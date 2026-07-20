@@ -47,27 +47,7 @@ module Api
         mount Api::V1::Analytics
       end
 
-      # Tratamento de erros específico, se necessário
-      rescue_from :all do |e|
-        unless (e.is_a? Grape::Exceptions::ValidationErrors) ||
-               (e.is_a? Grape::Exceptions::MethodNotAllowed) ||
-               e.message.include?('Mysql2::Error') ||
-               (e.is_a? PG::Error)
-
-          env = {}
-          env['exception_notifier.exception_data'] = {
-            api: 'API ERROR - POLEMK WHATS',
-            message: e.message,
-            user: 'No User.',
-            environment: Rails.env
-          }
-        end
-
-        # Log de erro
-        error_backtrace = "ERROR - API POLEMK: #{e.message} <br/> \n BACKTRACE: #{e.backtrace.join "\n"}"
-        Rails.logger.warn error_backtrace
-        error!(error_backtrace)
-      end
+      # Tratamento de erro é único e vive em Api::Root.
     end
   end
 end

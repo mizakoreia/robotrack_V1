@@ -118,39 +118,7 @@ module Api
         mount Api::Auth::V1::Registration
         mount Api::Auth::V1::Checkout
 
-        # Tratamento de erros específico seguindo padrão do Api::V1::Base
-        rescue_from :all do |e|
-          unless (e.is_a? Grape::Exceptions::ValidationErrors) ||
-                 (e.is_a? Grape::Exceptions::MethodNotAllowed) ||
-                 e.message.include?('Mysql2::Error') ||
-                 (e.is_a? PG::Error)
-
-            env = {}
-            env['exception_notifier.exception_data'] = {
-              api: 'API AUTH - POLEMK WHATS',
-              message: e.message,
-              user: 'No User.',
-              environment: Rails.env
-            }
-          end
-
-          # Log de erro
-          error_backtrace = "ERROR - API AUTH POLEMK: #{e.message} <br/> \n BACKTRACE: #{e.backtrace.join "\n"}"
-          Rails.logger.warn error_backtrace
-
-          if e.is_a?(Grape::Exceptions::ValidationErrors)
-            error!({
-                     error: 'validation_error',
-                     message: 'Dados inválidos',
-                     details: e.errors
-                   }, 400)
-          else
-            error!({
-                     error: 'internal_error',
-                     message: 'Erro interno no servidor'
-                   }, 500)
-          end
-        end
+        # Tratamento de erro é único e vive em Api::Root.
       end
     end
   end

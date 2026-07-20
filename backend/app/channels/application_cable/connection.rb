@@ -5,17 +5,19 @@ module ApplicationCable
     identified_by :current_user
 
     def connect
-      user = find_verified_user
-      self.current_user = user if user.present?
+      self.current_user = find_verified_user
     end
 
     private
 
+    # Ponto de estrangulamento do Cable: nenhum canal é instanciado sem passar
+    # por aqui, então um canal futuro não pode esquecer de verificar identidade
+    # (só pode esquecer de verificar autorização, que é problema da D3/D6).
     def find_verified_user
       token = request.params[:token]
-      return nil unless token.present?
+      reject_unauthorized_connection if token.blank?
 
-      begin
+      user = begin
         payload = nil
         payload = Warden::JWTAuth::TokenDecoder.new.call(token) if defined?(Warden::JWTAuth::TokenDecoder)
         payload ||= Auth::TokenService.new(nil).decode_token(token, verify_exp: true)
@@ -24,17 +26,9 @@ module ApplicationCable
       rescue StandardError
         nil
       end
-    end
 
-    def allow_public_checkout_subscription?
-      any_id = request.params[:purchase_id]
-      return false unless any_id.present?
-      Purchase.by_any_id(any_id).present?
-    end
-
-    def decode_user_id(token)
-      payload = Auth::TokenService.new(nil).decode_token(token, verify_exp: true)
-      payload['sub'] || payload['user_id']
+      reject_unauthorized_connection if user.nil?
+      user
     end
   end
 end

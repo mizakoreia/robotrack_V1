@@ -26,7 +26,7 @@ possível. O grupo 7 é o único destrutivo em dados e começa por backup.
 
 ## 2. Vedação do ActionCable e caminho de erro
 
-- [ ] 2.1 Fazer `find_verified_user` em
+- [x] 2.1 Fazer `find_verified_user` em
   `backend/app/channels/application_cable/connection.rb` chamar
   `reject_unauthorized_connection` quando não resolve `User`, remover
   `allow_public_checkout_subscription?` e `decode_user_id`, e deletar os quatro
@@ -34,18 +34,18 @@ possível. O grupo 7 é o único destrutivo em dados e começa por backup.
   (template-security-hardening §ActionCable — conexão sem `?token=` é rejeitada
   em vez de estabelecida com `current_user = nil`, e `app/channels/` fica só com
   os dois arquivos de `application_cable/`).
-- [ ] 2.2 Criar `backend/app/services/error_reporter.rb` delegando para
+- [x] 2.2 Criar `backend/app/services/error_reporter.rb` delegando para
   `Rails.error.report` e substituir a chamada a `ExceptionNotifier` em
   `root.rb:118` (§Notificação de exceção — o `rescue_from` deixa de levantar
   `NameError: uninitialized constant ExceptionNotifier`; o destino real do erro
   fica para `delivery-and-observability` plugar sob o mesmo módulo).
-- [ ] 2.3 Colapsar os três `rescue_from :all` de `api/root.rb`, `api/v1/base.rb`
+- [x] 2.3 Colapsar os três `rescue_from :all` de `api/root.rb`, `api/v1/base.rb`
   e `api/auth/v1/base.rb` num único em `Api::Root`, que responde
   `{error, message, request_id}` e loga backtrace em separado
   (§Resposta de erro — o corpo da resposta 500 deixa de casar com
   `/BACKTRACE|\.rb:\d+/`, que hoje casa porque `error!(error_backtrace)` serializa
   o backtrace inteiro do servidor ao cliente).
-- [ ] 2.4 Verificação: spec de `ActionCable::Connection` (`connect "/cable"` sem
+- [x] 2.4 Verificação: spec de `ActionCable::Connection` (`connect "/cable"` sem
   token → `UnauthorizedError`; com token válido → `current_user.id` correto) e
   spec de request que provoca exceção real e asserta ausência de backtrace no
   corpo com presença do `request_id` no log.

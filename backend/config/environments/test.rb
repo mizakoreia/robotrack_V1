@@ -14,4 +14,5 @@ Robotrack::Application.configure do
   config.action_cable.allowed_request_origins = ['http://localhost:5173', 'http://localhost:3000']
   config.action_cable.disable_request_forgery_protection = true
   config.active_job.queue_adapter = :inline
+  config.active_storage.service = :test
 end

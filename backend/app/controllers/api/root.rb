@@ -74,26 +74,29 @@ module Api
     mount Api::Whats::V1::Base    # /whats/v1/*
     mount Api::V1::Base
 
+    # Único tratamento de erro da API — as cópias em Api::V1::Base e
+    # Api::Auth::V1::Base foram removidas. O backtrace vai para o log, nunca
+    # para o corpo da resposta.
     rescue_from :all do |e|
-      unless (e.is_a? Grape::Exceptions::ValidationErrors) ||
-             (e.is_a? Grape::Exceptions::MethodNotAllowed) ||
-             e.message.include?('Mysql2::Error') ||
-             (e.is_a? PG::Error)
+      request_id = env['action_dispatch.request_id'] || SecureRandom.uuid
 
-        env = {}
-        env['exception_notifier.exception_data'] = {
-          api: 'API ERROR - POLEMK WHATS',
-          message: e.message,
-          user: 'No User.',
-          environment: Rails.env
-        }
-        ExceptionNotifier.notify_exception(e, env: env)
+      if e.is_a?(Grape::Exceptions::ValidationErrors)
+        error!({ error: 'validation_error', message: 'Dados inválidos', details: e.errors, request_id: }, 400)
       end
 
-      # Log de erro
-      error_backtrace = "ERROR - API POLEMK WHATS: #{e.message} <br/> \n BACKTRACE: #{e.backtrace.join "\n"}"
-      Rails.logger.warn error_backtrace
-      error!(error_backtrace)
+      Rails.logger.error(
+        {
+          event: 'api_error',
+          request_id:,
+          exception: e.class.name,
+          message: e.message,
+          backtrace: Array(e.backtrace).first(30)
+        }.to_json
+      )
+
+      ErrorReporter.report(e, context: { request_id:, path: request.path, method: request.request_method })
+
+      error!({ error: 'internal_error', message: 'Erro interno no servidor', request_id: }, 500)
     end
 
     add_swagger_documentation(
