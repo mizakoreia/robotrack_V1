@@ -10,41 +10,20 @@ module Api
     format :json
     # Sem prefixo/version global; cada módulo define seu próprio prefixo e versão
 
+    # Única lista de rotas servidas sem autenticação. Qualquer caminho fora
+    # daqui exige `Authorization: Bearer` válido — não há header, env var ou
+    # token de aplicação que desligue essa verificação.
+    PUBLIC_ROUTES = [
+      %r{^/swagger_doc},
+      %r{^/api/v1/countries/?$},
+      %r{^/auth/v1/oauth/google_url/?$},
+      %r{^/auth/v1/oauth/callback/?$}
+    ].freeze
+
     before do
-      skip_header = (headers['X-Skip-Auth'] == '1') || (headers['HTTP_X_SKIP_AUTH'] == '1')
-      next if skip_header
+      next if PUBLIC_ROUTES.any? { |regex| request.path =~ regex }
 
-      # Ignora autenticação para webhooks, swagger e endpoints públicos de auth
-      public_paths = [
-        %r{^/swagger_doc},
-        %r{^/api/v1/countries/?$},
-
-        %r{^/whats/v1/webhooks/messages-upsert/?$},
-        %r{^/whats/v1/webhooks/qrcode-updated/?$},
-        %r{^/whats/v1/webhooks/send-message/?$},
-        %r{^/whats/v1/webhooks/messages-update/?$},
-        %r{^/whats/v1/webhooks/connection-update/?$},
-        %r{^/whats/v1/webhooks/logout-instance/?$},
-        %r{^/auth/v1/magic_login/request_code/?$},
-        %r{^/auth/v1/magic_login/validate_code/?$},
-        %r{^/auth/v1/code_validation/?$},
-        %r{^/auth/v1/magic_login/can_resend/?$},
-        %r{^/auth/v1/oauth/google_url/?$},
-        %r{^/auth/v1/oauth/facebook_url/?$},
-        %r{^/auth/v1/oauth/callback/?$},
-        %r{^/auth/v1/pre_register/?$},
-        %r{^/auth/v1/verify_code/?$},
-        %r{^/auth/v1/complete_registration/?$},
-        %r{^/auth/v1/sessions/status/?$},
-        %r{^/auth/v1/checkout/session/?$},
-        
-        # status exige auth para gerar CSRF corretamente
-      ]
-
-      next if public_paths.any? { |regex| request.path =~ regex }
-
-
-      # Centraliza autenticação: Warden/Devise JWT ou decoder próprio; fallback para ClientApplication
+      # Centraliza autenticação: Warden/Devise JWT ou decoder próprio.
       user = nil
       user = env['warden'].authenticate if defined?(Warden) && env['warden']
 
@@ -67,12 +46,7 @@ module Api
           user = nil
         end
 
-        unless user
-          @current_client = ClientApplication.active.find_by(token: token)
-          error!({ error: 'unauthorized', message: 'Token inválido' }, 401) unless @current_client
-          env['api.current_client'] = @current_client
-          next
-        end
+        error!({ error: 'unauthorized', message: 'Token inválido' }, 401) unless user
       end
 
       @current_user = user
@@ -93,8 +67,6 @@ module Api
       end
 
       attr_reader :current_user
-
-      attr_reader :current_client
     end
 
     # Montando os módulos da API (cada um com seu prefixo e versão)

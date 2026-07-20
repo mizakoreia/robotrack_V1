@@ -6,7 +6,7 @@ possível. O grupo 7 é o único destrutivo em dados e começa por backup.
 
 ## 1. Vedação de autenticação HTTP
 
-- [ ] 1.1 Em `backend/app/controllers/api/root.rb`, remover o bloco `skip_header`
+- [x] 1.1 Em `backend/app/controllers/api/root.rb`, remover o bloco `skip_header`
   e o fallback `ClientApplication.active.find_by(token:)` (com o helper
   `current_client` e as escritas em `env['api.current_client']`), extraindo a
   allowlist para `Api::Root::PUBLIC_ROUTES` congelada, reduzida a `/swagger_doc`,
@@ -15,12 +15,12 @@ possível. O grupo 7 é o único destrutivo em dados e começa por backup.
   `GET /api/v1/users` com `X-Skip-Auth: 1` e sem `Authorization` passa a retornar
   401 em vez de 200, e um token que existia em `client_applications` passa a
   retornar 401 em vez de autenticar sem usuário).
-- [ ] 1.2 Escrever spec de request que enumera `Api::Root.routes`, subtrai
+- [x] 1.2 Escrever spec de request que enumera `Api::Root.routes`, subtrai
   `PUBLIC_ROUTES` e exige 401 em cada rota restante, emitida duas vezes: com e
   sem `X-Skip-Auth: 1` (§Allowlist — o spec falha nomeando método e caminho da
   primeira rota que responder algo diferente de 401; é o ancestral do route-sweep
   da D3 e `authorization-policies` o estende em vez de reinventar).
-- [ ] 1.3 Verificação: reintroduzir o `skip_header` temporariamente e confirmar
+- [x] 1.3 Verificação: reintroduzir o `skip_header` temporariamente e confirmar
   que 1.2 **falha**; reverter (§Allowlist — um spec que continua verde com o
   bypass de volta não tem poder de detecção e não vale como prova).
 

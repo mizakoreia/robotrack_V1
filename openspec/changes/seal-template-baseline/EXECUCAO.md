@@ -73,9 +73,25 @@ Total: 31 tarefas em 8 grupos de plano + G0.
 
 ## Comando por grupo
 
-O CLI `openspec` não está instalado nesta máquina (`which openspec` → vazio), então
-o fluxo roda sobre os arquivos do `openspec/` diretamente, que é a fonte da
-verdade que o CLI leria. O comando por grupo:
+O CLI `openspec` não está instalado como binário global, mas está disponível via
+npx com versão fixada:
+
+```bash
+npx --yes @fission-ai/openspec@1.6.0 <subcomando>
+```
+
+Comandos de apoio usados a cada grupo:
+
+```bash
+# antes de começar o grupo — confirma schema, artefatos e o que falta
+npx --yes @fission-ai/openspec@1.6.0 status       --change seal-template-baseline --json
+npx --yes @fission-ai/openspec@1.6.0 instructions apply --change seal-template-baseline --json
+
+# depois de marcar as tarefas do grupo — o plano tem de continuar coerente
+npx --yes @fission-ai/openspec@1.6.0 validate --changes --strict
+```
+
+Invocação por grupo (o escopo é a fatia de `tasks.md` que o grupo cobre):
 
 ```
 /opsx:apply seal-template-baseline   → escopo: G0   (estabilizar boot de teste)
@@ -88,6 +104,11 @@ verdade que o CLI leria. O comando por grupo:
 /opsx:apply seal-template-baseline   → escopo: G7   (tarefas 7.1–7.5)
 /opsx:apply seal-template-baseline   → escopo: G8   (tarefas 8.1–8.6)
 ```
+
+`instructions apply` devolve a lista de tarefas com status mas **não** tem noção
+de "grupo" — o agrupamento é desta execução, registrado neste arquivo. O CLI é a
+fonte da verdade sobre artefatos, progresso e validação; o recorte em G0..G8 é a
+camada por cima.
 
 ## Protocolo por grupo
 

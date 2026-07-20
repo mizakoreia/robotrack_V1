@@ -11,6 +11,9 @@ const API_URL = import.meta.env.VITE_API_URL || (() => {
   }
 })()
 
+/** Config interna: `skipAuth` marca chamadas que não devem levar `Authorization`. */
+type PublicRequestConfig = AxiosRequestConfig & { skipAuth?: boolean }
+
 class ApiClient {
   private client: AxiosInstance
   private isRefreshing = false
@@ -32,7 +35,9 @@ class ApiClient {
     // Request interceptor
     this.client.interceptors.request.use(
       (config) => {
-        const skip = (config.headers as any)?.['X-Skip-Auth'] === '1'
+        // Marcador interno: nunca trafega na requisição. O backend não tem —
+        // nem pode ter — um header que desligue autenticação.
+        const skip = (config as PublicRequestConfig).skipAuth === true
         if (!skip) {
           const token = localStorage.getItem('access_token') || localStorage.getItem('token')
           if (token) {
@@ -115,8 +120,7 @@ class ApiClient {
   }
 
   async getPublic<T>(url: string, config?: AxiosRequestConfig) {
-    const headers = { ...(config?.headers || {}), 'X-Skip-Auth': '1' }
-    const response = await this.client.get<T>(url, { ...(config || {}), headers })
+    const response = await this.client.get<T>(url, { ...(config || {}), skipAuth: true } as PublicRequestConfig)
     return response.data
   }
 
@@ -126,8 +130,7 @@ class ApiClient {
   }
 
   async postPublic<T>(url: string, data?: any, config?: AxiosRequestConfig) {
-    const headers = { ...(config?.headers || {}), 'X-Skip-Auth': '1' }
-    const response = await this.client.post<T>(url, data, { ...(config || {}), headers })
+    const response = await this.client.post<T>(url, data, { ...(config || {}), skipAuth: true } as PublicRequestConfig)
     return response.data
   }
 
