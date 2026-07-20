@@ -65,15 +65,42 @@ ALTER DEFAULT PRIVILEGES FOR ROLE robotrack_migrator IN SCHEMA public
 ALTER DEFAULT PRIVILEGES FOR ROLE robotrack_migrator IN SCHEMA public
   GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO robotrack_app;
 
--- O DatabaseCleaner emite `TRUNCATE ... RESTART IDENTITY` (hardcoded na
--- truncation 2.2.2). Reiniciar a sequence de uma coluna serial exige ser dono
--- dela, e o dono da sequence acompanha o dono da TABELA (a sequence é "linked").
--- A truncation é obrigatória sob RLS (um `DELETE` sem contexto de tenant apaga
--- zero linhas). Tabelas de tenant usam uuid (sem sequence) e ficam com o
--- migrator (FORCE RLS + REVOKE de coluna dependem disso). As não-tenant com
--- coluna serial passam para o app, para que a truncation de teste as reinicie.
--- Hoje só jwt_denylist se qualifica; o filtro é genérico para pegar qualquer
--- serial futura, sempre excluindo as tabelas de tenant.
+-- === Posse de `users` (identity-and-auth): DDL do migrator exige ownership ===
+-- `users` é do template (nasce do robotrack_user no dev). A partir desta onda o
+-- migrator faz DDL nela (encrypted_password, CHECKs, índice de e-mail — 1.2/1.3),
+-- e `ALTER TABLE` exige ser dono. `users` NÃO tem RLS, então o migrator ser dono
+-- é inócuo para isolamento; `users` não tem sequence serial, então isso NÃO
+-- afeta a truncation. Idempotente. Após a troca de dono, o app é RE-grantado
+-- abaixo (o privilégio de dono era implícito e some com a posse).
+DO $$
+BEGIN
+  IF to_regclass('public.users') IS NOT NULL THEN
+    EXECUTE 'ALTER TABLE public.users OWNER TO robotrack_migrator';
+  END IF;
+END
+$$;
+
+GRANT SELECT, INSERT, UPDATE, DELETE, TRUNCATE ON ALL TABLES    IN SCHEMA public TO robotrack_app;
+GRANT USAGE, SELECT, UPDATE                     ON ALL SEQUENCES IN SCHEMA public TO robotrack_app;
+
+-- === Migrator faz DDL em tabela do app COMO MEMBRO do app (identity-and-auth) ===
+-- `jwt_denylist` continua sendo do `robotrack_app` (a truncation de teste emite
+-- `TRUNCATE ... RESTART IDENTITY`, hardcoded na 2.2.2, que exige posse da
+-- sequence — e a sequence é "linked" à tabela, logo segue o dono). Mas o migrator
+-- precisa trocar o índice de `jti` para único (1.2). Em Postgres, a checagem de
+-- ownership passa se o papel corrente for MEMBRO do dono. Tornando o migrator
+-- membro do app, o DDL sobre tabelas do app funciona sem transferir posse — e a
+-- RLS não é tocada: o runtime continua sendo o `robotrack_app` (sem BYPASSRLS), e
+-- a membership é migrator→app, não o contrário (app não ganha nada). Idempotente.
+GRANT robotrack_app TO robotrack_migrator;
+
+-- As tabelas não-tenant com coluna serial passam para o app, para que a
+-- truncation de teste (TRUNCATE ... RESTART IDENTITY) reinicie a sequence. O
+-- migrator, agora membro do app, ainda faz DDL nelas quando preciso (ex.: o
+-- índice único de jti em jwt_denylist, 1.2). Tabelas de tenant usam uuid (sem
+-- sequence) e ficam com o migrator (FORCE RLS + REVOKE de coluna dependem
+-- disso). O filtro é genérico para pegar qualquer serial futura, sempre
+-- excluindo as de tenant. Hoje só jwt_denylist se qualifica.
 DO $$
 DECLARE tbl text;
 BEGIN

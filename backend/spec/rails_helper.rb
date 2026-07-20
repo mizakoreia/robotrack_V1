@@ -27,7 +27,9 @@ RSpec.configure do |config|
     # A truncation é obrigatória (não deletion): sob RLS, `DELETE` sem contexto
     # de tenant não remove nada. O `TRUNCATE ... RESTART IDENTITY` do
     # DatabaseCleaner exige ownership das sequences — resolvido em db/roles.sql
-    # transferindo as sequences para robotrack_app. Ver EXECUCAO.md.
+    # mantendo as tabelas serial (jwt_denylist) com o robotrack_app. O DDL do
+    # migrator sobre elas passa por `GRANT robotrack_app TO robotrack_migrator`
+    # (o migrator faz DDL como MEMBRO do dono). Ver EXECUCAO.md.
     DatabaseCleaner.clean_with(:truncation)
   end
 

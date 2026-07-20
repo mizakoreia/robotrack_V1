@@ -60,8 +60,12 @@ RSpec.describe 'Bootstrap e resolução de Person', :tenancy do
     end
 
     it 'cai para a parte local do e-mail quando o display_name é vazio' do
-      googler = create(:user, name: 'x', email: 'joao.pereira@fabrica.com.br')
-      googler.update_column(:name, '') # simula conta Google sem nome (bypassa validação)
+      # identity-and-auth (D4.6) impõe CHECK `char_length(btrim(name)) >= 2`: um
+      # nome vazio no banco deixou de ser possível (era simulado por
+      # update_column). O fallback do BootstrapService segue defensivo; aqui o
+      # display_name vazio é simulado no objeto, sem violar o CHECK.
+      googler = create(:user, name: 'Conta Google', email: 'joao.pereira@fabrica.com.br')
+      allow(googler).to receive(:display_name).and_return('')
 
       ws = described_class.new(user: googler).call
       expect(ws.name).to eq('Workspace de joao.pereira')

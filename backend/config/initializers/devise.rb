@@ -4,6 +4,11 @@ require 'devise/orm/active_record'
 Devise.setup do |config|
   config.mailer_sender = ENV.fetch('DEVISE_MAILER_FROM', 'no-reply@robotrack.local')
   config.secret_key = Rails.application.credentials.secret_key_base
+
+  # Senha mínima de 6, máxima de 128 (§3.1 / D4.7). A regra é reforçada pela
+  # validação de model `User` (não usamos o módulo :validatable).
+  config.password_length = 6..128
+
   config.omniauth_path_prefix = '/users/auth'
   OmniAuth.config.path_prefix = '/users/auth'
 

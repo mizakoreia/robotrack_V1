@@ -225,9 +225,36 @@ npx --yes @fission-ai/openspec@1.6.0 show     identity-and-auth --json --deltas-
 O CLI é a fonte da verdade sobre artefatos e validação; o recorte em G1..G5 é a
 camada desta execução, registrada aqui.
 
+## Ajustes de ambiente que apareceram na execução (não previstos no plano)
+
+- **G1 — posse de tabela do template vs. DDL do migrator.** `users` nascia do
+  `robotrack_user` e `jwt_denylist` do `robotrack_app`; nenhuma era do migrator, e
+  esta onda faz DDL nas duas (a Onda 1 só CREATE'ava tabelas novas). Resolução em
+  `db/roles.sql`: `users` → migrator (não tem RLS nem sequence, inócuo); `jwt_denylist`
+  **continua** do app (a truncation emite `TRUNCATE ... RESTART IDENTITY`, hardcoded
+  no database_cleaner 2.2.2, que exige posse da sequence "linked" à tabela) e o
+  migrator vira **membro do app** (`GRANT robotrack_app TO robotrack_migrator`) para
+  fazer DDL sobre tabelas do app pela via de ownership-por-membership. A RLS não é
+  tocada: o runtime segue como `robotrack_app` sem BYPASSRLS; a membership é
+  migrator→app, não o contrário. Tentativas descartadas: separar a posse da sequence
+  (impossível — sequence "linked" segue a tabela) e `reset_ids: false` (o caminho
+  postgres da truncation ignora a opção e sempre emite `RESTART IDENTITY`).
+- **G1 — `jwt_authenticatable` + model `JwtDenylist` puxados para G1.** A tarefa 1.4
+  liga `:jwt_authenticatable` no `User`, que exige `jwt_revocation_strategy` definida
+  no carregamento do model. Por isso o model `JwtDenylist` (planejado em 2.1) veio
+  para G1 — sem ele o boot quebraria. A CONFIG de dispatch/revogação no initializer
+  do Devise + os endpoints continuam em G2.
+- **G1 — `belongs_to :user_type, optional: true`.** O `belongs_to` do Rails exige a
+  associação por padrão; com `user_type_id` nullable e o cadastro por senha sem
+  preenchê-la, a associação passa a opcional (senão `POST /registration` estouraria).
+- **G1 — specs de ondas anteriores ajustados pela nova invariante.** O CHECK de nome
+  mín. 2 tornou impossível criar usuário com nome vazio: `bootstrap_and_resolve_spec`
+  passou a simular `display_name` vazio por stub (não por `update_column`), e
+  `magic_login_removal_spec` passou a criar usuário com senha (CHECK de credencial).
+
 ## Progresso
 
-- [ ] G1 — Esquema e modelo de identidade (1.1–1.5)
+- [x] G1 — Esquema e modelo de identidade (1.1–1.5) — backend 151/0 (142 + 9 novos)
 - [ ] G2 — Sessão JWT, denylist, superfície de senha e proteção (2.1–2.6, 4.1–4.5)
 - [ ] G3 — Google OAuth por redirect (3.1–3.4)
 - [ ] G4 — Tela única de login e cadastro (5.1–5.5)

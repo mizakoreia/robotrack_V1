@@ -1,11 +1,17 @@
 # frozen_string_literal: true
 
-# Modelo de usuário para o sistema de Magic Login
-# Suporta autenticação via código (email/WhatsApp) e OAuth social
+# Modelo de usuário (identity-and-auth): senha Devise + Google OAuth.
+# `encrypted_password` para login local; `provider`/`provider_uid` para Google.
 class User < ApplicationRecord
-  devise :omniauthable, omniauth_providers: %i[google_oauth2 facebook]
+  devise :database_authenticatable, :registerable, :omniauthable, :jwt_authenticatable,
+         jwt_revocation_strategy: JwtDenylist,
+         omniauth_providers: %i[google_oauth2 facebook]
   # Associations
-  belongs_to :user_type
+  # `user_type` é herança do domínio de cobrança do template e deixou de ser
+  # obrigatória (identity-and-auth 1.3 relaxou o NOT NULL/FK): o cadastro por
+  # senha não a preenche. O gate `User#og?` sobre UserType segue existindo até
+  # `authorization-policies` substituí-lo por Membership.role.
+  belongs_to :user_type, optional: true
   has_rich_text :biography
 
   # workspace-tenancy: cada usuário é dono de no máximo um workspace (§1.1) e
@@ -16,12 +22,21 @@ class User < ApplicationRecord
   has_many :memberships, dependent: :restrict_with_exception
 
   # Validations
-  validates :name, presence: true, length: { maximum: 255 }
-  validates :user_type_id, presence: true
+  # Nome normalizado (strip + colapso de espaços) antes de validar; o mínimo de
+  # 2 caracteres não-brancos é reforçado por CHECK no banco (D4.6).
+  before_validation :normalize_name
+  validates :name, presence: true, length: { minimum: 2, maximum: 255 }
+  # `user_type_id` deixou de ser NOT NULL (identity-and-auth 1.3); o cadastro por
+  # senha não o preenche. Sem validação de presença.
 
-  # Email ou telefone deve estar presente
-  validates :email, presence: true, unless: -> { phone.present? }
-  validates :phone, presence: true, unless: -> { email.present? }
+  # E-mail é a chave de identidade (D4.5): sempre presente e único.
+  validates :email, presence: true
+
+  # Senha mínima de 6 (§3.1). Sem o módulo :validatable, a regra vive aqui,
+  # aplicada só quando a senha está sendo definida (cadastro/troca). Usuário
+  # só-Google não define senha e o CHECK de credencial no banco garante que ele
+  # tenha `provider`.
+  validates :password, length: { in: Devise.password_length }, if: -> { password.present? }
 
   # Validações específicas por campo
   validates :email,
@@ -48,7 +63,7 @@ class User < ApplicationRecord
             allow_blank: true,
             if: -> { self.class.column_names.include?('state') }
 
-  validates :provider, inclusion: { in: %w[email whatsapp google facebook] }, allow_nil: true
+  validates :provider, inclusion: { in: %w[google_oauth2 google facebook email whatsapp] }, allow_nil: true
   validates :provider_uid, uniqueness: { scope: :provider }, allow_nil: true
 
   # Callbacks
@@ -157,6 +172,12 @@ class User < ApplicationRecord
   end
 
   private
+
+  # "  Ana   Souza  " → "Ana Souza". Roda antes das validações; um nome só de
+  # espaços vira "" e a validação de presença o recusa (D4.6).
+  def normalize_name
+    self.name = name.strip.gsub(/\s+/, ' ') if name.present?
+  end
 
   def normalize_email
     self.email = email.downcase.strip if email.present?

@@ -252,18 +252,17 @@ CREATE TABLE public.user_types (
 
 CREATE TABLE public.users (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
-    email character varying,
+    email character varying NOT NULL,
     phone character varying,
     name character varying NOT NULL,
     avatar_url text,
-    user_type_id uuid NOT NULL,
+    user_type_id uuid,
     provider character varying,
     provider_uid character varying,
     last_login_at timestamp(6) without time zone,
     login_count integer DEFAULT 0,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    jti character varying,
     cpf_cnpj character varying,
     cep character varying,
     street character varying,
@@ -286,7 +285,10 @@ CREATE TABLE public.users (
     customer_id character varying,
     subscription_id character varying,
     plan_id integer,
-    credit_card_brand character varying
+    credit_card_brand character varying,
+    encrypted_password character varying DEFAULT ''::character varying NOT NULL,
+    CONSTRAINT users_credential_present CHECK (((provider IS NOT NULL) OR ((encrypted_password)::text <> ''::text))),
+    CONSTRAINT users_name_min_length CHECK ((char_length(btrim((name)::text)) >= 2))
 );
 
 
@@ -454,7 +456,7 @@ CREATE UNIQUE INDEX index_active_storage_variants_uniqueness ON public.active_st
 -- Name: index_jwt_denylist_on_jti; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX index_jwt_denylist_on_jti ON public.jwt_denylist USING btree (jti);
+CREATE UNIQUE INDEX index_jwt_denylist_on_jti ON public.jwt_denylist USING btree (jti);
 
 
 --
@@ -517,7 +519,7 @@ CREATE UNIQUE INDEX index_user_types_on_name ON public.user_types USING btree (n
 -- Name: index_users_on_email; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE UNIQUE INDEX index_users_on_email ON public.users USING btree (email) WHERE (email IS NOT NULL);
+CREATE UNIQUE INDEX index_users_on_email ON public.users USING btree (email);
 
 
 --
@@ -525,13 +527,6 @@ CREATE UNIQUE INDEX index_users_on_email ON public.users USING btree (email) WHE
 --
 
 CREATE INDEX index_users_on_email_and_phone ON public.users USING btree (email, phone);
-
-
---
--- Name: index_users_on_jti; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX index_users_on_jti ON public.users USING btree (jti);
 
 
 --
@@ -589,14 +584,6 @@ CREATE TRIGGER workspaces_owner_immutable BEFORE UPDATE ON public.workspaces FOR
 
 ALTER TABLE ONLY public.memberships
     ADD CONSTRAINT fk_memberships_person_same_workspace FOREIGN KEY (workspace_id, person_id) REFERENCES public.people(workspace_id, id);
-
-
---
--- Name: users fk_rails_a2f1461231; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.users
-    ADD CONSTRAINT fk_rails_a2f1461231 FOREIGN KEY (user_type_id) REFERENCES public.user_types(id);
 
 
 --
@@ -687,6 +674,8 @@ ALTER TABLE public.workspaces ENABLE ROW LEVEL SECURITY;
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260720190002'),
+('20260720190001'),
 ('20260720180006'),
 ('20260720180005'),
 ('20260720180004'),

@@ -38,7 +38,8 @@ RSpec.describe 'Remoção do magic-login', type: :request do
   end
 
   it 'User.create! com atributos válidos persiste' do
-    user = User.create!(name: 'Sem Magic', email: 'sem-magic@example.com', user_type: create(:user_type, :client))
+    # identity-and-auth: o CHECK de credencial (D4.7) exige provider OU senha.
+    user = User.create!(name: 'Sem Magic', email: 'sem-magic@example.com', password: 'senha123')
 
     expect(user).to be_persisted
   end
