@@ -21,6 +21,10 @@ module Api
 
       mount Api::V1::Downloads
 
+      # Sonda de tenancy: rota de domínio existente só em teste, para exercitar a
+      # fiação de contexto e a varredura de rotas (workspace-tenancy 4.x).
+      mount Api::V1::TenancyProbe if Rails.env.test?
+
       # Tratamento de erro é único e vive em Api::Root.
     end
   end

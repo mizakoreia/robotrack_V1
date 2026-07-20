@@ -1,0 +1,57 @@
+# frozen_string_literal: true
+
+module Workspaces
+  # workspace-core §"Seleção do workspace corrente por request" (tarefa 4.1).
+  #
+  # Lê o workspace pedido (`X-Workspace-Id`), valida pertencimento e resolve o
+  # papel NO SERVIDOR — nunca a partir do cliente. `owner` é derivado de
+  # `owner_user_id`; senão, a `role` da membership; senão, sem acesso.
+  #
+  # Anti-enumeração de WORKSPACES: header ausente é `400 workspace_context_missing`;
+  # workspace alheio E workspace inexistente devolvem ambos `403
+  # workspace_access_denied` — a diferença de status vazaria a existência do
+  # tenant. (A anti-enumeração de RECURSOS de outro tenant é outra camada: a RLS
+  # os torna 404 via RecordNotFound.)
+  #
+  # Precisa estar dentro de uma transação: seta `app.current_user_id` (SET LOCAL)
+  # para que a política de controle de `workspaces` deixe ver os workspaces que o
+  # usuário possui ou é membro. Se o workspace não estiver visível por essa
+  # política, ele não pertence ao usuário → 403.
+  class ResolveCurrentService
+    Result = Struct.new(:ok, :status, :error, :workspace_id, :role, keyword_init: true)
+
+    def initialize(user:, workspace_id:)
+      @user = user
+      @workspace_id = workspace_id.presence
+    end
+
+    def call
+      return failure(400, 'workspace_context_missing') if @workspace_id.nil?
+
+      Tenant.set_user!(@user.id)
+
+      workspace = Workspace.where(id: @workspace_id).first
+      return failure(403, 'workspace_access_denied') if workspace.nil?
+
+      role = resolve_role(workspace)
+      return failure(403, 'workspace_access_denied') if role.nil?
+
+      Result.new(ok: true, workspace_id: workspace.id, role: role)
+    rescue ActiveRecord::StatementInvalid
+      # X-Workspace-Id malformado (uuid inválido) não revela nada além de negação.
+      failure(403, 'workspace_access_denied')
+    end
+
+    private
+
+    def resolve_role(workspace)
+      return :owner if workspace.owner_user_id == @user.id
+
+      Membership.where(workspace_id: workspace.id, user_id: @user.id).first&.role&.to_sym
+    end
+
+    def failure(status, error)
+      Result.new(ok: false, status: status, error: error)
+    end
+  end
+end

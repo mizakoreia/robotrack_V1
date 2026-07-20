@@ -10,6 +10,10 @@ module Api
     format :json
     # Sem prefixo/version global; cada módulo define seu próprio prefixo e versão
 
+    # Abre UMA transação em volta de cada rota de DOMÍNIO, dentro da qual o bloco
+    # `before` emite o SET LOCAL do contexto de tenant (workspace-tenancy 4.2).
+    use Tenant::TransactionMiddleware
+
     # Única lista de rotas servidas sem autenticação. Qualquer caminho fora
     # daqui exige `Authorization: Bearer` válido — não há header, env var ou
     # token de aplicação que desligue essa verificação.
@@ -19,6 +23,27 @@ module Api
       %r{^/auth/v1/oauth/google_url/?$},
       %r{^/auth/v1/oauth/callback/?$}
     ].freeze
+
+    # Rotas SEM contexto de tenant (allowlist explícita — tenant-isolation 4.2).
+    # Toda rota fora daqui é de DOMÍNIO: exige `X-Workspace-Id`, resolve o papel
+    # no servidor e roda dentro de uma transação com o contexto setado. Hoje NADA
+    # é workspace-scoped por HTTP — o primeiro recurso de domínio (projects, a
+    # jusante) cai fora desta lista e a spec de varredura (4.6) o obriga a se
+    # declarar. `users`/`uploads`/`downloads` são globais do template (gestão OG);
+    # se virarem tenant, saem daqui e a varredura cobra.
+    TENANT_EXEMPT_ROUTES = [
+      %r{^/swagger_doc},
+      %r{^/auth/},
+      %r{^/api/v1/workspaces},
+      %r{^/api/v1/users},
+      %r{^/api/v1/countries},
+      %r{^/api/v1/uploads},
+      %r{^/api/v1/downloads}
+    ].freeze
+
+    def self.tenant_exempt?(path)
+      TENANT_EXEMPT_ROUTES.any? { |regex| path =~ regex }
+    end
 
     before do
       next if PUBLIC_ROUTES.any? { |regex| request.path =~ regex }
@@ -51,6 +76,20 @@ module Api
 
       @current_user = user
       env['api.current_user'] = @current_user
+
+      # Contexto de tenant das rotas de domínio (workspace-tenancy 4.2). Roda
+      # dentro da transação aberta por Tenant::TransactionMiddleware.
+      unless Api::Root.tenant_exempt?(request.path)
+        ws_id = headers['X-Workspace-Id'] || headers['HTTP_X_WORKSPACE_ID']
+        resolution = Workspaces::ResolveCurrentService.new(user: @current_user, workspace_id: ws_id).call
+        error!({ error: resolution.error }, resolution.status) unless resolution.ok
+
+        Tenant.apply!(workspace_id: resolution.workspace_id, user_id: @current_user.id)
+        @current_workspace_id = resolution.workspace_id
+        @current_role = resolution.role
+        env['api.current_workspace_id'] = @current_workspace_id
+        env['api.current_role'] = @current_role
+      end
     end
 
     helpers do
@@ -66,7 +105,7 @@ module Api
         end
       end
 
-      attr_reader :current_user
+      attr_reader :current_user, :current_workspace_id, :current_role
     end
 
     # Montando os módulos da API (cada um com seu prefixo e versão)

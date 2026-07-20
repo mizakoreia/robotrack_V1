@@ -96,27 +96,27 @@ teste negativo desta capacidade prova nada.
 
 ## 4. Contexto de tenant nos pontos de entrada
 
-- [ ] 4.1 `Workspaces::ResolveCurrentService`: lê `X-Workspace-Id`, valida
+- [x] 4.1 `Workspaces::ResolveCurrentService`: lê `X-Workspace-Id`, valida
   pertencimento e resolve o papel (`owner` derivado de `owner_user_id`, senão a
   membership). (`workspace-core` §Seleção — header ausente devolve `400
   workspace_context_missing`; workspace alheio e workspace inexistente devolvem
   ambos `403`, nunca `404`)
-- [ ] 4.2 Ligar o contexto no bloco `before` de `app/controllers/api/root.rb`,
+- [x] 4.2 Ligar o contexto no bloco `before` de `app/controllers/api/root.rb`,
   com allowlist explícita de rotas sem tenant (auth, health,
   `GET /api/v1/workspaces`). (`tenant-isolation` §Contexto — rota de auth não
   abre transação; rota de domínio fora da allowlist e sem resolução reprova o CI)
-- [ ] 4.3 Middleware de servidor do Sidekiq que abre `Tenant.with` a partir do
+- [x] 4.3 Middleware de servidor do Sidekiq que abre `Tenant.with` a partir do
   primeiro argumento do job. (`tenant-isolation` §Contexto — job de domínio
   enfileirado sem `workspace_id` vai para a fila de mortos antes do `perform`,
   em vez de rodar com contexto nulo)
-- [ ] 4.4 Contexto de tenant na `ActionCable::Connection`, por
+- [x] 4.4 Contexto de tenant na `ActionCable::Connection`, por
   `subscribe`/`receive`. (D6 / `realtime-collaboration` — uma subscrição a
   `WorkspaceChannel` de workspace alheio é rejeitada no `subscribed`)
-- [ ] 4.5 Spec de vazamento entre requests: request A no contexto de `WS-A`
+- [x] 4.5 Spec de vazamento entre requests: request A no contexto de `WS-A`
   levanta exceção; request B, na mesma conexão do pool, vê
   `current_setting` `NULL`. (`tenant-isolation` §Contexto — este é o bug que o
   `SET LOCAL` existe para impedir e o único que um `ensure` não cobre)
-- [ ] 4.6 Spec de guarda de esquema: enumera `information_schema.tables`,
+- [x] 4.6 Spec de guarda de esquema: enumera `information_schema.tables`,
   subtrai a allowlist de não-tenant e falha se sobrar tabela sem
   `workspace_id NOT NULL`, sem `FORCE ROW LEVEL SECURITY` ou sem policy
   `tenant_isolation`. (`tenant-isolation` §workspace_id — este teste é o que faz
