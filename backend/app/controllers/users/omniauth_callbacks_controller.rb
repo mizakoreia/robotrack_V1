@@ -1,33 +1,45 @@
 # frozen_string_literal: true
 
+require 'cgi'
+
 module Users
+  # Callback do Google OAuth (identity-and-auth 3.3 / D4.4). O token vai ao SPA
+  # pelo FRAGMENTO da URL (`#access_token=…`), NUNCA em query string — o fragmento
+  # não é enviado ao servidor, não entra em log de acesso nem em `Referer`. A
+  # resolução de identidade (vínculo por e-mail verificado, sem duplicar) é do
+  # `Auth::GoogleOauthService`.
   class OmniauthCallbacksController < Devise::OmniauthCallbacksController
     def google_oauth2
-      handle_oauth('google')
+      user = ::Auth::GoogleOauthService.from_omniauth(request.env['omniauth.auth'])
+
+      if user
+        token, payload = ::Auth::TokenService.issue(user, remember_me: remember_me_param)
+        redirect_to_frontend("access_token=#{CGI.escape(token)}&expires_at=#{payload['exp']}")
+      else
+        # Recusa (e-mail não verificado): não vincula, não emite token.
+        redirect_to_frontend('error=email_nao_verificado')
+      end
     end
 
-    def facebook
-      handle_oauth('facebook')
+    # OmniAuth chama isto quando o usuário nega o consentimento ou a estratégia
+    # falha (D4.4). Também redireciona por fragmento, sem sessão.
+    def failure
+      redirect_to_frontend('error=acesso_negado')
     end
 
     private
 
-    def handle_oauth(provider)
-      auth = request.env['omniauth.auth']
-      info = auth.info || {}
-      uid = auth.uid
-      user = User.find_or_create_by_oauth(provider, uid, {
-                                            email: info['email'],
-                                            name: info['name'],
-                                            image: info['image']
-                                          })
+    def remember_me_param
+      ActiveModel::Type::Boolean.new.cast(request.env.dig('omniauth.params', 'remember_me'))
+    end
 
-      sign_in(user)
-      token_service = Auth::TokenService.new(user)
-      tokens = token_service.generate_tokens
+    def frontend_callback_url
+      ENV['FRONTEND_AUTH_CALLBACK_URL'] || ENV['FRONTEND_CALLBACK_URL'] ||
+        'http://localhost:5173/auth/callback'
+    end
 
-      redirect_to (ENV['FRONTEND_CALLBACK_URL'] || ENV['OAUTH_REDIRECT_URI'] || '/auth/callback') +
-                  "?provider=#{provider}&token=#{CGI.escape(tokens[:token])}&refresh_token=#{CGI.escape(tokens[:refresh_token])}"
+    def redirect_to_frontend(fragment)
+      redirect_to "#{frontend_callback_url}##{fragment}", allow_other_host: true
     end
   end
 end

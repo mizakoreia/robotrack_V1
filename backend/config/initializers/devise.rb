@@ -30,17 +30,13 @@ Devise.setup do |config|
     jwt.request_formats = { user: [:json] }
   end
 
+  # Só Google, por redirect de página inteira (identity-and-auth 3.1 / D4.4).
+  # O Facebook saiu: mantê-lo configurado sem credenciais faz o boot logar warning
+  # e expõe `/users/auth/facebook` como rota pública sem dono.
   config.omniauth :google_oauth2,
                   Rails.application.credentials.dig(:oauth, :google, :client_id),
                   Rails.application.credentials.dig(:oauth, :google, :client_secret),
                   {
                     redirect_uri: ENV['OAUTH_GOOGLE_REDIRECT_URI'] || ENV['OAUTH_REDIRECT_URI']
-                  }
-
-  config.omniauth :facebook,
-                  Rails.application.credentials.dig(:oauth, :facebook, :app_id),
-                  Rails.application.credentials.dig(:oauth, :facebook, :app_secret),
-                  {
-                    redirect_uri: ENV['OAUTH_FACEBOOK_REDIRECT_URI'] || ENV['OAUTH_REDIRECT_URI']
                   }
 end

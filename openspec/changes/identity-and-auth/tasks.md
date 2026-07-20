@@ -17,10 +17,10 @@
 
 ## 3. Google OAuth por redirect
 
-- [ ] 3.1 Remover a configuração `omniauth :facebook` do initializer e deixar apenas `google_oauth2` com `redirect_uri` por env (proposta, Não-objetivos — manter o Facebook configurado sem credenciais faz o boot logar warning e expõe `/users/auth/facebook` como rota pública sem dono).
-- [ ] 3.2 Implementar `Auth::GoogleOauthService.from_omniauth`: resolve por `provider/provider_uid`, senão vincula por e-mail **verificado**, senão cria; nome derivado da parte local do e-mail quando `info.name` vier em branco (D4.5/D4.6 — a falha a caçar é criar um segundo `User` com o mesmo e-mail, o que torna o casamento de `Person` por e-mail de D10 ambíguo).
-- [ ] 3.3 Implementar o controller de callback que redireciona para `FRONTEND_AUTH_CALLBACK_URL` com `#access_token=…&expires_at=…`, e a rota de falha que redireciona com `#error=…` (D4.4 — a falha a caçar é o token sair em query string e vazar para log de acesso e `Referer`).
-- [ ] 3.4 Spec de request com `OmniAuth.config.mock_auth` cobrindo: criação, vínculo a conta local existente (`User.where(email:).count == 1`), recusa com `email_verified` falso, e `uid` já pertencente a outro usuário (D4.5 — a falha a caçar é o vínculo ocorrer com e-mail não verificado, permitindo tomada de conta).
+- [x] 3.1 Remover a configuração `omniauth :facebook` do initializer e deixar apenas `google_oauth2` com `redirect_uri` por env (proposta, Não-objetivos — manter o Facebook configurado sem credenciais faz o boot logar warning e expõe `/users/auth/facebook` como rota pública sem dono).
+- [x] 3.2 Implementar `Auth::GoogleOauthService.from_omniauth`: resolve por `provider/provider_uid`, senão vincula por e-mail **verificado**, senão cria; nome derivado da parte local do e-mail quando `info.name` vier em branco (D4.5/D4.6 — a falha a caçar é criar um segundo `User` com o mesmo e-mail, o que torna o casamento de `Person` por e-mail de D10 ambíguo).
+- [x] 3.3 Implementar o controller de callback que redireciona para `FRONTEND_AUTH_CALLBACK_URL` com `#access_token=…&expires_at=…`, e a rota de falha que redireciona com `#error=…` (D4.4 — a falha a caçar é o token sair em query string e vazar para log de acesso e `Referer`).
+- [x] 3.4 Spec de request com `OmniAuth.config.mock_auth` cobrindo: criação, vínculo a conta local existente (`User.where(email:).count == 1`), recusa com `email_verified` falso, e `uid` já pertencente a outro usuário (D4.5 — a falha a caçar é o vínculo ocorrer com e-mail não verificado, permitindo tomada de conta).
 
 ## 4. Superfície HTTP e proteção
 

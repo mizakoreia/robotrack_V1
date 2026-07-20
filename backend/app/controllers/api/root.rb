@@ -27,9 +27,9 @@ module Api
       # Auth pública, ANCORADA (D4.8): `session/?$` NÃO casa `session/renew`.
       ['POST', %r{^/auth/v1/session/?$}],
       ['POST', %r{^/auth/v1/registration/?$}],
-      # OAuth manual LEGADO — substituído pelo redirect Devise em G3.
-      %r{^/auth/v1/oauth/google_url/?$},
-      %r{^/auth/v1/oauth/callback/?$}
+      # Google OAuth por redirect Devise (D4.8). O request phase e o callback são
+      # rotas Rails, fora da varredura Grape; a entrada aqui é defensiva.
+      %r{^/users/auth/google_oauth2}
     ].freeze
 
     def self.public_route?(method, path)

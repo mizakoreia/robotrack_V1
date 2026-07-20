@@ -47,8 +47,8 @@ module Api
           end
         end
 
-        # Endpoints de autenticação.
-        mount Api::Auth::V1::Oauth        # legado (google_url/callback) — sai em G3
+        # Endpoints de autenticação por senha. O Google é redirect Devise OmniAuth
+        # (rotas Rails `/users/auth/google_oauth2`), fora desta superfície Grape.
         mount Api::Auth::V1::Registration
         mount Api::Auth::V1::Session
         mount Api::Auth::V1::Me

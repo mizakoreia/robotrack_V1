@@ -282,10 +282,24 @@ camada desta execução, registrada aqui.
   os specs de channel). Serviços legados órfãos removidos (SessionsService,
   MeService, CsrfService); OauthService/AuthSession ficam para G3.
 
+- **G3 — Google via Devise OmniAuth, não mais o fluxo manual.** O `oauth.rb`
+  Grape (google_url/callback), o `OauthService`, as entities `AuthSession`/
+  `AuthResponse`, o `oauth_redirects_controller` e o `User.find_or_create_by_oauth`
+  eram o OAuth manual (troca de code no servidor) e foram removidos.
+  `Auth::GoogleOauthService.from_omniauth` resolve por provider/uid → vínculo por
+  e-mail verificado → criação; o `OmniauthCallbacksController` emite via
+  `TokenService` e redireciona com `#access_token` (fragmento). Facebook saiu da
+  config e do `omniauth_providers`. Allowlist: `/auth/v1/oauth/*` → `google_oauth2`
+  (5 padrões). Specs de onda anterior ajustados: `magic_login_removal` (google_url
+  → 404, rota Devise existe), `swagger` (SUPERFICIE sem `/auth/v1/oauth`),
+  `auth_route_sweep` (size 5). Spec 3.4 com `OmniAuth.config.mock_auth` +
+  `Rails.application.env_config['omniauth.auth']` (test mode) cobre criação,
+  vínculo, e-mail não verificado, uid de terceiro e entrega por fragmento.
+
 ## Progresso
 
 - [x] G1 — Esquema e modelo de identidade (1.1–1.5) — backend 151/0 (142 + 9 novos)
 - [x] G2 — Sessão JWT, denylist, superfície de senha e proteção (2.1–2.6, 4.1–4.5) — backend 177/0
-- [ ] G3 — Google OAuth por redirect (3.1–3.4)
+- [x] G3 — Google OAuth por redirect (3.1–3.4) — backend 181/0
 - [ ] G4 — Tela única de login e cadastro (5.1–5.5)
 - [ ] G5 — Sessão no cliente e ciclo do token de convite (6.1–6.8)

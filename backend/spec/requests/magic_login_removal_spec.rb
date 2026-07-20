@@ -23,11 +23,13 @@ RSpec.describe 'Remoção do magic-login', type: :request do
     end
   end
 
-  it 'GET /auth/v1/oauth/google_url continua 200 com URL do Google' do
+  it 'o OAuth manual legado saiu; o Google agora é redirect Devise' do
+    # identity-and-auth (G3) substituiu a troca de code manual pelo redirect
+    # OmniAuth. O endpoint antigo não existe mais; a rota Devise, sim.
     get '/auth/v1/oauth/google_url'
+    expect(response).to have_http_status(:not_found)
 
-    expect(response).to have_http_status(:ok)
-    expect(JSON.parse(response.body)['url']).to include('accounts.google.com')
+    expect(Rails.application.routes.url_helpers).to respond_to(:user_google_oauth2_omniauth_authorize_path)
   end
 
   it 'User não tem mais as associações do fluxo de código' do

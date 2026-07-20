@@ -74,13 +74,15 @@ RSpec.describe 'Varredura de autenticação das rotas', type: :request do
 
   describe 'a allowlist em si' do
     it 'contém exatamente os padrões públicos previstos (POST em session/registration)' do
-      expect(Api::Root::PUBLIC_ROUTES.size).to eq(6)
+      expect(Api::Root::PUBLIC_ROUTES.size).to eq(5)
       expect(Api::Root.public_route?('POST', '/auth/v1/session')).to be(true)
       expect(Api::Root.public_route?('POST', '/auth/v1/registration')).to be(true)
       expect(Api::Root.public_route?('GET', '/swagger_doc')).to be(true)
       expect(Api::Root.public_route?('GET', '/api/v1/countries')).to be(true)
-      expect(Api::Root.public_route?('GET', '/auth/v1/oauth/google_url')).to be(true)
-      expect(Api::Root.public_route?('POST', '/auth/v1/oauth/callback')).to be(true)
+      # Google OAuth por redirect Devise (rota Rails, defensiva na allowlist).
+      expect(Api::Root.public_route?('POST', '/users/auth/google_oauth2')).to be(true)
+      # O OAuth manual legado (/auth/v1/oauth/*) foi removido.
+      expect(Api::Root.public_route?('GET', '/auth/v1/oauth/google_url')).to be(false)
     end
 
     it 'mantém a auth sensível PROTEGIDA (allowlist ancorada, D4.8)' do

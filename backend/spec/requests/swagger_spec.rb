@@ -8,7 +8,6 @@ require 'rails_helper'
 RSpec.describe 'Swagger e superfície da API', type: :request do
   # Superfície pública declarada no proposal §Impact, após a redução.
   SUPERFICIE_ESPERADA = %w[
-    /auth/v1/oauth
     /auth/v1/session
     /auth/v1/registration
     /auth/v1/me

@@ -5,7 +5,7 @@
 class User < ApplicationRecord
   devise :database_authenticatable, :registerable, :omniauthable, :jwt_authenticatable,
          jwt_revocation_strategy: JwtDenylist,
-         omniauth_providers: %i[google_oauth2 facebook]
+         omniauth_providers: %i[google_oauth2]
   # Associations
   # `user_type` é herança do domínio de cobrança do template e deixou de ser
   # obrigatória (identity-and-auth 1.3 relaxou o NOT NULL/FK): o cadastro por
@@ -113,35 +113,10 @@ class User < ApplicationRecord
     user
   end
 
-  def self.find_or_create_by_oauth(provider, uid, info)
-    user = find_by(provider: provider, provider_uid: uid)
-
-    if user.nil?
-      # Tentar encontrar por email primeiro
-      user = find_by(email: info[:email].downcase) if info[:email].present?
-
-      if user.nil?
-        client_type = UserType.find_by(name: 'client')
-        user = create!(
-          email: info[:email],
-          name: info[:name] || "#{provider}_user",
-          avatar_url: info[:image],
-          user_type: client_type,
-          provider: provider,
-          provider_uid: uid
-        )
-      else
-        # Atualizar provider info se usuário já existe
-        user.update!(
-          provider: provider,
-          provider_uid: uid,
-          avatar_url: info[:image] || user.avatar_url
-        )
-      end
-    end
-
-    user
-  end
+  # A resolução de identidade do Google vive em `Auth::GoogleOauthService`
+  # (identity-and-auth 3.2): vínculo por e-mail VERIFICADO, sem duplicar, com
+  # `provider = 'google_oauth2'`. O antigo `find_or_create_by_oauth` (provider
+  # 'google', sem checar verificação) foi removido.
 
   # Métodos de instância
   def og?
