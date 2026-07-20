@@ -124,22 +124,22 @@ teste negativo desta capacidade prova nada.
 
 ## 5. Bootstrap e identidade de domínio
 
-- [ ] 5.1 `Workspaces::BootstrapService`: cria workspace com
+- [x] 5.1 `Workspaces::BootstrapService`: cria workspace com
   `name = "Workspace de <display_name>"` — caindo para a parte local do e-mail
   quando o nome de exibição é vazio — e a `Person` do dono na mesma transação,
   com `INSERT ... ON CONFLICT (owner_user_id) DO NOTHING` + releitura.
   (`workspace-core` §Bootstrap — dois logins simultâneos criam um único
   workspace e nenhuma chamada levanta `RecordNotUnique`; conta Google sem nome
   produz `"Workspace de joao.pereira"`, nunca `"Workspace de "`)
-- [ ] 5.2 Emitir o evento `workspace.bootstrapped` sem semear o catálogo.
+- [x] 5.2 Emitir o evento `workspace.bootstrapped` sem semear o catálogo.
   (`workspace-core` §Bootstrap — `task_templates.count` é 0 ao fim do bootstrap;
   semear aqui inverteria a dependência de Onda 1 para Onda 4)
-- [ ] 5.3 `People::ResolveService`: casa por e-mail no workspace (case-insensitive)
+- [x] 5.3 `People::ResolveService`: casa por e-mail no workspace (case-insensitive)
   ou cria nova, preenchendo `user_id` na linha existente.
   (D10 / `workspace-membership` §Resolução — Ana com 7 tarefas atribuídas e
   `user_id NULL` aceita o convite e continua com as 7; a contagem de `people` não
   muda)
-- [ ] 5.4 Spec do bootstrap e da resolução, incluindo o caso cross-workspace
+- [x] 5.4 Spec do bootstrap e da resolução, incluindo o caso cross-workspace
   (`Person` com o mesmo e-mail em `WS-B` não é reutilizada em `WS-A`) e o de
   remoção de membro preservando a `Person`.
   (`workspace-membership` §Resolução e §Membership — sem a `Person` do dono

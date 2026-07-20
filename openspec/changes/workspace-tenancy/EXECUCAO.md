@@ -188,5 +188,5 @@ camada desta execução, registrada aqui.
 - [x] G2 — Tabelas de tenancy (2.1–2.6)
 - [x] G3 — Row Level Security + Tenant.with + specs (3.1–3.6)
 - [x] G4 — Contexto nos pontos de entrada (4.1–4.6)
-- [ ] G5 — Bootstrap e identidade de domínio (5.1–5.4)
+- [x] G5 — Bootstrap e identidade de domínio (5.1–5.4)
 - [ ] G6 — Superfície de API e cliente + rebuild limpo (6.1–6.5)
