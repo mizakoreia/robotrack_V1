@@ -21,10 +21,6 @@ module Api
 
       mount Api::V1::Downloads
 
-      namespace :auth do
-        mount Api::Auth::V1::Registration
-      end
-
       # Tratamento de erro é único e vive em Api::Root.
     end
   end

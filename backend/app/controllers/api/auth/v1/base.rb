@@ -38,84 +38,12 @@ module Api
           def current_user_agent
             env['HTTP_USER_AGENT'] || 'Unknown'
           end
-
-          def rate_limit_key(identifier, method)
-            "magic_login:#{method}:#{identifier}"
-          end
-
-          def check_rate_limit!(identifier, method)
-            rate_limit_key(identifier, method)
-
-            # Verifica tentativas recentes
-            attempts = LoginAttempt.where(
-              identifier: identifier,
-              method: method,
-              created_at: 15.minutes.ago..Time.current,
-              success: false
-            ).count
-
-            if attempts >= 5
-              error!({
-                       error: 'rate_limit_exceeded',
-                       message: 'Muitas tentativas. Tente novamente em 15 minutos.'
-                     }, 429)
-            end
-
-            # Verifica se pode solicitar novo código
-            return unless method.in?(%w[email whatsapp])
-
-            last_code = LoginCode.where(
-              destination: identifier,
-              method: method,
-              created_at: 1.minute.ago..Time.current
-            ).last
-
-            return unless last_code && !last_code.can_resend?
-
-            error!({
-                     error: 'rate_limit_exceeded',
-                     message: "Aguarde #{last_code.time_until_resend} segundos antes de solicitar um novo código"
-                   }, 429)
-          end
-
-          def check_brute_force!(identifier, ip_address)
-            # Verifica tentativas de força bruta por IP
-            ip_attempts = LoginAttempt.where(
-              ip_address: ip_address,
-              created_at: 1.hour.ago..Time.current,
-              success: false
-            ).count
-
-            if ip_attempts >= 20
-              error!({
-                       error: 'ip_blocked',
-                       message: 'IP bloqueado por muitas tentativas. Contate o suporte.'
-                     }, 403)
-            end
-
-            # Verifica tentativas por identificador
-            id_attempts = LoginAttempt.where(
-              identifier: identifier,
-              created_at: 1.hour.ago..Time.current,
-              success: false
-            ).count
-
-            return unless id_attempts >= 10
-
-            error!({
-                     error: 'account_blocked',
-                     message: 'Conta temporariamente bloqueada por muitas tentativas'
-                   }, 403)
-          end
         end
 
         # Monta os endpoints de autenticação
-        mount Api::Auth::V1::MagicLogin
-        mount Api::Auth::V1::CodeValidation
         mount Api::Auth::V1::Oauth
         mount Api::Auth::V1::Sessions
         mount Api::Auth::V1::Me
-        mount Api::Auth::V1::Registration
 
         # Tratamento de erro é único e vive em Api::Root.
       end

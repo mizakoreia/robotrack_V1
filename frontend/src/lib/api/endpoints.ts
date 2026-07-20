@@ -7,18 +7,6 @@ import type {
 } from './types'
 
 export const authApi = {
-  // Magic Login - Request code
-  requestMagicCode: (identifier: string, method: 'email' | 'whatsapp') => 
-    apiClient.post<{ success: boolean; message: string }>('/auth/v1/magic_login/request_code', { identifier, method }),
-  
-  // Magic Login - Validate code and login
-  validateMagicCode: (identifier: string, code: string, method: 'email' | 'whatsapp') =>
-    apiClient.post<LoginResponse>('/auth/v1/magic_login/validate_code', { identifier, code, method }),
-  
-  // Check if can resend code
-  canResendCode: (identifier: string, method: 'email' | 'whatsapp') =>
-    apiClient.post<{ can_resend: boolean; remaining_time?: number }>('/auth/v1/magic_login/can_resend', { identifier, method }),
-  
   // OAuth URLs
   getGoogleAuthUrl: (redirectUri?: string) =>
     apiClient.get<{ url: string }>(`/auth/v1/oauth/google_url${redirectUri ? `?redirect_uri=${redirectUri}` : ''}`),

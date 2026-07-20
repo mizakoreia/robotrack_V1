@@ -1,24 +1,8 @@
 import { apiClient } from './client'
 /* import { toast } from 'sonner' */
 
-export interface MagicLoginRequest {
-  identifier: string // email ou whatsapp
-  method: 'email' | 'whatsapp'
-}
 
-export interface MagicLoginResponse {
-  success: boolean
-  message: string
-  identifier: string
-  method: 'email' | 'whatsapp'
-  code?: string
-}
 
-export interface CodeValidationRequest {
-  identifier: string
-  code: string
-  method: 'email' | 'whatsapp'
-}
 
 export interface AuthResponse {
   access_token: string
@@ -32,21 +16,6 @@ export interface AuthResponse {
   }
 }
 
-export interface VerifyCodeResponse {
-  success: boolean
-  message?: string
-  requires_completion?: boolean
-  access_token?: string
-  refresh_token?: string
-  user?: {
-    id: string
-    email?: string
-    whatsapp?: string
-    phone?: string
-    name?: string
-    avatar?: string
-  }
-}
 
 export interface OAuthUrlResponse {
   url: string
@@ -88,58 +57,6 @@ export interface RefreshTokenResponse {
 }
 
 class AuthService {
-  // Magic Login - Solicitar código
-  async requestMagicLogin(data: MagicLoginRequest): Promise<MagicLoginResponse> {
-    try {
-      const response = await apiClient.post<MagicLoginResponse>('/auth/v1/magic_login/request_code', data)
-      return response
-    } catch (error) {
-      throw error
-    }
-  }
-
-  // Magic Login - Validar código
-  async validateMagicCode(data: CodeValidationRequest): Promise<AuthResponse> {
-    try {
-      const response = await apiClient.post<AuthResponse>('/auth/v1/magic_login/validate_code', data)
-      const normalized: AuthResponse = {
-        access_token: (response as any).access_token ?? (response as any).token,
-        refresh_token: (response as any).refresh_token,
-        user: (response as any).user
-      }
-      return normalized
-    } catch (error) {
-      throw error
-    }
-  }
-
-  // Pré-registro
-  async preRegister(data: { identifier: string; method: 'email'|'whatsapp' }) {
-    return await apiClient.post('/auth/v1/pre_register', data)
-  }
-
-  async verifyPreRegisterCode(data: { identifier: string; method: 'email'|'whatsapp'; code: string }): Promise<VerifyCodeResponse> {
-    const response = await apiClient.post<any>('/auth/v1/verify_code', data)
-    const tokens = {
-      access_token: response.access_token ?? response.token,
-      refresh_token: response.refresh_token
-    }
-    const hasTokens = !!tokens.access_token
-    const normalized: VerifyCodeResponse = {
-      success: response.success ?? true,
-      message: response.message,
-      requires_completion: hasTokens ? false : (response.requires_completion ?? true),
-      access_token: hasTokens ? tokens.access_token : undefined,
-      refresh_token: hasTokens ? tokens.refresh_token : undefined,
-      user: response.user
-    }
-    return normalized
-  }
-
-  async completeRegistration(data: { identifier: string; method: 'email'|'whatsapp'; code: string; name: string; email?: string; whatsapp?: string }) {
-    return await apiClient.post('/auth/v1/complete_registration', data)
-  }
-
   // OAuth - Google
   async getGoogleAuthUrl(): Promise<OAuthUrlResponse> {
     try {

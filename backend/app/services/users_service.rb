@@ -14,7 +14,7 @@ class UsersService
         if user
           success_response(Api::Entities::User.represent(user), 200)
         else
-          error_response({ login_url: "/auth/magic_login?method=whatsapp&identifier=#{whatsapp}" }, 404)
+          error_response({ login_url: '/login' }, 404)
         end
       rescue StandardError => e
         internal_error_response(e.message)

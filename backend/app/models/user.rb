@@ -6,8 +6,6 @@ class User < ApplicationRecord
   devise :omniauthable, omniauth_providers: %i[google_oauth2 facebook]
   # Associations
   belongs_to :user_type
-  has_many :login_codes, dependent: :destroy
-  has_many :login_attempts, dependent: :destroy
   has_rich_text :biography
 
   # Validations
@@ -149,21 +147,6 @@ class User < ApplicationRecord
 
   def jwt_subject
     id
-  end
-
-  def active_login_code
-    login_codes.where('expires_at > ?', Time.current)
-               .where(used_at: nil)
-               .order(created_at: :desc)
-               .first
-  end
-
-  def can_request_new_code?
-    last_code = login_codes.order(created_at: :desc).first
-    return true if last_code.nil?
-
-    # Esperar 30 segundos entre requisições
-    last_code.created_at < 30.seconds.ago
   end
 
   private

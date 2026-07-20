@@ -106,25 +106,25 @@ possível. O grupo 7 é o único destrutivo em dados e começa por backup.
 
 ## 6. Fase 4 de remoção — Magic-login (D4)
 
-- [ ] 6.1 Deletar `api/auth/v1/{magic_login,code_validation,registration}.rb`, os
+- [x] 6.1 Deletar `api/auth/v1/{magic_login,code_validation,registration}.rb`, os
   cinco `Auth::*Service` do fluxo de código, `email_service.rb`, `auth_mailer.rb`
   e `app/views/auth_mailer/`, desmontá-los de `api/auth/v1/base.rb` e remover do
   `PUBLIC_ROUTES` as regex de `magic_login`, `code_validation`, `pre_register`,
   `verify_code` e `complete_registration` (§Magic-login —
   `POST /auth/v1/magic_login/request_code` retorna 404 e nenhuma linha é inserida
   em nenhuma tabela).
-- [ ] 6.2 Remover de `api/auth/v1/base.rb` os helpers `check_rate_limit!`,
+- [x] 6.2 Remover de `api/auth/v1/base.rb` os helpers `check_rate_limit!`,
   `check_brute_force!` e `rate_limit_key`, de `user.rb` os `has_many :login_codes`
   e `:login_attempts` com `active_login_code`/`can_request_new_code?`, e deletar
   os models `login_code.rb` e `login_attempt.rb` (§Magic-login —
   `User.reflect_on_all_associations` não contém `:login_codes` e `User.create!`
   com atributos válidos persiste).
-- [ ] 6.3 Deletar `features/auth/{MagicLogin,CodeValidation,CompleteRegistration,AuthFlow}.tsx`,
+- [x] 6.3 Deletar `features/auth/{MagicLogin,CodeValidation,CompleteRegistration,AuthFlow}.tsx`,
   podar `requestMagicCode`/`validateMagicCode`/`canResendCode` de `endpoints.ts` e
   reduzir `LoginPage.tsx` ao botão de OAuth (§Magic-login —
   `GET /auth/v1/oauth/google_url` continua retornando 200 com URL de
   `accounts.google.com`, provando que só o fluxo de código caiu).
-- [ ] 6.4 Verificação: `eager_load!` verde e spec de request confirmando 404 em
+- [x] 6.4 Verificação: `eager_load!` verde e spec de request confirmando 404 em
   `/auth/v1/magic_login/request_code` e 200 em `/auth/v1/oauth/google_url`.
 
 ## 7. Fase 5 — Descarte de tabelas, seeds e branding
