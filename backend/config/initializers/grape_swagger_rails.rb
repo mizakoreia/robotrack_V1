@@ -2,7 +2,7 @@
 
 # config/initializers/grape_swagger_rails.rb
 GrapeSwaggerRails.options.url      = '/api/v1/swagger_doc'
-GrapeSwaggerRails.options.app_name = 'Polemk API'
+GrapeSwaggerRails.options.app_name = ENV.fetch('APP_NAME', 'RoboTrack')
 GrapeSwaggerRails.options.before_action do
   GrapeSwaggerRails.options.app_url = request.protocol + request.host_with_port
 end

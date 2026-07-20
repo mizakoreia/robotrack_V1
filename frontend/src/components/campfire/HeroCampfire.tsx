@@ -35,7 +35,7 @@ export function HeroCampfire() {
           <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight">Crie e lance seus produtos com velocidade</h1>
           <p className="mt-4 text-base md:text-lg text-muted-foreground">Stack moderna, automações e um fluxo centrado em pagamento para acelerar sua operação.</p>
           <div className="mt-8 flex items-center gap-4">
-            <a id="quick-pay-btn" href="https://pika.polemk.com/payments" target="_blank" rel="noopener noreferrer">
+            <a id="quick-pay-btn" href="#" target="_blank" rel="noopener noreferrer">
               <Button variant="uiverse" className="px-4 py-2 h-11 text-sm">Pagamento rápido</Button>
             </a>
             <a href="#plans" className="text-sm underline">Ver planos</a>

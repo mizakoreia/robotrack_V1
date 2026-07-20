@@ -28,7 +28,6 @@ backend/config/secrets.yml
 
 # Configuração de banco (não versionar credenciais)
 backend/config/database.yml
-backend/db/schema.rb
 ## Temporários e logs
 backend/tmp/
 backend/log/
@@ -105,5 +104,4 @@ scratch.html
 DEV.session.sql
 
 .figma/*
-backend/db/schema.rb
 backend/config/database.yml

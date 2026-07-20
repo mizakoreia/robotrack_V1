@@ -143,7 +143,7 @@ export function FooterCrowd() {
       <div id="footer-crowd-container" className="relative w-screen h-[100vh] overflow-hidden">
         <div className="absolute top-0 md:top-[var(--topbar-h)] left-0 px-6 md:px-12 py-6">
           <div className="space-y-2">
-            <div className="text-xs md:text-sm">{new Date().getFullYear()} © Fábrica Polemk - Todos os direitos reservados.</div>
+            <div className="text-xs md:text-sm">{new Date().getFullYear()} © RoboTrack - Todos os direitos reservados.</div>
             <div className="text-2xl md:text-3xl font-bold">Construído por makers que chegaram<br/>muito antes do seu claudinho.</div>
             <div className="flex items-center gap-4 text-sm">
               <a href="/login" className="underline">Acessar</a>

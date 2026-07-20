@@ -129,29 +129,29 @@ possível. O grupo 7 é o único destrutivo em dados e começa por backup.
 
 ## 7. Fase 5 — Descarte de tabelas, seeds e branding
 
-- [ ] 7.1 Gerar `pg_dump -Fc` em `backend/tmp/backups/pre-seal-<AAAAMMDD-HHMM>.dump`
+- [x] 7.1 Gerar `pg_dump -Fc` em `backend/tmp/backups/pre-seal-<AAAAMMDD-HHMM>.dump`
   e **restaurá-lo** em um banco `robotrack_restore_check`
   (§Backup verificado — `pg_restore` sai com código 0 e a contagem de tabelas do
   banco restaurado bate com a da origem; dump gerado e não restaurado não conta
   como backup).
-- [ ] 7.2 Escrever e rodar a migration `RemoveTemplateTables`, descartando as 22
+- [x] 7.2 Escrever e rodar a migration `RemoveTemplateTables`, descartando as 22
   tabelas na ordem filhas→mães (`order_items` antes de `orders`/`items`;
   `plan_feature_*` antes de `plans`; `lead_messages` antes de `leads` antes de
   `operations`), com `down` levantando `ActiveRecord::IrreversibleMigration`
   apontando `tmp/backups/` (§Backup verificado — `rails db:rollback` levanta a
   exceção nomeando o diretório, em vez de recriar tabelas vazias que dariam falsa
   sensação de reversibilidade).
-- [ ] 7.3 Reescrever `db/seeds.rb` para conter apenas
+- [x] 7.3 Reescrever `db/seeds.rb` para conter apenas
   `UserType.seed_default_types!` e um usuário OG de desenvolvimento
   (§Seeds — o arquivo deixa de referenciar `SEED_WHATS_INSTANCE`, `SEED_LEADS`,
   `SEED_LEAD_MESSAGES` e `SEED_CLIENT_APPS`, que hoje semeiam módulos removidos).
-- [ ] 7.4 Substituir "POLEMK WHATS", "Polemk API" e `ROBOTRACK_WHATS` por
+- [x] 7.4 Substituir "POLEMK WHATS", "Polemk API" e `ROBOTRACK_WHATS` por
   RoboTrack em `api/root.rb`, `api/v1/base.rb`, `api/auth/v1/base.rb` e
   `config/initializers/grape_swagger_rails.rb`, e atualizar `.env.example`
   removendo variáveis de Evolution, Asaas e SMTP do magic-login
   (§Rebranding — `grep -rin polemk` em `backend/{app,config,db}` e `frontend/src`
   retorna 0 ocorrências).
-- [ ] 7.5 Verificação: `rails db:drop db:create db:schema:load db:seed` num banco
+- [x] 7.5 Verificação: `rails db:drop db:create db:schema:load db:seed` num banco
   vazio sai com código 0 e `UserType.count == 2` (§Seeds — prova que o drift de
   10 tabelas presentes em `schema.rb` sem arquivo de migration foi eliminado).
 

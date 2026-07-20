@@ -25,7 +25,7 @@ export function Topbar() {
     <div className={`fixed top-0 left-0 right-0 z-50 ${showOnMobile ? 'block' : 'hidden'} md:block`}>
       <div className="bg-card/80 backdrop-blur-sm border-b h-[var(--topbar-h)]">
         <div className="max-w-6xl mx-auto h-full px-0 md:px-0 flex items-center justify-between">
-          <div className="text-base md:text-lg font-bold text-foreground">@polemk/robotrack</div>
+          <div className="text-base md:text-lg font-bold text-foreground">RoboTrack</div>
           <div className="flex items-center gap-[15px] max-w-full px-4 md:px-0 md:mr-4">
             <button
               aria-label="Alternar tema"
