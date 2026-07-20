@@ -19,30 +19,38 @@ module Api
 
           attr_reader :current_user
 
-          def process_service_response(response)
-            status response[:status]
+          # Bearer do header Authorization, ou nil.
+          def bearer_token
+            raw = headers['Authorization'] || headers['HTTP_AUTHORIZATION']
+            return nil if raw.blank?
 
-            if (200..299).include?(response[:status])
-              response[:data]
+            scheme, token = raw.to_s.split(' ', 2)
+            scheme == 'Bearer' ? token : nil
+          end
+
+          # Envelope único das respostas de auth (identity-and-auth): sucesso em
+          # `data`, erro em `error`/`errors`, e o token também no header
+          # `Authorization` (spec §"Cadastro"/§"Login"). 204 sem corpo.
+          def render_auth_result(result)
+            if result[:ok]
+              header 'Authorization', "Bearer #{result[:token]}" if result[:token]
+              status result[:status]
+              if result[:status] == 204
+                body false
+              else
+                { data: { access_token: result[:token], user: Api::Entities::User.represent(result[:user]) } }
+              end
             else
-              error_payload = { error: response[:error] }
-              error_payload[:details] = response[:details] if response[:details]
-              error!(error_payload, response[:status])
+              status result[:status]
+              result[:errors] ? { errors: result[:errors] } : { error: result[:error] }
             end
-          end
-
-          def current_ip
-            env['HTTP_X_FORWARDED_FOR']&.split(',')&.first || env['REMOTE_ADDR'] || '0.0.0.0'
-          end
-
-          def current_user_agent
-            env['HTTP_USER_AGENT'] || 'Unknown'
           end
         end
 
-        # Monta os endpoints de autenticação
-        mount Api::Auth::V1::Oauth
-        mount Api::Auth::V1::Sessions
+        # Endpoints de autenticação.
+        mount Api::Auth::V1::Oauth        # legado (google_url/callback) — sai em G3
+        mount Api::Auth::V1::Registration
+        mount Api::Auth::V1::Session
         mount Api::Auth::V1::Me
 
         # Tratamento de erro é único e vive em Api::Root.

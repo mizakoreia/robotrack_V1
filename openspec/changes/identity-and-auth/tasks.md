@@ -8,12 +8,12 @@
 
 ## 2. Sessão JWT, denylist e ciclo de vida
 
-- [ ] 2.1 Criar `JwtDenylist` (`self.table_name = 'jwt_denylist'`, `include Devise::JWT::RevocationStrategies::Denylist`) e apontar `User` para ela como `jwt_revocation_strategy` (D4.1 — sem isso `DELETE /auth/v1/session` responde 204 e o token continua funcionando).
-- [ ] 2.2 Configurar `jwt.dispatch_requests` (POST em `registration`, `session`, `session/renew` e o callback do Google) e `jwt.revocation_requests` (`DELETE /auth/v1/session`) no initializer do Devise (D4.1 — hoje ambos são `[]` e nenhum token é despachado nem revogado pelo Warden).
-- [ ] 2.3 Sobrescrever `User#jwt_payload` para carimbar `exp` por `remember_me` (30d/12h, via `JWT_TTL_REMEMBER_DAYS`/`JWT_TTL_SESSION_HOURS`) e propagar `iat_origin` (D4.2 — com `remember_me: false` um `exp` de 30 dias deixaria token de sessão curta vivo por um mês num celular compartilhado).
-- [ ] 2.4 Implementar `Auth::SessionService` (login, logout, renew) no contrato singleton `ApiResponseHandler`, com o teto de renovação em `iat_origin + 2 × TTL` (D4.3 — sem o teto, renovar de 11 em 11 horas torna uma sessão de 12h perpétua).
-- [ ] 2.5 Implementar `Auth::PurgeJwtDenylistJob` apagando `exp < Time.current` e registrar o agendamento diário como requisito para `delivery-and-observability` (D4.1 — sem purga a tabela cresce indefinidamente e o lookup por `jti` em cada request degrada).
-- [ ] 2.6 Spec de request do ciclo completo: logout invalida só o token apresentado; token B do mesmo usuário continua válido; renew rotaciona `jti` e mata o anterior; renew com token revogado dá 401; purga não ressuscita token revogado (§3.1 — a falha a caçar é logout responder 204 com o token ainda passando em `GET /auth/v1/me`).
+- [x] 2.1 Criar `JwtDenylist` (`self.table_name = 'jwt_denylist'`, `include Devise::JWT::RevocationStrategies::Denylist`) e apontar `User` para ela como `jwt_revocation_strategy` (D4.1 — sem isso `DELETE /auth/v1/session` responde 204 e o token continua funcionando).
+- [x] 2.2 Configurar `jwt.dispatch_requests` (POST em `registration`, `session`, `session/renew` e o callback do Google) e `jwt.revocation_requests` (`DELETE /auth/v1/session`) no initializer do Devise (D4.1 — hoje ambos são `[]` e nenhum token é despachado nem revogado pelo Warden).
+- [x] 2.3 Sobrescrever `User#jwt_payload` para carimbar `exp` por `remember_me` (30d/12h, via `JWT_TTL_REMEMBER_DAYS`/`JWT_TTL_SESSION_HOURS`) e propagar `iat_origin` (D4.2 — com `remember_me: false` um `exp` de 30 dias deixaria token de sessão curta vivo por um mês num celular compartilhado).
+- [x] 2.4 Implementar `Auth::SessionService` (login, logout, renew) no contrato singleton `ApiResponseHandler`, com o teto de renovação em `iat_origin + 2 × TTL` (D4.3 — sem o teto, renovar de 11 em 11 horas torna uma sessão de 12h perpétua).
+- [x] 2.5 Implementar `Auth::PurgeJwtDenylistJob` apagando `exp < Time.current` e registrar o agendamento diário como requisito para `delivery-and-observability` (D4.1 — sem purga a tabela cresce indefinidamente e o lookup por `jti` em cada request degrada).
+- [x] 2.6 Spec de request do ciclo completo: logout invalida só o token apresentado; token B do mesmo usuário continua válido; renew rotaciona `jti` e mata o anterior; renew com token revogado dá 401; purga não ressuscita token revogado (§3.1 — a falha a caçar é logout responder 204 com o token ainda passando em `GET /auth/v1/me`).
 
 ## 3. Google OAuth por redirect
 
@@ -24,11 +24,11 @@
 
 ## 4. Superfície HTTP e proteção
 
-- [ ] 4.1 Criar os endpoints Grape em `app/controllers/api/auth/v1/`: `POST registration`, `POST session`, `DELETE session`, `POST session/renew`, `GET me`, com `Api::Entities::User` expondo só `id`, `name`, `email`, `avatar_url` (§3.1 — a entidade herdada do template expõe colunas de cartão de crédito).
-- [ ] 4.2 Adicionar ao allowlist de `api/root.rb` as regex **ancoradas** `^/auth/v1/session/?$`, `^/auth/v1/registration/?$`, `^/users/auth/google_oauth2` (D4.8 — a falha a caçar é `^/auth/v1/session` sem `/?$` tornar `session/renew` público, permitindo estender sessão sem token).
-- [ ] 4.3 Configurar rack-attack: throttle de 10 por 5 min em `POST /auth/v1/session` por (IP, e-mail normalizado), resposta 429, e igualar o caminho negativo do login executando o hash mesmo quando o e-mail não existe (D4.7 — a falha a caçar é distinguir "e-mail inexistente" de "senha errada" pelo tempo de resposta, com senha mínima de 6 caracteres).
-- [ ] 4.4 Estender o helper de request de `seal-template-baseline` com `sign_in_as(user, remember_me:)` — token realmente despachado pelo Warden — e `expired_bearer_for(user)`, documentando-o como contrato consumido pelas capacidades a jusante (proposta/Impacto — um helper que forja o JWT à mão faz os testes de denylist passarem sem que a revogação funcione).
-- [ ] 4.5 Spec de request negativo da superfície: `session/renew` sem token → 401; `me` sem token → 401; `me` com `X-Skip-Auth: 1` e sem token → 401; payload do token sem `workspace_id` nem `role` (§4.1 — a falha a caçar é o token virar portador de autorização, contornando D2/D3).
+- [x] 4.1 Criar os endpoints Grape em `app/controllers/api/auth/v1/`: `POST registration`, `POST session`, `DELETE session`, `POST session/renew`, `GET me`, com `Api::Entities::User` expondo só `id`, `name`, `email`, `avatar_url` (§3.1 — a entidade herdada do template expõe colunas de cartão de crédito).
+- [x] 4.2 Adicionar ao allowlist de `api/root.rb` as regex **ancoradas** `^/auth/v1/session/?$`, `^/auth/v1/registration/?$`, `^/users/auth/google_oauth2` (D4.8 — a falha a caçar é `^/auth/v1/session` sem `/?$` tornar `session/renew` público, permitindo estender sessão sem token).
+- [x] 4.3 Configurar rack-attack: throttle de 10 por 5 min em `POST /auth/v1/session` por (IP, e-mail normalizado), resposta 429, e igualar o caminho negativo do login executando o hash mesmo quando o e-mail não existe (D4.7 — a falha a caçar é distinguir "e-mail inexistente" de "senha errada" pelo tempo de resposta, com senha mínima de 6 caracteres).
+- [x] 4.4 Estender o helper de request de `seal-template-baseline` com `sign_in_as(user, remember_me:)` — token realmente despachado pelo Warden — e `expired_bearer_for(user)`, documentando-o como contrato consumido pelas capacidades a jusante (proposta/Impacto — um helper que forja o JWT à mão faz os testes de denylist passarem sem que a revogação funcione).
+- [x] 4.5 Spec de request negativo da superfície: `session/renew` sem token → 401; `me` sem token → 401; `me` com `X-Skip-Auth: 1` e sem token → 401; payload do token sem `workspace_id` nem `role` (§4.1 — a falha a caçar é o token virar portador de autorização, contornando D2/D3).
 
 ## 5. Tela de login e cadastro
 

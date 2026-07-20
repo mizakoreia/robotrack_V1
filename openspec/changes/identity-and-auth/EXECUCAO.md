@@ -252,10 +252,40 @@ camada desta execução, registrada aqui.
   passou a simular `display_name` vazio por stub (não por `update_column`), e
   `magic_login_removal_spec` passou a criar usuário com senha (CHECK de credencial).
 
+- **G2 — payload mínimo vs. dispatch do Warden (reconciliação de artefatos).** O
+  spec.md exige payload **exatamente** `sub, jti, exp, iat, iat_origin` ("o token
+  identifica, não autoriza"), mas o dispatch automático do Warden/devise-jwt
+  injeta `scp`/`aud`. Como o spec.md é o contrato, `Auth::TokenService` emite
+  chamando `User#jwt_payload` direto (5 chaves), e a autenticação em api/root.rb
+  decodifica e consulta o denylist pela própria estratégia `Denylist`
+  (`jwt_revoked?`/`revoke_jwt`) — a revogação continua HONESTA (logout grava o
+  `jti`, o auth path recusa `jti` no denylist). `jwt.dispatch_requests`/
+  `revocation_requests` ficam vazios (inertes sem usuário no Warden). O helper
+  `sign_in_as` (4.4) emite pelo mesmo caminho do endpoint, não forja à mão.
+- **G2 — allowlist pública CIENTE de método.** `POST /auth/v1/session` (login) é
+  público mas `DELETE /auth/v1/session` (logout) NÃO — precisa do token para saber
+  qual `jti` revogar (D4.8). A allowlist de path era agnóstica de método; virou
+  entradas `regex` OU `['METHOD', regex]`, com `Api::Root.public_route?(method,
+  path)`. Os route-sweeps (auth e tenant) passaram a usá-la.
+- **G2 — armadilha #2 fechada.** O `before` de api/root.rb tinha um fallback via
+  `Warden::JWTAuth::TokenDecoder` que decodifica sem checar denylist (ressuscitaria
+  token revogado). Removido: caminho único por `::Auth::TokenService.decode`, que
+  checa denylist. (Atenção ao namespace: dentro de `module Api`, `Auth` resolve
+  para `Api::Auth`; use `::Auth`.)
+- **G2 — sem `:rememberable`.** `remember_me` do Devise não existe (não incluímos
+  o módulo de cookie); os acessores voláteis do JWT são `jwt_remember_me`/
+  `jwt_iat_origin` no `User`, setados pelo TokenService antes de `jwt_payload`.
+- **G2 — specs de ondas anteriores ajustados à nova superfície.** `swagger_spec`
+  (`SUPERFICIE_ESPERADA`: `sessions`→`session`+`registration`), `auth_route_sweep`
+  e `tenant_route_sweep` (allowlist ciente de método), e `request_auth_helper`
+  reescrito (token real via `TokenService.issue`, `access_token_for` mantido para
+  os specs de channel). Serviços legados órfãos removidos (SessionsService,
+  MeService, CsrfService); OauthService/AuthSession ficam para G3.
+
 ## Progresso
 
 - [x] G1 — Esquema e modelo de identidade (1.1–1.5) — backend 151/0 (142 + 9 novos)
-- [ ] G2 — Sessão JWT, denylist, superfície de senha e proteção (2.1–2.6, 4.1–4.5)
+- [x] G2 — Sessão JWT, denylist, superfície de senha e proteção (2.1–2.6, 4.1–4.5) — backend 177/0
 - [ ] G3 — Google OAuth por redirect (3.1–3.4)
 - [ ] G4 — Tela única de login e cadastro (5.1–5.5)
 - [ ] G5 — Sessão no cliente e ciclo do token de convite (6.1–6.8)

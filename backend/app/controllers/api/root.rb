@@ -17,12 +17,30 @@ module Api
     # Única lista de rotas servidas sem autenticação. Qualquer caminho fora
     # daqui exige `Authorization: Bearer` válido — não há header, env var ou
     # token de aplicação que desligue essa verificação.
+    # Allowlist pública. Entradas são regex (qualquer método) OU pares
+    # `['METHOD', regex]` quando a mesma rota é pública em um método e protegida
+    # em outro — o caso de `/auth/v1/session`: `POST` (login) é público, `DELETE`
+    # (logout) NÃO é, porque precisa do token para saber qual `jti` revogar (D4.8).
     PUBLIC_ROUTES = [
       %r{^/swagger_doc},
       %r{^/api/v1/countries/?$},
+      # Auth pública, ANCORADA (D4.8): `session/?$` NÃO casa `session/renew`.
+      ['POST', %r{^/auth/v1/session/?$}],
+      ['POST', %r{^/auth/v1/registration/?$}],
+      # OAuth manual LEGADO — substituído pelo redirect Devise em G3.
       %r{^/auth/v1/oauth/google_url/?$},
       %r{^/auth/v1/oauth/callback/?$}
     ].freeze
+
+    def self.public_route?(method, path)
+      PUBLIC_ROUTES.any? do |entry|
+        if entry.is_a?(Array)
+          entry[0] == method.to_s.upcase && entry[1].match?(path)
+        else
+          entry.match?(path)
+        end
+      end
+    end
 
     # Rotas SEM contexto de tenant (allowlist explícita — tenant-isolation 4.2).
     # Toda rota fora daqui é de DOMÍNIO: exige `X-Workspace-Id`, resolve o papel
@@ -46,33 +64,32 @@ module Api
     end
 
     before do
-      next if PUBLIC_ROUTES.any? { |regex| request.path =~ regex }
+      next if Api::Root.public_route?(request.request_method, request.path)
 
-      # Centraliza autenticação: Warden/Devise JWT ou decoder próprio.
-      user = nil
-      user = env['warden'].authenticate if defined?(Warden) && env['warden']
+      # Autenticação centralizada por `Auth::TokenService.decode`, que verifica
+      # assinatura, expiração E denylist (revogação). O caminho ÚNICO — sem
+      # fallback via Warden::JWTAuth::TokenDecoder, que decodifica sem checar o
+      # denylist e ressuscitaria um token revogado (identity-and-auth D4.1). Um
+      # token no denylist chega aqui e vira 401.
+      auth_header = headers['Authorization'] || headers['HTTP_AUTHORIZATION']
+      error!({ error: 'unauthorized', message: 'Authorization header ausente' }, 401) if auth_header.blank?
 
-      unless user
-        auth_header = headers['Authorization'] || headers['HTTP_AUTHORIZATION']
-        error!({ error: 'unauthorized', message: 'Authorization header ausente' }, 401) if auth_header.blank?
-
-        scheme, token = auth_header.split(' ')
-        unless scheme == 'Bearer' && token.present?
-          error!({ error: 'unauthorized', message: 'Formato do Authorization inválido' },
-                 401)
-        end
-
-        begin
-          payload = nil
-          payload = Warden::JWTAuth::TokenDecoder.new.call(token) if defined?(Warden::JWTAuth::TokenDecoder)
-          payload ||= Auth::TokenService.new(nil).decode_token(token, verify_exp: true)
-          user = User.find_by(id: payload['sub']) if payload && payload['sub']
-        rescue StandardError
-          user = nil
-        end
-
-        error!({ error: 'unauthorized', message: 'Token inválido' }, 401) unless user
+      scheme, token = auth_header.split(' ')
+      unless scheme == 'Bearer' && token.present?
+        error!({ error: 'unauthorized', message: 'Formato do Authorization inválido' }, 401)
       end
+
+      user = nil
+      begin
+        # `::Auth` (topo) — dentro de `module Api`, `Auth` resolveria para
+        # `Api::Auth` (o namespace Grape da auth), que não tem TokenService.
+        payload = ::Auth::TokenService.decode(token, verify_exp: true)
+        user = User.find_by(id: payload['sub']) if payload && payload['sub']
+      rescue StandardError
+        user = nil
+      end
+
+      error!({ error: 'unauthorized', message: 'Token inválido' }, 401) unless user
 
       @current_user = user
       env['api.current_user'] = @current_user

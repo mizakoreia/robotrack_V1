@@ -12,9 +12,19 @@ Devise.setup do |config|
   config.omniauth_path_prefix = '/users/auth'
   OmniAuth.config.path_prefix = '/users/auth'
 
+  # devise-jwt (identity-and-auth 2.1/2.2). A REVOGAÇÃO é ligada de verdade: o
+  # model `JwtDenylist` inclui a estratégia `Denylist` e `User` a aponta como
+  # `jwt_revocation_strategy`. A emissão e a checagem de revogação, porém, NÃO
+  # passam pelo dispatch automático do Warden: ele injetaria `scp`/`aud` no
+  # payload, e o contrato do token é MÍNIMO (`sub, jti, exp, iat, iat_origin` —
+  # "o token identifica, não autoriza"). Por isso `Auth::TokenService` emite
+  # chamando `User#jwt_payload` direto e a autenticação em api/root.rb decodifica
+  # e consulta o denylist pela mesma estratégia. `dispatch_requests`/
+  # `revocation_requests` ficam vazios: sem um usuário no Warden, o middleware é
+  # inerte — a revogação honesta vive no TokenService + denylist.
   config.jwt do |jwt|
     jwt.secret = ENV['DEVISE_JWT_SECRET_KEY'] || ENV['JWT_SECRET'] || Rails.application.credentials.secret_key_base
-    jwt.expiration_time = ENV.fetch('JWT_EXPIRATION_TIME_MINUTES', '240').to_i.minutes.to_i
+    jwt.expiration_time = ENV.fetch('JWT_TTL_SESSION_HOURS', '12').to_i.hours.to_i
     jwt.dispatch_requests = []
     jwt.revocation_requests = []
     jwt.request_formats = { user: [:json] }

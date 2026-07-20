@@ -25,16 +25,22 @@ RSpec.describe 'Varredura de autenticação das rotas', type: :request do
          .gsub(%r{/:[^/]+}, '/1')
   end
 
-  def public?(path)
-    Api::Root::PUBLIC_ROUTES.any? { |regex| path =~ regex }
+  # Caminho casa QUALQUER padrão público (agnóstico de método) — usado no teste
+  # negativo "não abre nenhuma rota removida".
+  def self.pattern_of(entry) = entry.is_a?(Array) ? entry[1] : entry
+
+  def public_path?(path)
+    Api::Root::PUBLIC_ROUTES.any? { |entry| self.class.pattern_of(entry).match?(path) }
   end
 
-  # (método, caminho) de tudo que exige autenticação.
+  # (método, caminho) de tudo que exige autenticação — agora CIENTE de método:
+  # `DELETE /auth/v1/session` (logout) é protegido mesmo com `POST` público na
+  # mesma rota.
   protected_routes = Api::Root.routes.filter_map do |route|
     path = concrete_path(route)
     method = route.request_method.to_s.upcase
     next if method == 'HEAD'
-    next if Api::Root::PUBLIC_ROUTES.any? { |regex| path =~ regex }
+    next if Api::Root.public_route?(method, path)
 
     [method, path]
   end.uniq
@@ -67,16 +73,21 @@ RSpec.describe 'Varredura de autenticação das rotas', type: :request do
   end
 
   describe 'a allowlist em si' do
-    it 'contém exatamente os quatro padrões públicos previstos' do
-      expect(Api::Root::PUBLIC_ROUTES.size).to eq(4)
-      %w[
-        /swagger_doc
-        /api/v1/countries
-        /auth/v1/oauth/google_url
-        /auth/v1/oauth/callback
-      ].each do |path|
-        expect(public?(path)).to be(true), "#{path} deveria ser público"
-      end
+    it 'contém exatamente os padrões públicos previstos (POST em session/registration)' do
+      expect(Api::Root::PUBLIC_ROUTES.size).to eq(6)
+      expect(Api::Root.public_route?('POST', '/auth/v1/session')).to be(true)
+      expect(Api::Root.public_route?('POST', '/auth/v1/registration')).to be(true)
+      expect(Api::Root.public_route?('GET', '/swagger_doc')).to be(true)
+      expect(Api::Root.public_route?('GET', '/api/v1/countries')).to be(true)
+      expect(Api::Root.public_route?('GET', '/auth/v1/oauth/google_url')).to be(true)
+      expect(Api::Root.public_route?('POST', '/auth/v1/oauth/callback')).to be(true)
+    end
+
+    it 'mantém a auth sensível PROTEGIDA (allowlist ancorada, D4.8)' do
+      # `^/auth/v1/session/?$` não casa renew; me e logout (DELETE) exigem token.
+      expect(Api::Root.public_route?('POST', '/auth/v1/session/renew')).to be(false)
+      expect(Api::Root.public_route?('GET', '/auth/v1/me')).to be(false)
+      expect(Api::Root.public_route?('DELETE', '/auth/v1/session')).to be(false)
     end
 
     it 'não abre nenhuma rota dos módulos removidos' do
@@ -89,7 +100,7 @@ RSpec.describe 'Varredura de autenticação das rotas', type: :request do
         /auth/v1/checkout/session
         /whats/v1/webhooks/messages-upsert
       ].each do |path|
-        expect(public?(path)).to be(false), "#{path} não deveria estar na allowlist"
+        expect(public_path?(path)).to be(false), "#{path} não deveria estar na allowlist"
       end
     end
 

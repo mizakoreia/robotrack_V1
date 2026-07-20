@@ -171,6 +171,28 @@ class User < ApplicationRecord
     id
   end
 
+  # Acessores voláteis usados na emissão do JWT (setados pelo TokenService antes
+  # de `jwt_payload`). Não usamos o `remember_me` do Devise — não incluímos o
+  # módulo `:rememberable` (sessão por cookie), então o accessor é nosso.
+  # `jwt_iat_origin`: instante do login original, propagado nas renovações (D4.3).
+  attr_accessor :jwt_remember_me, :jwt_iat_origin
+
+  # Payload do JWT (D4.2/D4.3). Carimba `exp` conforme "manter conectado" e
+  # propaga `iat_origin`. É chamado DIRETAMENTE pelo `Auth::TokenService` (não
+  # pelo dispatch do Warden, que injetaria `scp`/`aud`), para que o payload tenha
+  # exatamente `sub, jti, exp, iat, iat_origin` — o token identifica, não autoriza
+  # (sem `workspace_id`/`role`; a autorização é de authorization-policies + RLS).
+  def jwt_payload
+    now = Time.now.to_i
+    remember = ActiveModel::Type::Boolean.new.cast(jwt_remember_me)
+    ttl = remember ? Auth::TokenService.remember_ttl_seconds : Auth::TokenService.session_ttl_seconds
+    {
+      'iat' => now,
+      'exp' => now + ttl,
+      'iat_origin' => (jwt_iat_origin || now)
+    }
+  end
+
   private
 
   # "  Ana   Souza  " → "Ana Souza". Roda antes das validações; um nome só de
