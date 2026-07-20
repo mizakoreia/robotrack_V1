@@ -39,10 +39,6 @@ module Api
 
 
 
-      namespace :permissions do
-        mount Api::V1::Permissions
-      end
-
       # Tratamento de erro é único e vive em Api::Root.
     end
   end

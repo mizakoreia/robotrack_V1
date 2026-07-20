@@ -71,13 +71,13 @@ possível. O grupo 7 é o único destrutivo em dados e começa por backup.
 
 ## 4. Fase 2 de remoção — RBAC por planos
 
-- [ ] 4.1 Deletar `permissions_sync_service.rb`, `api/v1/permissions.rb`, as três
+- [x] 4.1 Deletar `permissions_sync_service.rb`, `api/v1/permissions.rb`, as três
   entities `permission*` e os quatro models `permission*`/`user_permission`,
   desmontando `namespace :permissions` de `api/v1/base.rb`, preservando
   `user_type.rb` e `User#og?`/`#client?` (§RBAC — `GET /api/v1/permissions`
   retorna 404, e `PermissionsSyncService`, que referenciava `Purchase` e `Plan`
   já removidos em 3.1, sai antes de virar NameError).
-- [ ] 4.2 Verificação: `eager_load!` verde e spec de request provando que um
+- [x] 4.2 Verificação: `eager_load!` verde e spec de request provando que um
   usuário `client` ainda recebe 403 e um `og` recebe 200 em `GET /api/v1/users`
   (§RBAC — o gate remanescente não pode cair junto; `workspace-tenancy` só o
   substitui na Onda 1).
