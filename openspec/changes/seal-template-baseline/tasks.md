@@ -182,7 +182,7 @@ possível. O grupo 7 é o único destrutivo em dados e começa por backup.
 - [x] 8.5 Escrever teste de `lib/api/client.ts` injetando duas 401 concorrentes
   (§Suíte frontend — ocorre exatamente 1 POST de refresh e 2 retentativas, não 2
   refreshes; o single-flight não tem cobertura hoje e `offline-pwa` depende dele).
-- [ ] 8.6 Verificação final: num clone limpo, `bundle install`,
+- [x] 8.6 Verificação final: num clone limpo, `bundle install`,
   `rails db:create db:schema:load`, `bundle exec rspec`, `npm ci` e
   `npx vitest run` saem todos com código 0, e `.env.example` lista apenas
   `DATABASE_URL`, `REDIS_URL`, `DEVISE_JWT_SECRET_KEY`, `APP_NAME` e as
