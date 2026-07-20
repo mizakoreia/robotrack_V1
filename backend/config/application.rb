@@ -1,17 +1,7 @@
 # frozen_string_literal: true
 
 require_relative 'boot'
-if ENV['RAILS_ENV'] == 'test'
-  require 'active_model/railtie'
-  require 'active_job/railtie'
-  require 'active_record/railtie'
-  require 'action_controller/railtie'
-  require 'action_mailer/railtie'
-  require 'action_view/railtie'
-  require 'action_cable/engine'
-else
-  require 'rails/all'
-end
+require 'rails/all'
 
 Bundler.require(*Rails.groups)
 
@@ -19,7 +9,6 @@ module Robotrack
   class Application < Rails::Application
     config.load_defaults 8.0
     config.api_only = true
-    config.autoload_paths = config.autoload_paths.dup
 
     # Configuration for the application
     config.time_zone = 'Brasilia'
@@ -48,10 +37,10 @@ module Robotrack
   ActionMailer::Base.smtp_settings = {
     address: ENV.fetch('SMTP_ADDRESS', 'localhost'),
     port: ENV.fetch('SMTP_PORT', 1025),
-    domain: ENV.fetch('SMTP_DOMAIN'),
-    user_name: ENV.fetch('SMTP_USERNAME'),
-    password: ENV.fetch('SMTP_PASSWORD'),
-    authentication: ENV.fetch('SMTP_AUTHENTICATION').to_s.downcase.to_sym,
+    domain: ENV.fetch('SMTP_DOMAIN', 'localhost'),
+    user_name: ENV.fetch('SMTP_USERNAME', nil),
+    password: ENV.fetch('SMTP_PASSWORD', nil),
+    authentication: ENV.fetch('SMTP_AUTHENTICATION', 'plain').to_s.downcase.to_sym,
     enable_starttls_auto: ENV.fetch('SMTP_TLS_ENABLED', 'true') == 'true',
     openssl_verify_mode: 'none'
   }
