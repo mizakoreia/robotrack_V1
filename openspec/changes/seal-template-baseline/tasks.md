@@ -84,24 +84,24 @@ possível. O grupo 7 é o único destrutivo em dados e começa por backup.
 
 ## 5. Fase 3 de remoção — Leads, Operations, WhatsApp/Evolution
 
-- [ ] 5.1 Deletar os endpoints `leads.rb`, `lead_messages.rb`, `operations.rb`,
+- [x] 5.1 Deletar os endpoints `leads.rb`, `lead_messages.rb`, `operations.rb`,
   suas entities e os quatro services (`lead_service`, `lead_message_service`,
   `lead_cross_channel_service`, `operation_service`), desmontar os três
   namespaces de `api/v1/base.rb`, e remover `LeadsChatPage.tsx` com sua rota e os
   `leadsApi`/`leadMessagesApi` de `endpoints.ts` (§Leads — os três caminhos
   retornam 404; `LeadCrossChannelService` depende de `PolemkInstance` e sai antes
   do módulo Whats para não deixar NameError transitório).
-- [ ] 5.2 Deletar o namespace `app/controllers/api/whats/` inteiro,
+- [x] 5.2 Deletar o namespace `app/controllers/api/whats/` inteiro,
   `evolution_connection.rb`, `whats_app_webhook_service.rb`,
   `whats_message_service.rb`, os quatro `polemk_*_service.rb` e as entities
   `polemk_*`, desmontar `Api::Whats::V1::Base` de `api/root.rb`, e remover
   `WhatsappPage.tsx` com sua rota e os quatro grupos de `endpoints.ts`
   (§WhatsApp — `POST /whats/v1/webhooks/messages-upsert` retorna 404, não 200;
   esse webhook é o que criava `Lead`, por isso vem depois de 5.1).
-- [ ] 5.3 Deletar os models `lead.rb`, `lead_message.rb`, `operation.rb` e os
+- [x] 5.3 Deletar os models `lead.rb`, `lead_message.rb`, `operation.rb` e os
   quatro `polemk_*.rb` (§Leads — models saem por último na fase porque
   `Lead belongs_to :operation` e os services removidos acima os referenciavam).
-- [ ] 5.4 Verificação: `eager_load!` verde e
+- [x] 5.4 Verificação: `eager_load!` verde e
   `grep -rin "lead\|polemk\|evolution" backend/app frontend/src/lib` vazio.
 
 ## 6. Fase 4 de remoção — Magic-login (D4)

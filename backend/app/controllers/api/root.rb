@@ -71,7 +71,6 @@ module Api
 
     # Montando os módulos da API (cada um com seu prefixo e versão)
     mount Api::Auth::V1::Base     # /auth/v1/*
-    mount Api::Whats::V1::Base    # /whats/v1/*
     mount Api::V1::Base
 
     # Único tratamento de erro da API — as cópias em Api::V1::Base e

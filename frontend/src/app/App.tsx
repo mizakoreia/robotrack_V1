@@ -8,11 +8,8 @@ import { LoginPage } from '@/app/pages/LoginPage'
 import { OAuthCallbackPage } from '@/features/auth/OAuthCallbackPage'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { DashboardPage } from '@/app/pages/DashboardPage'
-import { WhatsappPage } from '@/app/pages/WhatsappPage'
 import { UsersPage } from '@/app/pages/UsersPage'
 import { ProfilePage } from '@/app/pages/ProfilePage'
-import { LeadsChatPage } from '@/app/pages/LeadsChatPage'
-import { OgRoute } from '@/components/OgRoute'
 import { BuildPage } from '@/app/pages/BuildPage'
 
 
@@ -34,10 +31,8 @@ function App() {
             }
           >
             <Route path="dashboard" element={<DashboardPage />} />
-            <Route path="whatsapp" element={<WhatsappPage />} />
             <Route path="users" element={<UsersPage />} />
             <Route path="profile" element={<ProfilePage />} />
-            <Route path="leads-chat" element={<OgRoute><LeadsChatPage /></OgRoute>} />
           </Route>
         </Routes>
         <Toaster />

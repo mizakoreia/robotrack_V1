@@ -25,20 +25,6 @@ module Api
         mount Api::Auth::V1::Registration
       end
 
-      namespace :leads do
-        mount Api::V1::Leads
-      end
-
-      namespace :operations do
-        mount Api::V1::Operations
-      end
-
-      namespace :lead_messages do
-        mount Api::V1::LeadMessages
-      end
-
-
-
       # Tratamento de erro é único e vive em Api::Root.
     end
   end
