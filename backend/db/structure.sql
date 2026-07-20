@@ -202,6 +202,8 @@ CREATE TABLE public.memberships (
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
+ALTER TABLE ONLY public.memberships FORCE ROW LEVEL SECURITY;
+
 
 --
 -- Name: people; Type: TABLE; Schema: public; Owner: -
@@ -217,6 +219,8 @@ CREATE TABLE public.people (
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT people_name_not_sentinel CHECK ((btrim(lower(name)) <> ALL (ARRAY['não atribuído'::text, 'nao atribuido'::text])))
 );
+
+ALTER TABLE ONLY public.people FORCE ROW LEVEL SECURITY;
 
 
 --
@@ -297,6 +301,8 @@ CREATE TABLE public.workspaces (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
+
+ALTER TABLE ONLY public.workspaces FORCE ROW LEVEL SECURITY;
 
 
 --
@@ -634,12 +640,54 @@ ALTER TABLE ONLY public.workspaces
 
 
 --
+-- Name: memberships; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.memberships ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: people; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.people ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: memberships tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.memberships USING (((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid) OR (user_id = (NULLIF(current_setting('app.current_user_id'::text, true), ''::text))::uuid))) WITH CHECK ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid));
+
+
+--
+-- Name: people tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.people USING ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid)) WITH CHECK ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid));
+
+
+--
+-- Name: workspaces tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.workspaces USING (((id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid) OR (owner_user_id = (NULLIF(current_setting('app.current_user_id'::text, true), ''::text))::uuid) OR (EXISTS ( SELECT 1
+   FROM public.memberships m
+  WHERE ((m.workspace_id = workspaces.id) AND (m.user_id = (NULLIF(current_setting('app.current_user_id'::text, true), ''::text))::uuid)))))) WITH CHECK ((id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid));
+
+
+--
+-- Name: workspaces; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.workspaces ENABLE ROW LEVEL SECURITY;
+
+--
 -- PostgreSQL database dump complete
 --
 
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260720180006'),
 ('20260720180005'),
 ('20260720180004'),
 ('20260720180003'),

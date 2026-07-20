@@ -7,7 +7,8 @@
 # nome/e-mail/usuário por workspace, abolição do sentinela "Não Atribuído") vivem
 # no BANCO (migration CreatePeople) — o model apenas ecoa o essencial.
 class Person < ApplicationRecord
-  belongs_to :workspace
+  include WorkspaceScoped
+
   belongs_to :user, optional: true
 
   has_many :memberships, dependent: :restrict_with_exception

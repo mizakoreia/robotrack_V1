@@ -60,7 +60,9 @@ RSpec.describe 'Constraints de esquema das tabelas de tenancy', :tenancy do
   describe 'workspaces (2.1)' do
     it 'aceita id fornecido pelo cliente, sem substituir por gen_random_uuid()' do
       insert_workspace(id: ws_a, owner_id: owner.id)
-      persisted = conn.select_value("SELECT id FROM workspaces WHERE owner_user_id = #{q(owner.id)}")
+      persisted = with_ws(ws_a, user_id: owner.id) do
+        conn.select_value("SELECT id FROM workspaces WHERE owner_user_id = #{q(owner.id)}")
+      end
       expect(persisted).to eq(ws_a)
     end
 
@@ -68,7 +70,9 @@ RSpec.describe 'Constraints de esquema das tabelas de tenancy', :tenancy do
       insert_workspace(id: ws_a, owner_id: owner.id)
       expect { insert_workspace(id: ws_b, owner_id: owner.id) }
         .to raise_error(ActiveRecord::RecordNotUnique, /index_workspaces_on_owner_user_id/)
-      count = conn.select_value("SELECT count(*) FROM workspaces WHERE owner_user_id = #{q(owner.id)}")
+      count = with_ws(ws_a, user_id: owner.id) do
+        conn.select_value("SELECT count(*) FROM workspaces WHERE owner_user_id = #{q(owner.id)}")
+      end
       expect(count).to eq(1)
     end
 
@@ -87,7 +91,7 @@ RSpec.describe 'Constraints de esquema das tabelas de tenancy', :tenancy do
 
     it 'cria pessoa sem conta (user_id e email NULL)' do
       pid = insert_person(ws_id: ws_a, name: 'Cláudio Terceirizado')
-      row = conn.select_one("SELECT user_id, email FROM people WHERE id = #{q(pid)}")
+      row = with_ws(ws_a) { conn.select_one("SELECT user_id, email FROM people WHERE id = #{q(pid)}") }
       expect(row['user_id']).to be_nil
       expect(row['email']).to be_nil
     end
@@ -187,7 +191,8 @@ RSpec.describe 'Constraints de esquema das tabelas de tenancy', :tenancy do
       expect do
         with_ws(ws_a) { conn.execute("UPDATE workspaces SET name = 'Renomeado' WHERE id = #{q(ws_a)}") }
       end.not_to raise_error
-      expect(conn.select_value("SELECT name FROM workspaces WHERE id = #{q(ws_a)}")).to eq('Renomeado')
+      name = with_ws(ws_a) { conn.select_value("SELECT name FROM workspaces WHERE id = #{q(ws_a)}") }
+      expect(name).to eq('Renomeado')
     end
 
     it 'nega ao papel privilegiado pela trigger workspaces_owner_immutable' do
@@ -198,6 +203,9 @@ RSpec.describe 'Constraints de esquema das tabelas de tenancy', :tenancy do
         user: ENV.fetch('MIGRATOR_DB_USER', 'robotrack_migrator'),
         password: ENV.fetch('MIGRATOR_DB_PASSWORD', 'mig_dev_pw')
       )
+      # Com FORCE RLS, até o dono das tabelas é sujeito à política: sem contexto,
+      # o migrator veria 0 linhas e o UPDATE não alcançaria a linha (nem a trigger).
+      mconn.exec("SELECT set_config('app.current_workspace_id', #{q(ws_a)}, false)")
       expect do
         mconn.exec("UPDATE workspaces SET owner_user_id = #{q(owner2.id)} WHERE id = #{q(ws_a)}")
       end.to raise_error(PG::RaiseException, /imutável \(§4\.1 inv\. 5\)/)

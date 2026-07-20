@@ -63,7 +63,7 @@ teste negativo desta capacidade prova nada.
 
 ## 3. Row Level Security
 
-- [ ] 3.1 Migration de RLS: `ENABLE` + `FORCE ROW LEVEL SECURITY` em `people`,
+- [x] 3.1 Migration de RLS: `ENABLE` + `FORCE ROW LEVEL SECURITY` em `people`,
   `workspaces` e `memberships`, com a policy `tenant_isolation` (`USING` e
   `WITH CHECK`) em `people` e as policies de controle em `workspaces` e
   `memberships` combinando `app.current_workspace_id` com `app.current_user_id`,
@@ -72,24 +72,24 @@ teste negativo desta capacidade prova nada.
   `true` nas três, só `ENABLE` deixaria o dono das tabelas ignorar a policy;
   listar workspaces funciona sem tenant setado, mas inserir membership em
   workspace alheio não)
-- [ ] 3.2 Helper `app/lib/tenant.rb` com `Tenant.with(workspace_id:, user_id:)`
+- [x] 3.2 Helper `app/lib/tenant.rb` com `Tenant.with(workspace_id:, user_id:)`
   usando `set_config(..., true)` dentro de transação.
   (`tenant-isolation` §Contexto — após o fim do bloco, `current_setting` na
   mesma conexão retorna `NULL`; um `SET` não-local com `ensure` devolveria a
   conexão suja ao pool)
-- [ ] 3.3 Concern `WorkspaceScoped` (default scope, atribuição automática de
+- [x] 3.3 Concern `WorkspaceScoped` (default scope, atribuição automática de
   `workspace_id` na criação) como reforço ergonômico do model.
   (design D-1 — é conveniência; a spec de 3.5 prova que `unscoped` continua
   isolado mesmo com o concern desligado)
-- [ ] 3.4 Spec de isolamento em leitura: `find` cross-tenant, `unscoped.count`,
+- [x] 3.4 Spec de isolamento em leitura: `find` cross-tenant, `unscoped.count`,
   `select_all` cru — dataset com 12 projetos em `WS-A` e 30 em `WS-B`.
   (`tenant-isolation` §Isolamento — `unscoped.count` dentro de `WS-A` retorna
   12; se retornar 42, a garantia está no Ruby e não no banco)
-- [ ] 3.5 Spec de isolamento em escrita: `INSERT` com `workspace_id` alheio,
+- [x] 3.5 Spec de isolamento em escrita: `INSERT` com `workspace_id` alheio,
   `UPDATE` movendo linha entre tenants, `delete_all` alcançando outro tenant.
   (`tenant-isolation` §Isolamento — as três operações falham ou não afetam nada;
   as 30 linhas de `WS-B` permanecem)
-- [ ] 3.6 Spec de fail-closed: sem `Tenant.with`, `Person.count` é `0` e
+- [x] 3.6 Spec de fail-closed: sem `Tenant.with`, `Person.count` é `0` e
   `Person.create!` levanta violação de policy num banco com 40 pessoas.
   (`tenant-isolation` §Fail-closed — o modo de falha por esquecimento é lista
   vazia, nunca vazamento)
