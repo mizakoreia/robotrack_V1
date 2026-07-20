@@ -43,10 +43,6 @@ module Api
         mount Api::V1::Permissions
       end
 
-      namespace :analytics do
-        mount Api::V1::Analytics
-      end
-
       # Tratamento de erro é único e vive em Api::Root.
     end
   end

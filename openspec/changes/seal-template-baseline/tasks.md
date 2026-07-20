@@ -52,20 +52,20 @@ possível. O grupo 7 é o único destrutivo em dados e começa por backup.
 
 ## 3. Fase 1 de remoção — Cobrança e Asaas
 
-- [ ] 3.1 Deletar `app/services/analytics_service.rb`,
+- [x] 3.1 Deletar `app/services/analytics_service.rb`,
   `app/controllers/api/v1/analytics.rb`, `app/controllers/api/entities/analytics/`,
   `entities/purchase.rb`, `entities/sale.rb` e desmontar `namespace :analytics`
   de `api/v1/base.rb` (template-scope-reduction §Cobrança — `AnalyticsService`
   chama `Purchase.all` e `Subscription.all`, models que não existem em disco;
   `GET /api/v1/analytics` deixa de existir em vez de dar NameError em runtime).
-- [ ] 3.2 Deletar `app/services/auth/checkout_session_service.rb` e
+- [x] 3.2 Deletar `app/services/auth/checkout_session_service.rb` e
   `app/controllers/api/auth/v1/checkout.rb`, desmontar de `api/auth/v1/base.rb`,
   remover `checkoutSession` de `frontend/src/lib/api/endpoints.ts` e apagar
   `asaas_payment_webhook_service.rb`, `asaas_webhook_service.rb` e `webhooks.rb`
   da raiz do repo (§Cobrança — `POST /auth/v1/checkout/session` retorna 404 e a
   raiz do repositório não contém mais os três arquivos que nenhum autoload path
   carrega).
-- [ ] 3.3 Verificação: `bin/rails runner 'Rails.application.eager_load!'` sai com
+- [x] 3.3 Verificação: `bin/rails runner 'Rails.application.eager_load!'` sai com
   código 0 e `grep -rin "purchase\|subscription\|asaas" backend/app` retorna
   vazio.
 

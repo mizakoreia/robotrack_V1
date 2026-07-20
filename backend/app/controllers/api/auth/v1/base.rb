@@ -116,7 +116,6 @@ module Api
         mount Api::Auth::V1::Sessions
         mount Api::Auth::V1::Me
         mount Api::Auth::V1::Registration
-        mount Api::Auth::V1::Checkout
 
         # Tratamento de erro é único e vive em Api::Root.
       end

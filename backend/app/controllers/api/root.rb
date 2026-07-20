@@ -106,8 +106,7 @@ module Api
       base_path: '/',
       info: {
         title: ENV.fetch('APP_NAME', 'robotrack'),
-        description: "API do #{ENV.fetch('APP_NAME',
-                                         'robotrack')} para integrações (WhatsApp/Evolution, Pagamentos/Asaas, Auth)."
+        description: "API do #{ENV.fetch('APP_NAME', 'robotrack')}."
       },
       security_definitions: {
         Bearer: {

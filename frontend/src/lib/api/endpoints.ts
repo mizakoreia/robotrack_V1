@@ -42,13 +42,6 @@ export const authApi = {
   getSessionStatus: () =>
     apiClient.get<{ valid: boolean; user?: User }>('/auth/v1/sessions/status'),
 
-  // Pós‑checkout: cria/retoma sessão (endpoint público)
-  checkoutSession: (params: { payment_id?: string; asaas_id?: string; purchase_identifier?: string; subscription_id?: string; subscription_identifier?: string }) =>
-    apiClient.postPublic<{ access_token?: string; refresh_token?: string; user: User; requires_login?: boolean }>(
-      '/auth/v1/checkout/session',
-      params
-    ),
-  
   // Legacy endpoints (deprecated)
   login: (data: LoginRequest) => 
     apiClient.post<LoginResponse>('/auth/v1/login', data),
