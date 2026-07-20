@@ -15,4 +15,11 @@ Robotrack::Application.configure do
   config.action_cable.disable_request_forgery_protection = true
   config.active_job.queue_adapter = :inline
   config.active_storage.service = :test
+
+  # workspace-tenancy: a conexão de runtime é robotrack_app, que NÃO é dona do
+  # banco e não pode fazer DDL/purge. Por isso o schema de teste é gerenciado
+  # manualmente (migrar como robotrack_migrator antes do rspec — ver
+  # db/PROVISIONING.md), e o auto-maintain é desligado para não tentar um
+  # `db:test:purge` que o app não tem privilégio de executar.
+  config.active_record.maintain_test_schema = false
 end

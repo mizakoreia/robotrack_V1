@@ -27,12 +27,12 @@ teste negativo desta capacidade prova nada.
 
 ## 2. Tabelas de tenancy
 
-- [ ] 2.1 Migration `workspaces`: `id uuid` PK com default `gen_random_uuid()`
+- [x] 2.1 Migration `workspaces`: `id uuid` PK com default `gen_random_uuid()`
   mas fornecível pelo cliente, `name`, `owner_user_id NOT NULL` FK para `users`,
   índice único em `owner_user_id`. (`workspace-core` §Entidade Workspace — o
   segundo `INSERT` com o mesmo `owner_user_id` viola o índice único; sem coluna
   `responsibles`)
-- [ ] 2.2 Migration `people` (habilitando `citext` na mesma leva): `id`,
+- [x] 2.2 Migration `people` (habilitando `citext` na mesma leva): `id`,
   `workspace_id NOT NULL`, `name NOT NULL`, `email citext NULL`,
   `user_id uuid NULL`, os índices únicos parciais de `(workspace_id, email)`,
   `(workspace_id, user_id)` e `(workspace_id, lower(btrim(name)))`, o único
@@ -42,21 +42,21 @@ teste negativo desta capacidade prova nada.
   `" joão souza "` colidem no mesmo workspace mas não entre workspaces; as
   quatro grafias de `"Não Atribuído"` falham no `INSERT`, e `"Ana Atribuído"`
   passa)
-- [ ] 2.3 Migration `memberships` com o enum Postgres `membership_role`
+- [x] 2.3 Migration `memberships` com o enum Postgres `membership_role`
   (exatamente `edit` e `view`), FK composta
   `(workspace_id, person_id) → people(workspace_id, id)` e único
   `(workspace_id, user_id)`. (`workspace-membership` §Papéis e §Membership —
   `UPDATE memberships SET role='owner'` falha com `invalid input value for
   enum`, não com validação de model; `person_id` de outro workspace é rejeitado
   pela FK em vez de virar linha invisível)
-- [ ] 2.4 Trigger `memberships_owner_is_not_member`, que levanta exceção quando
+- [x] 2.4 Trigger `memberships_owner_is_not_member`, que levanta exceção quando
   `NEW.user_id` é o `owner_user_id` do workspace. (`§1.1` — o dono não é membro;
   o `INSERT` falha em vez de criar dois papéis conflitantes para a mesma pessoa)
-- [ ] 2.5 Proteger `workspaces.owner_user_id`: `REVOKE UPDATE (owner_user_id)`
+- [x] 2.5 Proteger `workspaces.owner_user_id`: `REVOKE UPDATE (owner_user_id)`
   para `robotrack_app` **e** trigger `workspaces_owner_immutable`.
   (`§4.1 inv. 5` — o `UPDATE` como `robotrack_app` falha por privilégio de
   coluna, e como `robotrack_migrator` falha pelo trigger)
-- [ ] 2.6 Spec de esquema exercitando 2.1–2.5 exclusivamente por SQL, sem passar
+- [x] 2.6 Spec de esquema exercitando 2.1–2.5 exclusivamente por SQL, sem passar
   por model. (barra de qualidade, item 5 — cada constraint é provada contornando o
   ActiveRecord, porque é exatamente por esse caminho que ela vai ser testada em
   produção)

@@ -22,7 +22,8 @@ RSpec.configure do |config|
   config.include FactoryBot::Syntax::Methods
 
   config.before(:suite) do
-    ActiveRecord::Migration.maintain_test_schema!
+    # Sem `maintain_test_schema!`: o schema de teste é migrado manualmente como
+    # robotrack_migrator (a conexão de runtime robotrack_app não faz DDL/purge).
     # A truncation é obrigatória (não deletion): sob RLS, `DELETE` sem contexto
     # de tenant não remove nada. O `TRUNCATE ... RESTART IDENTITY` do
     # DatabaseCleaner exige ownership das sequences — resolvido em db/roles.sql

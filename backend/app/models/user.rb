@@ -8,6 +8,13 @@ class User < ApplicationRecord
   belongs_to :user_type
   has_rich_text :biography
 
+  # workspace-tenancy: cada usuário é dono de no máximo um workspace (§1.1) e
+  # pode ser uma Person (via user_id) em vários workspaces.
+  has_one :owned_workspace, class_name: 'Workspace', foreign_key: 'owner_user_id',
+                            inverse_of: :owner, dependent: :restrict_with_exception
+  has_many :people, dependent: :nullify
+  has_many :memberships, dependent: :restrict_with_exception
+
   # Validations
   validates :name, presence: true, length: { maximum: 255 }
   validates :user_type_id, presence: true

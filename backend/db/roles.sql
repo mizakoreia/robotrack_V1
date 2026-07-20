@@ -52,8 +52,10 @@ GRANT USAGE ON SCHEMA public TO robotrack_app;
 -- Objetos JÁ existentes (tabelas do template + metadados do Rails).
 GRANT SELECT, INSERT, UPDATE, DELETE, TRUNCATE ON ALL TABLES    IN SCHEMA public TO robotrack_app;
 GRANT USAGE, SELECT, UPDATE                     ON ALL SEQUENCES IN SCHEMA public TO robotrack_app;
-GRANT SELECT, INSERT, UPDATE, DELETE, TRUNCATE ON ALL TABLES    IN SCHEMA public TO robotrack_migrator;
-GRANT USAGE, SELECT, UPDATE                     ON ALL SEQUENCES IN SCHEMA public TO robotrack_migrator;
+-- REFERENCES: o migrator cria FKs de workspaces/people/memberships para `users`
+-- (tabela do template, dona = robotrack_user no dev); criar a FK exige REFERENCES.
+GRANT SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES ON ALL TABLES    IN SCHEMA public TO robotrack_migrator;
+GRANT USAGE, SELECT, UPDATE                                ON ALL SEQUENCES IN SCHEMA public TO robotrack_migrator;
 
 -- Objetos FUTUROS criados pelo migrator: a app recebe DML automaticamente, sem
 -- precisar re-rodar grants a cada migration. (O REVOKE de owner_user_id é feito
@@ -87,5 +89,22 @@ BEGIN
   LOOP
     EXECUTE format('ALTER TABLE public.%I OWNER TO robotrack_app', tbl);
   END LOOP;
+END
+$$;
+
+-- Imutabilidade do dono, camada de privilégio de coluna (§4.1 inv. 5). Precisa
+-- morar AQUI, não só na migration: `pg_dump -x` (structure.sql) OMITE GRANT/
+-- REVOKE, então um rebuild via `db:schema:load` (tarefa 6.5) nasceria com o app
+-- podendo trocar o dono. Como o app teria UPDATE de TABELA (default privileges
+-- acima), e privilégio de tabela + coluna é UNIÃO, revogamos o UPDATE de tabela
+-- e reconcedemos só as colunas mutáveis. Guardado por existência: no G1 a tabela
+-- ainda não existe. A trigger workspaces_owner_immutable (na migration, capturada
+-- no structure.sql) cobre o path migrator/admin.
+DO $$
+BEGIN
+  IF to_regclass('public.workspaces') IS NOT NULL THEN
+    REVOKE UPDATE ON workspaces FROM robotrack_app;
+    GRANT  UPDATE (name, updated_at) ON workspaces TO robotrack_app;
+  END IF;
 END
 $$;

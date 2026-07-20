@@ -185,7 +185,7 @@ camada desta execução, registrada aqui.
 ## Progresso
 
 - [x] G1 — Fundação de esquema e papéis de banco (1.1–1.4)
-- [ ] G2 — Tabelas de tenancy (2.1–2.6)
+- [x] G2 — Tabelas de tenancy (2.1–2.6)
 - [ ] G3 — Row Level Security + Tenant.with + specs (3.1–3.6)
 - [ ] G4 — Contexto nos pontos de entrada (4.1–4.6)
 - [ ] G5 — Bootstrap e identidade de domínio (5.1–5.4)

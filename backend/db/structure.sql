@@ -37,6 +37,52 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA public;
 COMMENT ON EXTENSION pgcrypto IS 'cryptographic functions';
 
 
+--
+-- Name: membership_role; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE public.membership_role AS ENUM (
+    'edit',
+    'view'
+);
+
+
+--
+-- Name: memberships_owner_is_not_member(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.memberships_owner_is_not_member() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF NEW.user_id = (
+    SELECT owner_user_id FROM workspaces WHERE id = NEW.workspace_id
+  ) THEN
+    RAISE EXCEPTION
+      'o dono do workspace não pode ser membro (§1.1): user_id=%', NEW.user_id;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: workspaces_owner_immutable(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.workspaces_owner_immutable() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF NEW.owner_user_id IS DISTINCT FROM OLD.owner_user_id THEN
+    RAISE EXCEPTION
+      'owner_user_id do workspace é imutável (§4.1 inv. 5)';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
@@ -142,6 +188,38 @@ ALTER SEQUENCE public.jwt_denylist_id_seq OWNED BY public.jwt_denylist.id;
 
 
 --
+-- Name: memberships; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.memberships (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    workspace_id uuid NOT NULL,
+    user_id uuid NOT NULL,
+    person_id uuid NOT NULL,
+    role public.membership_role NOT NULL,
+    invitation_id uuid,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: people; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.people (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    workspace_id uuid NOT NULL,
+    name text NOT NULL,
+    email public.citext,
+    user_id uuid,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT people_name_not_sentinel CHECK ((btrim(lower(name)) <> ALL (ARRAY['não atribuído'::text, 'nao atribuido'::text])))
+);
+
+
+--
 -- Name: schema_migrations; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -209,6 +287,19 @@ CREATE TABLE public.users (
 
 
 --
+-- Name: workspaces; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.workspaces (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    name text NOT NULL,
+    owner_user_id uuid NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
 -- Name: jwt_denylist id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -264,6 +355,22 @@ ALTER TABLE ONLY public.jwt_denylist
 
 
 --
+-- Name: memberships memberships_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.memberships
+    ADD CONSTRAINT memberships_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: people people_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.people
+    ADD CONSTRAINT people_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: schema_migrations schema_migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -285,6 +392,14 @@ ALTER TABLE ONLY public.user_types
 
 ALTER TABLE ONLY public.users
     ADD CONSTRAINT users_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: workspaces workspaces_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.workspaces
+    ADD CONSTRAINT workspaces_pkey PRIMARY KEY (id);
 
 
 --
@@ -334,6 +449,48 @@ CREATE UNIQUE INDEX index_active_storage_variants_uniqueness ON public.active_st
 --
 
 CREATE INDEX index_jwt_denylist_on_jti ON public.jwt_denylist USING btree (jti);
+
+
+--
+-- Name: index_memberships_on_workspace_id_and_person_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_memberships_on_workspace_id_and_person_id ON public.memberships USING btree (workspace_id, person_id);
+
+
+--
+-- Name: index_memberships_on_workspace_id_and_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_memberships_on_workspace_id_and_user_id ON public.memberships USING btree (workspace_id, user_id);
+
+
+--
+-- Name: index_people_on_workspace_id_and_email; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_people_on_workspace_id_and_email ON public.people USING btree (workspace_id, email) WHERE (email IS NOT NULL);
+
+
+--
+-- Name: index_people_on_workspace_id_and_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_people_on_workspace_id_and_id ON public.people USING btree (workspace_id, id);
+
+
+--
+-- Name: index_people_on_workspace_id_and_normalized_name; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_people_on_workspace_id_and_normalized_name ON public.people USING btree (workspace_id, lower(btrim(name)));
+
+
+--
+-- Name: index_people_on_workspace_id_and_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_people_on_workspace_id_and_user_id ON public.people USING btree (workspace_id, user_id) WHERE (user_id IS NOT NULL);
 
 
 --
@@ -400,11 +557,80 @@ CREATE INDEX index_users_on_user_type_id ON public.users USING btree (user_type_
 
 
 --
+-- Name: index_workspaces_on_owner_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_workspaces_on_owner_user_id ON public.workspaces USING btree (owner_user_id);
+
+
+--
+-- Name: memberships memberships_owner_is_not_member; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER memberships_owner_is_not_member BEFORE INSERT OR UPDATE ON public.memberships FOR EACH ROW EXECUTE FUNCTION public.memberships_owner_is_not_member();
+
+
+--
+-- Name: workspaces workspaces_owner_immutable; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER workspaces_owner_immutable BEFORE UPDATE ON public.workspaces FOR EACH ROW EXECUTE FUNCTION public.workspaces_owner_immutable();
+
+
+--
+-- Name: memberships fk_memberships_person_same_workspace; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.memberships
+    ADD CONSTRAINT fk_memberships_person_same_workspace FOREIGN KEY (workspace_id, person_id) REFERENCES public.people(workspace_id, id);
+
+
+--
 -- Name: users fk_rails_a2f1461231; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.users
     ADD CONSTRAINT fk_rails_a2f1461231 FOREIGN KEY (user_type_id) REFERENCES public.user_types(id);
+
+
+--
+-- Name: memberships memberships_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.memberships
+    ADD CONSTRAINT memberships_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: memberships memberships_workspace_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.memberships
+    ADD CONSTRAINT memberships_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id);
+
+
+--
+-- Name: people people_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.people
+    ADD CONSTRAINT people_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: people people_workspace_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.people
+    ADD CONSTRAINT people_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id);
+
+
+--
+-- Name: workspaces workspaces_owner_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.workspaces
+    ADD CONSTRAINT workspaces_owner_user_id_fkey FOREIGN KEY (owner_user_id) REFERENCES public.users(id);
 
 
 --
@@ -414,6 +640,11 @@ ALTER TABLE ONLY public.users
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260720180005'),
+('20260720180004'),
+('20260720180003'),
+('20260720180002'),
+('20260720180001'),
 ('20260720170117'),
 ('20251117180000'),
 ('20251117170500'),
