@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html data-theme="dark" lang="pt">
+<head>
+  <meta charset="utf-8">
+  <title>Documentação da API</title>
+    <link rel="stylesheet" href="https://unpkg.com/@stoplight/elements/styles.min.css">
+    <script src="https://unpkg.com/@stoplight/elements/web-components.min.js"></script>
+</head>
+<style>
+    @media (prefers-color-scheme: dark) {
+        .sl-prose {
+            font-size: 1.5rem !important;
+        }
+        .sl-text-base {
+            font-size: 1rem !important;
+            .sl-mr-2 {
+                font-size: 1.2rem !important;
+            }
+        }
+        .sl-text-warning {
+            font-size: .8rem !important;
+        }
+        .sl-code-highlight {
+            font-size: 1rem !important;
+        }
+        .sl-markdown-viewer {
+            p {
+                font-size: 1rem !important;
+            }
+        }
+        .sl-code-viewer {
+            .string-literal {
+                color: #90badf !important;
+            }
+            .constant {
+                color: #d67d64 !important;
+            }
+        }
+        .sl-text-warning {
+            color: #e7601c !important;
+        }
+        .property {
+            color: #d716d0 !important;
+        }
+        .punctuation {
+            color: #fafafa !important;
+        }
+        .string {
+            color: #06dbe7 !important;
+        }
+        .number {
+            color: #0077ff !important;
+        }
+        .boolean {
+            color: #fff906 !important;
+        }
+        body {
+            background-color: #0e131b !important;
+        }
+        .sl-flex {
+            a.sl-flex.sl-items-center.sl-px-4.sl-py-3.sl-border-t {
+                display: none !important;
+            }
+        }
+        .sl-text-xs {
+            font-size: .8rem;
+        }
+        .sl-code-editor {
+            position: relative;
+            z-index: 1;
+        }
+
+        .npm__react-simple-code-editor__textarea {
+            position: relative;
+            z-index: 2;
+            font-size: 1rem !important; /* Ajuste para manter consistência com o texto visual */
+        }
+
+        .sl-code-highlight {
+            position: relative;
+            z-index: 0;
+        }
+    }
+</style>
+<body>
+<elements-api
+    apiDescriptionUrl="/swagger_doc"
+    router="hash"
+    layout="sidebar",
+    />
+</body>
+</html>

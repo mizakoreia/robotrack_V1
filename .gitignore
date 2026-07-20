@@ -1,0 +1,109 @@
+# Monorepo Gitignore — Backend (Rails) + Frontend (React/Vite)
+
+## Backup do histórico antigo (template ai9) — não versionar
+.git.ai9.bak/
+
+## Credenciais e segredos
+# Bloqueia TODO .env em qualquer nível (raiz, backend, frontend, etc.):
+# .env, .env.local, .env.production, .env.swp, algo.env ...
+.env
+.env.*
+*.env
+**/.env
+**/.env.*
+**/*.env
+
+# ... exceto os templates, que devem ser versionados
+!.env.example
+!**/.env.example
+
+backend/Gemfile
+
+# Rails credentials/secrets (backend)
+backend/config/master.key
+backend/config/credentials.yml.enc
+backend/config/credentials/*.enc
+backend/config/credentials/*.key
+backend/config/secrets.yml
+
+# Configuração de banco (não versionar credenciais)
+backend/config/database.yml
+backend/db/schema.rb
+## Temporários e logs
+backend/tmp/
+backend/log/
+backend/storage/*
+!backend/storage/.keep
+
+## Assets e uploads gerados
+backend/public/assets/
+backend/public/system/
+
+## Ruby/Bundler
+backend/vendor/bundle/
+backend/.bundle/
+backend/*.gem
+backend/Gemfile.lock
+.bundle/config
+.ruby-version
+
+## Node/JS — dependências e build
+**/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/.eslintcache
+frontend/.tsbuildinfo
+
+## Logs/locks de gerenciadores de pacotes
+yarn.lock
+yarn-error.log*
+.yarn-integrity
+npm-debug.log*
+pnpm-debug.log*
+
+## IDE/Editor
+.vscode/
+.idea/
+*.code-workspace
+
+## Sistema Operacional
+**/.DS_Store
+**/Thumbs.db
+
+## Packs do Rails (webpacker legado)
+public/packs
+public/packs-test
+
+## Diversos existentes
+.rakeTasks
+.generators
+.byebug_history
+public/assets/*
+public/system/*
+public/.DS_Store
+config/.DS_Store
+app/.DS_Store
+db/.DS_Store
+engines/.DS_Store
+
+## Credenciais no root (legado, se existirem)
+/config/credentials/development.key
+/config/credentials/development.yml.enc
+/config/credentials/production.key
+/config/credentials/production.yml.enc
+config/credentials.yml.enc
+config/credentials
+/config/master.key
+
+## Arquivos diversos não versionáveis
+deploy_production.sh
+CLAUDE.md
+claude.md
+image (1).png
+image (2).png
+scratch.html
+DEV.session.sql
+
+.figma/*
+backend/db/schema.rb
+backend/config/database.yml

@@ -1,0 +1,128 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+# Configurações padrão (personalizáveis via env)
+RAILS_PORT="${RAILS_PORT:-3000}"
+VITE_PORT="${VITE_PORT:-5173}"
+SKIP_INSTALL="${SKIP_INSTALL:-0}"  # defina 1 para pular installs
+
+pids=()
+names=()
+
+log() {
+  printf "\033[1;36m[dev]\033[0m %s\n" "$*"
+}
+
+err() {
+  printf "\033[1;31m[dev]\033[0m %s\n" "$*" >&2
+}
+
+cleanup() {
+  trap - INT TERM EXIT
+  log "Encerrando serviços…"
+  for pid in "${pids[@]}"; do
+    kill -INT "$pid" 2>/dev/null || true
+  done
+  sleep 0.3
+  for pid in "${pids[@]}"; do
+    kill -TERM "$pid" 2>/dev/null || true
+  done
+  wait || true
+  log "Todos finalizados."
+}
+
+trap 'cleanup; exit 0' INT TERM
+trap cleanup EXIT
+
+check_cmd() {
+  if ! command -v "$1" >/dev/null 2>&1; then
+    err "Dependência ausente: $1"
+    return 1
+  fi
+}
+
+preflight() {
+  check_cmd bash || exit 1
+  check_cmd ruby || exit 1
+  check_cmd bundle || exit 1
+  check_cmd node || exit 1
+  # pnpm é opcional; se não existir, usamos npm
+  if ! command -v pnpm >/dev/null 2>&1; then
+    check_cmd npm || exit 1
+  fi
+
+  if [ "$SKIP_INSTALL" -ne 1 ]; then
+    log "Checando dependências do backend (bundle)…"
+    (cd backend && bundle check >/dev/null 2>&1) || (cd backend && bundle install --quiet)
+
+    log "Checando dependências do frontend (node)…"
+    if command -v pnpm >/dev/null 2>&1; then
+      (cd frontend && pnpm install --silent)
+    else
+      (cd frontend && npm install --silent)
+    fi
+  fi
+}
+
+start_backend() {
+  log "Iniciando Rails em :${RAILS_PORT}…"
+  (
+    cd backend
+    if command -v stdbuf >/dev/null 2>&1; then
+      RAILS_LOG_TO_STDOUT=1 stdbuf -oL -eL bundle exec rails s -b 0.0.0.0 -p "${RAILS_PORT}" 2>&1 | sed -e 's/^/[backend] /'
+    else
+      RAILS_LOG_TO_STDOUT=1 bundle exec rails s -b 0.0.0.0 -p "${RAILS_PORT}" 2>&1 | sed -e 's/^/[backend] /'
+    fi
+  ) &
+  pids+=("$!")
+  names+=("backend")
+}
+
+start_sidekiq() {
+  log "Iniciando Sidekiq…"
+  (
+    cd backend
+    bundle exec sidekiq -C config/sidekiq.yml
+  ) &
+  pids+=("$!")
+  names+=("sidekiq")
+}
+
+start_frontend() {
+  log "Iniciando Vite em :${VITE_PORT}…"
+  (
+    cd frontend
+    if command -v pnpm >/dev/null 2>&1; then
+      pnpm exec vite --host --port "${VITE_PORT}"
+    elif command -v npx >/dev/null 2>&1; then
+      npx vite --host --port "${VITE_PORT}"
+    else
+      npm run dev -- --host --port "${VITE_PORT}"
+    fi
+  ) &
+  pids+=("$!")
+  names+=("frontend")
+}
+
+monitor() {
+  log "Backend:  http://localhost:${RAILS_PORT}"
+  log "Frontend: http://localhost:${VITE_PORT}"
+  log "Pressione Ctrl+C para encerrar."
+  # Se o bash suportar wait -n, encerramos quando qualquer processo morre
+  if wait -n 2>/dev/null; then
+    :
+  else
+    # Fallback: espera por todos (encerra apenas com Ctrl+C)
+    wait
+  fi
+}
+
+main() {
+  preflight
+  start_backend
+  start_sidekiq
+  start_frontend
+  monitor
+}
+
+main

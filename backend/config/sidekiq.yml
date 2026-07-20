@@ -1,0 +1,7 @@
+worker:
+  :concurrency: 5
+  :timeout: 25
+  
+production:
+  :concurrency: 25
+  :timeout: 25

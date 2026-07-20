@@ -1,0 +1,26 @@
+development:
+  adapter: postgresql
+  encoding: unicode
+  pool: 10
+  host: localhost
+  username: robotrack_user
+  password: '***'
+  database: robotrack_dev
+
+test:
+  adapter: postgresql
+  encoding: unicode
+  pool: 10
+  host: localhost
+  username: robotrack_user
+  password: '***'
+  database: robotrack_test
+
+production:
+  adapter: postgresql
+  encoding: unicode
+  pool: 10
+  host: localhost
+  username: robotrack_user
+  password: '***'
+  database: robotrack_prod

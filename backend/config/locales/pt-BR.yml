@@ -1,0 +1,11 @@
+pt-BR:
+  hello: "Olá"
+  activerecord:
+    errors:
+      messages:
+        record_invalid: "Registro inválido: %{errors}"
+  errors:
+    messages:
+      blank: "não pode ficar em branco"
+      invalid: "não é válido"
+      taken: "já está em uso"

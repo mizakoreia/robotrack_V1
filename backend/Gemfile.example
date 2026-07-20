@@ -1,0 +1,75 @@
+source 'https://rubygems.org'
+git_source(:github) { |repo| "https://github.com/#{repo}.git" }
+
+ruby '3.2.3'
+
+gem 'rails', '~> 8.0.0'
+gem 'pg', '~> 1.1'
+gem "puma", "~> 6.4"
+gem 'bootsnap', '>= 1.4.4', require: false
+gem 'image_processing', '~> 1.2'
+
+# API
+gem 'grape'
+gem 'grape-entity'
+gem 'grape-swagger'
+gem 'grape-swagger-rails'
+gem "grape-swagger-entity"
+
+# Autenticação
+gem 'devise'
+gem 'devise-jwt'
+gem 'omniauth'
+gem 'omniauth-google-oauth2'
+gem 'omniauth-facebook'
+gem 'omniauth-rails_csrf_protection'
+
+# Segurança & CORS
+gem 'rack-cors'
+gem 'rack-attack'
+
+# Jobs & Realtime
+gem 'sidekiq'
+gem 'redis', '~> 4.0'
+
+# Integrações HTTP
+gem 'faraday'
+gem 'faraday-multipart'
+
+# Utilitários
+gem 'dotenv-rails'
+gem 'aasm'
+gem 'paper_trail'
+
+# Documentação
+gem 'yard'
+
+gem 'httparty'
+
+# I18n para traduções padrão em pt-BR
+gem 'rails-i18n'
+
+group :development, :test do
+  gem 'byebug', platforms: [:mri, :mingw, :x64_mingw]
+  gem 'rspec-rails'
+  gem 'factory_bot_rails'
+  gem 'faker'
+  gem 'database_cleaner-active_record'
+  gem 'vcr'
+  gem 'webmock'
+end
+
+group :development do
+  gem 'listen', '~> 3.3'
+  gem 'spring'
+  gem 'rubocop', require: false
+  gem 'rubocop-rails', require: false
+  gem 'rubocop-rspec', require: false
+  gem 'brakeman', require: false
+  gem 'bundler-audit', require: false
+  gem 'solargraph', require: false
+end
+
+group :test do
+  gem 'simplecov', require: false
+end

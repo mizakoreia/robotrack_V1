@@ -1,0 +1,45 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "dev",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-lc",
+        "export PATH=\"$HOME/.rbenv/shims:/usr/local/opt/postgresql@16/bin:$PATH\"; cd /Users/mizaelfelippe/Desktop/Projeto_code_dev/robotrack && SKIP_INSTALL=1 exec ./bin/dev"
+      ],
+      "port": 5173,
+      "autoPort": false
+    },
+    {
+      "name": "sidekiq",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-lc",
+        "export PATH=\"$HOME/.rbenv/shims:/usr/local/opt/postgresql@16/bin:$PATH\"; cd /Users/mizaelfelippe/Desktop/Projeto_code_dev/robotrack/backend && exec bundle exec sidekiq -C config/sidekiq.yml"
+      ],
+      "port": 3000,
+      "autoPort": false
+    },
+    {
+      "name": "backend",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-lc",
+        "export PATH=\"$HOME/.rbenv/shims:/usr/local/opt/postgresql@16/bin:$PATH\"; cd /Users/mizaelfelippe/Desktop/Projeto_code_dev/robotrack/backend && RAILS_LOG_TO_STDOUT=1 exec bundle exec rails s -b 0.0.0.0 -p 3000"
+      ],
+      "port": 3000,
+      "autoPort": false
+    },
+    {
+      "name": "frontend",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-lc",
+        "cd /Users/mizaelfelippe/Desktop/Projeto_code_dev/robotrack/frontend && exec /usr/local/bin/node node_modules/vite/bin/vite.js --host --port 5173"
+      ],
+      "port": 5173,
+      "autoPort": false
+    }
+  ]
+}

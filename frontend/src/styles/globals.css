@@ -1,0 +1,281 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 84% 4.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 84% 4.9%;
+  --primary: 262.1 83.3% 57.8%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 210 40% 96%;
+  --secondary-foreground: 222.2 84% 4.9%;
+  --muted: 210 40% 96%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --accent: 210 40% 96%;
+  --accent-foreground: 222.2 84% 4.9%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 262.1 83.3% 57.8%;
+  --radius: 0.5rem;
+  --scrollbar: #00040d;
+  --topbar-h: 94px;
+  --header-card-w: 360px;
+}
+
+.dark {
+  --background: 222.2 84% 4.9%;
+  --foreground: 210 40% 98%;
+  --card: 222.2 84% 4.9%;
+  --card-foreground: 210 40% 98%;
+  --popover: 222.2 84% 4.9%;
+  --popover-foreground: 210 40% 98%;
+  --primary: 210 40% 98%;
+  --primary-foreground: 222.2 47.4% 11.2%;
+  --secondary: 217.2 32.6% 17.5%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 217.2 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
+  --accent: 217.2 32.6% 17.5%;
+  --accent-foreground: 210 40% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 217.2 32.6% 17.5%;
+  --input: 217.2 32.6% 17.5%;
+  --ring: 212.7 26.8% 83.9%;
+  --scrollbar: #00040d;
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+body {
+  color: hsl(var(--foreground));
+  background: hsl(var(--background));
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Global scrollbar styling */
+html {
+  scroll-behavior: smooth;
+  scrollbar-color: transparent transparent;
+  scrollbar-width: none;
+}
+
+*::-webkit-scrollbar {
+  width: 0px;
+  height: 0px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: transparent;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scrollbar);
+  filter: brightness(1.1);
+}
+
+.btn {
+  --border-color: linear-gradient(-45deg, #ffae00, #7e03aa, #00fffb);
+  --border-width: 0.125em;
+  --curve-size: 0.5em;
+  --blur: 30px;
+  --bg: hsl(var(--background));
+  --color: hsl(var(--foreground));
+  color: var(--color);
+  cursor: pointer;
+  position: relative;
+  isolation: isolate;
+  display: inline-grid;
+  place-content: center;
+  padding: 0.375rem 0.875rem;
+  font-size: 0.875rem;
+  border: 0;
+  text-transform: uppercase;
+  box-shadow: 10px 10px 20px rgba(0, 0, 0, 0.2);
+  clip-path: polygon(0% var(--curve-size), var(--curve-size) 0, 100% 0, 100% calc(100% - var(--curve-size)), calc(100% - var(--curve-size)) 100%, 0 100%);
+  transition: color 250ms, background-color 250ms;
+}
+
+.btn::after,
+.btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+.btn::before {
+  background: var(--border-color);
+  background-size: 300% 300%;
+  animation: move-bg7234 5s ease infinite;
+  z-index: -2;
+}
+
+@keyframes move-bg7234 {
+  0% {
+    background-position: 31% 0%;
+  }
+  50% {
+    background-position: 70% 100%;
+  }
+  100% {
+    background-position: 31% 0%;
+  }
+}
+
+.btn::after {
+  background: var(--bg);
+  z-index: -1;
+  clip-path: polygon(var(--border-width) calc(var(--curve-size) + var(--border-width) * 0.5), calc(var(--curve-size) + var(--border-width) * 0.5) var(--border-width), calc(100% - var(--border-width)) var(--border-width), calc(100% - var(--border-width)) calc(100% - calc(var(--curve-size) + var(--border-width) * 0.5)), calc(100% - calc(var(--curve-size) + var(--border-width) * 0.5)) calc(100% - var(--border-width)), var(--border-width) calc(100% - var(--border-width)));
+  transition: clip-path 500ms;
+}
+
+.btn:where(:hover, :focus)::after {
+  clip-path: polygon(calc(100% - var(--border-width)) calc(100% - calc(var(--curve-size) + var(--border-width) * 0.5)), calc(100% - var(--border-width)) var(--border-width), calc(100% - var(--border-width)) var(--border-width), calc(100% - var(--border-width)) calc(100% - calc(var(--curve-size) + var(--border-width) * 0.5)), calc(100% - calc(var(--curve-size) + var(--border-width) * 0.5)) calc(100% - var(--border-width)), calc(100% - calc(var(--curve-size) + var(--border-width) * 0.5)) calc(100% - var(--border-width)));
+  transition: 200ms;
+}
+
+.dark .btn {
+  --bg: #080312;
+  --color: #afffff;
+}
+
+.btn:where(:hover, :focus) {
+  color: hsl(var(--foreground));
+}
+
+[data-helper] .helper-fab {
+  position: absolute !important;
+}
+
+.btn-neutral {
+  --border-color: linear-gradient(-45deg, hsl(var(--border)), hsl(var(--border)));
+  --bg: hsl(var(--background));
+  --color: hsl(var(--foreground));
+}
+
+/* Campfire-like button: bold green fill with white text and rounded corners */
+.btn-campfire {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  color: #fff;
+  background: linear-gradient(#22c55e, #16a34a);
+  box-shadow: inset 0 -2px 0 rgba(255,255,255,0.15), 0 2px 0 #15803d, 0 8px 24px rgba(0,0,0,0.25);
+  border: 2px solid #15803d; /* darker emerald for edge */
+  transition: background 150ms ease, box-shadow 150ms ease, transform 50ms ease;
+  text-transform: none;
+}
+.btn-campfire:hover { background: linear-gradient(#16a34a, #15803d); }
+.btn-campfire:active {
+  transform: translateY(1px);
+  box-shadow: inset 0 -1px 0 rgba(255,255,255,0.12), 0 1px 0 #166534, 0 6px 18px rgba(0,0,0,0.22);
+}
+.btn-campfire span { font-weight: 700; }
+.dark .btn-campfire {
+  color: #f0fff4;
+  background: linear-gradient(#16a34a, #15803d);
+  border-color: #166534;
+  box-shadow: inset 0 -2px 0 rgba(255,255,255,0.12), 0 2px 0 #166534, 0 8px 24px rgba(0,0,0,0.45);
+}
+
+.card-highlight {
+  --border-color: linear-gradient(-45deg, #ffae00, #7e03aa, #00fffb);
+  --border-width: 0.125em;
+  border: var(--border-width) solid transparent;
+  background:
+    linear-gradient(hsl(var(--card)), hsl(var(--card))) padding-box,
+    var(--border-color) border-box;
+  background-size: 100% 100%, 300% 300%;
+  background-position: center, 31% 0%;
+  animation: move-bg-card 5s ease infinite;
+}
+
+@keyframes move-bg-card {
+  0% { background-position: center, 31% 0%; }
+  50% { background-position: center, 70% 100%; }
+  100% { background-position: center, 31% 0%; }
+}
+
+.card-highlight svg {
+  animation: icon-hue-cycle 5s linear infinite;
+}
+
+@keyframes icon-hue-cycle {
+  0% { filter: hue-rotate(0deg); }
+  100% { filter: hue-rotate(360deg); }
+}
+
+/* Gradientes utilitários mais escuros baseados em from-blue-400 to-purple-400 */
+.bg-goat-gradient-dark {
+  background-image: linear-gradient(135deg, #0c1b35 0%, #1a0f2f 60%, #00040d 100%);
+}
+.bg-goat-gradient-light {
+  background-image: linear-gradient(135deg, #eff6ff 0%, #f3e8ff 60%, #ffffff 100%);
+}
+.text-goat-gradient-dark {
+  background-image: linear-gradient(90deg, #1e3a8a, #4c1d95);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.text-goat-gradient-light {
+  background-image: linear-gradient(90deg, #3b82f6, #8b5cf6);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Subtle table row hover and transition */
+table tr {
+  transition: background-color 150ms ease-in-out;
+}
+table tr:hover {
+  background-color: rgba(99, 102, 241, 0.06); /* indigo-500/6 */
+}
+
+/* Cards subtle entrance */
+.card-enter {
+  opacity: 0;
+  transform: translateY(8px);
+}
+.card-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 200ms ease, transform 200ms ease;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+.fade-in { animation: fadeIn 300ms ease both; }
+@media (prefers-reduced-motion: reduce) {
+  .fade-in { animation: none; }
+}
+/* Light mode card fix: ensure readable card background and border contrast */
+.light .card-light {
+  background-color: #ffffff;
+  border-color: rgba(0,0,0,0.08);
+}
