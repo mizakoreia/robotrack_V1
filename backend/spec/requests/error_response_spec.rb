@@ -7,13 +7,8 @@ require 'rails_helper'
 # essa regressão — o modo de falha concreto é o backtrace vazar, então é isso
 # que se asserta.
 RSpec.describe 'Resposta de erro 5xx', type: :request do
-  let(:user) do
-    UserType.seed_default_types!
-    User.create!(name: 'OG de Teste', email: 'og-erro@example.com', user_type: UserType.og)
-  end
-
-  let(:token) { Auth::TokenService.new(user).generate_tokens[:token] }
-  let(:auth) { { 'Authorization' => "Bearer #{token}" } }
+  let(:user) { create(:user, :og) }
+  let(:auth) { auth_headers(user) }
 
   # Provoca uma exceção real no service que o endpoint de fato chama.
   before do

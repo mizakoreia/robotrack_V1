@@ -157,29 +157,29 @@ possível. O grupo 7 é o único destrutivo em dados e começa por backup.
 
 ## 8. Infraestrutura de teste e suítes verdes
 
-- [ ] 8.1 Criar `backend/spec/factories/` para `User` e `UserType` com sequência
+- [x] 8.1 Criar `backend/spec/factories/` para `User` e `UserType` com sequência
   de e-mail, e o spec de sanidade que itera `FactoryBot.factories` chamando
   `create` em cada uma (test-harness-baseline §Factories —
   `create_list(:user, 50)` persiste sem violar o índice único de `email`, e a
   falha de uma factory nomeia a factory em vez de estourar num spec de request
   meses depois).
-- [ ] 8.2 Criar `backend/spec/support/request_auth_helper.rb` com
+- [x] 8.2 Criar `backend/spec/support/request_auth_helper.rb` com
   `auth_headers(user, expired: false)` e incluí-lo por
   `config.include ..., type: :request` (§Helper — `grep -rn "def bearer_for"
   backend/spec` retorna 0 e `auth_headers(user, expired: true)` produz 401, para
   que o caminho negativo seja escrevível sem manipular JWT à mão).
-- [ ] 8.3 Configurar `database_cleaner-active_record` em `rails_helper.rb` com
+- [x] 8.3 Configurar `database_cleaner-active_record` em `rails_helper.rb` com
   truncation apenas para exemplos marcados, mantendo
   `use_transactional_fixtures = true` (§Estratégia de limpeza — um exemplo
   `js: true` que grava por outra conexão é limpo, e a suíte transacional não
   fica mais lenta por truncar o que não precisa).
-- [ ] 8.4 Deletar os oito specs backend de módulos removidos e os oito testes
+- [x] 8.4 Deletar os oito specs backend de módulos removidos e os oito testes
   órfãos do frontend, podar `lib/api/__tests__/auth.test.ts` das asserções de
   magic-login e reescrever `swagger_spec.rb` para a superfície reduzida
   (§Suíte frontend — `npx vitest run` deixa de emitir `Failed to resolve import`
   para `CheckoutPage` e `PaymentsPage`, e `grep -rn "it.skip\|describe.skip"
   frontend/src` retorna 0; `skip` seria uma suíte verde que mente).
-- [ ] 8.5 Escrever teste de `lib/api/client.ts` injetando duas 401 concorrentes
+- [x] 8.5 Escrever teste de `lib/api/client.ts` injetando duas 401 concorrentes
   (§Suíte frontend — ocorre exatamente 1 POST de refresh e 2 retentativas, não 2
   refreshes; o single-flight não tem cobertura hoje e `offline-pwa` depende dele).
 - [ ] 8.6 Verificação final: num clone limpo, `bundle install`,

@@ -7,12 +7,8 @@ require 'rails_helper'
 # com `current_user = nil`, e os canais legados davam `stream_for`
 # incondicionalmente a quem chegasse.
 RSpec.describe ApplicationCable::Connection, type: :channel do
-  let(:user) do
-    UserType.seed_default_types!
-    User.create!(name: 'Usuária do Cable', email: 'cable@example.com', user_type: UserType.og)
-  end
-
-  let(:token) { Auth::TokenService.new(user).generate_tokens[:token] }
+  let(:user) { create(:user, :og) }
+  let(:token) { access_token_for(user) }
 
   it 'rejeita conexão sem token' do
     expect { connect '/cable' }.to have_rejected_connection
@@ -23,7 +19,7 @@ RSpec.describe ApplicationCable::Connection, type: :channel do
   end
 
   it 'rejeita conexão cujo token decodifica para um usuário inexistente' do
-    orphan = Auth::TokenService.new(user).generate_tokens[:token]
+    orphan = access_token_for(user)
     user.destroy!
 
     expect { connect "/cable?token=#{orphan}" }.to have_rejected_connection

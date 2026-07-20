@@ -38,8 +38,7 @@ RSpec.describe 'Remoção do magic-login', type: :request do
   end
 
   it 'User.create! com atributos válidos persiste' do
-    UserType.seed_default_types!
-    user = User.create!(name: 'Sem Magic', email: 'sem-magic@example.com', user_type: UserType.client)
+    user = User.create!(name: 'Sem Magic', email: 'sem-magic@example.com', user_type: create(:user_type, :client))
 
     expect(user).to be_persisted
   end
