@@ -42,7 +42,6 @@ backend/vendor/bundle/
 backend/.bundle/
 backend/*.gem
 .bundle/config
-.ruby-version
 
 ## Node/JS — dependências e build
 **/node_modules/
