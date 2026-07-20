@@ -66,3 +66,17 @@ export const usersApi = {
 export const countriesApi = {
   list: (q?: string) => apiClient.get<{ countries: { name: string; iso2: string; dial_code: string }[] }>(`/api/v1/countries${q ? `?q=${encodeURIComponent(q)}` : ''}`)
 }
+
+// workspace-core §"Índice do usuário" (workspace-tenancy 6.3). O papel vem no
+// item apenas como rótulo — nunca é enviado de volta pelo cliente.
+export interface WorkspaceItem {
+  id: string
+  name: string
+  role: string
+}
+
+export const workspacesApi = {
+  list: () => apiClient.get<WorkspaceItem[]>('/api/v1/workspaces'),
+  updateName: (id: string, name: string) =>
+    apiClient.patch<WorkspaceItem>(`/api/v1/workspaces/${id}`, { name }),
+}

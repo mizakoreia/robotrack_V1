@@ -24,6 +24,14 @@ module TenancyHelpers
     Tenant.with(workspace_id: workspace.id, user_id: (user || workspace.owner).id, &block)
   end
 
+  # Adiciona `user` como membro (`role`) do workspace, criando a Person dele.
+  def add_member(workspace, user, role)
+    in_workspace(workspace) do
+      person = Person.create!(name: user.name, email: user.email, user_id: user.id)
+      Membership.create!(workspace_id: workspace.id, user: user, person: person, role: role)
+    end
+  end
+
   # Semeia `count` pessoas no workspace e devolve os ids.
   def seed_people(workspace, count, prefix: 'Pessoa')
     in_workspace(workspace) do

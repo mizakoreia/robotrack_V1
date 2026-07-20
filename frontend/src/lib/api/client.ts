@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios'
+import { useWorkspaceStore } from '../../store/workspaceStore'
 /* import { toast } from 'sonner' */
 
 const API_URL = import.meta.env.VITE_API_URL || (() => {
@@ -42,6 +43,12 @@ class ApiClient {
           const token = localStorage.getItem('access_token') || localStorage.getItem('token')
           if (token) {
             config.headers.Authorization = `Bearer ${token}`
+          }
+          // Contexto de tenant: só o id do workspace corrente trafega. O servidor
+          // resolve o papel; o cliente nunca o envia (D9 / workspace-tenancy 6.3).
+          const workspaceId = useWorkspaceStore.getState().currentWorkspaceId
+          if (workspaceId) {
+            config.headers['X-Workspace-Id'] = workspaceId
           }
         }
         return config

@@ -147,26 +147,26 @@ teste negativo desta capacidade prova nada.
 
 ## 6. Superfície de API e cliente
 
-- [ ] 6.1 `Api::Entities::Workspace` e endpoint `GET /api/v1/workspaces`,
+- [x] 6.1 `Api::Entities::Workspace` e endpoint `GET /api/v1/workspaces`,
   derivado ao vivo de `workspaces` + `memberships`, montado em `api/v1/base.rb`.
   (`workspace-core` §Índice — dono de `WS-A` e membro `view` de `WS-B` recebe
   exatamente dois itens; `WS-C` não aparece)
-- [ ] 6.2 `PATCH /api/v1/workspaces/:id` aceitando apenas `name`.
+- [x] 6.2 `PATCH /api/v1/workspaces/:id` aceitando apenas `name`.
   (`workspace-core` §Imutabilidade — payload com `owner_user_id` devolve `422` e
   o valor persistido não muda; alterar só `name` devolve `200`)
-- [ ] 6.3 Enviar `X-Workspace-Id` no cliente axios (`frontend/src/lib/api/client.ts`)
+- [x] 6.3 Enviar `X-Workspace-Id` no cliente axios (`frontend/src/lib/api/client.ts`)
   e adicionar `workspaces.list` em `endpoints.ts`, guardando o workspace corrente
   em Zustand e o papel **apenas** como rótulo vindo da resposta.
   (`workspace-core` §Índice / D9 — o papel nunca é lido de storage do cliente
   para decidir nada)
-- [ ] 6.4 Suíte de request negativa da superfície HTTP: `localStorage` adulterado
+- [x] 6.4 Suíte de request negativa da superfície HTTP: `localStorage` adulterado
   com `{"id": "WS-C", "role": "owner"}` chamando `GET /api/v1/projects` com
   `X-Workspace-Id: WS-C`; `X-Skip-Auth: 1` em rota de domínio; e `role=owner`
   enviado num workspace onde o usuário é `view`.
   (`§4.1 inv. 2` / `tenant-isolation` §Fail-closed — `403` no primeiro, `401` no
   segundo, papel efetivo `view` no terceiro; adulterar o índice de UI não
   concede acesso porque o papel vem de `owner_user_id`/`memberships`)
-- [ ] 6.5 Rodar `db:drop && db:create && db:schema:load` num ambiente limpo e
+- [x] 6.5 Rodar `db:drop && db:create && db:schema:load` num ambiente limpo e
   executar a suíte de isolamento inteira sobre o banco reconstruído.
   (`tenant-isolation` §Esquema em SQL — todos os cenários de negação passam; se
   algum passar por ausência de RLS no esquema carregado, 1.1 está incompleta)
