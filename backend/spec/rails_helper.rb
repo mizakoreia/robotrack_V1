@@ -23,13 +23,21 @@ RSpec.configure do |config|
 
   config.before(:suite) do
     ActiveRecord::Migration.maintain_test_schema!
+    # A truncation é obrigatória (não deletion): sob RLS, `DELETE` sem contexto
+    # de tenant não remove nada. O `TRUNCATE ... RESTART IDENTITY` do
+    # DatabaseCleaner exige ownership das sequences — resolvido em db/roles.sql
+    # transferindo as sequences para robotrack_app. Ver EXECUCAO.md.
     DatabaseCleaner.clean_with(:truncation)
   end
 
-  # Truncation só onde a transação do RSpec não é visível: o exemplo roda em
-  # outra thread/conexão e grava fora dela.
+  # Truncation onde a transação do RSpec não serve: specs de sistema/js (rodam em
+  # outra conexão) e specs de tenancy, que exercitam o `SET LOCAL` do
+  # `Tenant.with` — sob transação do RSpec o valor de sessão não seria descartado
+  # no fim do bloco e os cenários de "variável é NULL após o contexto" mentiriam.
   config.around(:each) do |example|
-    needs_truncation = example.metadata[:type] == :system || example.metadata[:js]
+    needs_truncation = example.metadata[:type] == :system ||
+                       example.metadata[:js] ||
+                       example.metadata[:tenancy]
 
     if needs_truncation
       DatabaseCleaner.strategy = :truncation

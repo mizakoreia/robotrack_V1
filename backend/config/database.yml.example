@@ -1,26 +1,23 @@
-development:
+# Copie para config/database.yml (gitignored) e preencha as senhas.
+#
+# workspace-tenancy: a conexão de RUNTIME é robotrack_app (sem SUPERUSER, sem
+# BYPASSRLS) para que a RLS seja avaliada de verdade. As migrations rodam como
+# robotrack_migrator via DATABASE_URL sobreposta (ver backend/db/PROVISIONING.md).
+# Rode `psql -U <superuser> -d <db> -f db/roles.sql` uma vez por banco para criar
+# os papéis e conceder privilégios.
+default: &default
   adapter: postgresql
   encoding: unicode
-  pool: 10
-  host: localhost
-  username: robotrack_user
-  password: '***'
-  database: robotrack_dev
+  pool: <%= ENV.fetch('RAILS_MAX_THREADS', 10) %>
+
+development:
+  <<: *default
+  url: <%= ENV.fetch('DATABASE_URL', 'postgres://robotrack_app:***@localhost/robotrack_dev') %>
 
 test:
-  adapter: postgresql
-  encoding: unicode
-  pool: 10
-  host: localhost
-  username: robotrack_user
-  password: '***'
-  database: robotrack_test
+  <<: *default
+  url: <%= ENV.fetch('DATABASE_URL', 'postgres://robotrack_app:***@localhost/robotrack_test') %>
 
 production:
-  adapter: postgresql
-  encoding: unicode
-  pool: 10
-  host: localhost
-  username: robotrack_user
-  password: '***'
-  database: robotrack_prod
+  <<: *default
+  url: <%= ENV.fetch('DATABASE_URL', nil) %>

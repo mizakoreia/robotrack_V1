@@ -6,21 +6,21 @@ teste negativo desta capacidade prova nada.
 
 ## 1. Fundação de esquema e papéis de banco
 
-- [ ] 1.1 Trocar `config.active_record.schema_format` para `:sql`, gerar
+- [x] 1.1 Trocar `config.active_record.schema_format` para `:sql`, gerar
   `db/structure.sql` a partir do banco corrente e remover `db/schema.rb`.
   (design D-4 — `db:drop && db:create && db:schema:load` num banco limpo produz
   esquema idêntico ao migrado; se `schema.rb` sobreviver, o próximo CI monta o
   banco sem RLS e passa verde)
-- [ ] 1.2 Gerar dump lógico (`pg_dump -Fc`) dos ambientes já provisionados e
+- [x] 1.2 Gerar dump lógico (`pg_dump -Fc`) dos ambientes já provisionados e
   documentar o comando de restauração antes de qualquer mudança de papel de
   banco. (backup obrigatório da 1.3 — sem ele, um `REVOKE` errado em staging não
   tem caminho de volta)
-- [ ] 1.3 Criar os papéis `robotrack_migrator` (dono das tabelas) e
+- [x] 1.3 Criar os papéis `robotrack_migrator` (dono das tabelas) e
   `robotrack_app` (runtime, sem `SUPERUSER`, sem `BYPASSRLS`) e separar
   `DATABASE_URL` de `MIGRATION_DATABASE_URL`. (`tenant-isolation` §Papel de banco
   — `SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = current_user`
   retorna `f, f` na conexão de runtime; rollback = reapontar `DATABASE_URL`)
-- [ ] 1.4 Spec de guarda `spec/tenancy/db_role_spec.rb` que falha se o papel da
+- [x] 1.4 Spec de guarda `spec/tenancy/db_role_spec.rb` que falha se o papel da
   conexão de runtime tiver `rolsuper` ou `rolbypassrls`. (`tenant-isolation`
   §Papel de banco — a suíte reprova quando alguém aponta `DATABASE_URL` para o
   superusuário local, que é o default de todo setup de desenvolvimento)
