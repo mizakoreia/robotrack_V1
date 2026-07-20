@@ -1,0 +1,49 @@
+## 1. Esquema e invariantes de banco
+
+- [ ] 1.1 Migration A: criar `task_advances` (uuid PK com default mas fornecível pelo cliente, `workspace_id` NOT NULL, `task_id`, `by` nullable → `people`, `author_name_snapshot` NOT NULL, `from_progress`, `to_progress`, `comment`, `legacy`, `recorded_at`, `created_at`), FK `ON DELETE RESTRICT` para `tasks`, índices `(task_id, recorded_at DESC, created_at DESC, id DESC)` e `(workspace_id, task_id)`. (§1.1 Avanço, D1/D2/D-ORD — excluir uma `task` com avanços falha em vez de apagar a trilha em cascata; duas leituras da trilha com timestamps empatados devolvem a mesma ordem)
+- [ ] 1.2 CHECK constraints da tabela + trigger de coerência `task_advances.workspace_id = tasks.workspace_id`: faixa `0..100`; `to_progress = 100 OR legacy OR btrim(comment) <> ''`; `char_length(comment) <= 1000`; `by IS NOT NULL OR legacy`; `recorded_at <= created_at + interval '10 minutes'`. (§2.4 item 3, D-CMT/D-LEG/D2 — `INSERT` direto com `to_progress = 60` e `comment = '   '` é rejeitado pelo Postgres, não pelo model; avanço apontando para tarefa de outro workspace aborta a transação)
+- [ ] 1.3 Migration B: habilitar RLS em `task_advances` com policies **apenas** de `SELECT` e `INSERT` por `app.current_workspace_id`. (D2 — sessão de `W1` consultando `task_advances` por SQL direto retorna zero linhas de `W2`)
+- [ ] 1.4 Migration C: `REVOKE UPDATE, DELETE ON task_advances FROM <app_role>` + trigger `BEFORE UPDATE OR DELETE` com `RAISE EXCEPTION`. Roda depois de A e B; a `down` derruba o trigger antes de tudo. (§4.1 inv. 3, D-IMUT — `DELETE` executado pelo role owner da tabela, fora da aplicação, aborta)
+- [ ] 1.5 Verificação **pré-destrutiva** de 1.6: rodar `SELECT count(*) FROM tasks WHERE status = 'Concluído' AND progress <> 100` e exportar as linhas divergentes antes de tocar em `tasks`. (D-CHK plano de migração — havendo linha divergente, 1.6 é abortada e o dado corrigido; nunca aplicar `NOT VALID` silencioso)
+- [ ] 1.6 Migration D: `CHECK tasks_done_implies_full (status <> 'Concluído' OR progress = 100)` em `tasks`, validada. **Não** criar a bi-implicação inversa. (D-CHK — `UPDATE tasks SET status='Concluído'` sem tocar em `progress` falha; reabrir para `Em Andamento` com `progress = 100` continua passando)
+- [ ] 1.7 Spec de banco com as cinco negações do grupo: `UPDATE`, `DELETE`, comentário em branco abaixo de 100, autor nulo não-`legacy`, workspace cruzado. (Prova executável de que nenhuma dessas invariantes depende do model)
+
+## 2. Máquina de estados
+
+- [ ] 2.1 Model `TaskAdvance` com validações espelhando as CHECKs, mensagens em `config/locales/pt-BR.advances.yml`, e `readonly?` impedindo `save` de registro persistido. (D14 — `422` traz texto pt-BR do campo `comment`, não a mensagem crua do Postgres)
+- [ ] 2.2 `Tasks::ApplyTransitionService` com as 8 linhas da tabela-verdade de §2.2, aceitando `progress` XOR `status`. **Sem `aasm`** (justificativa em `design.md` D-SM). (§2.2 — `status: "Em Andamento"` numa tarefa em `progress = 35` deixa `35`; `progress: 0` numa tarefa `N/A` deixa `N/A`, não `Pendente`)
+- [ ] 2.3 Spec unitário com uma asserção por linha da tabela-verdade, incluindo os pares legítimos `(Em Andamento, 0)` e `(Em Andamento, 100)`. (§2.2 + D-CHK — o teste falha se alguém "corrigir" `Em Andamento` com progresso 100 para outro valor)
+
+## 3. Registro de avanço
+
+- [ ] 3.1 `TaskAdvances::CreateService` com a transação completa: insere entrada, aplica transição, incrementa `lock_version`, grava auditoria quando `to_progress = 100`. (§2.4 item 4 — falha na gravação de auditoria reverte a entrada da trilha e `tasks.progress` volta a `45`)
+- [ ] 3.2 Clamp de `recorded_at`: ausente → `now()`; futuro além de `ADVANCE_RECORDED_AT_SKEW_MINUTES` ou passado além de 90 dias → `created_at` com `recorded_at_adjusted = true`. (D8 — `recorded_at = now() + 3 dias` cria o avanço com clamp em vez de responder `422`, e a entrada não fica presa no topo da timeline)
+- [ ] 3.3 Auto-atribuição §2.3 na mesma transação, só quando `task_assignees` está vazia, com `find_or_create` idempotente da `Person` do ator no roster. (§2.3 — tarefa cujo único responsável é Bruno não é reatribuída quando Ana registra avanço; o roster não ganha entrada de nome solto)
+- [ ] 3.4 Resolução de conflito na ordem correta: idempotência por uuid (`200` com o avanço existente) **antes** da checagem de `lock_version`, e `StaleObjectError` → `409` com `task` atual e `latest_advance` no corpo. (D-ID/D-409 — reenvio de `U1` com `lock_version = 7` desatualizado devolve `200`, não `409`; sessão A após B ter subido para `8` recebe `409` com `progress: 70` e nenhuma entrada de A é criada)
+- [ ] 3.5 Publicação pós-commit e best-effort do evento do `WorkspaceChannel` (D6) e do gatilho de notificação (§2.7). (§2.7 — Redis indisponível no enfileiramento devolve `201` e mantém a entrada na trilha; o erro vai para o rastreio, não para a resposta)
+- [ ] 3.6 Specs de request de `45 → 100` sem comentário (`201`) e `45 → 60` sem comentário (`422` sem linha criada), mais o spec de duas sessões concorrentes provando 3.4. (§2.4 item 3 — os dois casos concretos da regra dura; o teste de concorrência falha se a ordem das duas checagens for invertida)
+
+## 4. API e autorização
+
+- [ ] 4.1 `TaskAdvancePolicy` (`create?` = `owner`/`edit`; `index?` = qualquer membro) no idioma singleton dos services do template. (D3/§4.1 — membro `view` recebe `403`; tarefa de outro workspace recebe `404`, não `403`)
+- [ ] 4.2 Endpoints Grape `POST` e `GET /api/v1/tasks/:task_id/advances` (paginado, 50 por página, mais recentes primeiro), montados em `api/v1/base.rb` com policy declarada. (D3 — o route-sweep spec falha se a declaração de policy for omitida)
+- [ ] 4.3 `Api::Entities::TaskAdvance` (`recorded_at`, `created_at`, `synced_late`, `recorded_at_adjusted`, `author_name_snapshot`, `legacy`) e extensão da entity de `tasks` com `advances_count` e `last_comment`. (§3.5 coluna Trilha — `robot-task-table` monta o aviso "trilha faltando" só com `advances_count`, sem consultar nota alguma)
+- [ ] 4.4 Remover `progress` e `status` cru dos parâmetros de `PATCH /api/v1/tasks/:id`, respondendo `422` apontando o endpoint de avanço. (§2.4 — `PATCH` com `{"progress": 80}` não move o progresso; é a prova de que a trilha não tem porta lateral)
+- [ ] 4.5 Spec de request negativo: `view` → `403` em avanço e em mudança de status; tenant cruzado → `404`; `PATCH` com `progress` → `422`. (§4.1 inv. 1 e inv. 4 — três negações num arquivo só, para não se perderem)
+
+## 5. Interface do modal de avanço
+
+- [ ] 5.1 `features/advances/useAdvanceDraft.ts` — slider controlado por `draft ?? serverProgress`; cancelar e `Esc` limpam o rascunho e devolvem o foco ao controle de origem. (§2.4 item 5, D-UI/D9 — arrastar até `60` e cancelar devolve o slider a `45` sem nenhuma requisição de escrita; não existe `useEffect` sincronizando progresso do servidor para estado local)
+- [ ] 5.2 Handlers `−10`/`+10` lendo o progresso de `queryClient.getQueryData` no instante do clique, com clamp `[0, 100]`. (§2.4 item 1 — dois `+10` seguidos sem recarregar produzem `+20`, não `+10`; `+10` em `95` abre o modal em `100`)
+- [ ] 5.3 Modal com `de`/`para`, campo `para` editável, rótulo de comentário condicional do módulo pt-BR, e confirmar bloqueado quando `para < 100` e o comentário é vazio ou só espaços. (§2.4 itens 2–3, D14 — alterar `para` de `60` para `100` troca o rótulo e habilita o confirmar com campo vazio; três espaços não habilitam)
+- [ ] 5.4 Mutation gerando `uuid` no cliente, enviando `recorded_at` da confirmação e `lock_version` da abertura do modal, invalidando as duas query keys no sucesso. (D1/D8/D9 — duplo clique em menos de 300 ms envia o mesmo uuid e a trilha ganha 1 entrada, não 2)
+- [ ] 5.5 Tratamento de `409`: preserva o comentário, exibe autor/valor/`recorded_at` do avanço concorrente, oferece "recalcular a partir de X%" (novo uuid) ou descartar, sem retentativa automática. (D-409 — após `409` de um `+10` sobre `70`, o modal passa a `70 → 80` e o uuid enviado é diferente do que falhou)
+- [ ] 5.6 Estado somente-leitura para papel `view`: botões ocultos, slider `aria-disabled`, modal não abre. (§4.1 — remover `disabled` pelo devtools e forçar o envio resulta em `403` e recarga da tarefa, não em escrita)
+- [ ] 5.7 Testes Vitest + Testing Library dos cinco casos concretos: `45 → 100` sem comentário, `45 → 60` sem comentário, dois `+10` = `+20`, arrastar-e-cancelar, e `409` preservando o comentário. (§2.4 — cada teste nomeia o valor final esperado, não "modal funciona")
+
+## 6. Integração e fechamento
+
+- [ ] 6.1 Contratos escritos para as capacidades dependentes: entrada `legacy` para `legacy-data-migration` (campos exatos, `tasks` sem coluna `obs`) e nova condição do aviso "trilha faltando" para `robot-task-table` (`0 < progress < 100 AND advances_count = 0`). (D-LEG/§3.5 — o importador cria a entrada `(nota anterior)`; tarefa em `40%` com apenas 1 entrada `legacy` **não** exibe o alerta)
+- [ ] 6.2 Registrar em `delivery-and-observability` a env var `ADVANCE_RECORDED_AT_SKEW_MINUTES` (padrão `10`) e a métrica de contagem de `409` por workspace. (Buraco de entrega — deploy sem a env var usa o padrão e o teste de clamp continua passando; sem a métrica não há como detectar conflito crônico num robô)
+- [ ] 6.3 Fechar Q1 com `robot-tasks`: `tasks` usa soft-delete e FK `ON DELETE RESTRICT`. (D-IMUT — hard delete de tarefa com avanços aborta no trigger de imutabilidade; precisa estar resolvido antes de 1.1 ir para produção)
+- [ ] 6.4 Spec de integração ponta a ponta: avanço `0 → 20` em tarefa sem responsável, verificando entrada na trilha, transição para `Em Andamento`, auto-atribuição do autor, `lock_version` incrementado e evento publicado uma única vez. (§2.4 item 4 — prova de que os cinco efeitos ocorrem na mesma confirmação e o evento não é publicado duas vezes)

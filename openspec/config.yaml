@@ -1,0 +1,113 @@
+schema: spec-driven
+
+context: |
+  # RoboTrack — contexto de projeto
+
+  ## O que é
+  RoboTrack rastreia o progresso de comissionamento de robôs industriais (contexto
+  automotivo: células de solda, handling, sealing). Hierarquia
+  **Projeto → Célula → Robô → Tarefa**, com consolidação de progresso bottom-up.
+  Usuários são engenheiros de comissionamento no chão de fábrica: celular na mão,
+  às vezes de luva, sob luz forte de galpão; e desktop para planejar e revisar.
+  Times pequenos colaboram num mesmo workspace (papéis: dono / editor / leitor).
+
+  A especificação funcional canônica é `/Users/mizaelfelippe/Documents/GitHub/RoboTrack/`
+  (`ESPECIFICACAO.md`, `DESIGN.md`, `PRODUCT.md`, `firestore.rules`). Toda proposta
+  deve citar as seções da spec que endereça (ex.: `§2.4`, `§4.1 inv. 6`).
+
+  ## ATENÇÃO: isto é um PORTE, não um transplante
+  A spec descreve o sistema **legado**: PWA vanilla JS + Firebase/Firestore.
+  O alvo é este repositório: monólito **Rails 8 + React**, sem Firebase.
+  A spec é a fonte de verdade para **comportamento e regra de negócio**;
+  NÃO para arquitetura. Cada capacidade precisa traduzir conscientemente:
+  - Firestore security rules  → autorização server-side (policy + constraint no banco)
+  - Firebase Auth             → Devise + devise-jwt + omniauth-google-oauth2
+  - documentos aninhados      → esquema relacional normalizado
+  - `onSnapshot` (tempo real) → ActionCable + invalidação de cache no cliente
+  - offline persistence       → service worker + fila de mutations no cliente
+  - `serverTimestamp()`       → timestamp explícito (registrado vs. sincronizado)
+
+  Onde a spec descreve uma regra que o Firestore só expressava no cliente ou em
+  rules frágeis, **expressar no banco** (constraint, trigger, índice único, RLS) —
+  não só no model. Um model pode ser contornado por um console; uma constraint não.
+
+  ## Stack alvo
+  **Backend** (`backend/`): Ruby 3.2.3, Rails 8.0 (API), Grape + grape-entity +
+  grape-swagger, PostgreSQL (`pg`), Devise + devise-jwt, omniauth-google-oauth2,
+  Sidekiq + Redis, ActionCable, AASM (máquinas de estado), PaperTrail, rack-attack,
+  rack-cors, dotenv-rails, rails-i18n (pt-BR). Testes: RSpec + FactoryBot + Faker +
+  database_cleaner + SimpleCov.
+
+  **Frontend** (`frontend/`): React 18 + TypeScript + Vite, react-router-dom v6,
+  TanStack React Query v5 (server state), Zustand (client state), axios,
+  Tailwind CSS 3 + tailwind-merge + clsx + tailwindcss-animate, lucide-react,
+  sonner (toasts), recharts, @rails/actioncable, GSAP. Testes: Vitest +
+  Testing Library.
+
+  ## Convenções
+  - Idioma: **pt-BR** em UI, mensagens, seed e documentação. Código, nomes de
+    tabela/coluna/rota e identificadores em **inglês**.
+  - API sob Grape, versionada, apresentada com grape-entity. Nada de renderizar
+    ActiveRecord direto.
+  - Nenhuma coluna de domínio usa **nome de pessoa como chave estrangeira**. O
+    legado endereçava responsáveis e notificações por texto (`"Não Atribuído"`);
+    o porte usa identidade estável (`people.id`). Nomes só aparecem como snapshot
+    histórico imutável (ex.: `author_name_snapshot` numa trilha append-only).
+  - Toda leitura de domínio parte do workspace corrente. Isolamento de tenant é
+    obrigação de banco, não convenção de código.
+  - Migrations reversíveis; nada destrutivo sem tarefa de backup antes.
+  - Aceite de tarefa nomeia o **modo de falha concreto**, não repete o título.
+    Bom: "dois `+10` seguidos sem recarregar produzem +20, não +10".
+    Ruim: "tabela criada".
+
+  ## Invariantes inegociáveis (spec §4.1)
+  1. Autorização é validada no servidor, sempre. Bloqueio na UI é conveniência.
+  2. Papel vem exclusivamente da associação de membro. Índice de workspaces do
+     usuário é cache de UI e nunca fonte de autorização.
+  3. Log de auditoria é append-only para todos, inclusive o dono.
+  4. A única mutação de um membro `view` é marcar a própria notificação como lida.
+  5. O dono de um workspace é imutável.
+  6. Consumo de convite é atômico: token existente, não usado, não expirado,
+     workspace correspondente, e-mail idêntico ao do autenticado, papel igual.
+  7. Convite só aponta para o workspace do próprio criador, papel em `view`/`edit`.
+  8. Notificação: mensagem ≤ 500 caracteres, criada sempre com `read: false`.
+
+  ## Duas métricas de progresso que coexistem de propósito
+  - **Ponderado** (§2.1): usado nos anéis e no relatório. Média ponderada por peso
+    ignorando `N/A`; robô sem tarefas = 0; robô só com `N/A` = 100.
+  - **Contagem crua** (§3.2): usado nos hubs analíticos. Concluídas ÷ total.
+  Nunca unificar acidentalmente. Todo lugar que exibe um dos dois deve rotulá-lo.
+
+  ## Sistema visual
+  Escuro por padrão, claro opcional, **deliberadamente não segue
+  `prefers-color-scheme`**. Neutros tintados de azul + accent azul. Cor de status é
+  semântica, nunca decorativa, e tem três variantes (cheia / tinta / sólida) —
+  trocá-las quebra contraste AA. Fonte única (Inter) em vários pesos; números com
+  `tabular-nums`. **Nenhum emoji na UI** — ícones herdam `currentColor`; os únicos
+  glifos são os símbolos tipográficos do relatório A4 (`✓ ◐ ○ —`). Alvo WCAG AA
+  medido nos dois temas. Respeitar `prefers-reduced-motion`. Alvos de toque ≥ 32px
+  (uso com luva).
+  Regra dura: **badge é rótulo, seletor é controle — nunca podem se parecer.**
+
+rules:
+  proposal:
+    - Escreva em pt-BR.
+    - Abra citando as seções da ESPECIFICACAO.md que esta capacidade cobre.
+    - Inclua sempre uma seção "Não-objetivos" delimitando o que fica de fora.
+    - Se a capacidade traduz algo de Firebase, diga explicitamente o quê e para quê.
+  design:
+    - Escreva em pt-BR.
+    - Toda decisão registra a alternativa descartada e o porquê.
+    - Marque explicitamente onde a invariante vai morar (model, policy, constraint,
+      trigger, índice ou RLS) — não basta dizer "validado".
+  specs:
+    - Requisitos em pt-BR, com SHALL/MUST (nunca "deveria"/"pode").
+    - Todo cenário precisa ser executável como teste; prefira valores concretos.
+    - Cenários de negação (quem NÃO pode) são obrigatórios em qualquer capacidade
+      que toque em papel, workspace ou dado de outro tenant.
+  tasks:
+    - Escreva em pt-BR.
+    - Cada tarefa cabe em uma sessão de trabalho; se tem mais de um entregável,
+      quebre em duas.
+    - Todo grupo de tarefas termina com uma tarefa de verificação (teste ou prova).
+    - Tarefa destrutiva exige tarefa de backup/rollback imediatamente antes.

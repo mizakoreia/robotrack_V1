@@ -1,0 +1,49 @@
+## 1. Esquema de `tasks`
+
+- [ ] 1.1 Verificar a precondição do esquema-pai: `robots` e `people` possuem índice único `(id, workspace_id)`; se não, abrir issue bloqueante em `commissioning-hierarchy`/`workspace-tenancy` antes de prosseguir (§1.1 — sem esse índice a FK composta de `tasks` falha na migration e o erro aparece só no `db:migrate`, não na revisão)
+- [ ] 1.2 Migration: `CREATE TYPE task_status AS ENUM ('Pendente','Em Andamento','Concluído','N/A')` (§1.1 — gravar `'Concluido'` sem acento por `INSERT` direto tem que estourar erro de tipo, não passar)
+- [ ] 1.3 Migration da tabela `tasks`: uuid PK com default `gen_random_uuid()` mas fornecível, `workspace_id NOT NULL`, `robot_id`, `cat`, `desc`, `weight` default 1, `progress smallint default 0 CHECK (progress BETWEEN 0 AND 100)`, `status` default `'Pendente'`, `position`, `lock_version`, índice único `(id, workspace_id)`, índice `(robot_id, position)` (D1/D3-RT — `INSERT` com `progress = 101` tem que ser abortado pelo banco, não pela validação do model)
+- [ ] 1.4 Habilitar RLS `ENABLE` + `FORCE` em `tasks` com policy sobre `current_setting('app.current_workspace_id')` (D2 — `SELECT * FROM tasks` numa sessão com o workspace errado tem que devolver 0 linhas, mesmo para o dono da conexão)
+- [ ] 1.5 Model `Task` + factory: enum de status, `belongs_to :robot`, `optimistic_locking`, `default_scope` de reforço (§1.1 — a factory precisa produzir tarefa válida sem informar `workspace_id` explicitamente, resolvendo-o do robô)
+- [ ] 1.6 Spec de banco cobrindo os 4 cenários negativos do grupo: `progress = 101`, `status` inválido, `workspace_id` nulo e leitura cross-tenant sob RLS (§1.1/§4.1 inv. 1 — o spec falha se qualquer uma das quatro violações for aceita pelo banco)
+
+## 2. `task_assignees` por identidade
+
+- [ ] 2.1 Migration da tabela `task_assignees` com uuid PK, `workspace_id NOT NULL`, FKs compostas `(task_id, workspace_id)` e `(person_id, workspace_id)`, `ON DELETE CASCADE` a partir de `tasks` e `RESTRICT` a partir de `people` (D-RT-1 — `INSERT` cruzando tarefa de `WS-A` com pessoa de `WS-B` tem que ser abortado pela FK, não passar despercebido)
+- [ ] 2.2 Índice único `(task_id, person_id)` e índice `(person_id, task_id)` para a consulta de "Minhas Tarefas" (§3.6 — duas requisições concorrentes atribuindo a mesma pessoa não podem produzir dois chips iguais na tabela)
+- [ ] 2.3 Models `TaskAssignee` + `Task#assignees` (has_many through `people`), com RLS habilitado na tabela (D10 — tarefa sem responsável responde `[]`, nunca um registro chamado `"Não Atribuído"`)
+- [ ] 2.4 Spec de prova de ausência de `resp`: assertiva sobre `Task.column_names` garantindo que não existe `resp` nem `assignees` como coluna de texto (D-RT-2 — o spec falha se alguém reintroduzir a coluna de compatibilidade legada por conveniência)
+
+## 3. API de leitura e CRUD de tarefa
+
+- [ ] 3.1 `Tasks::ListService` + `Api::Entities::Task` (com `assignees: [{id, name}]`) e endpoint `GET /api/v1/robots/:robot_id/tasks` ordenado por `position` (§3.5/§1.4 — robô recém-criado sem tarefas responde `200` com `tasks: []`, não `404`)
+- [ ] 3.2 `Tasks::CreateService` + endpoint `POST /api/v1/robots/:robot_id/tasks` aceitando uuid do cliente, com `position` = máx+1 (§3.5 — repetir o mesmo `POST` com o mesmo uuid retorna `409` e não cria a segunda tarefa)
+- [ ] 3.3 `Tasks::UpdateService` + endpoint `PATCH /api/v1/tasks/:id` para descrição, exigindo `lock_version` e **rejeitando com 422** payloads que contenham `progress` ou `status` (D-RT-3 — enviar `desc` junto de `progress: 50` não pode gravar a descrição "só a parte permitida"; a requisição inteira falha)
+- [ ] 3.4 Tratamento de `ActiveRecord::StaleObjectError` → `409` com o estado atual no corpo (D-RT-7 — dois `PATCH` com `lock_version: 3` produzem um `200` e um `409`, nunca dois `200`)
+- [ ] 3.5 `Tasks::DeleteService` + endpoint `DELETE /api/v1/tasks/:id` (§3.5 — excluir tarefa com 2 responsáveis não pode deixar linhas órfãs em `task_assignees`)
+- [ ] 3.6 `TaskPolicy` declarada em todos os 4 endpoints acima, integrada ao route-sweep de `authorization-policies` (D3/§4.1 — endpoint sem policy declarada quebra o CI; membro `view` recebe `403` em create/update/delete)
+- [ ] 3.7 Request specs cobrindo o caminho negativo do grupo: `view` em cada mutação (403), recurso de outro workspace (404 e corpo sem `desc`), `progress` no `PATCH` (422) e conflito de versão (409) (§4.1 inv. 1/4 — o spec falha se qualquer negação vazar dado do recurso no corpo da resposta)
+
+## 4. Atribuição de responsáveis
+
+- [ ] 4.1 `Tasks::AssigneesService.replace` calculando o diff `{added, removed}` sobre o conjunto enviado, numa transação (D-RT-6 — `[P1,P2]` → `[P2,P3]` retorna `added: [P3]`, `removed: [P1]` e não lista `P2` em `added`)
+- [ ] 4.2 Endpoint `PUT /api/v1/tasks/:id/assignees` idempotente, com `person_ids: []` válido e `person_id` de outro workspace resultando em `404` (D11 — reenviar o mesmo PUT retorna `added: []` e não duplica; lista vazia zera responsáveis sem criar pessoa sentinela)
+- [ ] 4.3 Publicação do evento de mudança de responsáveis com o diff, para consumo de `in-app-notifications` e `realtime-collaboration` (§2.7/D6 — quem já era responsável antes do PUT não pode aparecer no payload do evento de `assign`)
+- [ ] 4.4 Frontend: hook `useTaskAssignees` (React Query, key `['ws', wsId, 'robot', robotId, 'tasks']`) com a lógica do modal de atribuição — lista de pessoas do workspace, seleção múltipla, e criação de pessoa nova via `POST /people` com uuid do cliente seguida da inclusão no PUT (§3.5/D9 — a pessoa recém-cadastrada já sai marcada no modal e sobrevive ao fechamento sem recarregar a página)
+- [ ] 4.5 Request spec + teste de componente cobrindo idempotência, conjunto vazio, pessoa cross-tenant (404) e `view` recebendo 403 no PUT (§4.1 inv. 4 — o spec falha se um `view` conseguir alterar qualquer conjunto de responsáveis)
+
+## 5. Criação de robôs em lote (§2.5)
+
+- [ ] 5.1 `Robots::BatchNormalizer`: trim, descarte de vazios, dedup por nome normalizado (trim + colapso de espaços + casefold) preservando a primeira ocorrência, e clamp em 50 (§2.5 — leva com 99 nomes válidos produz 50 robôs; `["R01 - Solda", "R01 - Solda"]` produz 1)
+- [ ] 5.2 `Robots::BatchCreateService`: transação única criando os robôs (uuid do cliente, `application` da leva, `position` sequencial) e retornando 422 quando a lista normalizada fica vazia (D-RT-4 — leva com todos os campos vazios responde `422`, não `200` com zero robôs)
+- [ ] 5.3 Materialização das tarefas-base: aplicar a regra de filtro de `task-catalog` (`appFilters` vazio OU contém `"Misto / Geral"` OU `"Todas"` OU a Aplicação do robô), copiar `cat`/`desc`/`weight` por valor e atribuir `position` pela ordem lexicográfica de `(cat, desc)` (§2.5/§1.3 — robô `Sealing` recebe "Calibração de Cola" e robô `Solda MIG` não recebe nem ela nem "Check sinais de Gripper")
+- [ ] 5.4 Inserção com `insert_all` montando `workspace_id` explicitamente em cada hash de tarefa e de robô (D-RT-5 — `insert_all` pula callbacks; sem o `workspace_id` no hash a policy de RLS rejeita o INSERT e a leva inteira precisa fazer rollback, não persistir os robôs sem tarefas)
+- [ ] 5.5 Endpoint `POST /api/v1/cells/:cell_id/robots/batch` com `RobotBatchPolicy` declarada (§4.1 — `view` recebe `403`; célula de outro workspace recebe `404` com corpo que não revela o nome da célula)
+- [ ] 5.6 Frontend: assistente de dois passos — passo 1 (quantidade com clamp visual em 50 + seletor de Aplicação), passo 2 (um campo por robô com placeholder `R01 - Solda`) enviando uma única requisição (§2.5 — digitar `99` no passo 1 mostra exatamente 50 campos, e o texto do placeholder nunca vira o nome de um robô)
+- [ ] 5.7 Request spec de lote sobre o catálogo padrão dos 31 templates: 99→50, dois nomes iguais→1 robô, `Sealing` com "Calibração de Cola", `Solda MIG` sem ela, catálogo vazio→`201` com `tasks: []`, e falha no meio da leva→zero robôs persistidos (§2.5/§1.3 — o spec falha se uma leva parcialmente criada sobreviver ao rollback)
+
+## 6. Carga, entrega e verificação transversal
+
+- [ ] 6.1 Benchmark da leva máxima (50 robôs × 31 tarefas ≈ 1550 linhas) em transação única, com limite de duração registrado e alerta acordado com `delivery-and-observability` (D-RT-4 riscos — se a transação máxima ultrapassar o timeout de request, o usuário vê erro depois de preencher 50 nomes; o benchmark falha antes disso acontecer em produção)
+- [ ] 6.2 Spec de fronteira de capacidade: provar que nenhum endpoint de `robot-tasks` altera `progress` ou `status`, e que a máquina de estados §2.2 não está implementada aqui (D-RT-3 — o spec falha se `progress-advances` for antecipado dentro desta capacidade e criar dois donos da transição)
+- [ ] 6.3 Nota de handoff para `legacy-data-migration` registrando a decisão D-RT-2: leitura tolerante de §1.4 item 1 é do importador, o esquema não tem `resp`, `"Não Atribuído"` é filtrado e nomes não resolvidos viram conjunto vazio (§1.4 item 1/D11 — sem esse handoff explícito o importador reintroduz a gravação `resp = assignees[0] || "Não Atribuído"` que esta capacidade removeu)
