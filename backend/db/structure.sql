@@ -388,6 +388,28 @@ CREATE TABLE public.schema_migrations (
 
 
 --
+-- Name: task_templates; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.task_templates (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    workspace_id uuid NOT NULL,
+    cat text NOT NULL,
+    "desc" text NOT NULL,
+    weight numeric DEFAULT 1 NOT NULL,
+    app_filters text[] DEFAULT '{}'::text[] NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT chk_task_templates_app_filters CHECK ((app_filters <@ ARRAY['Misto / Geral'::text, 'Solda Ponto'::text, 'Solda MIG'::text, 'Handling'::text, 'Sealing'::text, 'Outros'::text, 'Todas'::text])),
+    CONSTRAINT chk_task_templates_cat CHECK (((length(btrim(cat)) >= 1) AND (length(btrim(cat)) <= 120))),
+    CONSTRAINT chk_task_templates_desc CHECK (((length(btrim("desc")) >= 1) AND (length(btrim("desc")) <= 200))),
+    CONSTRAINT chk_task_templates_weight CHECK ((weight > (0)::numeric))
+);
+
+ALTER TABLE ONLY public.task_templates FORCE ROW LEVEL SECURITY;
+
+
+--
 -- Name: user_types; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -582,6 +604,14 @@ ALTER TABLE ONLY public.schema_migrations
 
 
 --
+-- Name: task_templates task_templates_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.task_templates
+    ADD CONSTRAINT task_templates_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: cells uq_cells_id_workspace; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -627,6 +657,14 @@ ALTER TABLE ONLY public.robots
 
 ALTER TABLE ONLY public.robots
     ADD CONSTRAINT uq_robots_position UNIQUE (cell_id, "position") DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: task_templates uq_task_templates_id_workspace; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.task_templates
+    ADD CONSTRAINT uq_task_templates_id_workspace UNIQUE (id, workspace_id);
 
 
 --
@@ -812,6 +850,20 @@ CREATE UNIQUE INDEX index_robots_on_cell_lower_name ON public.robots USING btree
 --
 
 CREATE INDEX index_robots_on_workspace_id ON public.robots USING btree (workspace_id);
+
+
+--
+-- Name: index_task_templates_on_workspace_cat_desc; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_task_templates_on_workspace_cat_desc ON public.task_templates USING btree (workspace_id, cat, "desc");
+
+
+--
+-- Name: index_task_templates_on_workspace_lower_desc; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_task_templates_on_workspace_lower_desc ON public.task_templates USING btree (workspace_id, lower(btrim("desc")));
 
 
 --
@@ -1052,6 +1104,14 @@ ALTER TABLE ONLY public.robots
 
 
 --
+-- Name: task_templates task_templates_workspace_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.task_templates
+    ADD CONSTRAINT task_templates_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id);
+
+
+--
 -- Name: workspaces workspaces_owner_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1123,6 +1183,12 @@ CREATE POLICY purge_expired_select ON public.invitations FOR SELECT USING (((cur
 ALTER TABLE public.robots ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: task_templates; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.task_templates ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: cells tenant_isolation; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -1172,6 +1238,13 @@ CREATE POLICY tenant_isolation ON public.robots USING ((workspace_id = (NULLIF(c
 
 
 --
+-- Name: task_templates tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.task_templates USING ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid)) WITH CHECK ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid));
+
+
+--
 -- Name: workspaces tenant_isolation; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -1193,6 +1266,7 @@ ALTER TABLE public.workspaces ENABLE ROW LEVEL SECURITY;
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260721140001'),
 ('20260721130005'),
 ('20260721130004'),
 ('20260721130003'),
