@@ -301,5 +301,57 @@ camada desta execução, registrada aqui.
 - [x] G1 — Esquema e modelo de identidade (1.1–1.5) — backend 151/0 (142 + 9 novos)
 - [x] G2 — Sessão JWT, denylist, superfície de senha e proteção (2.1–2.6, 4.1–4.5) — backend 177/0
 - [x] G3 — Google OAuth por redirect (3.1–3.4) — backend 181/0
-- [ ] G4 — Tela única de login e cadastro (5.1–5.5)
-- [ ] G5 — Sessão no cliente e ciclo do token de convite (6.1–6.8)
+- [~] G4 — Tela única de login e cadastro (5.1–5.4 feitos; **falta 5.5**) — front vitest 12/12, tsc 0 erros
+- [~] G5 — Sessão no cliente e ciclo do convite (6.1–6.7 feitos; **falta 6.8**) — front vitest 12/12, tsc 0 erros
+
+## RETOMADA (parada em 21/07/2026, fim do dia)
+
+**Estado seguro e coerente.** Backend G1–G3 completo e commitado (181/0). O
+frontend de G4+G5 está IMPLEMENTADO e commitado (`add0705`): a suíte vitest está
+**12/12 verde** e `npx tsc --noEmit` dá **0 erros**. Nada quebrado na árvore.
+
+**O que a próxima sessão deve fazer PRIMEIRO (para fechar G4 e G5):**
+
+1. **Escrever 5.5** — `frontend/src/features/auth/__tests__/AuthPage.test.tsx`
+   (Vitest + @testing-library/react, render em `<MemoryRouter>`, `vi.mock` de
+   `../../lib/api/endpoints`): alternância login↔cadastro preserva o e-mail
+   digitado; senha de 5 caracteres NÃO dispara `authApi.login`/`register`; 401
+   limpa só a senha (e-mail intacto); cadastro sem nome não envia e anuncia erro
+   por `aria-live` no campo Nome. A `AuthPage` já expõe labels acessíveis
+   ("Nome"/"E-mail"/"Senha"/"Manter conectado") para `getByLabelText`.
+2. **Escrever 6.8** — testes do ciclo de sessão/convite. Alvos e onde a lógica
+   vive: convite guardado antes do login e consumido depois
+   (`lib/auth/invite.ts` + `lib/auth/session.ts#handleInviteAfterAuth`); storage
+   lançando exceção não trava o login (`lib/safeStorage.ts`, fallback em memória +
+   `withStorageTimeout`); 401 encerra sem laço (JÁ coberto por
+   `lib/api/__tests__/client.session.test.ts` — pode-se reaproveitar/expandir);
+   logout esvazia o cache (`lib/auth/session.ts#performLogout` → `queryClient.clear`).
+3. **Marcar 5.5 e 6.8** em `tasks.md`, validar
+   (`npx --yes @fission-ai/openspec@1.6.0 validate identity-and-auth --strict`) e
+   commitar como o fechamento de G4/G5.
+4. (Opcional) Verificação em browser da tela `/entrar` via launch.json do
+   frontend (node vite direto — ver [[macos-dev-setup]]); não é obrigatória, a
+   suíte é vitest.
+5. Change concluída → considerar `openspec archive identity-and-auth` se o fluxo
+   das ondas anteriores previr isso (as anteriores NÃO foram arquivadas; manter o
+   padrão salvo instrução em contrário).
+
+**Comandos de verificação do frontend:**
+```bash
+cd frontend && npx vitest run && npx tsc --noEmit
+```
+
+**Mapa do frontend novo (para não reconstruir contexto):**
+- `store/authStore.ts` — fonte única do token; `setSession/setToken/setUser/
+  clearSession`; storage por `remember`; hidrata de local→session. `AuthUser`
+  alargado com `user_type?/is_og?/phone?` (compat de telas legadas).
+- `lib/safeStorage.ts` — `safeStorage.{get,set,remove}(kind,key)` + `withStorageTimeout`.
+- `lib/api/client.ts` — token do store; 401 (não-público) → `endSession()`; `API_URL` exportado.
+- `lib/api/endpoints.ts` — `authApi.{register,login,logout,renew,me,updateMe,
+  googleRedirectUrl,acceptInvite}`.
+- `features/auth/{AuthPage,OAuthCallbackPage,InviteRoute}.tsx`.
+- `lib/auth/{invite,session,oauthState}.ts`.
+- Rotas em `app/App.tsx`: `/entrar`, `/auth/callback`, `/convite/:token`.
+- Removidos: `app/pages/LoginPage.tsx`, `hooks/useAuth.ts`, `lib/api/auth.ts`.
+- Contrato pendente do servidor (de `workspace-invitations`): `POST
+  /api/v1/invitations/:token/accept` (o cliente já chama; hoje não existe no back).
