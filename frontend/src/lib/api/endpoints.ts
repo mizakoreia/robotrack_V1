@@ -217,16 +217,13 @@ export interface ProjectDTO {
   cells: CellDTO[]
 }
 
-export const ROBOT_APPLICATIONS = [
-  'Misto / Geral',
-  'Solda Ponto',
-  'Solda MIG',
-  'Handling',
-  'Sealing',
-  'Outros',
-] as const
-
-export type RobotApplication = (typeof ROBOT_APPLICATIONS)[number]
+// task-catalog 6.3 (§1.2, D-TC-3) — a lista de Aplicações NÃO é redeclarada em
+// TS. O ponto de verdade é o backend (`Robot::APPLICATIONS`), servido por
+// `GET /api/v1/meta/robot_applications` e consumido em runtime por
+// `useRobotApplications` (`['meta','robotApplications']`, staleTime infinito). O
+// tipo é um alias de string porque os valores só existem em runtime — um `grep`
+// por `"Solda MIG"` em `frontend/src` fora de testes/fixtures deve dar zero.
+export type RobotApplication = string
 
 export const hierarchyApi = {
   listProjects: () => apiClient.get<ProjectDTO[]>('/api/v1/projects'),
@@ -272,4 +269,61 @@ export const hierarchyApi = {
       scope_id: scopeId,
       ordered_ids: orderedIds,
     }),
+
+  // task-catalog 6.1 (§2.6, tarefa 5.4) — sincronização retroativa: aplica ao
+  // robô os templates que faltam. O backend (G6, depende da tabela `tasks`)
+  // responde a contagem de adicionadas. `appFilters` decide a aplicabilidade lá;
+  // o cliente só dispara e invalida a lista de tarefas do robô.
+  syncRobotTaskTemplates: (robotId: string) =>
+    apiClient.post<SyncResultDTO>(
+      `/api/v1/robots/${encodeURIComponent(robotId)}/sync_task_templates`,
+    ),
+}
+
+// task-catalog 6.1 (§1.1, §3.9, §1.4 item 3, D-TC-5) — catálogo de tarefas-base.
+//
+// `appFilters` em camelCase, NUNCA `apps`: o nome legado morre na fronteira do
+// backend, e o tipo TS não o expõe. `weight` chega inteiro quando integral
+// (a entity serializa `1`, não `1.0`). O envio de escrita aceita `appFilters`
+// (o coerce do backend também tolera `apps`, mas o cliente novo não o usa).
+export interface TaskTemplateDTO {
+  id: string
+  cat: string
+  desc: string
+  weight: number
+  appFilters: string[]
+}
+
+export interface TaskTemplateWriteInput {
+  id?: string
+  cat?: string
+  desc?: string
+  weight?: number
+  appFilters?: string[]
+}
+
+// §2.6/5.3 — a resposta da sincronização conta as tarefas efetivamente
+// inseridas, não o tamanho do conjunto aplicável.
+export interface SyncResultDTO {
+  added_count: number
+}
+
+export const taskTemplatesApi = {
+  list: () => apiClient.get<TaskTemplateDTO[]>('/api/v1/task_templates'),
+
+  create: (data: TaskTemplateWriteInput) =>
+    apiClient.post<TaskTemplateDTO>('/api/v1/task_templates', data),
+
+  update: (id: string, data: TaskTemplateWriteInput) =>
+    apiClient.patch<TaskTemplateDTO>(`/api/v1/task_templates/${encodeURIComponent(id)}`, data),
+
+  destroy: (id: string) =>
+    apiClient.delete(`/api/v1/task_templates/${encodeURIComponent(id)}`),
+}
+
+// task-catalog 6.3 (§1.2) — metadados globais. Fonte única da lista de
+// Aplicações; o frontend consome daqui em vez de manter uma segunda lista.
+export const metaApi = {
+  robotApplications: () =>
+    apiClient.get<RobotApplication[]>('/api/v1/meta/robot_applications'),
 }

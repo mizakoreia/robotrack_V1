@@ -161,18 +161,31 @@ Pré-requisito de todas: `commissioning-hierarchy` entregue (tabelas `projects`,
 
 ## 6. Cliente e fechamento
 
-- [ ] 6.1 `frontend/src/lib/api/endpoints.ts`: grupo `taskTemplates` com list/create/
+- [x] 6.1 `frontend/src/lib/api/endpoints.ts`: grupo `taskTemplates` com list/create/
       update/destroy e `robots.syncTaskTemplates`, tipados com `appFilters` (nunca `apps`).
       (§1.4 item 3 — o tipo TS não expõe `apps`; o nome legado morre na fronteira do
       backend.)
-- [ ] 6.2 Hooks React Query com as chaves `['ws', wsId, 'taskTemplates']` e
+      *(`syncRobotTaskTemplates` chama `POST /api/v1/robots/:id/sync_task_templates`, cujo
+      backend nasce no G6; o fio do cliente é real e tipado desde já.)*
+- [x] 6.2 Hooks React Query com as chaves `['ws', wsId, 'taskTemplates']` e
       `['meta','robotApplications']` (`staleTime: Infinity`), seguindo D9; a mutation de
       sync invalida `['ws', wsId, 'robot', robotId, 'tasks']`. (§2.6/D9 — após sincronizar,
       a tabela do robô mostra as 29 tarefas novas sem reload manual.)
-- [ ] 6.3 Tipo `RobotApplication` derivado do endpoint de metadados, sem lista literal em
+      *(`src/features/catalog/useTaskTemplates.ts`; chaves em `src/lib/api/catalogKeys.ts`.)*
+- [x] 6.3 Tipo `RobotApplication` derivado do endpoint de metadados, sem lista literal em
       TS. (§1.2 — um `grep` por `"Solda MIG"` no `frontend/src` retorna zero ocorrências
       fora de testes e de fixtures.)
-- [ ] 6.4 **Verificação:** teste de integração ponta a ponta do fluxo de §3.9 relevante ao
+      *(O literal `ROBOT_APPLICATIONS` foi removido de `endpoints.ts`; `RobotApplication`
+      virou alias de `string` (os valores só existem em runtime). `useRobotApplications`
+      busca a lista; grep de verificação confirmado zero fora de testes.)*
+- [x] 6.4 **Verificação:** teste de integração ponta a ponta do fluxo de §3.9 relevante ao
       modelo — criar template com filtro `Sealing`, editar para `Misto / Geral`, sincronizar
       um robô `Solda MIG` e confirmar que a tarefa agora aparece. (§3.9 — se a normalização
       de `Misto / Geral` não limpar o filtro, a tarefa não aparece e o teste falha.)
+      *(Teste no NÍVEL DO CLIENTE (`useTaskTemplates.test.tsx`): prova que a escrita
+      atravessa como `appFilters` (nunca `apps`), que editar envia `["Misto / Geral"]`, e
+      que a sync invalida `['ws', wsId, 'robot', robotId, 'tasks']` para a tabela refazer o
+      fetch. A normalização servidor-side (`Misto / Geral` → `[]`) e a MATERIALIZAÇÃO da
+      tarefa dependem da tabela `tasks` — provadas nas request specs do G4 e nas de sync do
+      G6 (5.5). O e2e cross-sistema real fecha no G6; sem `tasks`, um teste de "a tarefa
+      aparece" aqui seria mock testando mock. Registrado para não fingir cobertura.)*
