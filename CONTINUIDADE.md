@@ -12,21 +12,21 @@ main (48497fd)                       ← ondas 1–4, sem nada desta sessão
 └── authorization-policies (6b89283)     change COMPLETA
     └── commissioning-hierarchy (b75b072)  change COMPLETA
         └── task-catalog                   change COMPLETA — 6 de 6 (TC-G6 fechou)
-            └── robot-tasks (branch atual)  change COMPLETA — 6 de 6 grupos
+            └── robot-tasks                 change COMPLETA — 6 de 6 grupos
+                └── progress-advances (branch atual)  change COMPLETA — 6 de 6 grupos
 ```
 
-**`robot-tasks` contém todo o trabalho** (empilhada sobre `task-catalog`; o
-TC-G6, o sync retroativo, foi commitado NESTA branch por depender da tabela
-`tasks`). É nela que se continua. Push por branch canônica (`git push origin
-HEAD:robot-tasks`). Os PRs para a `main` podem ser abertos depois, na ordem do
-empilhamento.
+**`progress-advances` contém todo o trabalho** (empilhada sobre `robot-tasks`). É
+nela que se continua. Push por branch canônica (`git push origin
+HEAD:progress-advances`). Os PRs para a `main` podem ser abertos depois, na ordem
+do empilhamento.
 
-## Suítes (medidas na branch `robot-tasks`)
+## Suítes (medidas na branch `progress-advances`)
 
 | Suíte | Resultado |
 |---|---|
-| Backend `bundle exec rspec` (como `robotrack_app`) | **820 / 0 falhas / 10 pending** |
-| Frontend `vitest run` | **88 / 0** |
+| Backend `bundle exec rspec` (como `robotrack_app`, `--seed 12345`) | **877 / 0 falhas / 9 pending** |
+| Frontend `vitest run` | **95 / 0** |
 | Frontend `tsc --noEmit` | limpo |
 
 Todos os 10 pending nomeiam a capacidade que os desbloqueia — nenhum é dívida
@@ -37,7 +37,7 @@ destravaram e viraram verdes ao longo de `robot-tasks`.)
 > suíte completa (estado do Rack::Attack sensível à ordem aleatória do RSpec);
 > passa isolado. Não é regressão desta sessão. Rodar com `--seed` fixo estabiliza.
 
-## Changes concluídas (8 de 24)
+## Changes concluídas (9 de 24)
 
 `seal-template-baseline`, `workspace-tenancy`, `identity-and-auth`,
 `workspace-invitations` (anteriores) e:
@@ -68,30 +68,51 @@ destravaram e viraram verdes ao longo de `robot-tasks`.)
   **sincronização retroativa** (`SyncToRobotService` + `POST /robots/:id/sync_task_templates`)
   que aplica os templates faltantes a robôs existentes sem sobrescrever, com backstop de
   concorrência pelo índice único de `tasks`. O TC-G6 fechou depois de `robot-tasks`.
+- **`progress-advances`** (G0..G6, COMPLETA) — a máquina de estados progresso↔status §2.2 e
+  a trilha de avanço **imutável**. `task_advances` (RLS forçada só com SELECT+INSERT, REVOKE
+  UPDATE/DELETE + trigger, FK composta `ON DELETE RESTRICT`, CHECKs da regra dura do
+  comentário/autor-nulo-só-legacy/skew de `recorded_at`), `tasks` ganhou soft-delete e a
+  CHECK `done ⇒ 100`. `ApplyTransitionService` (tabela-verdade pura, sem aasm),
+  `TaskAdvances::CreateService` (idempotência por uuid ANTES do `lock_version`, 409 com
+  estado atual, clamp de `recorded_at`, auto-atribuição do autor, evento pós-commit — tudo
+  numa transação com `requires_new: true`, um savepoint que um bug de concorrência real
+  exigiu). API `POST`/`GET /tasks/:task_id/advances` (`TaskAdvancePolicy`, 409 no formato
+  D-409), entity com `advances_count`/`last_comment`. Frontend `features/advances/` (slider
+  `draft ?? server`, ±10 lendo cache vivo, modal com rótulo condicional e resolução de 409
+  sem perder o comentário, read-only para `view`). Três handoffs de contrato
+  (`legacy-data-migration`, `robot-task-table`, `delivery-and-observability`) e e2e dos 5
+  efeitos. Decisões de execução 1–10 no EXECUCAO.
 
 Cada change tem seu `openspec/changes/<nome>/EXECUCAO.md` com o mapa de grupos, as
 decisões tomadas na execução, as armadilhas encontradas e a CONCLUSÃO com o relatório
 final. **Leia o EXECUCAO.md antes de tocar no código de uma change.**
 
-## Onde parou: `task-catalog` e `robot-tasks` COMPLETAS; núcleo de tarefas fechado
+## Onde parou: `progress-advances` COMPLETA; a trilha de avanço fechada
 
-Ambas fecharam (6/6 grupos cada) — ver os respectivos `EXECUCAO.md` (CONCLUSÃO).
-A Tarefa existe de ponta a ponta: catálogo, esquema, CRUD, atribuição por
-identidade, criação em lote e **sincronização retroativa** (o TC-G6, que fechou o
-ciclo depois que `robot-tasks` criou a tabela `tasks`). O cliente da sync já está
-ligado ao backend (o `SyncResultDTO` foi alinhado para `addedCount`).
+Fechou (6/6 grupos) — ver `openspec/changes/progress-advances/EXECUCAO.md`
+(decisões 1–10). O progresso agora tem UMA porta de escrita (a trilha imutável), a
+máquina de estados progresso↔status vive em service puro, o modal de avanço existe
+no frontend, e os contratos para `legacy-data-migration`/`robot-task-table`/
+`delivery-and-observability` estão escritos como `HANDOFF-progress-advances.md` no
+diretório de cada uma.
 
-**Próximo passo — `progress-advances`** (a máquina de estados §2.2 que esta onda
-deliberadamente deixou de fora). Depois `progress-rollup`. Ver a seção abaixo.
+**Pendência conhecida (documentada, não atribuída):** a tensão D-H6×D-IMUT — hard
+delete de robô/projeto que arraste tarefas com avanços daria 500 no trigger de
+imutabilidade. A resolução completa é **soft-delete de hierarquia** (uma follow-up
+em `commissioning-hierarchy`); a suíte segue verde porque `tasks` já é soft-delete
+e a FK `task_advances→tasks` é RESTRICT. Ver EXECUCAO decisão 6.
 
-## Depois do núcleo de tarefas
+**Próximo passo — `progress-rollup`** (o `progress_cache` consolidado sobe a
+hierarquia a partir dos avanços). Ver a seção abaixo.
 
-`progress-advances` (a máquina de estados progresso↔status §2.2, o modal de avanço §2.4, a
-auto-atribuição §2.3 e `task_advances` — que `robot-tasks` deliberadamente deixou de fora) e
-`progress-rollup` (o `progress_cache` consolidado). Para ter telas de verdade:
-`design-system` + `app-shell-navigation` + `hierarchy-screens` + `robot-task-table` (hoje a
-UI é a landing do template + autenticação + painel de equipe + os hooks/lógica sem tela
-final).
+## Depois de `progress-advances`
+
+`progress-rollup` (o `progress_cache` consolidado — soma ponderada dos avanços subindo
+robô→célula→projeto). Para ter telas de verdade: `design-system` + `app-shell-navigation` +
+`hierarchy-screens` + `robot-task-table` (esta última CONSOME `progress-advances`: monta a
+tabela do robô, o aviso "trilha faltando" com `advances_count`, e reusa
+`<AdvanceControls>` — ver o `HANDOFF-progress-advances.md` no diretório dela). Hoje a UI é a
+landing do template + autenticação + painel de equipe + os hooks/lógica sem tela final.
 
 ## Método (não abrir mão)
 
@@ -149,14 +170,15 @@ O frontend usa **pnpm** (`pnpm-lock.yaml`); o `package-lock.json` está dessincr
 > cada uma com proposta, design, deltas de spec e tarefas.
 >
 > Leia `CONTINUIDADE.md` na raiz do repositório: ele tem o estado atual, o que já foi
-> entregue, onde parei e o método de trabalho. `task-catalog` e `robot-tasks` estão
-> COMPLETAS (leia os EXECUCAO.md delas). O núcleo da Tarefa está fechado de ponta a ponta.
+> entregue, onde parei e o método de trabalho. `task-catalog`, `robot-tasks` e
+> `progress-advances` estão COMPLETAS (leia os EXECUCAO.md delas). O núcleo da Tarefa e a
+> trilha de avanço estão fechados de ponta a ponta.
 >
-> Trabalhe na branch `robot-tasks` (as branches são empilhadas; ela contém tudo). O próximo
-> passo é a change **`progress-advances`** (máquina de estados progresso↔status §2.2, modal
-> de avanço §2.4, auto-atribuição §2.3 e `task_advances`), que `robot-tasks` deliberadamente
-> deixou de fora. Comece pelo `EXECUCAO.md` dela (commit G0) — antes de qualquer código.
-> Push por branch canônica.
+> Trabalhe na branch `progress-advances` (as branches são empilhadas; ela contém tudo). O
+> próximo passo é a change **`progress-rollup`** (o `progress_cache` consolidado — soma
+> ponderada dos avanços subindo robô→célula→projeto). Comece pelo `EXECUCAO.md` dela
+> (commit G0) — antes de qualquer código. Push por branch canônica
+> (`git push origin HEAD:progress-rollup`).
 >
 > Siga o método: um grupo por vez, e ao fim de cada grupo me apresente um resumo e peça
 > autorização antes de seguir para o próximo. Não regrida nenhuma das regras listadas na

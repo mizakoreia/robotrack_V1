@@ -160,7 +160,10 @@ Aplicar (migrations dev+test como migrator; re-rodar roles.sql quando houver REV
   o modal É o passo de confirmação — não há um segundo botão "abrir". 95 testes vitest (era 88), tsc limpo.
   Pendência para `robot-task-table`: quem POPULA o cache `catalogKeys.robotTasks(wsId, robotId)` com `TaskDTO[]`
   é aquela change; sem ela o modal lê progress 0 (fallback). O contrato do tipo está aqui.
-- [ ] G6 — Integração e fechamento (6.1, 6.2, 6.4)
+- [x] G6 — Integração e fechamento (6.1, 6.2, 6.4) — três handoffs de contrato
+  (`legacy-data-migration`, `robot-task-table`, `delivery-and-observability`) na convenção
+  `HANDOFF-progress-advances.md`; spec e2e `advance_flow_spec.rb` provando os 5 efeitos + evento único.
+  **change COMPLETA.**
 
 ## RETOMADA (para o próximo agente)
 
