@@ -323,9 +323,10 @@ export interface TaskTemplateWriteInput {
 }
 
 // §2.6/5.3 — a resposta da sincronização conta as tarefas efetivamente
-// inseridas, não o tamanho do conjunto aplicável.
+// inseridas, não o tamanho do conjunto aplicável. Campo `addedCount` (camelCase),
+// como o endpoint responde (task-catalog TC-G6).
 export interface SyncResultDTO {
-  added_count: number
+  addedCount: number
 }
 
 export const taskTemplatesApi = {

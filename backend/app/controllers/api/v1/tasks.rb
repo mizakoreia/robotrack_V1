@@ -57,6 +57,18 @@ module Api
               present result[:data][:record], with: Api::Entities::Task
             end
           end
+
+          # task-catalog 5.4 (§2.6) — sincronização retroativa das tarefas-base.
+          # `TaskTemplatePolicy.sync?` → owner/edit (view 403). Resposta camelCase
+          # `addedCount` (o que o cliente legado espera).
+          route_setting :policy, policy: 'TaskTemplatePolicy', action: :sync
+          post 'sync_task_templates' do
+            result = task_result(
+              ::TaskTemplates::SyncToRobotService.new(context: authorization_context)
+                .call(robot_id: params[:robot_id])
+            )
+            { addedCount: result[:data][:added_count] }
+          end
         end
       end
 

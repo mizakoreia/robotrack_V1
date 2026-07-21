@@ -114,7 +114,7 @@ describe('sincronização retroativa (§2.6)', () => {
   it('invalida a lista de tarefas DO ROBÔ, para a tabela refazer o fetch', async () => {
     const client = newClient()
     const spy = vi.spyOn(client, 'invalidateQueries')
-    api.sync.mockResolvedValue({ added_count: 1 })
+    api.sync.mockResolvedValue({ addedCount: 1 })
 
     const { result } = renderHook(() => useSyncTaskTemplates(), { wrapper: wrapper(client) })
     act(() => {
