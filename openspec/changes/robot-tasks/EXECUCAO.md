@@ -144,9 +144,21 @@ Total: ~30 tarefas em 6 grupos de código.
 5. **Um** commit `G<n>:`. Sem push a cada grupo além do fim; sem `.env`/coverage.
 6. Ao fim de cada grupo: resumir e **pedir autorização antes do próximo**.
 
+## Decisões tomadas na execução (pós-G0)
+
+7. **O "factory" de §1.5 é o helper `create_task(robot)` (tenancy_helpers.rb),
+   não uma FactoryBot factory.** A `factories_spec` linta TODA factory rodando
+   `create(name)` SEM contexto de tenant; uma factory de `Task` (linha de tenant)
+   estouraria na RLS. O repo já não tem factory nenhuma de model de tenant por
+   isso — cria via `make_workspace`/inline. O helper resolve `workspace_id` do
+   robô, que é o intent literal de §1.5. Também: `tasks` ganhou
+   `index_tasks_on_workspace_id` porque a `schema_guard_spec` exige um índice
+   liderado por `workspace_id` em toda tabela de domínio.
+
 ## Progresso
 
-- [ ] G1 — Esquema `tasks` (1.1–1.6)
+- [x] G1 — Esquema `tasks` (1.1–1.6) — backend 712 → 723 (12→11 pending: a
+  contract spec de cascade `tasks→robots` destravou ao existir a tabela)
 - [ ] G2 — `task_assignees` (2.1–2.4)
 - [ ] G3 — API de leitura e CRUD (3.1–3.7)
 - [ ] G4 — Atribuição de responsáveis (4.1–4.5)
