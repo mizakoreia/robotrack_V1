@@ -39,7 +39,11 @@ RSpec.describe 'Varredura negativa de vazamento entre tenants', :tenancy, type: 
     'PATCH /api/v1/cells/:id' => ->(ids) { ["/api/v1/cells/#{ids[:cell]}", { name: 'X', lock_version: 0 }] },
     'DELETE /api/v1/cells/:id' => ->(ids) { ["/api/v1/cells/#{ids[:cell]}", {}] },
     'PATCH /api/v1/robots/:id' => ->(ids) { ["/api/v1/robots/#{ids[:robot]}", { name: 'X', lock_version: 0 }] },
-    'DELETE /api/v1/robots/:id' => ->(ids) { ["/api/v1/robots/#{ids[:robot]}", {}] }
+    'DELETE /api/v1/robots/:id' => ->(ids) { ["/api/v1/robots/#{ids[:robot]}", {}] },
+    # task-catalog G4: o catálogo entra na varredura no mesmo grupo que o cria.
+    'GET /api/v1/task_templates/:id' => ->(ids) { ["/api/v1/task_templates/#{ids[:task_template]}", {}] },
+    'PATCH /api/v1/task_templates/:id' => ->(ids) { ["/api/v1/task_templates/#{ids[:task_template]}", { desc: 'X' }] },
+    'DELETE /api/v1/task_templates/:id' => ->(ids) { ["/api/v1/task_templates/#{ids[:task_template]}", {}] }
   }.freeze
 
   it 'toda rota com id tem gerador OU override — e nenhum órfão' do
@@ -82,7 +86,8 @@ RSpec.describe 'Varredura negativa de vazamento entre tenants', :tenancy, type: 
         projeto = Project.create!(name: 'P de A')
         celula = Cell.create!(project_id: projeto.id, name: 'C de A')
         robo = Robot.create!(cell_id: celula.id, name: 'R de A')
-        { project: projeto.id, cell: celula.id, robot: robo.id }
+        template = TaskTemplate.create!(cat: 'A. Hardware', desc: 'Template de A')
+        { project: projeto.id, cell: celula.id, robot: robo.id, task_template: template.id }
       end
 
       { membership: membership_id, invitation: invitation_id }.merge(hierarquia)
