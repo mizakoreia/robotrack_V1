@@ -96,16 +96,16 @@
 
 ## 5. Ordenação manual (§2.9)
 
-- [ ] 5.1 `Hierarchy::ReorderService` genérica por escopo: `FOR UPDATE` no pai, comparação
+- [x] 5.1 `Hierarchy::ReorderService` genérica por escopo: `FOR UPDATE` no pai, comparação
   de conjunto de ids, renumeração `0..n-1` numa transação. (§2.9 — falha na 5ª de 8 linhas
   deixa as 8 nas posições originais, sem duplicata nem buraco)
-- [ ] 5.2 Endpoints `PATCH /api/v1/{projects,cells,robots}/reorder` recebendo
+- [x] 5.2 Endpoints `PATCH /api/v1/{projects,cells,robots}/reorder` recebendo
   `{scope_id, ordered_ids}`, com policy declarada; `position` removida dos params de
   `PATCH` de item. (§2.9 — `PATCH /cells/<id>` com `{"position": 0}` não move a célula)
-- [ ] 5.3 Detecção de conflito: conjunto divergente → `409` com o conjunto atual, sem
+- [x] 5.3 Detecção de conflito: conjunto divergente → `409` com o conjunto atual, sem
   escrita. (§2.9 — irmão criado por outra pessoa entre o carregamento e o drop produz
   `409`, não uma lista onde o item novo some ou fica órfão em `position = 3` duplicada)
-- [ ] 5.4 **Verificação:** spec de concorrência com duas threads reordenando o mesmo
+- [x] 5.4 **Verificação:** spec de concorrência com duas threads reordenando o mesmo
   projeto e spec provando que reordenar não incrementa `lock_version`. (§2.9 — sem
   deadlock, sem posição duplicada, e um `PATCH` de renome com `lock_version` antigo
   continua válido depois de uma reordenação)

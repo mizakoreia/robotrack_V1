@@ -46,6 +46,20 @@ module Api
           present result[:data][:record], with: Api::Entities::Cell
         end
 
+        # §2.9 — reorder em lote; escopo = projeto. Antes de `patch ':id'`.
+        route_setting :policy, policy: 'CellPolicy', action: :reorder
+        params do
+          requires :scope_id, type: String
+          requires :ordered_ids, type: Array[String]
+        end
+        patch 'reorder' do
+          result = hierarchy_result(
+            ::Hierarchy::ReorderService.new(model: ::Cell)
+              .call(scope_id: params[:scope_id], ordered_ids: params[:ordered_ids])
+          )
+          present result[:data][:records], with: Api::Entities::Cell
+        end
+
         route_setting :policy, policy: 'CellPolicy', action: :update
         params do
           requires :id, type: String
