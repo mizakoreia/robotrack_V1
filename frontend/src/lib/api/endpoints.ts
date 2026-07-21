@@ -165,3 +165,111 @@ export const workspacesApi = {
   updateName: (id: string, name: string) =>
     apiClient.patch<WorkspaceItem>(`/api/v1/workspaces/${id}`, { name }),
 }
+
+// commissioning-hierarchy 6.1 — hierarquia Projeto → Célula → Robô (§1.1).
+//
+// `id` vai no POST (D1): o cliente gera com `newId()` e o servidor honra, o que
+// torna o replay idempotente (201 na primeira vez, 200 nas seguintes) e permite
+// a atualização otimista usar o id definitivo desde o primeiro render.
+// `lock_version` é obrigatório no PATCH (D-H9) — um 409 `stale_object` traz o
+// recurso atual no corpo. `position` NÃO é editável item a item: ordem muda só
+// por `reorder` em lote (§2.9).
+export interface ProgressDTO {
+  weighted: number
+  done: number
+  total: number
+}
+
+export interface RobotDTO {
+  id: string
+  cell_id: string
+  name: string
+  application: string
+  position: number
+  lock_version: number
+  updated_at: string
+  updated_by_person_id: string | null
+  progress: ProgressDTO
+  tasks: unknown[]
+  tasks_count: number
+}
+
+export interface CellDTO {
+  id: string
+  project_id: string
+  name: string
+  position: number
+  lock_version: number
+  updated_at: string
+  updated_by_person_id: string | null
+  progress: ProgressDTO
+  robots: RobotDTO[]
+}
+
+export interface ProjectDTO {
+  id: string
+  name: string
+  position: number
+  lock_version: number
+  updated_at: string
+  updated_by_person_id: string | null
+  progress: ProgressDTO
+  cells: CellDTO[]
+}
+
+export const ROBOT_APPLICATIONS = [
+  'Misto / Geral',
+  'Solda Ponto',
+  'Solda MIG',
+  'Handling',
+  'Sealing',
+  'Outros',
+] as const
+
+export type RobotApplication = (typeof ROBOT_APPLICATIONS)[number]
+
+export const hierarchyApi = {
+  listProjects: () => apiClient.get<ProjectDTO[]>('/api/v1/projects'),
+  createProject: (data: { id: string; name: string }) =>
+    apiClient.post<ProjectDTO>('/api/v1/projects', data),
+  updateProject: (id: string, data: { name?: string; lock_version: number }) =>
+    apiClient.patch<ProjectDTO>(`/api/v1/projects/${id}`, data),
+  deleteProject: (id: string) => apiClient.delete(`/api/v1/projects/${id}`),
+  reorderProjects: (scopeId: string, orderedIds: string[]) =>
+    apiClient.patch<ProjectDTO[]>('/api/v1/projects/reorder', {
+      scope_id: scopeId,
+      ordered_ids: orderedIds,
+    }),
+
+  listCells: (projectId: string) =>
+    apiClient.get<CellDTO[]>(`/api/v1/cells?project_id=${encodeURIComponent(projectId)}`),
+  createCell: (data: { id: string; name: string; project_id: string }) =>
+    apiClient.post<CellDTO>('/api/v1/cells', data),
+  updateCell: (id: string, data: { name?: string; lock_version: number }) =>
+    apiClient.patch<CellDTO>(`/api/v1/cells/${id}`, data),
+  deleteCell: (id: string) => apiClient.delete(`/api/v1/cells/${id}`),
+  reorderCells: (scopeId: string, orderedIds: string[]) =>
+    apiClient.patch<CellDTO[]>('/api/v1/cells/reorder', {
+      scope_id: scopeId,
+      ordered_ids: orderedIds,
+    }),
+
+  listRobots: (cellId: string) =>
+    apiClient.get<RobotDTO[]>(`/api/v1/robots?cell_id=${encodeURIComponent(cellId)}`),
+  createRobot: (data: {
+    id: string
+    name: string
+    cell_id: string
+    application?: RobotApplication
+  }) => apiClient.post<RobotDTO>('/api/v1/robots', data),
+  updateRobot: (
+    id: string,
+    data: { name?: string; application?: RobotApplication; lock_version: number },
+  ) => apiClient.patch<RobotDTO>(`/api/v1/robots/${id}`, data),
+  deleteRobot: (id: string) => apiClient.delete(`/api/v1/robots/${id}`),
+  reorderRobots: (scopeId: string, orderedIds: string[]) =>
+    apiClient.patch<RobotDTO[]>('/api/v1/robots/reorder', {
+      scope_id: scopeId,
+      ordered_ids: orderedIds,
+    }),
+}

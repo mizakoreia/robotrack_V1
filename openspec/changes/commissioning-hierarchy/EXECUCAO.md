@@ -169,7 +169,7 @@ Total: 32 tarefas em 6 grupos. Sequencial.
 - [x] G2 — Models + identidade (2.1–2.4, 3.1–3.3) — backend 498 → 512
 - [x] G3 — CRUD (4.1–4.7) — backend 512 → 578
 - [x] G4 — Reordenação (5.1–5.4) — backend 578 → 598
-- [ ] G5 — Cliente (6.1–6.6)
+- [x] G5 — Cliente (6.1–6.6) — frontend 63 → 75, backend inalterado (598)
 - [ ] G6 — Fechamento (7.1–7.2)
 
 ## RETOMADA
