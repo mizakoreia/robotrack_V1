@@ -1,0 +1,12 @@
+# progress-advances (D14) — strings pt-BR do registro de avanço, centralizadas.
+# A mensagem de 422 do campo `comment` vem daqui, não da mensagem crua do Postgres.
+pt-BR:
+  activerecord:
+    errors:
+      models:
+        task_advance:
+          attributes:
+            comment:
+              required_below_100: "é obrigatório quando o progresso registrado é menor que 100%"
+            by:
+              required_unless_legacy: "só pode ser nulo em uma entrada legada (nota anterior)"

@@ -20,20 +20,26 @@ RSpec.describe 'Fronteira de capacidade de robot-tasks', :tenancy do
     end
   end
 
-  it 'a tabela task_advances NÃO existe (é de progress-advances)' do
-    expect(conn.select_value("SELECT to_regclass('public.task_advances')::text")).to be_nil
-  end
+  # NOTA: `task_advances` e a máquina de estados JÁ EXISTEM — são de
+  # `progress-advances` (change posterior, empilhada). A asserção original
+  # ("task_advances não existe") era a prova de que robot-tasks NÃO a antecipou;
+  # cumprido o seu papel, foi substituída pela garantia que permanece verdadeira
+  # abaixo: os services de robot-tasks não MUTAM progress/status.
 
-  it 'não há service de avanço nesta capacidade' do
+  it 'os 5 services de CRUD de robot-tasks existem; não há service que RECORD avanço aqui' do
+    nomes = Dir.glob(Rails.root.join('app/services/tasks/*.rb')).map { |f| File.basename(f, '.rb') }
+    expect(nomes).to include('list_service', 'create_service', 'update_service', 'delete_service', 'assignees_service')
+    # O registro de avanço vive em `app/services/task_advances/` (progress-advances),
+    # não aqui. `apply_transition_service` (calculadora pura da transição) é
+    # tolerado — ele NÃO persiste (provado abaixo).
     expect(defined?(Tasks::AdvanceService)).to be_nil
-    expect(Dir.glob(Rails.root.join('app/services/tasks/*.rb')).map { |f| File.basename(f, '.rb') })
-      .to match_array(%w[list_service create_service update_service delete_service assignees_service])
   end
 
-  it 'nenhum service de tarefa muta progress ou status (só os lê no snapshot de conflito)' do
+  it 'nenhum service de tarefa muta progress ou status (só os lê / calcula a transição)' do
     fontes = Dir.glob(Rails.root.join('app/services/tasks/*.rb')).map { |f| File.read(f) }.join("\n")
     # Atribuição a progress/status (`self.progress =`, `.status =`, `update(progress:`)
-    # não pode existir. A leitura no snapshot (`progress: task.progress`) é permitida.
+    # não pode existir. Leitura no snapshot e cálculo puro (`Result.new(status:)`)
+    # são permitidos — o `ApplyTransitionService` só devolve o par, não persiste.
     expect(fontes).not_to match(/\.(progress|status)\s*=(?!=)/)
     expect(fontes).not_to match(/update!?\([^)]*\b(progress|status):/)
   end
