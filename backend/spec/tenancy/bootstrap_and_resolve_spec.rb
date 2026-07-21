@@ -55,7 +55,9 @@ RSpec.describe 'Bootstrap e resolução de Person', :tenancy do
       end
       threads.each(&:join)
 
-      expect(errors).to be_empty
+      # A mensagem importa: sem ela, a falha era só "esperava vazio", e a exceção
+      # que explicava a corrida ficava engolida pelo `rescue` acima.
+      expect(errors).to be_empty, errors.map { |e| "#{e.class}: #{e.message}" }.join("\n")
       expect(owner_workspace_count(user)).to eq(1)
     end
 

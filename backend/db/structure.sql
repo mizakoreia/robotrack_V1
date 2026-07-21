@@ -120,6 +120,27 @@ $$;
 
 
 --
+-- Name: purge_expired_invitations(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.purge_expired_invitations() RETURNS integer
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+  removidos integer;
+BEGIN
+  PERFORM set_config('app.invitation_purge', 'on', true);
+  DELETE FROM invitations
+   WHERE used_at IS NULL
+     AND expires_at < now() - interval '30 days';
+  GET DIAGNOSTICS removidos = ROW_COUNT;
+  RETURN removidos;
+END;
+$$;
+
+
+--
 -- Name: workspaces_owner_immutable(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -825,6 +846,27 @@ ALTER TABLE public.memberships ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.people ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: invitations purge_expired; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY purge_expired ON public.invitations FOR DELETE USING (((current_setting('app.invitation_purge'::text, true) = 'on'::text) AND (used_at IS NULL) AND (expires_at < (now() - '30 days'::interval))));
+
+
+--
+-- Name: invitations purge_expired_delete; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY purge_expired_delete ON public.invitations FOR DELETE USING (((current_setting('app.invitation_purge'::text, true) = 'on'::text) AND (used_at IS NULL) AND (expires_at < (now() - '30 days'::interval))));
+
+
+--
+-- Name: invitations purge_expired_select; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY purge_expired_select ON public.invitations FOR SELECT USING (((current_setting('app.invitation_purge'::text, true) = 'on'::text) AND (used_at IS NULL) AND (expires_at < (now() - '30 days'::interval))));
+
+
+--
 -- Name: invitations tenant_isolation; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -874,6 +916,7 @@ ALTER TABLE public.workspaces ENABLE ROW LEVEL SECURITY;
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260721120005'),
 ('20260721120004'),
 ('20260721120003'),
 ('20260721120002'),

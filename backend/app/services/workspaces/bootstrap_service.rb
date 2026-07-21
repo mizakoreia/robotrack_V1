@@ -53,6 +53,16 @@ module Workspaces
 
     # `Person` do dono, idempotente. Abre o contexto do workspace do vencedor (que
     # pode diferir do id que geramos, se perdemos a corrida).
+    #
+    # `ON CONFLICT DO NOTHING` SEM alvo, de propósito: `people` tem TRÊS índices
+    # únicos por workspace (e-mail, user_id e nome normalizado), e um alvo
+    # nomeado cobre um só. A corrida real de dois logins simultâneos colide no
+    # índice de E-MAIL antes de chegar ao de `user_id` — com o alvo nomeado, o
+    # perdedor levantava `RecordNotUnique` e o bootstrap falhava. Sem alvo,
+    # qualquer colisão significa a mesma coisa aqui: a `Person` do dono já
+    # existe, não há o que fazer.
+    # (Correção de bug pré-existente da Onda 1, exposto pelos specs de
+    # concorrência de workspace-invitations.)
     def ensure_owner_person(workspace)
       Tenant.with(workspace_id: workspace.id, user_id: user.id) do
         conn = ActiveRecord::Base.connection
@@ -60,7 +70,7 @@ module Workspaces
           'INSERT INTO people (id, workspace_id, name, email, user_id) ' \
           "VALUES (gen_random_uuid(), #{q(workspace.id)}, #{q(person_name)}, " \
           "#{user.email ? q(user.email) : 'NULL'}, #{q(user.id)}) " \
-          'ON CONFLICT (workspace_id, user_id) WHERE user_id IS NOT NULL DO NOTHING'
+          'ON CONFLICT DO NOTHING'
         )
       end
     end

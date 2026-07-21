@@ -1,6 +1,6 @@
 # EXECUCAO — workspace-invitations
 
-Mapa de execução das 29 tarefas de `tasks.md`, quebradas em **grupos coerentes**,
+Mapa de execução das 33 tarefas de `tasks.md`, quebradas em **grupos coerentes**,
 um grupo por invocação. Cada grupo é aplicado, verificado e commitado
 isoladamente antes do seguinte começar. Mesmo método de
 `seal-template-baseline/EXECUCAO.md` (Onda 0), `workspace-tenancy/EXECUCAO.md`
@@ -69,7 +69,7 @@ uma base sã e entrega outra base sã. G1→G2→…→G6, sem paralelismo.
 | **G5** | Frontend: painel de equipe, diálogo de convite, fluxo do convidado, revogação | 4.5, 4.6, 5.1–5.3, 5.5 | front | G4 |
 | **G6** | Operação e endurecimento (rate limit, expurgo, APP_URL, i18n, suíte de invariantes) | 6.1–6.5 | ambos | G5 |
 
-Total: 29 tarefas em 6 grupos de trabalho.
+Total: 33 tarefas em 6 grupos de trabalho.
 
 ## Decisões de desenho já fixadas pela change (não reabrir)
 
@@ -272,12 +272,92 @@ camada desta execução, registrada aqui.
 
 ## Progresso
 
-- [ ] G1 — Esquema do convite (1.1–1.5)
-- [ ] G2 — Criação de convite (2.1–2.5)
-- [ ] G3 — Consumo atômico (3.1–3.6)
-- [ ] G4 — Painel de equipe no servidor + revogação (4.1–4.4, 4.7, 5.4)
-- [ ] G5 — Frontend: painel, diálogo, fluxo do convidado, revogação (4.5, 4.6, 5.1–5.3, 5.5)
-- [ ] G6 — Operação e endurecimento (6.1–6.5)
+- [x] G1 — Esquema do convite (1.1–1.5) — backend 181 → 203
+- [x] G2 — Criação de convite (2.1–2.5) — backend 203 → 224
+- [x] G3 — Consumo atômico (3.1–3.6) — backend 224 → 249
+- [x] G4 — Painel de equipe no servidor + revogação (4.1–4.4, 4.7, 5.4) — backend 249 → 289
+- [x] G5 — Frontend: painel, diálogo, fluxo do convidado, revogação (4.5, 4.6, 5.1–5.3, 5.5) — backend 291, front 32 → 60
+- [x] G6 — Operação e endurecimento (6.1–6.5) — backend 318, front 63
+
+## Ajustes que apareceram na execução (não previstos no plano)
+
+- **G1 — `EXTRACT`, não texto.** O intervalo do Postgres volta como `P7D`
+  (ISO 8601) via `pg`, não `"7 days"`. A asserção da janela de expiração usa
+  `EXTRACT(day FROM …)`.
+- **G3 — uma entidade Grape por arquivo.** `Api::Entities::InvitationPreview`
+  nasceu junto de `Invitation` no mesmo arquivo e o Zeitwerk não a encontrou
+  (`uninitialized constant`). Separada em `invitation_preview.rb`.
+- **G3 — `Membership` não tinha `belongs_to :invitation`.** A coluna existia
+  desde a Onda 1, a associação não; `Membership.create!(invitation:)` estourava
+  `UnknownAttributeError`.
+- **G3 — 50 threads não cabem num pool de 10.** O spec de carga original
+  esgotava o pool e falhava por `ConnectionTimeoutError` — provando algo sobre o
+  Rails, não sobre o `FOR UPDATE`. Reescrito como fila servida por `pool - 2`
+  trabalhadores; a prova FINA de que tokens distintos não se bloqueiam é o
+  exemplo que segura uma linha travada enquanto outra é consumida.
+- **G5 — `type="email"` bloqueia o submit antes do nosso código.** A validação
+  nativa do navegador (e do jsdom) impede o `submit` e mostra um balão próprio,
+  fora do `aria-live`. O campo virou `type="text" inputMode="email"`: a validação
+  é nossa, a mensagem é nossa.
+- **G6 — o formatter do logger precisa de `push_tags`.** Trocar o formatter por
+  um lambda quebrou `ActiveSupport::TaggedLogging` em toda request. O scrubber
+  virou um `SimpleDelegator`, que delega `tagged`/`push_tags`/`pop_tags`.
+- **G6 — um `DELETE` com `WHERE` exige política de SELECT.** A política de
+  expurgo criada só `FOR DELETE` apagava zero linhas em silêncio: no Postgres, um
+  `DELETE` cuja cláusula referencia colunas também passa pelas políticas de
+  SELECT. Viraram duas políticas (`purge_expired_select` e `purge_expired_delete`)
+  com o mesmo predicado.
+- **G6 — bug pré-existente da Onda 1 corrigido.** Os specs de concorrência desta
+  change mudaram o tempo da suíte e passaram a expor, de forma intermitente, uma
+  corrida real em `Workspaces::BootstrapService`: dois logins simultâneos
+  colidiam no índice único de **e-mail** de `people`, enquanto o
+  `ON CONFLICT (workspace_id, user_id)` só cobria o índice de usuário — o
+  perdedor levantava `RecordNotUnique`. Trocado por `ON CONFLICT DO NOTHING` sem
+  alvo (três índices únicos, um alvo nomeado cobre um só). A asserção do spec
+  daquela onda passou a imprimir a exceção capturada, que antes ficava engolida
+  pelo `rescue`.
+
+## CONCLUSÃO (21/07/2026)
+
+**Change 100% aplicada: 33/33 tarefas, 6 grupos, 7 commits locais (G0..G6).**
+
+| Suíte | Antes (baseline) | Depois |
+|---|---|---|
+| Backend (`bundle exec rspec`, como `robotrack_app`) | 181 / 0 | **318 / 0** |
+| Frontend (`npx vitest run`) | 32 / 0 | **63 / 0** |
+| Frontend (`npx tsc --noEmit`) | limpo | **limpo** |
+
+**O objetivo central foi cumprido:** `POST /api/v1/invitations/:token/accept`
+existe, e o contrato bate com o cliente que já o chamava desde a Onda 2 (sem
+corpo, sem `X-Workspace-Id`, `410` para expirado). O aceite é atômico de verdade
+— há spec de concorrência real, com threads e conexões distintas, provando que
+duas requisições simultâneas com o mesmo token produzem **uma** membership.
+
+**Garantias das ondas anteriores, conferidas ao final:** runtime conecta como
+`robotrack_app` (sem SUPERUSER/BYPASSRLS); RLS **forçada** nas tabelas novas
+(`invitations`, `membership_revocations`), com a guarda de esquema cobrindo as
+duas; specs de isolamento verdes; varredura de rotas de tenant **não-vácua** e
+maior (os três endpoints de `memberships` e o `DELETE` de convite entraram nela);
+varredura de autenticação atualizada (a allowlist pública cresceu de 5 para 6
+entradas, e o spec confere o conteúdo exato).
+
+**Pendências para OUTRAS changes (não desta):**
+- `authorization-policies` (D3): absorver `app/policies/` e estender o
+  `policy_route_sweep_spec` para a superfície inteira.
+- `audit-log` (D12): absorver `membership_revocations` em `audit_logs`.
+- `realtime-collaboration` (D6): implementar `WorkspaceChannel`; o
+  `Memberships::RemoveService` já publica o evento e só precisa que o canal
+  exista (`broadcast_to_workspace`). O fallback por 403 já funciona sozinho.
+- `delivery-and-observability`: carregar `config/sidekiq_cron.yml` em produção e
+  definir `APP_URL` (sem ela o boot de produção falha, de propósito).
+- `workspace-settings` (§3.9): montar `features/team/TeamPanel` dentro da tela de
+  Configurações; hoje ele vive na rota própria `/configuracoes/equipe`.
+- `quality-and-accessibility`: harness de E2E de navegador — o fluxo completo
+  está coberto por dois testes que se encontram no meio (request spec de ponta a
+  ponta + teste da rotina de revogação no cliente).
+
+**Não arquivada** (`openspec archive`) — as ondas anteriores também não foram;
+mantido o padrão. **Sem push** (sem credencial configurada).
 
 ## RETOMADA
 

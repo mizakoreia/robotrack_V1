@@ -1,0 +1,41 @@
+# workspace-invitations 6.4 / D14 — mensagens pt-BR de convite, equipe e
+# revogação.
+#
+# A API responde CÓDIGOS estáveis (`invitation_expired`, `already_member`, …),
+# não frases: é o cliente que decide o texto, e o código é o contrato — mudar a
+# frase não pode quebrar ninguém. Este arquivo é o par do módulo único do
+# frontend (`src/lib/i18n/invitations.ts`): cada código tem aqui a redação
+# oficial, para e-mail, log operacional, suporte e para qualquer superfície do
+# servidor que venha a renderizar texto (relatórios, futuros mailers).
+#
+# Nenhum literal dessas mensagens deve existir espalhado no código — é o motivo
+# de o CI verificar por grep.
+pt-BR:
+  invitations:
+    errors:
+      invitation_not_found: "Convite não encontrado. Confira o link ou peça um novo."
+      invitation_already_used: "Este convite já foi utilizado."
+      invitation_expired: "Este convite expirou. Peça um novo ao administrador do workspace."
+      invitation_workspace_mismatch: "Este convite não pertence ao workspace informado."
+      invitation_email_mismatch: "Este convite é para outro e-mail. Entre com a conta convidada para aceitá-lo."
+      invitation_already_pending: "Já existe um convite pendente para este e-mail. Revogue o anterior para criar outro."
+      unexpected_parameter: "Parâmetro não permitido nesta requisição."
+      invalid_role: "Papel inválido. Um convite só concede visualizar ou editar."
+      invalid_email: "Informe um e-mail válido com até 254 caracteres."
+      already_member: "Esta pessoa já faz parte do workspace."
+      person_email_conflict: "O e-mail do convite já está vinculado a outra conta neste workspace."
+      forbidden: "Só o dono do workspace pode convidar, alterar papéis ou remover membros."
+    memberships:
+      errors:
+        membership_not_found: "Membro não encontrado neste workspace."
+        owner_is_immutable: "O dono do workspace não muda de papel."
+        cannot_remove_owner: "O dono não pode ser removido: um workspace sem dono é irrecuperável."
+        workspace_access_revoked: "Seu acesso a este workspace foi removido pelo dono."
+    roles:
+      view: "Pode visualizar"
+      edit: "Pode editar"
+      owner: "Dono"
+    status:
+      pending: "Pendente"
+      expired: "Expirado"
+      used: "Utilizado"

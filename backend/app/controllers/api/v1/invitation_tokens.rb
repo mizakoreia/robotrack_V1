@@ -18,6 +18,15 @@ module Api
       format :json
       helpers Api::V1::ControllerHelpers
 
+      # `Referrer-Policy: no-referrer` nas duas rotas por token (6.3): o token
+      # está na URL, e sem isto qualquer recurso externo carregado a partir da
+      # resposta levaria a URL inteira — com a credencial — no cabeçalho
+      # `Referer`. O frontend faz o par disso trocando a URL por uma sem o token
+      # (`history.replaceState`) assim que o guarda em sessionStorage.
+      before do
+        header 'Referrer-Policy', 'no-referrer'
+      end
+
       resource :invitations do
         # GET /api/v1/invitations/:token — público (pré-login).
         params do

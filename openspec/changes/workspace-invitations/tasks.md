@@ -129,23 +129,23 @@
 
 ## 6. Operação e endurecimento
 
-- [ ] 6.1 `Rack::Attack` com store Redis: 10/10min por IP e por usuário no aceite,
+- [x] 6.1 `Rack::Attack` com store Redis: 10/10min por IP e por usuário no aceite,
   20/10min por IP na pré-visualização, `429` com `Retry-After`, e log estruturado
   de bloqueio com SHA-256 do token truncado em 12 chars (§3.10 — a 11ª tentativa
   retorna `429` sem tocar o banco, verificado por contagem de queries; e
   `grep 'rt_inv_' log/` após 20 bloqueios não retorna nada)
-- [ ] 6.2 `Invitations::PurgeExpiredJob` agendado diariamente, apagando só
+- [x] 6.2 `Invitations::PurgeExpiredJob` agendado diariamente, apagando só
   `used_at IS NULL AND expires_at < now() - 30 days` (§3.10 — convite expirado há
   3 dias sobrevive e produz `410`; convite consumido há 2 anos sobrevive porque
   `ON DELETE RESTRICT` o protege)
-- [ ] 6.3 Declarar a `APP_URL` obrigatória e o agendamento do Sidekiq em produção
+- [x] 6.3 Declarar a `APP_URL` obrigatória e o agendamento do Sidekiq em produção
   junto a `delivery-and-observability`, com header `Referrer-Policy: no-referrer`
   na rota `/convite/:token` (§3.10 — sem `APP_URL`, o boot falha explicitamente em
   vez de gerar links com `localhost` em produção)
-- [ ] 6.4 Strings pt-BR de convite, erro e revogação em `config/locales/pt-BR.*.yml`
+- [x] 6.4 Strings pt-BR de convite, erro e revogação em `config/locales/pt-BR.*.yml`
   e no módulo único do frontend (D14 — nenhum literal de mensagem de convite fora
   dos dois arquivos, verificado por grep no CI)
-- [ ] 6.5 Suíte executável das invariantes 6 e 7 contribuída à suíte de
+- [x] 6.5 Suíte executável das invariantes 6 e 7 contribuída à suíte de
   `authorization-policies`, com os seis cenários de negação obrigatórios
   (verificação do grupo 6 — e-mail divergente, token usado, expirado, papel
   adulterado, workspace alheio e `edit` convidando falham cada um com seu código

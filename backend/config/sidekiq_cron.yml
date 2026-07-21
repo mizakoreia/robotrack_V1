@@ -1,0 +1,25 @@
+# Agendamento de jobs periódicos (workspace-invitations 6.3).
+#
+# Este arquivo DECLARA o que precisa rodar; quem o carrega em produção
+# (sidekiq-cron, sidekiq-scheduler ou o agendador da plataforma) é
+# `delivery-and-observability`. Declarar aqui evita o modo de falha silencioso:
+# um job que existe no código, ninguém agenda, e a tabela cresce por meses sem
+# que nada falhe.
+
+purge_expired_invitations:
+  cron: '0 4 * * *' # todo dia, 04:00 UTC
+  class: 'Invitations::PurgeExpiredJob'
+  queue: default
+  description: >
+    Apaga convites não usados expirados há mais de 30 dias (D-INV-9). Convites
+    consumidos são preservados: memberships.invitation_id os referencia com
+    ON DELETE RESTRICT e eles são a prova auditável do acesso concedido.
+
+purge_jwt_denylist:
+  cron: '30 4 * * *' # todo dia, 04:30 UTC
+  class: 'Auth::PurgeJwtDenylistJob'
+  queue: default
+  description: >
+    Apaga do denylist as linhas cujo `exp` já passou (identity-and-auth 2.5).
+    Um token expirado já é recusado pela verificação de `exp`; mantê-lo só faz a
+    tabela crescer e o lookup por `jti` degradar a cada request.

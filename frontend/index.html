@@ -4,6 +4,12 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- workspace-invitations 6.3: o token do convite chega na URL
+         (`/convite/<token>`). Sem isto, qualquer requisição a outra origem feita
+         a partir dessa página levaria a URL inteira — com a credencial — no
+         cabeçalho `Referer`. O par disto é o `history.replaceState` da
+         InviteRoute, que tira o token da barra assim que ele é guardado. -->
+    <meta name="referrer" content="no-referrer" />
     <title>Robotrack</title>
   </head>
   <body>
