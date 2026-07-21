@@ -28,8 +28,7 @@ module Invitations
     end
 
     def call
-      policy = InvitationPolicy.new(role: @current_role, user: @current_user, workspace_id: @workspace_id)
-      return error_response('forbidden', 403) unless policy.create?
+      return error_response('forbidden', 403) unless InvitationPolicy.create?(::Authorization::RoleContext.new(@current_role))
 
       # Invariante 7: o convite é do workspace do criador, ponto. Pedir outro é
       # negado com o mesmo `forbidden` de quem não é dono — nada sobre a

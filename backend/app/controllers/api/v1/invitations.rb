@@ -21,10 +21,11 @@ module Api
         # GET /api/v1/invitations — convites do workspace corrente (só o dono).
         route_setting :policy, 'InvitationPolicy#index?'
         get do
-          policy = InvitationPolicy.new(role: env['api.current_role'],
-                                        user: env['api.current_user'],
-                                        workspace_id: env['api.current_workspace_id'])
-          error!({ error: 'forbidden' }, 403) unless policy.index?
+          context = ::Authorization::Context.new(
+            user: env['api.current_user'],
+            workspace: ::Workspace.find_by(id: env['api.current_workspace_id'])
+          )
+          error!({ error: 'forbidden' }, 403) unless InvitationPolicy.index?(context)
 
           present ::Invitation.order(created_at: :desc).to_a, with: Api::Entities::Invitation
         end

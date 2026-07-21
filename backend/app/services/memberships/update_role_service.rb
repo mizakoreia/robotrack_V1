@@ -29,8 +29,7 @@ module Memberships
     end
 
     def call
-      policy = MembershipPolicy.new(role: @current_role, user: @current_user, workspace_id: @workspace_id)
-      return error_response('forbidden', 403) unless policy.update?
+      return error_response('forbidden', 403) unless MembershipPolicy.update?(::Authorization::RoleContext.new(@current_role))
 
       return error_response('invalid_role', 422) unless ALLOWED_ROLES.include?(@role)
 

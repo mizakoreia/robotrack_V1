@@ -22,8 +22,7 @@ module Memberships
     end
 
     def call
-      policy = MembershipPolicy.new(role: @current_role, user: @current_user, workspace_id: @workspace_id)
-      return error_response('forbidden', 403) unless policy.index?
+      return error_response('forbidden', 403) unless MembershipPolicy.index?(::Authorization::RoleContext.new(@current_role))
 
       success_response({ members: [owner_row, *member_rows].compact }, 200)
     end
