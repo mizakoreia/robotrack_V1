@@ -185,7 +185,47 @@ Total: ~30 tarefas em 6 grupos de código.
 - [x] G3 — API de leitura e CRUD (3.1–3.7) — backend 735 → 767
 - [x] G4 — Atribuição de responsáveis (4.1–4.5) — backend 767 → 780, frontend 80 → 84
 - [x] G5 — Criação de robôs em lote (5.1–5.7) — backend 780 → 796, frontend 84 → 88
-- [ ] G6 — Carga, fronteira e handoff (6.1–6.3)
+- [x] G6 — Carga, fronteira e handoff (6.1–6.3) — backend 796 → 801
+
+## CONCLUSÃO
+
+Change **robot-tasks ENTREGUE — 6 de 6 grupos**. É o caminho crítico do porte:
+a Tarefa (a unidade atômica de tudo que o produto mede/exibe/relata) agora existe
+como esquema relacional, API e criação em lote.
+
+O que ficou de pé:
+
+- **`tasks`** — uuid do cliente, `status` como enum Postgres, `progress` com
+  CHECK 0–100, FK composta `(robot_id, workspace_id)` com CASCADE, RLS forçada, e
+  o índice único `(robot_id, lower(btrim(desc)))` que o sync de task-catalog
+  exige.
+- **`task_assignees`** — responsável por `person_id` (nunca nome), FKs compostas
+  que impedem cruzar workspaces, único `(task_id, person_id)`, RESTRICT de
+  `people`, RLS. Sem `resp`, sem `"Não Atribuído"`.
+- **CRUD de tarefa** — `GET/POST/PATCH/DELETE` sob `TaskPolicy`, 404 uniforme,
+  409 por id e por versão, e o PATCH que rejeita `progress`/`status` inteiro.
+- **Atribuição** — PUT idempotente do conjunto com diff `{added, removed}` e o
+  evento `task.assignees_changed`.
+- **Criação em lote** — normalizer (clamp/dedup), transação única com `insert_all`
+  e materialização das tarefas-base filtradas pela Aplicação, assistente de 2
+  passos no cliente.
+- **Transversal** — benchmark da leva máxima (1550 linhas em ~185 ms), a fronteira
+  provando que a máquina de estados §2.2 NÃO foi antecipada, e o handoff a
+  `legacy-data-migration`.
+
+Suítes ao fim: **backend 796→801 / 0 falhas / 10 pending**, **frontend 88 / 0**,
+`tsc` limpo. As varreduras (route-sweep, cross-tenant, tenant, swagger) cresceram
+a cada grupo que criou rota. O gerador cross-tenant ganhou suporte a id
+não-terminal.
+
+**Destrava agora:** o **TC-G6 de task-catalog** (sincronização retroativa §2.6)
+pode enfim rodar — a tabela `tasks` e o índice `(robot_id, lower(btrim(desc)))`
+existem. Depois, `progress-advances` (a máquina de estados que esta change
+deliberadamente deixou de fora) está no caminho.
+
+Decisões de execução tomadas fora do design (todas registradas acima): o índice
+de dedup vindo de task-catalog (1), o "factory" como helper (7), o modal contra
+`/people` inexistente (8) e a divergência D-RT-4 do índice de nome (9).
 
 ## RETOMADA
 

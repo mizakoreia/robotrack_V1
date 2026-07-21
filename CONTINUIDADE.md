@@ -8,27 +8,35 @@ está em [PROMPT DE RETOMADA](#prompt-de-retomada), no fim.
 **As branches são empilhadas, não independentes:**
 
 ```
-main (48497fd)                     ← ondas 1–4, sem nada desta sessão
-└── authorization-policies (6b89283)   change COMPLETA
+main (48497fd)                       ← ondas 1–4, sem nada desta sessão
+└── authorization-policies (6b89283)     change COMPLETA
     └── commissioning-hierarchy (b75b072)  change COMPLETA
-        └── task-catalog (0c65ccb)         EM ANDAMENTO — 2 de 6 grupos
+        └── task-catalog (3d261ac)         5 de 6 grupos (falta só TC-G6, o sync)
+            └── robot-tasks (e78d05b)      change COMPLETA — 6 de 6 grupos
 ```
 
-**`task-catalog` contém todo o trabalho.** É nela que se continua. Os PRs para a
-`main` podem ser abertos depois, na ordem do empilhamento.
+**`robot-tasks` contém todo o trabalho** (empilhada sobre `task-catalog`). É nela
+que se continua. Push é por branch canônica da change (`git push origin
+HEAD:robot-tasks`). Os PRs para a `main` podem ser abertos depois, na ordem do
+empilhamento.
 
-## Suítes (medidas na branch `task-catalog`)
+## Suítes (medidas na branch `robot-tasks`)
 
 | Suíte | Resultado |
 |---|---|
-| Backend `bundle exec rspec` (como `robotrack_app`) | **712 / 0 falhas / 12 pending** |
-| Frontend `vitest run` | **80 / 0** |
+| Backend `bundle exec rspec` (como `robotrack_app`) | **801 / 0 falhas / 10 pending** |
+| Frontend `vitest run` | **88 / 0** |
 | Frontend `tsc --noEmit` | limpo |
 
-Todos os 12 pending nomeiam a capacidade que os desbloqueia — nenhum é dívida
-anônima.
+Todos os 10 pending nomeiam a capacidade que os desbloqueia — nenhum é dívida
+anônima. (Dois pendings de cascade — `tasks→robots` e `task_assignees→tasks` —
+destravaram e viraram verdes ao longo de `robot-tasks`.)
 
-## Changes concluídas (7 de 24)
+> Nota de ambiente: `spec/requests/auth/rate_limit_spec.rb` é levemente FLAKY na
+> suíte completa (estado do Rack::Attack sensível à ordem aleatória do RSpec);
+> passa isolado. Não é regressão desta sessão. Rodar com `--seed` fixo estabiliza.
+
+## Changes concluídas (8 de 24; task-catalog em 5/6)
 
 `seal-template-baseline`, `workspace-tenancy`, `identity-and-auth`,
 `workspace-invitations` (anteriores) e:
@@ -44,63 +52,61 @@ anônima.
   `progress_cache` desde a origem, CRUD idempotente (201/200/409/404), reordenação em lote
   com advisory lock, e o cliente (hooks React Query, `newId()`, handler de drag & drop).
   Sem telas — `hierarchy-screens` é outra change.
+- **`robot-tasks`** (G0..G6, COMPLETA) — a Tarefa como esquema relacional (`tasks` com enum
+  `task_status`, CHECK 0–100, FK composta com CASCADE, RLS, índice único
+  `(robot_id, lower(btrim(desc)))`), `task_assignees` por `person_id` (FKs compostas, sem
+  `resp`, sem `"Não Atribuído"`), CRUD de tarefa (409 por id/versão, PATCH rejeita
+  `progress`/`status`), atribuição por PUT de conjunto com diff + evento, e criação de robôs
+  em lote §2.5 (normalizer clamp/dedup, transação única com `insert_all`, materialização das
+  tarefas-base filtradas pela Aplicação, assistente de 2 passos). Benchmark da leva máxima
+  (1550 linhas ~185 ms), fronteira provando que `progress-advances` NÃO foi antecipado, e
+  handoff a `legacy-data-migration`. Decisões de execução 1/7/8/9 no EXECUCAO.
+- **`task-catalog`** (G0..G5 de 6) — catálogo `task_templates` (CHECK de domínio, unicidade
+  por `desc` normalizada, RLS), `ApplicabilityFilter` Ruby+SQL, seed dos 31 padrões na
+  transação do bootstrap, CRUD + `GET /meta/robot_applications`, e o cliente TS. **Falta só
+  o TC-G6** (sync retroativo §2.6), que estava bloqueado pela tabela `tasks` — agora
+  destravado por `robot-tasks`.
 
 Cada change tem seu `openspec/changes/<nome>/EXECUCAO.md` com o mapa de grupos, as
 decisões tomadas na execução, as armadilhas encontradas e a CONCLUSÃO com o relatório
 final. **Leia o EXECUCAO.md antes de tocar no código de uma change.**
 
-## Onde parou: `task-catalog`
+## Onde parou: `robot-tasks` completa; `TC-G6` destravado
 
-Feito (G0..G2): esquema `task_templates` (CHECK de domínio em `app_filters` aceitando os
-6 valores da §1.2 mais `'Todas'`, unicidade por `lower(btrim(desc))`, RLS forçada), model
-com a normalização D-TC-2, e `TaskTemplates::ApplicabilityFilter` em Ruby **e** SQL com
-tabela de casos 6×4 provando que as duas versões não divergem.
+`robot-tasks` fechou (6/6 grupos) — ver `openspec/changes/robot-tasks/EXECUCAO.md`
+(CONCLUSÃO + decisões 1/7/8/9). Com isso a tabela `tasks` e o índice
+`(robot_id, lower(btrim(desc)))` existem.
 
-Feito (G3 — tarefas 3.1–3.6): `TaskTemplates::DefaultCatalog` com os **31 itens** da §1.3
-(9 categorias `A. Hardware`…`I. Aceitação`, todos `weight: 1`, **2** com filtro —
-`Calibração de Cola` → `["Sealing"]`, `Check sinais de Gripper` → `["Handling","Solda
-Ponto"]`, grafias do legado preservadas); spec de trava (31/9/2 + conjunto literal de
-`desc`); `Workspaces::SeedDefaultTaskTemplatesService` com `insert_all!` único; seed
-chamado DENTRO da transação do `BootstrapService` (guardado por `inserted == 1`, com
-cenário de falha injetada provando rollback); scope `TaskTemplate.ordered` com `COLLATE
-"C"` e spec de ordenação sob `C` **e** `pt-BR-x-icu`; spec de isolamento por workspace.
-O seed deixou de passar pelo evento `workspace.bootstrapped` (não satisfaz a atomicidade
-da §1.3) — ver EXECUCAO decisão 6.
+**Próximo passo — TC-G6** (task-catalog, tarefas 5.1–5.7, sincronização retroativa §2.6),
+agora **DESTRAVADO**. Entrega, na branch `robot-tasks` (que já contém `task-catalog`
+empilhado):
 
-Feito (G4 — tarefas 4.1–4.6): `TaskTemplatePolicy` verificada + predicado `sync?`
-(unit-testado; endpoint só no G6); entity `Api::Entities::TaskTemplate` (`appFilters`
-camelCase, `weight` inteiro quando integral); CRUD `GET/POST/PATCH/DELETE
-/api/v1/task_templates` (coerce que tolera `apps`, `appFilters` vence com warning
-estruturado; 404 byte-idêntico cross-tenant; 409 por id do cliente); `GET
-/api/v1/meta/robot_applications` servindo `Robot::APPLICATIONS` (`access: :authenticated`,
-isento de tenant — ver EXECUCAO decisão 7); route-sweep, cross-tenant e superfície do
-swagger cresceram no mesmo grupo.
+- `TaskTemplates::SyncToRobotService.call(robot:, actor:)` — `SELECT ... FOR UPDATE` na
+  linha do robô, seleção dos templates aplicáveis por `ApplicabilityFilter.scope_for`, diff
+  por `lower(btrim(desc))` contra as tarefas do robô, `insert_all` **só das faltantes** com
+  `progress: 0`, `status: "Pendente"`, sem responsável, `position` continuando a maior atual
+  (NUNCA upsert — zeraria progresso). Retorno `{ added_count: N }` (linhas inseridas, não o
+  tamanho do conjunto aplicável).
+- Endpoint `POST /api/v1/robots/:id/sync_task_templates` com `TaskTemplatePolicy.sync?` (já
+  existe) — entra no route-sweep e no gerador cross-tenant no mesmo grupo.
+- Specs: aplicabilidade concreta (Solda MIG não recebe `Calibração de Cola`; Sealing recebe;
+  Handling recebe `Check sinais de Gripper`), não-sobrescrita (tarefa em progresso 100 com
+  responsável permanece; `"tcp check "` não duplica `"TCP Check"`), e concorrência (duas
+  syncs simultâneas do mesmo robô partindo de zero terminam com exatamente as N tarefas, a
+  2ª informa `0`) — o índice único `(robot_id, lower(btrim(desc)))` é o backstop.
+- O cliente já está pronto (task-catalog G5): `hierarchyApi.syncRobotTaskTemplates` +
+  `useSyncTaskTemplates`. Fechar o e2e cross-sistema que o TC-G5 deixou no nível do cliente.
 
-Feito (G5 — tarefas 6.1–6.4): cliente TS — grupo `taskTemplatesApi` (list/create/update/
-destroy) + `hierarchyApi.syncRobotTaskTemplates` + `metaApi.robotApplications` em
-`endpoints.ts`, tipados com `appFilters` (nunca `apps`); hooks em
-`src/features/catalog/useTaskTemplates.ts` (`useTaskTemplates`, create/update/delete,
-`useSyncTaskTemplates`, `useRobotApplications`) com chaves em `catalogKeys.ts`
-(`['ws', wsId, 'taskTemplates']`, `['meta','robotApplications']` staleTime Infinity, sync
-invalidando `['ws', wsId, 'robot', robotId, 'tasks']`); o literal `ROBOT_APPLICATIONS` foi
-REMOVIDO e `RobotApplication` virou alias de `string` (6.3, grep zero fora de testes); teste
-de integração no nível do cliente (o e2e cross-sistema fecha no G6 — ver EXECUCAO decisão 8).
+Ao fim, task-catalog vira 6/6 e a CONCLUSÃO do EXECUCAO dela é atualizada.
 
-**Próximo passo — TC-G6** (tarefas 5.1–5.7, sincronização retroativa §2.6): **BLOQUEADO
-até `robot-tasks` criar a tabela `tasks`** e o índice único `(robot_id, lower(btrim(desc)))`.
-Entrega o `TaskTemplates::SyncToRobotService` (lock na linha do robô, seleção por
-`ApplicabilityFilter`, diff por `lower(btrim(desc))`, `insert_all` das faltantes, retorno
-`{ added_count }`), o endpoint `POST /api/v1/robots/:id/sync_task_templates` com
-`TaskTemplatePolicy.sync?` (já existe), e as specs de aplicabilidade/não-sobrescrita/
-concorrência. Se ao chegar nele a tabela `tasks` não existir, a change fecha honestamente
-como "5 de 6 grupos" (EXECUCAO decisão 5) — o próximo trabalho passa a ser `robot-tasks`.
+## Depois de `TC-G6`
 
-## Depois de `task-catalog`
-
-`robot-tasks` (tarefas, `task_assignees` por `people.id`, criação de robôs em lote §2.5) —
-caminho crítico, remove 4 pendings. Depois `progress-advances` e `progress-rollup`. Para
-ter telas de verdade: `design-system` + `app-shell-navigation` + `hierarchy-screens` (hoje
-a UI é a landing do template + autenticação + painel de equipe).
+`progress-advances` (a máquina de estados progresso↔status §2.2, o modal de avanço §2.4, a
+auto-atribuição §2.3 e `task_advances` — que `robot-tasks` deliberadamente deixou de fora) e
+`progress-rollup` (o `progress_cache` consolidado). Para ter telas de verdade:
+`design-system` + `app-shell-navigation` + `hierarchy-screens` + `robot-task-table` (hoje a
+UI é a landing do template + autenticação + painel de equipe + os hooks/lógica sem tela
+final).
 
 ## Método (não abrir mão)
 
@@ -159,10 +165,14 @@ O frontend usa **pnpm** (`pnpm-lock.yaml`); o `package-lock.json` está dessincr
 >
 > Leia `CONTINUIDADE.md` na raiz do repositório: ele tem o estado atual, o que já foi
 > entregue, onde parei e o método de trabalho. Depois leia
-> `openspec/changes/task-catalog/EXECUCAO.md`, que é a change em andamento.
+> `openspec/changes/robot-tasks/EXECUCAO.md` (change COMPLETA) e
+> `openspec/changes/task-catalog/EXECUCAO.md` (falta só o TC-G6, o sync retroativo).
 >
-> Trabalhe na branch `task-catalog` (as branches são empilhadas; ela contém tudo).
-> O próximo passo é o grupo TC-G3, descrito no CONTINUIDADE.md e nas tarefas 3.1–3.6.
+> Trabalhe na branch `robot-tasks` (as branches são empilhadas; ela contém tudo, inclusive
+> `task-catalog`). O próximo passo é o grupo **TC-G6** (sincronização retroativa §2.6 de
+> task-catalog), agora destravado porque `robot-tasks` criou a tabela `tasks` e o índice
+> `(robot_id, lower(btrim(desc)))` — descrito no CONTINUIDADE.md e nas tarefas 5.1–5.7 de
+> task-catalog. Push por branch canônica (`git push origin HEAD:robot-tasks`).
 >
 > Siga o método: um grupo por vez, e ao fim de cada grupo me apresente um resumo e peça
 > autorização antes de seguir para o próximo. Não regrida nenhuma das regras listadas na
