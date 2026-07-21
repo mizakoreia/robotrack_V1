@@ -9,10 +9,10 @@
 
 ## 2. `task_assignees` por identidade
 
-- [ ] 2.1 Migration da tabela `task_assignees` com uuid PK, `workspace_id NOT NULL`, FKs compostas `(task_id, workspace_id)` e `(person_id, workspace_id)`, `ON DELETE CASCADE` a partir de `tasks` e `RESTRICT` a partir de `people` (D-RT-1 — `INSERT` cruzando tarefa de `WS-A` com pessoa de `WS-B` tem que ser abortado pela FK, não passar despercebido)
-- [ ] 2.2 Índice único `(task_id, person_id)` e índice `(person_id, task_id)` para a consulta de "Minhas Tarefas" (§3.6 — duas requisições concorrentes atribuindo a mesma pessoa não podem produzir dois chips iguais na tabela)
-- [ ] 2.3 Models `TaskAssignee` + `Task#assignees` (has_many through `people`), com RLS habilitado na tabela (D10 — tarefa sem responsável responde `[]`, nunca um registro chamado `"Não Atribuído"`)
-- [ ] 2.4 Spec de prova de ausência de `resp`: assertiva sobre `Task.column_names` garantindo que não existe `resp` nem `assignees` como coluna de texto (D-RT-2 — o spec falha se alguém reintroduzir a coluna de compatibilidade legada por conveniência)
+- [x] 2.1 Migration da tabela `task_assignees` com uuid PK, `workspace_id NOT NULL`, FKs compostas `(task_id, workspace_id)` e `(person_id, workspace_id)`, `ON DELETE CASCADE` a partir de `tasks` e `RESTRICT` a partir de `people` (D-RT-1 — `INSERT` cruzando tarefa de `WS-A` com pessoa de `WS-B` tem que ser abortado pela FK, não passar despercebido) *(ordem das colunas casa os índices únicos existentes: `tasks(id, workspace_id)` e `people(workspace_id, id)`, mesmo padrão de `memberships`.)*
+- [x] 2.2 Índice único `(task_id, person_id)` e índice `(person_id, task_id)` para a consulta de "Minhas Tarefas" (§3.6 — duas requisições concorrentes atribuindo a mesma pessoa não podem produzir dois chips iguais na tabela) *(+ `index_task_assignees_on_workspace_id` para a guarda de tenancy.)*
+- [x] 2.3 Models `TaskAssignee` + `Task#assignees` (has_many through `people`), com RLS habilitado na tabela (D10 — tarefa sem responsável responde `[]`, nunca um registro chamado `"Não Atribuído"`)
+- [x] 2.4 Spec de prova de ausência de `resp`: assertiva sobre `Task.column_names` garantindo que não existe `resp` nem `assignees` como coluna de texto (D-RT-2 — o spec falha se alguém reintroduzir a coluna de compatibilidade legada por conveniência) *(+ assertiva de que NENHUMA tabela do esquema tem coluna `resp`.)*
 
 ## 3. API de leitura e CRUD de tarefa
 

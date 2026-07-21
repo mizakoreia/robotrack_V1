@@ -159,7 +159,8 @@ Total: ~30 tarefas em 6 grupos de código.
 
 - [x] G1 — Esquema `tasks` (1.1–1.6) — backend 712 → 723 (12→11 pending: a
   contract spec de cascade `tasks→robots` destravou ao existir a tabela)
-- [ ] G2 — `task_assignees` (2.1–2.4)
+- [x] G2 — `task_assignees` (2.1–2.4) — backend 723 → 735 (11→10 pending: a
+  contract spec de cascade `task_assignees→tasks` destravou)
 - [ ] G3 — API de leitura e CRUD (3.1–3.7)
 - [ ] G4 — Atribuição de responsáveis (4.1–4.5)
 - [ ] G5 — Criação de robôs em lote (5.1–5.7)
