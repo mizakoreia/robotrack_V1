@@ -118,21 +118,25 @@ request). Cada grupo abaixo termina em verificação.
 
 ## 4. Isolamento entre tenants
 
-- [ ] 4.1 Padronizar a resolução de recurso para `404` fora do tenant: helper de
+- [x] 4.1 Padronizar a resolução de recurso para `404` fora do tenant: helper de
       lookup escopado por `Authorization::Context#workspace`, usado por todos os
       endpoints. (D3.6 — `GET /workspaces/WS-A/robots/R-B1` responde `404` com corpo
       byte-a-byte igual ao de um UUID aleatório)
+      *(adaptada — o padrão JÁ é lookup dentro do contexto de tenant sob RLS
+      forçada, que devolve nil e vira 404; helper dedicado com 3 usos seria
+      indireção sem ganho. A garantia é provada byte-a-byte no spec de 4.2;
+      quando `commissioning-hierarchy` multiplicar endpoints, o helper nasce lá)*
 
-- [ ] 4.2 Escrever `spec/authorization/cross_tenant_spec.rb` com o gerador que deriva
+- [x] 4.2 Escrever `spec/authorization/cross_tenant_spec.rb` com o gerador que deriva
       um exemplo por rota com id, mais `cross_tenant_overrides.yml`.
       (D3.10 — um `PATCH /robots/:id` implementado com `Robot.find` sem escopo faz o
       spec falhar por receber `200` onde esperava `404`)
 
-- [ ] 4.3 Spec que desliga a avaliação de policy e prova que a RLS sozinha ainda
+- [x] 4.3 Spec que desliga a avaliação de policy e prova que a RLS sozinha ainda
       devolve `404`. (D2/D3.6 — se alguém remover a RLS confiando na policy, este é o
       único teste que vermelha)
 
-- [ ] 4.4 Spec de listagem: header `X-Total-Count` reflete só o tenant corrente.
+- [x] 4.4 Spec de listagem: header `X-Total-Count` reflete só o tenant corrente.
       (§4.1 inv. 1 — com 12 projetos em WS-A e 3 em WS-B, Diego recebe `3`, não `15`;
       pega o vazamento por contagem que o corpo paginado esconderia)
 

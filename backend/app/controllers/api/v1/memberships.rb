@@ -24,6 +24,9 @@ module Api
           ).call
           error!({ error: result[:error] }, result[:status]) unless result[:success]
 
+          # authorization-policies 4.4: a contagem também é escopada pelo tenant
+          # — vazamento por header é vazamento igual.
+          header 'X-Total-Count', result[:data][:members].size.to_s
           present result[:data][:members], with: Api::Entities::Membership
         end
 
