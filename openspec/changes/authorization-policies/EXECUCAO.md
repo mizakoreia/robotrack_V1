@@ -130,6 +130,19 @@ Total: 28 tarefas em 6 grupos de trabalho. Sequencial, sem paralelismo.
    como o G2 termina com todas as rotas declaradas, o G6 a remove sem fase
    intermediária entre changes.
 
+8. **O esquema real da Onda 1 difere do design desta change — e é mais forte.**
+   O design assume dono-como-membership (`role='owner'` no enum, índice único
+   parcial, coluna `owner_person_id`). O que existe: dono é a coluna
+   `workspaces.owner_user_id`, imutável pelo trigger `workspaces_owner_immutable`
+   (JÁ existe desde a Onda 1) + REVOKE de coluna em `roles.sql`; o trigger
+   `memberships_owner_is_not_member` impede o dono de virar linha de membership;
+   o enum `membership_role` é só `('edit','view')`. "Exatamente um dono" vale
+   por construção (coluna NOT NULL), sem índice parcial. Adaptação: 3.1 e 3.2
+   viram VERIFICAÇÃO (specs por SQL cru dos mecanismos existentes, adicionados
+   se faltarem), não migrations novas; `Authorization::Context` resolve papel à
+   moda da Onda 1 (dono pela coluna, senão `memberships.role`), e a inv. 2
+   continua valendo: papel resolvido no servidor, nunca de claim/índice de UI.
+
 ## Armadilhas previstas
 
 1. **O `rescue_from :all` de `Api::Root` engole tudo.** As exceções de

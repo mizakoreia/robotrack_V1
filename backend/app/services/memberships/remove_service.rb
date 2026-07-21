@@ -29,8 +29,7 @@ module Memberships
     end
 
     def call
-      policy = MembershipPolicy.new(role: @current_role, user: @current_user, workspace_id: @workspace_id)
-      return error_response('forbidden', 403) unless policy.destroy?
+      return error_response('forbidden', 403) unless MembershipPolicy.destroy?(::Authorization::RoleContext.new(@current_role))
 
       membership = find_membership
       if membership.nil?

@@ -7,34 +7,34 @@ request). Cada grupo abaixo termina em verificação.
 
 ## 1. Núcleo de autorização
 
-- [ ] 1.1 Criar `backend/app/policies/permission_matrix.rb` com as 8 actions da §4.1
+- [x] 1.1 Criar `backend/app/policies/permission_matrix.rb` com as 8 actions da §4.1
       na ordem da tabela, congelado, e `PermissionMatrix.allows?(action, role)`.
       (§4.1 tabela — `allows?(:manage_membership, :edit)` retorna `false`; qualquer
       action desconhecida levanta `KeyError`, não retorna `false` silenciosamente)
 
-- [ ] 1.2 Criar `backend/app/lib/authorization/context.rb`: objeto imutável
+- [x] 1.2 Criar `backend/app/lib/authorization/context.rb`: objeto imutável
       `(user, workspace, person, role)`, com `role` lido **só** de `memberships`.
       (§4.1 inv. 2 — um contexto construído para usuário sem membership tem
       `role == nil` e `Context#member?` `false`; o construtor não aceita `role` por
       argumento, então nenhum chamador pode injetá-lo)
 
-- [ ] 1.3 Criar `backend/app/policies/base_policy.rb` no idioma singleton dos
+- [x] 1.3 Criar `backend/app/policies/base_policy.rb` no idioma singleton dos
       services (`class << self`), com `authorize!(context, action, resource = nil)`
       levantando `Authorization::Forbidden` / `Authorization::NotFound`.
       (D3.1 — `BasePolicy` não expõe leitura de `role`; uma subclasse que tente
       `context.role == :owner` é pega pelo cop do grupo 6)
 
-- [ ] 1.4 Escrever as policies de recurso: `ProjectPolicy`, `CellPolicy`,
+- [x] 1.4 Escrever as policies de recurso: `ProjectPolicy`, `CellPolicy`,
       `RobotPolicy`, `TaskPolicy`, `AdvancePolicy`, mapeando cada operação para uma
       das 8 actions. (§4.1 linhas 2-3 — `ProjectPolicy.destroy?` com papel `edit`
       retorna `true`, com `view` retorna `false`, e nenhuma delas compara `role`)
 
-- [ ] 1.5 Escrever `TaskTemplatePolicy`, `PersonPolicy`, `AuditLogPolicy`,
+- [x] 1.5 Escrever `TaskTemplatePolicy`, `PersonPolicy`, `AuditLogPolicy`,
       `NotificationPolicy`, `MembershipPolicy`, `InvitationPolicy`, `WorkspacePolicy`.
       (§4.1 linhas 4-8 — `AuditLogPolicy` não responde a `update?`/`destroy?`:
       `respond_to?(:update?)` é `false`, não um método que retorna `false`)
 
-- [ ] 1.6 Spec unitário de `PermissionMatrix` que reafirma as 8 linhas literalmente,
+- [x] 1.6 Spec unitário de `PermissionMatrix` que reafirma as 8 linhas literalmente,
       com o texto da §4.1 em comentário ao lado de cada linha.
       (§4.1 — trocar `mark_notification_read` para `[:owner, :edit]` quebra este spec
       com diff legível, não um erro de integração distante)
