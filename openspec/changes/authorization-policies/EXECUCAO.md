@@ -143,6 +143,15 @@ Total: 28 tarefas em 6 grupos de trabalho. Sequencial, sem paralelismo.
    moda da Onda 1 (dono pela coluna, senão `memberships.role`), e a inv. 2
    continua valendo: papel resolvido no servidor, nunca de claim/índice de UI.
 
+9. **Sem migration no-op para o trigger de notifications (3.3).** Uma migration
+   que se auto-marca `up` com a tabela ausente ESCONDERIA o trigger para
+   sempre: quando `in-app-notifications` criasse a tabela, a migration já
+   constaria executada e ninguém a rodaria de novo. O DDL do trigger (e o CHECK
+   de 500 chars, e o DEFAULT read=false) vai na migration daquela change; o
+   exemplo `pending` de inv. 4 em `spec/authorization/` nomeia a capacidade e
+   cobra a chegada. G3 vira o que ele realmente é neste esquema: PROVA por SQL
+   cru dos mecanismos existentes + a prova pendente do que falta.
+
 ## Armadilhas previstas
 
 1. **O `rescue_from :all` de `Api::Root` engole tudo.** As exceções de
@@ -242,7 +251,7 @@ npx --yes @fission-ai/openspec@1.6.0 show     authorization-policies --json --de
 
 - [x] G1 — Núcleo (1.1–1.6) — backend 318 → 346
 - [x] G2 — Gate no Grape (2.1–2.7) — backend 346 → 353
-- [ ] G3 — Invariantes no banco (3.1–3.5)
+- [x] G3 — Invariantes no banco (3.1–3.5) — backend 353 → 357 (1 pending)
 - [ ] G4 — Cross-tenant (4.1–4.4)
 - [ ] G5 — Conformidade (5.1–5.7)
 - [ ] G6 — Fechamento (6.1–6.4)
