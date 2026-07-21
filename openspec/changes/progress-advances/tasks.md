@@ -25,11 +25,11 @@
 
 ## 4. API e autorização
 
-- [ ] 4.1 `TaskAdvancePolicy` (`create?` = `owner`/`edit`; `index?` = qualquer membro) no idioma singleton dos services do template. (D3/§4.1 — membro `view` recebe `403`; tarefa de outro workspace recebe `404`, não `403`)
-- [ ] 4.2 Endpoints Grape `POST` e `GET /api/v1/tasks/:task_id/advances` (paginado, 50 por página, mais recentes primeiro), montados em `api/v1/base.rb` com policy declarada. (D3 — o route-sweep spec falha se a declaração de policy for omitida)
-- [ ] 4.3 `Api::Entities::TaskAdvance` (`recorded_at`, `created_at`, `synced_late`, `recorded_at_adjusted`, `author_name_snapshot`, `legacy`) e extensão da entity de `tasks` com `advances_count` e `last_comment`. (§3.5 coluna Trilha — `robot-task-table` monta o aviso "trilha faltando" só com `advances_count`, sem consultar nota alguma)
-- [ ] 4.4 Remover `progress` e `status` cru dos parâmetros de `PATCH /api/v1/tasks/:id`, respondendo `422` apontando o endpoint de avanço. (§2.4 — `PATCH` com `{"progress": 80}` não move o progresso; é a prova de que a trilha não tem porta lateral)
-- [ ] 4.5 Spec de request negativo: `view` → `403` em avanço e em mudança de status; tenant cruzado → `404`; `PATCH` com `progress` → `422`. (§4.1 inv. 1 e inv. 4 — três negações num arquivo só, para não se perderem)
+- [x] 4.1 `TaskAdvancePolicy` (`create?` = `owner`/`edit`; `index?` = qualquer membro) no idioma singleton dos services do template. (D3/§4.1 — membro `view` recebe `403`; tarefa de outro workspace recebe `404`, não `403`)
+- [x] 4.2 Endpoints Grape `POST` e `GET /api/v1/tasks/:task_id/advances` (paginado, 50 por página, mais recentes primeiro), montados em `api/v1/base.rb` com policy declarada. (D3 — o route-sweep spec falha se a declaração de policy for omitida)
+- [x] 4.3 `Api::Entities::TaskAdvance` (`recorded_at`, `created_at`, `synced_late`, `recorded_at_adjusted`, `author_name_snapshot`, `legacy`) e extensão da entity de `tasks` com `advances_count` e `last_comment`. (§3.5 coluna Trilha — `robot-task-table` monta o aviso "trilha faltando" só com `advances_count`, sem consultar nota alguma)
+- [x] 4.4 Remover `progress` e `status` cru dos parâmetros de `PATCH /api/v1/tasks/:id`, respondendo `422` apontando o endpoint de avanço. (§2.4 — `PATCH` com `{"progress": 80}` não move o progresso; é a prova de que a trilha não tem porta lateral) *(A rejeição 422 `read_only_field` já existia de robot-tasks; G4 acrescentou `hint: 'POST /api/v1/tasks/:task_id/advances'` apontando a porta certa.)*
+- [x] 4.5 Spec de request negativo: `view` → `403` em avanço e em mudança de status; tenant cruzado → `404`; `PATCH` com `progress` → `422`. (§4.1 inv. 1 e inv. 4 — três negações num arquivo só, para não se perderem)
 
 ## 5. Interface do modal de avanço
 
