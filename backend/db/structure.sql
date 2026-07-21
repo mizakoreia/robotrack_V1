@@ -226,6 +226,28 @@ CREATE TABLE public.ar_internal_metadata (
 
 
 --
+-- Name: cells; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.cells (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    workspace_id uuid NOT NULL,
+    project_id uuid NOT NULL,
+    name text NOT NULL,
+    "position" integer NOT NULL,
+    progress_cache jsonb DEFAULT '{}'::jsonb NOT NULL,
+    progress_cached_at timestamp with time zone,
+    lock_version integer DEFAULT 0 NOT NULL,
+    updated_by_person_id uuid,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT chk_cells_name CHECK (((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 120)))
+);
+
+ALTER TABLE ONLY public.cells FORCE ROW LEVEL SECURITY;
+
+
+--
 -- Name: jwt_denylist; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -309,6 +331,51 @@ CREATE TABLE public.people (
 );
 
 ALTER TABLE ONLY public.people FORCE ROW LEVEL SECURITY;
+
+
+--
+-- Name: projects; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.projects (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    workspace_id uuid NOT NULL,
+    name text NOT NULL,
+    "position" integer NOT NULL,
+    progress_cache jsonb DEFAULT '{}'::jsonb NOT NULL,
+    progress_cached_at timestamp with time zone,
+    lock_version integer DEFAULT 0 NOT NULL,
+    updated_by_person_id uuid,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT chk_projects_name CHECK (((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 120)))
+);
+
+ALTER TABLE ONLY public.projects FORCE ROW LEVEL SECURITY;
+
+
+--
+-- Name: robots; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.robots (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    workspace_id uuid NOT NULL,
+    cell_id uuid NOT NULL,
+    name text NOT NULL,
+    application text DEFAULT 'Misto / Geral'::text NOT NULL,
+    "position" integer NOT NULL,
+    progress_cache jsonb DEFAULT '{}'::jsonb NOT NULL,
+    progress_cached_at timestamp with time zone,
+    lock_version integer DEFAULT 0 NOT NULL,
+    updated_by_person_id uuid,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT chk_robots_application CHECK ((application = ANY (ARRAY['Misto / Geral'::text, 'Solda Ponto'::text, 'Solda MIG'::text, 'Handling'::text, 'Sealing'::text, 'Outros'::text]))),
+    CONSTRAINT chk_robots_name CHECK (((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 120)))
+);
+
+ALTER TABLE ONLY public.robots FORCE ROW LEVEL SECURITY;
 
 
 --
@@ -443,6 +510,14 @@ ALTER TABLE ONLY public.ar_internal_metadata
 
 
 --
+-- Name: cells cells_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cells
+    ADD CONSTRAINT cells_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: invitations invitations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -483,11 +558,75 @@ ALTER TABLE ONLY public.people
 
 
 --
+-- Name: projects projects_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.projects
+    ADD CONSTRAINT projects_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: robots robots_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.robots
+    ADD CONSTRAINT robots_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: schema_migrations schema_migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.schema_migrations
     ADD CONSTRAINT schema_migrations_pkey PRIMARY KEY (version);
+
+
+--
+-- Name: cells uq_cells_id_workspace; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cells
+    ADD CONSTRAINT uq_cells_id_workspace UNIQUE (id, workspace_id);
+
+
+--
+-- Name: cells uq_cells_position; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cells
+    ADD CONSTRAINT uq_cells_position UNIQUE (project_id, "position") DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: projects uq_projects_id_workspace; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.projects
+    ADD CONSTRAINT uq_projects_id_workspace UNIQUE (id, workspace_id);
+
+
+--
+-- Name: projects uq_projects_position; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.projects
+    ADD CONSTRAINT uq_projects_position UNIQUE (workspace_id, "position") DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: robots uq_robots_id_workspace; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.robots
+    ADD CONSTRAINT uq_robots_id_workspace UNIQUE (id, workspace_id);
+
+
+--
+-- Name: robots uq_robots_position; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.robots
+    ADD CONSTRAINT uq_robots_position UNIQUE (cell_id, "position") DEFERRABLE INITIALLY DEFERRED;
 
 
 --
@@ -561,6 +700,20 @@ CREATE INDEX index_active_storage_variant_records_on_blob_id ON public.active_st
 --
 
 CREATE UNIQUE INDEX index_active_storage_variants_uniqueness ON public.active_storage_variant_records USING btree (blob_id, variation_digest);
+
+
+--
+-- Name: index_cells_on_project_lower_name; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_cells_on_project_lower_name ON public.cells USING btree (project_id, lower(name));
+
+
+--
+-- Name: index_cells_on_workspace_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_cells_on_workspace_id ON public.cells USING btree (workspace_id);
 
 
 --
@@ -641,6 +794,27 @@ CREATE UNIQUE INDEX index_people_on_workspace_id_and_user_id ON public.people US
 
 
 --
+-- Name: index_projects_on_workspace_lower_name; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_projects_on_workspace_lower_name ON public.projects USING btree (workspace_id, lower(name));
+
+
+--
+-- Name: index_robots_on_cell_lower_name; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_robots_on_cell_lower_name ON public.robots USING btree (cell_id, lower(name));
+
+
+--
+-- Name: index_robots_on_workspace_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_robots_on_workspace_id ON public.robots USING btree (workspace_id);
+
+
+--
 -- Name: index_user_types_on_hierarchy_level; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -718,6 +892,30 @@ CREATE TRIGGER workspaces_owner_immutable BEFORE UPDATE ON public.workspaces FOR
 
 
 --
+-- Name: cells cells_updated_by_person_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cells
+    ADD CONSTRAINT cells_updated_by_person_id_fkey FOREIGN KEY (updated_by_person_id) REFERENCES public.people(id) ON DELETE SET NULL;
+
+
+--
+-- Name: cells cells_workspace_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cells
+    ADD CONSTRAINT cells_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id);
+
+
+--
+-- Name: cells fk_cells_project_same_workspace; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cells
+    ADD CONSTRAINT fk_cells_project_same_workspace FOREIGN KEY (project_id, workspace_id) REFERENCES public.projects(id, workspace_id) ON DELETE CASCADE;
+
+
+--
 -- Name: invitations fk_invitations_creator_in_workspace; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -739,6 +937,14 @@ ALTER TABLE ONLY public.memberships
 
 ALTER TABLE ONLY public.memberships
     ADD CONSTRAINT fk_memberships_person_same_workspace FOREIGN KEY (workspace_id, person_id) REFERENCES public.people(workspace_id, id);
+
+
+--
+-- Name: robots fk_robots_cell_same_workspace; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.robots
+    ADD CONSTRAINT fk_robots_cell_same_workspace FOREIGN KEY (cell_id, workspace_id) REFERENCES public.cells(id, workspace_id) ON DELETE CASCADE;
 
 
 --
@@ -814,12 +1020,50 @@ ALTER TABLE ONLY public.people
 
 
 --
+-- Name: projects projects_updated_by_person_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.projects
+    ADD CONSTRAINT projects_updated_by_person_id_fkey FOREIGN KEY (updated_by_person_id) REFERENCES public.people(id) ON DELETE SET NULL;
+
+
+--
+-- Name: projects projects_workspace_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.projects
+    ADD CONSTRAINT projects_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id);
+
+
+--
+-- Name: robots robots_updated_by_person_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.robots
+    ADD CONSTRAINT robots_updated_by_person_id_fkey FOREIGN KEY (updated_by_person_id) REFERENCES public.people(id) ON DELETE SET NULL;
+
+
+--
+-- Name: robots robots_workspace_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.robots
+    ADD CONSTRAINT robots_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id);
+
+
+--
 -- Name: workspaces workspaces_owner_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.workspaces
     ADD CONSTRAINT workspaces_owner_user_id_fkey FOREIGN KEY (owner_user_id) REFERENCES public.users(id);
 
+
+--
+-- Name: cells; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.cells ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: invitations; Type: ROW SECURITY; Schema: public; Owner: -
@@ -846,6 +1090,12 @@ ALTER TABLE public.memberships ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.people ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: projects; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: invitations purge_expired; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -864,6 +1114,19 @@ CREATE POLICY purge_expired_delete ON public.invitations FOR DELETE USING (((cur
 --
 
 CREATE POLICY purge_expired_select ON public.invitations FOR SELECT USING (((current_setting('app.invitation_purge'::text, true) = 'on'::text) AND (used_at IS NULL) AND (expires_at < (now() - '30 days'::interval))));
+
+
+--
+-- Name: robots; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.robots ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: cells tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.cells USING ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid)) WITH CHECK ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid));
 
 
 --
@@ -895,6 +1158,20 @@ CREATE POLICY tenant_isolation ON public.people USING ((workspace_id = (NULLIF(c
 
 
 --
+-- Name: projects tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.projects USING ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid)) WITH CHECK ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid));
+
+
+--
+-- Name: robots tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.robots USING ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid)) WITH CHECK ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid));
+
+
+--
 -- Name: workspaces tenant_isolation; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -916,6 +1193,11 @@ ALTER TABLE public.workspaces ENABLE ROW LEVEL SECURITY;
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260721130005'),
+('20260721130004'),
+('20260721130003'),
+('20260721130002'),
+('20260721130001'),
 ('20260721120005'),
 ('20260721120004'),
 ('20260721120003'),
