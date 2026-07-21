@@ -1,12 +1,12 @@
 ## 1. Contrato com workspace-tenancy e esquema
 
-- [ ] 1.1 Verificar, contra o change `workspace-tenancy` já mergeado, que `people`
+- [x] 1.1 Verificar, contra o change `workspace-tenancy` já mergeado, que `people`
   tem coluna `email`, índice único `people (workspace_id, id)` e `user_id` nullable;
   se `people.email` não existir, abrir bloqueio antes de escrever qualquer código
   (D10 — sem `people.email` o aceite passa a criar sempre `Person` nova e duplica
   o responsável pré-cadastrado, quebrando "Minhas Tarefas" para quem já tinha
   tarefas atribuídas)
-- [ ] 1.2 Migration `create_invitations`: PK `uuid`, `workspace_id NOT NULL`, `token`,
+- [x] 1.2 Migration `create_invitations`: PK `uuid`, `workspace_id NOT NULL`, `token`,
   `email`, enum Postgres `invitation_role ('view','edit')`, `created_by_person_id`,
   `expires_at NOT NULL DEFAULT now() + interval '7 days'`, `used_at`,
   `used_by_user_id`; na mesma migration, as constraints: único em `token`,
@@ -15,17 +15,17 @@
   `(workspace_id, created_by_person_id) → people (workspace_id, id)`
   (§4.1 inv. 7 — `INSERT` com `role = 'owner'` falha no enum e `UPDATE` gravando
   `used_at` sem `used_by_user_id` falha no CHECK, ambos sem passar por model)
-- [ ] 1.3 Migration aditiva `add_invitation_id_to_memberships` (nullable,
+- [x] 1.3 Migration aditiva `add_invitation_id_to_memberships` (nullable,
   `REFERENCES invitations(id) ON DELETE RESTRICT`) + índice único parcial
   `idx_memberships_one_per_invitation ... WHERE invitation_id IS NOT NULL`
   (§4.1 inv. 6 — dois `INSERT` de membership com o mesmo `invitation_id` colidem;
   memberships migradas com `invitation_id NULL` não colidem entre si)
-- [ ] 1.4 Habilitar RLS em `invitations` por `app.current_workspace_id` (D2) e criar
+- [x] 1.4 Habilitar RLS em `invitations` por `app.current_workspace_id` (D2) e criar
   a função `SECURITY DEFINER invitation_by_token(text)` para os dois caminhos
   sem workspace corrente (pré-visualização e aceite) (§4.1 inv. 1 — um `SELECT *
   FROM invitations` com `app.current_workspace_id = WS-A` não retorna nenhuma linha
   de `WS-B`, e a função só devolve por token exato, nunca listagem)
-- [ ] 1.5 Spec de banco que exercita 1.2–1.4 por SQL cru, sem passar por
+- [x] 1.5 Spec de banco que exercita 1.2–1.4 por SQL cru, sem passar por
   ActiveRecord: 6 inserções inválidas, cada uma esperando a violação nomeada
   (verificação do grupo 1 — prova que a invariante não mora só no model)
 

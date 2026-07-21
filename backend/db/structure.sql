@@ -38,6 +38,16 @@ COMMENT ON EXTENSION pgcrypto IS 'cryptographic functions';
 
 
 --
+-- Name: invitation_role; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE public.invitation_role AS ENUM (
+    'view',
+    'edit'
+);
+
+
+--
 -- Name: membership_role; Type: TYPE; Schema: public; Owner: -
 --
 
@@ -45,6 +55,49 @@ CREATE TYPE public.membership_role AS ENUM (
     'edit',
     'view'
 );
+
+
+SET default_tablespace = '';
+
+SET default_table_access_method = heap;
+
+--
+-- Name: invitations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.invitations (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    workspace_id uuid NOT NULL,
+    token text NOT NULL,
+    email text NOT NULL,
+    role public.invitation_role NOT NULL,
+    created_by_person_id uuid NOT NULL,
+    expires_at timestamp with time zone DEFAULT (now() + '7 days'::interval) NOT NULL,
+    used_at timestamp with time zone,
+    used_by_user_id uuid,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT chk_invitations_consumption CHECK ((((used_at IS NULL) AND (used_by_user_id IS NULL)) OR ((used_at IS NOT NULL) AND (used_by_user_id IS NOT NULL)))),
+    CONSTRAINT chk_invitations_email_length CHECK ((char_length(email) <= 254)),
+    CONSTRAINT chk_invitations_email_lowercase CHECK ((email = lower(email)))
+);
+
+ALTER TABLE ONLY public.invitations FORCE ROW LEVEL SECURITY;
+
+
+--
+-- Name: invitation_by_token(text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.invitation_by_token(p_token text) RETURNS SETOF public.invitations
+    LANGUAGE plpgsql STABLE SECURITY DEFINER
+    SET search_path TO 'public', 'pg_temp'
+    AS $$
+BEGIN
+  PERFORM set_config('app.invitation_token', coalesce(p_token, ''), true);
+  RETURN QUERY SELECT * FROM invitations WHERE token = p_token;
+END;
+$$;
 
 
 --
@@ -82,10 +135,6 @@ BEGIN
 END;
 $$;
 
-
-SET default_tablespace = '';
-
-SET default_table_access_method = heap;
 
 --
 -- Name: action_text_rich_texts; Type: TABLE; Schema: public; Owner: -
@@ -355,6 +404,14 @@ ALTER TABLE ONLY public.ar_internal_metadata
 
 
 --
+-- Name: invitations invitations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.invitations
+    ADD CONSTRAINT invitations_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: jwt_denylist jwt_denylist_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -411,6 +468,13 @@ ALTER TABLE ONLY public.workspaces
 
 
 --
+-- Name: idx_memberships_one_per_invitation; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_memberships_one_per_invitation ON public.memberships USING btree (invitation_id) WHERE (invitation_id IS NOT NULL);
+
+
+--
 -- Name: index_action_text_rich_texts_uniqueness; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -450,6 +514,27 @@ CREATE INDEX index_active_storage_variant_records_on_blob_id ON public.active_st
 --
 
 CREATE UNIQUE INDEX index_active_storage_variants_uniqueness ON public.active_storage_variant_records USING btree (blob_id, variation_digest);
+
+
+--
+-- Name: index_invitations_on_token; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_invitations_on_token ON public.invitations USING btree (token);
+
+
+--
+-- Name: index_invitations_on_workspace_id_and_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_invitations_on_workspace_id_and_created_at ON public.invitations USING btree (workspace_id, created_at DESC);
+
+
+--
+-- Name: index_invitations_pending_unique_per_email; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_invitations_pending_unique_per_email ON public.invitations USING btree (workspace_id, email) WHERE (used_at IS NULL);
 
 
 --
@@ -579,11 +664,43 @@ CREATE TRIGGER workspaces_owner_immutable BEFORE UPDATE ON public.workspaces FOR
 
 
 --
+-- Name: invitations fk_invitations_creator_in_workspace; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.invitations
+    ADD CONSTRAINT fk_invitations_creator_in_workspace FOREIGN KEY (workspace_id, created_by_person_id) REFERENCES public.people(workspace_id, id);
+
+
+--
+-- Name: memberships fk_memberships_invitation; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.memberships
+    ADD CONSTRAINT fk_memberships_invitation FOREIGN KEY (invitation_id) REFERENCES public.invitations(id) ON DELETE RESTRICT;
+
+
+--
 -- Name: memberships fk_memberships_person_same_workspace; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.memberships
     ADD CONSTRAINT fk_memberships_person_same_workspace FOREIGN KEY (workspace_id, person_id) REFERENCES public.people(workspace_id, id);
+
+
+--
+-- Name: invitations invitations_used_by_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.invitations
+    ADD CONSTRAINT invitations_used_by_user_id_fkey FOREIGN KEY (used_by_user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: invitations invitations_workspace_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.invitations
+    ADD CONSTRAINT invitations_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id);
 
 
 --
@@ -627,6 +744,12 @@ ALTER TABLE ONLY public.workspaces
 
 
 --
+-- Name: invitations; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.invitations ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: memberships; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -637,6 +760,13 @@ ALTER TABLE public.memberships ENABLE ROW LEVEL SECURITY;
 --
 
 ALTER TABLE public.people ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: invitations tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.invitations USING (((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid) OR (token = NULLIF(current_setting('app.invitation_token'::text, true), ''::text)))) WITH CHECK ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid));
+
 
 --
 -- Name: memberships tenant_isolation; Type: POLICY; Schema: public; Owner: -
@@ -674,6 +804,9 @@ ALTER TABLE public.workspaces ENABLE ROW LEVEL SECURITY;
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260721120003'),
+('20260721120002'),
+('20260721120001'),
 ('20260720190002'),
 ('20260720190001'),
 ('20260720180006'),
