@@ -40,6 +40,9 @@ RSpec.describe 'Bootstrap e resolução de Person', :tenancy do
       expect(owner_workspace_count(user)).to eq(1)
       count = in_ws(ws.id, user.id) { Person.count }
       expect(count).to eq(1)
+      # Logins repetidos não re-semeiam: o INSERT do workspace bate em ON CONFLICT
+      # DO NOTHING (0 linhas) e o seed é pulado (task-catalog §1.3, tarefa 3.4).
+      expect(in_ws(ws.id, user.id) { TaskTemplate.count }).to eq(31)
     end
 
     it 'dois logins simultâneos criam um único workspace, sem RecordNotUnique' do
@@ -73,7 +76,10 @@ RSpec.describe 'Bootstrap e resolução de Person', :tenancy do
       expect(ws.name).to eq('Workspace de joao.pereira')
     end
 
-    it 'emite workspace.bootstrapped e não semeia catálogo (só a Person do dono)' do
+    it 'emite workspace.bootstrapped e semeia o catálogo padrão de 31 templates' do
+      # task-catalog §1.3/3.4 (D-TC-4): o seed passou a rodar DENTRO da transação
+      # do bootstrap. O evento continua emitido para observadores de ciclo de
+      # vida, mas não é mais o caminho do seed (EXECUCAO task-catalog, decisão 6).
       eventos = []
       callback = ->(*args) { eventos << ActiveSupport::Notifications::Event.new(*args) }
 
@@ -83,7 +89,22 @@ RSpec.describe 'Bootstrap e resolução de Person', :tenancy do
 
       expect(eventos.size).to eq(1)
       expect(eventos.first.payload[:workspace_id]).to eq(ws.id)
-      expect(in_ws(ws.id, user.id) { Person.count }).to eq(1) # nada além do dono
+      expect(in_ws(ws.id, user.id) { Person.count }).to eq(1)        # só o dono
+      expect(in_ws(ws.id, user.id) { TaskTemplate.count }).to eq(31) # catálogo semeado
+    end
+
+    it 'falha no seed do catálogo aborta a criação do workspace (mesma transação)' do
+      # task-catalog §1.3/3.4: injeta uma violação de CHECK (weight 0) numa linha
+      # do catálogo. Como o seed roda na MESMA transação do INSERT do workspace,
+      # o insert_all! levanta e nada é persistido — não existe workspace com zero
+      # templates (nem meio catálogo).
+      allow(TaskTemplates::DefaultCatalog).to receive(:rows_for).and_wrap_original do |original, wsid|
+        original.call(wsid) + [{ workspace_id: wsid, cat: 'Z. Injetada', desc: 'Linha ruim', weight: 0, app_filters: [] }]
+      end
+
+      expect { described_class.new(user: user).call }
+        .to raise_error(ActiveRecord::StatementInvalid, /chk_task_templates_weight/)
+      expect(owner_workspace_count(user)).to eq(0)
     end
   end
 

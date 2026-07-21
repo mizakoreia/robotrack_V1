@@ -21,7 +21,7 @@ main (48497fd)                     ← ondas 1–4, sem nada desta sessão
 
 | Suíte | Resultado |
 |---|---|
-| Backend `bundle exec rspec` (como `robotrack_app`) | **652 / 0 falhas / 12 pending** |
+| Backend `bundle exec rspec` (como `robotrack_app`) | **666 / 0 falhas / 12 pending** |
 | Frontend `vitest run` | **75 / 0** |
 | Frontend `tsc --noEmit` | limpo |
 
@@ -56,23 +56,22 @@ Feito (G0..G2): esquema `task_templates` (CHECK de domínio em `app_filters` ace
 com a normalização D-TC-2, e `TaskTemplates::ApplicabilityFilter` em Ruby **e** SQL com
 tabela de casos 6×4 provando que as duas versões não divergem.
 
-**Próximo passo — TC-G3** (tarefas 3.1–3.6 de `openspec/changes/task-catalog/tasks.md`):
+Feito (G3 — tarefas 3.1–3.6): `TaskTemplates::DefaultCatalog` com os **31 itens** da §1.3
+(9 categorias `A. Hardware`…`I. Aceitação`, todos `weight: 1`, **2** com filtro —
+`Calibração de Cola` → `["Sealing"]`, `Check sinais de Gripper` → `["Handling","Solda
+Ponto"]`, grafias do legado preservadas); spec de trava (31/9/2 + conjunto literal de
+`desc`); `Workspaces::SeedDefaultTaskTemplatesService` com `insert_all!` único; seed
+chamado DENTRO da transação do `BootstrapService` (guardado por `inserted == 1`, com
+cenário de falha injetada provando rollback); scope `TaskTemplate.ordered` com `COLLATE
+"C"` e spec de ordenação sob `C` **e** `pt-BR-x-icu`; spec de isolamento por workspace.
+O seed deixou de passar pelo evento `workspace.bootstrapped` (não satisfaz a atomicidade
+da §1.3) — ver EXECUCAO decisão 6.
 
-1. `backend/app/services/task_templates/default_catalog.rb` com os **31 itens** da §1.3:
-   9 categorias (`A. Hardware` … `I. Aceitação`), todos `weight: 1`, e **exatamente 2**
-   com filtro — `Calibração de Cola` → `["Sealing"]` e `Check sinais de Gripper` →
-   `["Handling","Solda Ponto"]`.
-   **Preservar as grafias erradas do original** (`"Traj, de Descarte"`,
-   `"Otimização de Trajetoria"`, `"Dryrun Baixa velocidade ate 100%"`): o importador casa
-   por `desc`, e "corrigir" duplicaria a tarefa na migração do legado.
-2. Spec de trava do catálogo (31 / 9 / 2).
-3. `Workspaces::SeedDefaultTaskTemplatesService` com `insert_all` único.
-4. Chamada dentro da transação do `Workspaces::BootstrapService` — nenhum workspace pode
-   nascer sem catálogo.
-5. Spec de ordenação com `COLLATE "C"` explícita (sem ela a ordem das categorias muda
-   entre ambientes) e spec de isolamento por workspace.
-
-Depois: **TC-G4** (policy + CRUD + `GET /api/v1/meta/robot_applications`), **TC-G5**
+**Próximo passo — TC-G4** (tarefas 4.1–4.6): policy `TaskTemplatePolicy` (verificação +
+predicado), entity `Api::Entities::TaskTemplate` (com `appFilters` em camelCase), CRUD
+`GET/POST/PATCH/DELETE /api/v1/task_templates` (coerce que tolera `apps`, `appFilters`
+vence com warning), `GET /api/v1/meta/robot_applications` servindo `Robot::APPLICATIONS`,
+e a varredura negativa (route-sweep + cross-tenant crescem juntas). Depois: **TC-G5**
 (cliente), **TC-G6** (sincronização retroativa §2.6 — **depende da tabela `tasks`**, de
 `robot-tasks`; por isso foi movido para o fim).
 

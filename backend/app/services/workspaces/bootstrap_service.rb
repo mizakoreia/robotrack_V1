@@ -6,8 +6,16 @@ module Workspaces
   # Idempotente e seguro sob concorrência (celular + desktop logando ao mesmo
   # tempo, cenário real do produto). Chamado pelo gancho de primeiro login de
   # `identity-and-auth` e, defensivamente, por quem precise garantir o workspace
-  # do dono. Cria SÓ o workspace e a `Person` do dono — o catálogo de 31 tarefas
-  # (§1.3) é semeado por `task-catalog` ao consumir o evento `workspace.bootstrapped`.
+  # do dono. Cria o workspace, semeia o catálogo padrão de 31 tarefas-base
+  # (`task-catalog` §1.3, D-TC-4) na MESMA transação da criação do workspace, e
+  # garante a `Person` do dono.
+  #
+  # O seed do catálogo é chamado DENTRO de `create_idempotently` (não via o
+  # evento `workspace.bootstrapped`): §1.3/3.4 exige que ele esteja na mesma
+  # transação do INSERT do workspace — um subscriber do evento rodaria fora dela
+  # e um workspace poderia commitar sem catálogo. O evento continua emitido para
+  # observadores de ciclo de vida, mas não é mais o caminho do seed
+  # (EXECUCAO task-catalog, decisão 6).
   #
   # Garantia de concorrência: índice único em `owner_user_id` +
   # `INSERT ... ON CONFLICT (owner_user_id) DO NOTHING` + releitura. O perdedor da
@@ -41,11 +49,18 @@ module Workspaces
       new_id = SecureRandom.uuid
       Tenant.with(workspace_id: new_id, user_id: user.id) do
         conn = ActiveRecord::Base.connection
-        conn.exec_update(
+        inserted = conn.exec_update(
           "INSERT INTO workspaces (id, name, owner_user_id) " \
           "VALUES (#{q(new_id)}, #{q(workspace_name)}, #{q(user.id)}) " \
           'ON CONFLICT (owner_user_id) DO NOTHING'
         )
+        # Semeia o catálogo (task-catalog §1.3, tarefa 3.4) na MESMA transação e
+        # SÓ quando criamos o workspace agora (`inserted == 1`). Se perdemos a
+        # corrida (`inserted == 0`), o vencedor já semeou — semear de novo
+        # colidiria com o índice único (workspace_id, lower(btrim(desc))). Uma
+        # falha no seed reverte o INSERT do workspace acima: nenhum workspace
+        # nasce com zero templates.
+        SeedDefaultTaskTemplatesService.new(workspace_id: new_id).call if inserted.positive?
       end
       # Relê — pode ser a nossa linha ou a de um vencedor concorrente (id distinto).
       find_existing
