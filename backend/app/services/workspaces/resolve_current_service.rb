@@ -31,10 +31,10 @@ module Workspaces
       Tenant.set_user!(@user.id)
 
       workspace = Workspace.where(id: @workspace_id).first
-      return failure(403, 'workspace_access_denied') if workspace.nil?
+      return failure(403, denial_code) if workspace.nil?
 
       role = resolve_role(workspace)
-      return failure(403, 'workspace_access_denied') if role.nil?
+      return failure(403, denial_code) if role.nil?
 
       Result.new(ok: true, workspace_id: workspace.id, role: role)
     rescue ActiveRecord::StatementInvalid
@@ -43,6 +43,26 @@ module Workspaces
     end
 
     private
+
+    # workspace-invitations 5.3 / D-INV-7 — o fallback de revogação.
+    #
+    # A negação continua sendo SEMPRE 403, e continua indistinguível entre
+    # "workspace alheio" e "workspace inexistente" — é o que impede enumerar
+    # tenants (Onda 1). O código diferenciado só aparece para quem TEVE acesso e
+    # o perdeu, e essa pessoa já sabia que o workspace existe: nada novo vaza.
+    # Sem isto, o cliente de quem foi removido não teria como distinguir "fui
+    # expulso daqui" de "digitei o workspace errado", e §3.10 exige avisá-lo.
+    def denial_code
+      revoked? ? 'workspace_access_revoked' : 'workspace_access_denied'
+    end
+
+    def revoked?
+      MembershipRevocation.unscoped
+                          .where(workspace_id: @workspace_id, user_id: @user.id)
+                          .exists?
+    rescue ActiveRecord::StatementInvalid
+      false
+    end
 
     def resolve_role(workspace)
       return :owner if workspace.owner_user_id == @user.id

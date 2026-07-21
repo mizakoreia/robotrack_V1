@@ -135,3 +135,15 @@ BEGIN
   END IF;
 END
 $$;
+
+-- Snapshot de membership removida é APPEND-ONLY (workspace-invitations 4.2).
+-- Mesmo argumento do bloco acima: `pg_dump -x` omite GRANT/REVOKE, então sem
+-- isto um rebuild por `db:schema:load` nasceria com o runtime podendo reescrever
+-- o próprio log que torna a remoção reversível. Guardado por existência.
+DO $$
+BEGIN
+  IF to_regclass('public.membership_revocations') IS NOT NULL THEN
+    REVOKE UPDATE, DELETE ON membership_revocations FROM robotrack_app;
+  END IF;
+END
+$$;

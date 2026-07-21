@@ -237,6 +237,24 @@ ALTER SEQUENCE public.jwt_denylist_id_seq OWNED BY public.jwt_denylist.id;
 
 
 --
+-- Name: membership_revocations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.membership_revocations (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    workspace_id uuid NOT NULL,
+    user_id uuid NOT NULL,
+    person_id uuid NOT NULL,
+    role public.membership_role NOT NULL,
+    invitation_id uuid,
+    removed_by_user_id uuid NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+ALTER TABLE ONLY public.membership_revocations FORCE ROW LEVEL SECURITY;
+
+
+--
 -- Name: memberships; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -420,6 +438,14 @@ ALTER TABLE ONLY public.jwt_denylist
 
 
 --
+-- Name: membership_revocations membership_revocations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.membership_revocations
+    ADD CONSTRAINT membership_revocations_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: memberships memberships_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -542,6 +568,13 @@ CREATE UNIQUE INDEX index_invitations_pending_unique_per_email ON public.invitat
 --
 
 CREATE UNIQUE INDEX index_jwt_denylist_on_jti ON public.jwt_denylist USING btree (jti);
+
+
+--
+-- Name: index_membership_revocations_on_workspace_and_user; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_membership_revocations_on_workspace_and_user ON public.membership_revocations USING btree (workspace_id, user_id);
 
 
 --
@@ -704,6 +737,30 @@ ALTER TABLE ONLY public.invitations
 
 
 --
+-- Name: membership_revocations membership_revocations_removed_by_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.membership_revocations
+    ADD CONSTRAINT membership_revocations_removed_by_user_id_fkey FOREIGN KEY (removed_by_user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: membership_revocations membership_revocations_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.membership_revocations
+    ADD CONSTRAINT membership_revocations_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: membership_revocations membership_revocations_workspace_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.membership_revocations
+    ADD CONSTRAINT membership_revocations_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id);
+
+
+--
 -- Name: memberships memberships_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -750,6 +807,12 @@ ALTER TABLE ONLY public.workspaces
 ALTER TABLE public.invitations ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: membership_revocations; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.membership_revocations ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: memberships; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -766,6 +829,13 @@ ALTER TABLE public.people ENABLE ROW LEVEL SECURITY;
 --
 
 CREATE POLICY tenant_isolation ON public.invitations USING (((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid) OR (token = NULLIF(current_setting('app.invitation_token'::text, true), ''::text)))) WITH CHECK ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid));
+
+
+--
+-- Name: membership_revocations tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.membership_revocations USING (((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid) OR (user_id = (NULLIF(current_setting('app.current_user_id'::text, true), ''::text))::uuid))) WITH CHECK ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid));
 
 
 --
@@ -804,6 +874,7 @@ ALTER TABLE public.workspaces ENABLE ROW LEVEL SECURITY;
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260721120004'),
 ('20260721120003'),
 ('20260721120002'),
 ('20260721120001'),

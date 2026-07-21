@@ -79,18 +79,18 @@
 
 ## 4. Painel de equipe
 
-- [ ] 4.1 `MembershipPolicy` + `Memberships::UpdateRoleService`: só `owner`, só
+- [x] 4.1 `MembershipPolicy` + `Memberships::UpdateRoleService`: só `owner`, só
   entre `view`/`edit`, `422 owner_is_immutable` se o alvo for o dono (§4.1 inv. 5 —
   `PATCH` com `role: "owner"` retorna `422` e o papel não muda)
-- [ ] 4.2 Backup: antes de qualquer remoção de membro, `Memberships::RemoveService`
+- [x] 4.2 Backup: antes de qualquer remoção de membro, `Memberships::RemoveService`
   grava snapshot da membership (workspace, person, role, invitation_id) numa
   entrada de `audit_logs` (§2.8 — a remoção é reversível manualmente pelo dono a
   partir do log, já que `audit_logs` tem `REVOKE UPDATE, DELETE` por D12)
-- [ ] 4.3 `Memberships::RemoveService`: remove a membership, limpa `person.user_id`
+- [x] 4.3 `Memberships::RemoveService`: remove a membership, limpa `person.user_id`
   para `NULL` e **não** apaga a `Person` (§3.10 — as 12 tarefas do removido
   continuam apontando para a mesma `Person`; `422 cannot_remove_owner` se o alvo
   for o dono)
-- [ ] 4.4 Endpoints `GET /api/v1/memberships`, `PATCH /api/v1/memberships/:id`,
+- [x] 4.4 Endpoints `GET /api/v1/memberships`, `PATCH /api/v1/memberships/:id`,
   `DELETE /api/v1/memberships/:id` com policy declarada, cobertos pelo route-sweep
   de D3 (§4.1 inv. 1 — o route-sweep falha o CI se algum dos três não declarar policy)
 - [ ] 4.5 Componente `features/team/TeamPanel` com as duas listas e chaves React
@@ -99,7 +99,7 @@
 - [ ] 4.6 Diálogo de criação de convite com "Copiar link" e fallback de campo
   selecionável quando a Clipboard API é negada (§3.10 — negar a permissão de
   clipboard mostra o link em texto, não uma falha silenciosa)
-- [ ] 4.7 Request spec negativo do painel: `view` fazendo `PATCH` de papel, `edit`
+- [x] 4.7 Request spec negativo do painel: `view` fazendo `PATCH` de papel, `edit`
   fazendo `DELETE` de convite, dono de `WS-A` mexendo em membership de `WS-B`
   (verificação do grupo 4 — os dois primeiros `403`, o terceiro `404` porque a RLS
   esconde a linha; `404` e não `403` é o critério, senão a existência de `WS-B`
@@ -118,7 +118,7 @@
   workspace próprio; acionada pelo 403 `workspace_access_revoked` do interceptor do
   `apiClient` (§3.10 — sem Cable conectado, a revogação ainda é detectada na
   próxima requisição e nenhum dado de `WS-A` permanece na tela)
-- [ ] 5.4 Publicação do evento `membership_revoked` no `WorkspaceChannel` a partir
+- [x] 5.4 Publicação do evento `membership_revoked` no `WorkspaceChannel` a partir
   de `Memberships::RemoveService`, consumido por `handleAccessRevoked` (D6 — com
   Cable conectado, a detecção ocorre em < 2s sem interação do usuário; a tarefa
   degrada para no-op se `realtime-collaboration` ainda não estiver entregue)

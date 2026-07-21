@@ -22,6 +22,8 @@ module Api
       mount Api::V1::Invitations
       mount Api::V1::InvitationTokens
 
+      mount Api::V1::Memberships
+
       mount Api::V1::Countries
 
       mount Api::V1::Downloads
