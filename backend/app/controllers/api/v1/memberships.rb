@@ -15,7 +15,7 @@ module Api
       resource :memberships do
         # GET /api/v1/memberships — membros do workspace corrente (qualquer
         # membro lê; só o dono muta).
-        route_setting :policy, 'MembershipPolicy#index?'
+        route_setting :policy, policy: 'MembershipPolicy', action: :index
         get do
           result = ::Memberships::ListService.new(
             current_user: env['api.current_user'],
@@ -28,7 +28,7 @@ module Api
         end
 
         # PATCH /api/v1/memberships/:id — só o dono, só entre view e edit.
-        route_setting :policy, 'MembershipPolicy#update?'
+        route_setting :policy, policy: 'MembershipPolicy', action: :update
         params do
           requires :id, type: String
           requires :role, type: String
@@ -48,7 +48,7 @@ module Api
         end
 
         # DELETE /api/v1/memberships/:id — só o dono; nunca o próprio dono.
-        route_setting :policy, 'MembershipPolicy#destroy?'
+        route_setting :policy, policy: 'MembershipPolicy', action: :destroy
         params do
           requires :id, type: String
         end

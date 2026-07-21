@@ -1,5 +1,11 @@
 # frozen_string_literal: true
 
+# authorization-policies 2.2: o gate de autorização fica LIGADO em test desde o
+# dia 1 do rollout — um spec afirma isso, para a fase faseada não virar
+# permanente por inércia. A tarefa 6.3 remove a flag e torna o gate
+# incondicional em todos os ambientes.
+ENV['AUTHZ_ENFORCE'] ||= '1'
+
 Robotrack::Application.configure do
   config.cache_classes = true
   config.eager_load = false

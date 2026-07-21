@@ -86,6 +86,8 @@ module Api
       end
     end
 
+    helpers Api::V1::AuthorizationHelpers
+
     before do
       next if Api::Root.public_route?(request.request_method, request.path)
 
@@ -130,6 +132,17 @@ module Api
         env['api.current_workspace_id'] = @current_workspace_id
         env['api.current_role'] = @current_role
       end
+
+      # authorization-policies G2 (D3.4): a decisão de autorização acontece AQUI,
+      # uma vez por request, antes de qualquer service. `AUTHZ_ENFORCE` existe só
+      # para o rollout dentro da própria change (ligada em `test` desde o dia 1);
+      # a tarefa 6.3 a remove e torna o gate incondicional.
+      authorize_route! if Api::Root.authz_enforced?
+    end
+
+    # Flag de rollout do gate (2.2). Removida em 6.3 — não usar fora daqui.
+    def self.authz_enforced?
+      ENV['AUTHZ_ENFORCE'] == '1'
     end
 
     helpers do
@@ -151,6 +164,33 @@ module Api
     # Montando os módulos da API (cada um com seu prefixo e versão)
     mount Api::Auth::V1::Base     # /auth/v1/*
     mount Api::V1::Base
+
+    # Contrato de negação (authorization-policies 2.4 / D3.12): corpo de chave
+    # única `error`, sem nome de policy, action ou papel. As strings pt-BR para
+    # a UI vivem em config/locales/pt-BR.authorization.yml (D14) — o corpo da
+    # negação NÃO as inclui, de propósito.
+    rescue_from ::Authorization::Forbidden do
+      error!({ error: 'forbidden' }, 403)
+    end
+
+    rescue_from ::Authorization::NotFound do
+      error!({ error: 'not_found' }, 404)
+    end
+
+    # Fail-closed por ambiente (2.3 / D3.4). Rota sem declaração NUNCA responde
+    # 200. Em development/test o 500 é BARULHENTO e distinguível: código
+    # `undeclared_route` + o path ofensor no corpo — o Grape engole exceção
+    # re-levantada dentro de rescue_from, então a "falha na cara de quem
+    # escreveu o endpoint" é este corpo, mais o route-sweep que reprova em CI.
+    # Em produção: 500 genérico sem detalhe, reportado ao rastreio.
+    rescue_from ::Authorization::UndeclaredRouteError do |e|
+      if Rails.env.development? || Rails.env.test?
+        error!({ error: 'undeclared_route', message: e.message }, 500)
+      else
+        ErrorReporter.report(e, context: { path: request.path, method: request.request_method })
+        error!({ error: 'internal_error' }, 500)
+      end
+    end
 
     # Único tratamento de erro da API — as cópias em Api::V1::Base e
     # Api::Auth::V1::Base foram removidas. O backtrace vai para o log, nunca

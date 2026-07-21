@@ -1,0 +1,27 @@
+# Allowlist de rotas PÚBLICAS (sem autenticação) — authorization-policies 2.5 / D3.5.
+#
+# Fonte AUDITÁVEL da mesma lista que `Api::Root::PUBLIC_ROUTES` implementa em
+# regex: o route-sweep confere que toda rota Grape que o `public_route?` deixa
+# passar está listada aqui, e que nenhuma entrada aqui é órfã (rota que não
+# existe mais). `reason` é obrigatório e não-vazio — escrever o motivo é o custo
+# que desencoraja usar a allowlist como escape hatch.
+#
+# `path` no formato da tabela de rotas do Grape (`:param` para segmento dinâmico).
+- path: /swagger_doc
+  method: GET
+  reason: "Documentação OpenAPI da API — pública por desenho do template."
+- path: /swagger_doc/:name
+  method: GET
+  reason: "Detalhe por recurso da documentação OpenAPI."
+- path: /api/v1/countries
+  method: GET
+  reason: "Lista estática de países para formulário de cadastro, sem dado de usuário."
+- path: /auth/v1/session
+  method: POST
+  reason: "Login por e-mail e senha — é o que EMITE a credencial (D4.8)."
+- path: /auth/v1/registration
+  method: POST
+  reason: "Cadastro por e-mail e senha — anterior à existência de credencial (D4.8)."
+- path: /api/v1/invitations/:token
+  method: GET
+  reason: "Pré-visualização do convite ANTES do login (workspace-invitations D-INV-6); só GET, corpo mascarado, sem workspace_id."

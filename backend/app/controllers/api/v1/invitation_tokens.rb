@@ -11,8 +11,9 @@ module Api
     # `Api::Root::TENANT_EXEMPT_ROUTES` (ciente de método, para não arrastar
     # junto o `DELETE /api/v1/invitations/:id`, que é rota de domínio normal).
     #
-    # Nenhuma das duas declara policy: não há papel a consultar: a pré-visualização
-    # é pública por desenho e a autorização do aceite É a invariante 6, avaliada
+    # Não há papel de workspace a consultar aqui: a pré-visualização é PÚBLICA
+    # (allowlist `config/authorization/public_routes.yml`) e o aceite declara
+    # `access: :authenticated` — sua autorização É a invariante 6, avaliada
     # dentro da transação com a linha travada.
     class InvitationTokens < Grape::API
       format :json
@@ -40,6 +41,9 @@ module Api
         end
 
         # POST /api/v1/invitations/:token/accept — autenticado, sem tenant.
+        # A autorização do aceite É a invariante 6 (avaliada com a linha
+        # travada, dentro do AcceptService); aqui só a autenticação conta.
+        route_setting :policy, access: :authenticated
         params do
           requires :token, type: String
         end

@@ -41,39 +41,39 @@ request). Cada grupo abaixo termina em verificação.
 
 ## 2. Gate no Grape
 
-- [ ] 2.1 Criar `api/v1/authorization_helpers.rb` com `authorize!` que lê
+- [x] 2.1 Criar `api/v1/authorization_helpers.rb` com `authorize!` que lê
       `route_setting(:policy)` do endpoint corrente.
       (D3.4 — endpoint sem `route_setting` faz o helper levantar
       `Authorization::UndeclaredRouteError`, não retornar `nil`)
 
-- [ ] 2.2 Ligar a etapa de autorização no `before` de `api/root.rb`, depois da
+- [x] 2.2 Ligar a etapa de autorização no `before` de `api/root.rb`, depois da
       autenticação, atrás de `AUTHZ_ENFORCE`, com a flag ligada em `test` desde já e
       um spec afirmando que ela está ligada nesse ambiente.
       (§4.1 inv. 1 — com um service instrumentado, uma requisição negada registra
       zero invocações do service; e desligar a flag em `test` vermelha um spec, então
       o rollout faseado não se torna permanente por inércia)
 
-- [ ] 2.3 Implementar o comportamento fail-closed por ambiente: levanta em
+- [x] 2.3 Implementar o comportamento fail-closed por ambiente: levanta em
       `development`/`test`, responde `500` + rastreio de erro em `production`.
       (D3.4 — rota não declarada em produção responde `500` com corpo sem dado de
       domínio; nunca `200`)
 
-- [ ] 2.4 Mapear as exceções de autorização em `rescue_from` para o contrato
+- [x] 2.4 Mapear as exceções de autorização em `rescue_from` para o contrato
       `401`/`403`/`404` com corpo de chave única `error`, strings de
       `config/locales/pt-BR.*.yml` (D14).
       (§4.1 — o corpo do `403` não contém `"owner"`, `"edit"`, `"ProjectPolicy"` nem
       o nome da action)
 
-- [ ] 2.5 Criar `config/authorization/public_routes.yml` com `path`/`method`/`reason`
+- [x] 2.5 Criar `config/authorization/public_routes.yml` com `path`/`method`/`reason`
       obrigatórios, carregado uma vez no boot.
       (D3.5 — entrada com `reason` vazio faz o boot falhar em `test`, não passar
       despercebida)
 
-- [ ] 2.6 Declarar `route_setting :policy` em todos os endpoints Grape sobreviventes
+- [x] 2.6 Declarar `route_setting :policy` em todos os endpoints Grape sobreviventes
       ao `seal-template-baseline`. (§4.1 inv. 1 — o route-sweep do grupo 5 passa a
       verde; enquanto sobrar um endpoint, ele lista o método + path exatos)
 
-- [ ] 2.7 Spec de request provando que `X-Skip-Auth: 1` não contorna autorização.
+- [x] 2.7 Spec de request provando que `X-Skip-Auth: 1` não contorna autorização.
       (§4.1 inv. 1 — Diego com o header em `GET /workspaces/WS-A/projects` recebe
       `401` ou `404`, nunca a lista de projetos; regressão contra a brecha do template)
 

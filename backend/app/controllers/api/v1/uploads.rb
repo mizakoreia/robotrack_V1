@@ -18,6 +18,7 @@ module Api
           requires :file, type: File, desc: 'Arquivo de imagem'
         end
 
+        route_setting :policy, access: :authenticated
         post '', http_codes: [
           [201, 'Created'],
           [400, 'Bad Request'],

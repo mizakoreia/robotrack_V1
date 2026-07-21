@@ -1,0 +1,10 @@
+# authorization-policies 2.4 (D14). O CORPO das negações é de chave única
+# `error` (D3.12) e não inclui estas strings — elas existem para a UI
+# (app-shell-navigation) exibir mensagens pt-BR a partir do código de erro,
+# e para logs/relatórios. Nenhuma cita papel exigido, policy ou action.
+pt-BR:
+  authorization:
+    unauthorized: "Sessão ausente ou expirada. Entre novamente."
+    forbidden: "Você não tem permissão para esta ação neste workspace."
+    not_found: "Recurso não encontrado."
+    internal_error: "Erro interno no servidor."

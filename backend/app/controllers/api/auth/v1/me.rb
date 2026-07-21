@@ -10,6 +10,7 @@ module Api
         before { authenticate_user! }
 
         namespace :me do
+          route_setting :policy, access: :authenticated
           get do
             status 200
             { data: { user: Api::Entities::User.represent(current_user) } }

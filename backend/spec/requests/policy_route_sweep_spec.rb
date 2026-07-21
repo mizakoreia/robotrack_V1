@@ -52,11 +52,15 @@ RSpec.describe 'Varredura de policies das rotas de convite e equipe', type: :req
                            "#{method} #{path} não declara `route_setting :policy` — sem isso a " \
                            'autorização vira decisão avulsa dentro do endpoint (invariante 1)'
 
-      classe, metodo = declarada.split('#')
-      policy = classe.constantize
+      # Forma nova (authorization-policies G2): hash com policy + action, ou
+      # `access: :authenticated` para rota autenticada sem tenant.
+      next if declarada[:access] == :authenticated
+
+      policy = declarada.fetch(:policy).constantize
+      metodo = "#{declarada.fetch(:action)}?"
       expect(policy.ancestors).to include(BasePolicy)
       expect(policy.public_send(metodo, CONTEXTO_NULO)).to be(false),
-                                                           "#{classe}.#{metodo} autoriza papel NULO — a policy tem de ser fail-closed"
+                                                           "#{policy}.#{metodo} autoriza papel NULO — a policy tem de ser fail-closed"
     end
   end
 

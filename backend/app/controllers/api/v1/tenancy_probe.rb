@@ -15,6 +15,7 @@ module Api
       namespace :tenancy_probe do
         # Devolve o contexto resolvido e o que o banco enxerga de fato.
         desc 'Sonda de contexto de tenant (só teste)', hidden: true
+        route_setting :policy, policy: 'WorkspacePolicy', action: :show
         get :context do
           {
             workspace_id: env['api.current_workspace_id'],
@@ -29,6 +30,7 @@ module Api
         # Levanta exceção DEPOIS de o contexto estar aberto — para provar que o
         # ROLLBACK descarta o SET LOCAL e a request seguinte não vaza (4.5).
         desc 'Sonda que levanta exceção (só teste)', hidden: true
+        route_setting :policy, policy: 'WorkspacePolicy', action: :show
         get :boom do
           Person.count # toca o banco com contexto aberto
           raise 'boom proposital'
