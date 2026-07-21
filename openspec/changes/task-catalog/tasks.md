@@ -68,25 +68,29 @@ Pré-requisito de todas: `commissioning-hierarchy` entregue (tabelas `projects`,
 
 ## 3. Catálogo padrão e seed
 
-- [ ] 3.1 `backend/app/services/task_templates/default_catalog.rb` com os 31 itens de §1.3
+- [x] 3.1 `backend/app/services/task_templates/default_catalog.rb` com os 31 itens de §1.3
       transcritos literalmente, em ordem de categoria, todos `weight: 1`, filtro apenas em
       `Calibração de Cola` (`["Sealing"]`) e `Check sinais de Gripper` (`["Handling","Solda
       Ponto"]`). (§1.3 — a constante tem `size == 31`, 9 `cat` distintos e exatamente 2
       entradas com filtro não vazio.)
-- [ ] 3.2 Spec de trava do catálogo: compara o conjunto de `desc` com a lista literal de
+- [x] 3.2 Spec de trava do catálogo: compara o conjunto de `desc` com a lista literal de
       §1.3 e verifica as três contagens (31 / 9 / 2). (§1.3 — adicionar ou renomear
       qualquer item quebra o spec, forçando atualização consciente da spec funcional.)
-- [ ] 3.3 `Workspaces::SeedDefaultTaskTemplatesService` com `insert_all` único, recebendo o
+- [x] 3.3 `Workspaces::SeedDefaultTaskTemplatesService` com `insert_all` único, recebendo o
       `workspace` como argumento. (§1.3 — 31 linhas criadas com uma única query; o spec
       conta as queries e falha se virarem 31 `INSERT`s.)
-- [ ] 3.4 Chamar o seed no bootstrap de workspace de `workspace-tenancy`, dentro da mesma
+      *(Assinatura `workspace_id:` e não `workspace:`: no bootstrap o seed roda com o
+      uuid gerado no cliente ANTES de a linha `Workspace` estar carregada como objeto;
+      o id é o que o `Tenant.with` já usa. `insert_all!` — com bang — para que a falha
+      reverta a transação de bootstrap, ver 3.4.)*
+- [x] 3.4 Chamar o seed no bootstrap de workspace de `workspace-tenancy`, dentro da mesma
       transação de `Workspace.create`. (§1.3 — injetando falha no `insert_all`, nenhum
       workspace fica persistido; não existe workspace com 0 templates.)
-- [ ] 3.5 Spec de ordenação lexicográfica: listagem devolve `A. Hardware` … `I. Aceitação`
+- [x] 3.5 Spec de ordenação lexicográfica: listagem devolve `A. Hardware` … `I. Aceitação`
       nessa ordem, com `ORDER BY cat COLLATE "C"`, rodando com `lc_collate` de `pt_BR.UTF-8`
       e de `C`. (§1.3 nota — sem a collation explícita a ordem muda entre ambientes e a tela
       de configurações embaralha as categorias só em produção.)
-- [ ] 3.6 **Verificação:** spec de isolamento do seed — workspace A exclui `Speed up`,
+- [x] 3.6 **Verificação:** spec de isolamento do seed — workspace A exclui `Speed up`,
       workspace B continua com 31. (§1.3 — prova que o catálogo é propriedade do workspace
       e não uma tabela global compartilhada.)
 

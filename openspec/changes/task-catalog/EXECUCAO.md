@@ -95,6 +95,19 @@ Total: 34 tarefas em 6 grupos.
    metade: as tarefas 5.x ficam `- [ ]` com nota, e a CONCLUSÃO registra a
    change como "5 de 6 grupos". Nada de spec `pending` fingindo cobertura de
    um service que não existe.
+6. **O seed do catálogo NÃO passa pelo evento `workspace.bootstrapped`, apesar
+   de o `BootstrapService` (Onda 1) tê-lo emitido justamente como costura para
+   esta change.** Divergência design×realidade entre duas changes: §1.3/3.4
+   exige o seed na MESMA transação do `Workspace.create`, e um subscriber do
+   evento rodaria fora dela (`ActiveSupport::Notifications.instrument` é chamado
+   depois de `create_idempotently` retornar, com a transação do `Tenant.with`
+   já commitada). Resolução: o seed é chamado DIRETO dentro de
+   `create_idempotently`, guardado por `inserted == 1` (não re-semeia quem
+   perdeu a corrida do `ON CONFLICT DO NOTHING`). O evento continua emitido —
+   é um evento de ciclo de vida legítimo, com spec — mas deixou de ser o
+   caminho do seed. O teste do bootstrap que afirmava "não semeia catálogo"
+   foi atualizado para afirmar os 31 templates, e ganhou o cenário de falha
+   injetada (weight 0 → CHECK → rollback → zero workspace).
 
 ## Armadilhas previstas
 
@@ -133,7 +146,7 @@ Total: 34 tarefas em 6 grupos.
 
 - [x] G1 — Esquema (1.1–1.7; 1.1–1.3 nao aplicadas, decisao 1) — backend 604 → 617
 - [x] G2 — Model e filtro de aplicabilidade (2.1–2.4) — backend 617 → 652
-- [ ] G3 — Catálogo padrão e seed (3.1–3.6)
+- [x] G3 — Catálogo padrão e seed (3.1–3.6) — backend 652 → 666
 - [ ] G4 — Policy e API (4.1–4.6)
 - [ ] G5 — Cliente (6.1–6.4)
 - [ ] G6 — Sincronização retroativa (5.1–5.7) — depende de `robot-tasks`

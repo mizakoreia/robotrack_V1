@@ -14,6 +14,14 @@ class TaskTemplate < ApplicationRecord
   # SQL; o adapter faz o quoting. O acessor do Rails funciona normalmente.
   TODOS_OS_ROBOS = ['Misto / Geral', 'Todas'].freeze
 
+  # task-catalog 3.5 (§1.3 nota, D-TC-1) — a ordem das 9 categorias vem da
+  # ordenação lexicográfica do prefixo (`A. `, `B. `…) DENTRO de `cat`, com
+  # collation BINÁRIA explícita (`COLLATE "C"`). Sem ela, um locale como
+  # `pt_BR.UTF-8` ignora pontuação e a ordem das categorias muda entre ambientes
+  # — bug que só aparece em produção. `"desc"` também com `COLLATE "C"` para a
+  # ordem dentro da categoria ser igualmente determinística.
+  scope :ordered, -> { order(Arel.sql('cat COLLATE "C", "desc" COLLATE "C"')) }
+
   before_validation :normalize_fields
 
   validates :cat, :desc, presence: true
