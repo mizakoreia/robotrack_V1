@@ -254,7 +254,75 @@ npx --yes @fission-ai/openspec@1.6.0 show     authorization-policies --json --de
 - [x] G3 — Invariantes no banco (3.1–3.5) — backend 353 → 357 (1 pending)
 - [x] G4 — Cross-tenant (4.1–4.4) — backend 357 → 363 (1 pending)
 - [x] G5 — Conformidade (5.1–5.7) — backend 363 → 461 (9 pending)
-- [ ] G6 — Fechamento (6.1–6.4)
+- [x] G6 — Fechamento (6.1–6.4) — backend 461 → 464 (9 pending)
+
+## CONCLUSÃO (21/07/2026)
+
+**Change 100% aplicada: 28/28 tarefas, 6 grupos, 7 commits locais (G0..G6).**
+
+| Suíte | Antes (baseline) | Depois |
+|---|---|---|
+| Backend (`bundle exec rspec`, como `robotrack_app`) | 318 / 0 | **464 / 0** (9 pending deliberados) |
+| `spec/authorization/` isolado | — | **121 / 0** (9 pending) |
+| Frontend (`vitest run`) | 63 / 0 | **63 / 0** (inalterado — change é só backend) |
+| Frontend (`tsc --noEmit`) | limpo | **limpo** |
+
+**O objetivo central foi cumprido — a invariante 1 como processo mecanizado:**
+matriz §4.1 é DADO num arquivo (`permission_matrix.rb`), a decisão é uma por
+request no `before` de `Api::Root` (incondicional — a flag `AUTHZ_ENFORCE`
+nasceu no G2 e morreu no 6.3; o grep no código retorna zero), rota sem
+declaração NÃO responde 200 em ambiente algum (500 `undeclared_route` barulhento
+em dev/test, 500 genérico + rastreio em produção), e quatro guardas impedem a
+regressão: route-sweep da superfície inteira, varredura cross-tenant GERADA,
+guarda estático anti `role ==` e o job de CI dedicado
+(`.github/workflows/authorization.yml`).
+
+**Relatório de conformidade (6.4)** — estado das 8 invariantes:
+
+| Inv. | Status | Onde |
+|---|---|---|
+| 1 | **verde** | inv_1 (zero invocações de service em negação) + route-sweep + gate |
+| 2 | **verde** | inv_2 (claim JWT forjado, membership removida, enum) + Context |
+| 3 | policy verde; banco **pending: audit-log** | inv_3 (AuditLogPolicy sem verbos de escrita; REVOKE virá com a tabela) |
+| 4 | policy verde; HTTP/trigger **pending: in-app-notifications** | inv_4 (mark_read? exige destinatário — D-A) |
+| 5 | **verde** | inv_5 + db_invariants + schema_constraints (trigger, REVOKE de coluna, enum sem 'owner') |
+| 6 | **verde** | inv_6 (2º aceite → 409) + suíte de concorrência de workspace-invitations |
+| 7 | **verde** | inv_7 (papel owner → 422 + enum; workspace alheio → 403 opaco) |
+| 8 | **pending: in-app-notifications** | inv_8 (CHECK ≤500 + DEFAULT read=false virão com a tabela) |
+
+Os 9 pending da suíte: inv_3 (banco), inv_4 (HTTP), inv_8, 5 linhas HTTP da
+matriz (commissioning-hierarchy, progress-advances, task-catalog,
+audit-log/in-app-notifications, workspace-settings) e o trigger de notifications
+em db_invariants. **Todos nomeiam a capacidade bloqueadora** — o meta-spec
+reprova pending sem dono.
+
+**Paridade com o legado:** 22/22 `allow`s do `firestore.rules` rastreados
+(`legacy_parity.yml`), 7 divergências deliberadas documentadas e impressas pelo
+spec — incluindo D-A (notificação alheia não pode mais ser marcada) e D-B (dono
+deixou de ser inferido de `uid == wsId`).
+
+**Garantias das ondas anteriores, conferidas ao final:** runtime conecta como
+`robotrack_app` (sem SUPERUSER/BYPASSRLS); RLS forçada; specs de isolamento
+verdes; varreduras de rotas não-vácuas e MAIORES (a de policies foi de ~9 rotas
+para 100% da superfície); vazamento entre tenants = 404 byte-a-byte.
+
+**Pendências para OUTRAS changes (não desta):**
+- `in-app-notifications`: tabela + trigger de colunas (D3.7) + CHECK 500 +
+  DEFAULT read=false + endpoint PATCH restrito a `read`; remover os pending de
+  inv_4/inv_8 e o de db_invariants.
+- `audit-log`: tabela `audit_logs` com `REVOKE UPDATE, DELETE`; remover o
+  pending de inv_3; absorver `membership_revocations`.
+- `commissioning-hierarchy` / `progress-advances` / `task-catalog` /
+  `workspace-settings`: expor as rotas e remover os pending da camada HTTP da
+  matriz; nascem já sob o route-sweep e a varredura cross-tenant (herdam os
+  testes automaticamente — é o ponto).
+- `workspace-settings`: decidir se renomear workspace desce de owner-only para
+  `manage_catalog` (entrada na allowlist do guarda anti `role ==`).
+- `delivery-and-observability`: incorporar o job `authorization` (já existe em
+  `.github/workflows/authorization.yml`) como bloqueante na pipeline completa.
+
+**Não arquivada** (`openspec archive`) — as ondas anteriores também não foram.
+**Sem push** (sem credencial nesta máquina).
 
 ## RETOMADA
 

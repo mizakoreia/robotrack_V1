@@ -183,21 +183,21 @@ request). Cada grupo abaixo termina em verificação.
 
 ## 6. Fechamento e entrega
 
-- [ ] 6.1 Adicionar cop/spec estático que proíbe comparação direta de papel fora de
+- [x] 6.1 Adicionar cop/spec estático que proíbe comparação direta de papel fora de
       `permission_matrix.rb` (`context.role ==`, `role == :owner`).
       (D3.2 — um `if context.role == :owner` numa policy nova falha o build; é o que
       impede a matriz de voltar a se espalhar em `if`s)
 
-- [ ] 6.2 Configurar o job de CI `authorization` rodando `spec/authorization/` isolado
+- [x] 6.2 Configurar o job de CI `authorization` rodando `spec/authorization/` isolado
       e bloqueante; citar em `delivery-and-observability`.
       (§4.1 inv. 1 — route-sweep vermelho com os outros 400 testes verdes ainda
       bloqueia o merge, nomeado como falha de autorização)
 
-- [ ] 6.3 Remover a flag `AUTHZ_ENFORCE` e tornar o fail-closed incondicional, depois
+- [x] 6.3 Remover a flag `AUTHZ_ENFORCE` e tornar o fail-closed incondicional, depois
       que 5.1 estiver verde. (D3.4 — nenhuma referência à env var resta no código; o
       grep por `AUTHZ_ENFORCE` retorna zero ocorrências fora do CHANGELOG)
 
-- [ ] 6.4 Rodar a suíte inteira com um seed de 2 workspaces × 3 papéis e registrar o
+- [x] 6.4 Rodar a suíte inteira com um seed de 2 workspaces × 3 papéis e registrar o
       relatório de conformidade (8 invariantes + sweep + cross-tenant + paridade).
       (§4.1 — o relatório nomeia cada invariante ainda `pending` e a capacidade que a
       bloqueia; nenhuma invariante fica sem status)

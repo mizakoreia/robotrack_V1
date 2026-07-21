@@ -15,10 +15,13 @@ RSpec.describe 'Gate de autorização', :tenancy, type: :request do
     auth_headers(user).merge('X-Workspace-Id' => workspace.id)
   end
 
-  describe 'a flag de rollout (2.2)' do
-    it 'está LIGADA em test — desligar aqui vermelha este spec de propósito' do
-      expect(ENV['AUTHZ_ENFORCE']).to eq('1')
-      expect(Api::Root.authz_enforced?).to be(true)
+  describe 'o gate é incondicional (6.3)' do
+    it 'a flag de rollout AUTHZ_ENFORCE não existe mais no código' do
+      fontes = Dir[Rails.root.join('app/**/*.rb'), Rails.root.join('config/**/*.rb')]
+      com_flag = fontes.select { |f| File.read(f).include?('AUTHZ_ENFORCE') }
+      expect(com_flag).to be_empty,
+                          "AUTHZ_ENFORCE ainda referenciada em: #{com_flag.join(', ')} — " \
+                          'o fail-closed tem de ser incondicional (6.3)'
     end
   end
 

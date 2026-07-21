@@ -98,7 +98,9 @@ RSpec.describe 'Varredura negativa de vazamento entre tenants', :tenancy, type: 
     end
 
     it 'a RLS SOZINHA ainda nega, com a avaliação de policy desligada (4.3)' do
-      allow(Api::Root).to receive(:authz_enforced?).and_return(false)
+      # Neutraliza o gate SÓ neste exemplo (o stub morre com ele): se alguém
+      # remover a RLS confiando na policy, este é o teste que vermelha.
+      allow_any_instance_of(Grape::Endpoint).to receive(:authorize_route!)
 
       path, params = GERADORES['DELETE /api/v1/invitations/:id'].call(ids)
       delete path, params: params, headers: headers_diego
