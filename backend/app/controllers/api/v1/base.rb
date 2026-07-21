@@ -19,6 +19,8 @@ module Api
 
       mount Api::V1::Workspaces
 
+      mount Api::V1::Invitations
+
       mount Api::V1::Countries
 
       mount Api::V1::Downloads

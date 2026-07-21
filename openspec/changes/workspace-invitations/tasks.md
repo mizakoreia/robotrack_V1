@@ -31,23 +31,23 @@
 
 ## 2. Criação de convite
 
-- [ ] 2.1 Model `Invitation` com normalização `email.strip.downcase` em
+- [x] 2.1 Model `Invitation` com normalização `email.strip.downcase` em
   `before_validation`, geração de `token` (`rt_inv_` + `SecureRandom.urlsafe_base64(32)`)
   e `expires_at` = `created_at + 7.days` (§3.10 — convite criado com
   `"Joao@Fabrica.COM"` é persistido como `"joao@fabrica.com"` e casa no aceite)
-- [ ] 2.2 `InvitationPolicy` no mecanismo de `authorization-policies` (D3):
+- [x] 2.2 `InvitationPolicy` no mecanismo de `authorization-policies` (D3):
   `create?`/`destroy?`/`index?` exigem membership `owner` do workspace-alvo
   (§4.1 inv. 7 — membro `edit` recebe `403` e nenhuma linha é criada)
-- [ ] 2.3 `Invitations::CreateService` no contrato `ApiResponseHandler`, retornando
+- [x] 2.3 `Invitations::CreateService` no contrato `ApiResponseHandler`, retornando
   o link absoluto montado com `ENV['APP_URL']`; rejeitar `role: "owner"` com `422
   invalid_role` e e-mail > 254 chars com `422 invalid_email` (§3.10 — a resposta
   contém a URL completa `<APP_URL>/convite/rt_inv_...`, não só o token solto)
-- [ ] 2.4 Endpoints Grape `POST /api/v1/invitations`, `GET /api/v1/invitations`
+- [x] 2.4 Endpoints Grape `POST /api/v1/invitations`, `GET /api/v1/invitations`
   (pendentes do workspace corrente), `DELETE /api/v1/invitations/:id`, montados com
   uma linha em `api/v1/base.rb`; `Api::Entities::Invitation` **nunca** serializa o
   `token` em respostas de listagem sem o link (§3.10 — a lista de pendentes permite
   recopiar o link)
-- [ ] 2.5 Request spec dos caminhos negativos de criação: `edit` convidando, `view`
+- [x] 2.5 Request spec dos caminhos negativos de criação: `edit` convidando, `view`
   convidando, `workspace_id` de outro workspace, `role: "owner"`, e-mail de 255
   chars (verificação do grupo 2 — todos `403`/`422`, contagem de `invitations`
   inalterada em todos os cinco)
