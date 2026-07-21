@@ -14,12 +14,16 @@ require 'rails_helper'
 RSpec.describe 'Contrato de cascade da hierarquia' do
   conn = ActiveRecord::Base.connection
 
-  # filho => pai que precisa cascatear
+  # filho => pai que precisa cascatear.
+  #
+  # `task_advances` NÃO está aqui de propósito: `progress-advances` (D-IMUT) a fez
+  # `ON DELETE RESTRICT` — a trilha de comissionamento é IMUTÁVEL, e nem um cascade
+  # a apaga (o trigger de imutabilidade recusaria o DELETE de qualquer forma). Ver
+  # o exemplo dedicado abaixo e a TENSÃO documentada nele.
   CONTRATO = {
     'cells' => 'projects',
     'robots' => 'cells',
     'tasks' => 'robots',
-    'task_advances' => 'tasks',
     'task_assignees' => 'tasks'
   }.freeze
 
@@ -50,6 +54,31 @@ RSpec.describe 'Contrato de cascade da hierarquia' do
         raise "implementar quando #{capacidade} criar #{filho}"
       end
     end
+  end
+
+  # progress-advances D-IMUT — a EXCEÇÃO ao contrato de cascade: a trilha é
+  # imutável e sobrevive à tarefa.
+  #
+  # TENSÃO CONHECIDA (documentada para o próximo agente / decisão de produto):
+  # `tasks → robots` ainda é CASCADE (commissioning-hierarchy), mas `task_advances
+  # → tasks` é RESTRICT. Logo, HARD-deletar um robô que tenha tarefas COM avanços
+  # falharia (o cascade tentaria apagar `tasks`, e a RESTRICT/trigger de
+  # `task_advances` aborta → 500). `progress-advances` mitigou pela metade
+  # (soft-delete em `tasks` via `DeleteService`), mas o cascade de HARD delete da
+  # hierarquia (excluir robô/célula/projeto) não passa por lá. Resolução completa
+  # = soft-delete na hierarquia — FOLLOW-UP de commissioning-hierarchy/robot-tasks,
+  # fora do escopo de progress-advances. Hoje a suíte fica verde porque nenhum
+  # spec de exclusão da hierarquia cria tarefas com avanços antes de excluir.
+  it 'task_advances → tasks é ON DELETE RESTRICT (trilha imutável, D-IMUT)' do
+    fk = conn.select_one(<<~SQL)
+      SELECT confdeltype FROM pg_constraint
+      WHERE conrelid = 'task_advances'::regclass AND contype = 'f'
+        AND confrelid = 'tasks'::regclass
+    SQL
+    expect(fk).not_to be_nil, 'task_advances não tem FK para tasks'
+    expect(fk['confdeltype']).to eq('r'),
+                                 'task_advances → tasks tem de ser RESTRICT: a trilha de comissionamento ' \
+                                 'não é apagada em cascata (D-IMUT). tasks usa soft-delete.'
   end
 
   it 'audit_logs e notifications NÃO cascateiam da hierarquia (D-H6)' do

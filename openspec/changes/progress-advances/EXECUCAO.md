@@ -83,6 +83,19 @@ do estado atual, não de cache), D-AUTHZ (create owner/edit; view 403; tenant al
 5. **`PATCH /tasks/:id` JÁ rejeita `progress`/`status`** (robot-tasks G3 devolve 422
    `read_only_field`). A tarefa 4.4 vira refinamento: apontar o endpoint de avanço na
    resposta. Baixo risco.
+6. **TENSÃO D-H6 × D-IMUT (descoberta no G1 — precisa de decisão de produto).**
+   `commissioning-hierarchy` (D-H6) fez `tasks → robots` `ON DELETE CASCADE` (excluir um
+   projeto cascateia até as tarefas, para não dar 500 de FK). `progress-advances` (D-IMUT)
+   fez `task_advances → tasks` `ON DELETE RESTRICT` + trigger de imutabilidade — a trilha
+   NUNCA é apagada. Consequência: HARD-deletar um robô/célula/projeto que tenha tarefas
+   COM avanços FALHARIA (o cascade tentaria apagar `tasks`, e a RESTRICT/trigger aborta →
+   500). O soft-delete de `tasks` (decisão 1) resolve o DELETE de tarefa AVULSA, mas NÃO o
+   cascade de HARD delete da hierarquia. Resolução completa = a hierarquia
+   (projects/cells/robots) também virar soft-delete — FOLLOW-UP de
+   `commissioning-hierarchy`/`robot-tasks`, FORA do escopo de progress-advances. A suíte
+   fica verde (nenhum spec de exclusão da hierarquia cria avanços antes de excluir); o
+   `hierarchy_fk_contract_spec` foi ajustado (task_advances = RESTRICT, com a tensão
+   documentada no próprio spec). SINALIZADO ao usuário.
 
 ## Armadilhas previstas
 
@@ -113,8 +126,9 @@ Aplicar (migrations dev+test como migrator; re-rodar roles.sql quando houver REV
 
 ## Progresso
 
-- [ ] G1 — Esquema + soft-delete (1.1–1.7, 6.3)
-- [ ] G2 — Máquina de estados (2.1–2.3)
+- [x] G1 — Esquema + soft-delete (1.1–1.7, 6.3) — task_advances imutável, CHECKs, RLS,
+  done⇒100, soft-delete em tasks; 2 specs herdados ajustados (boundary; FK RESTRICT)
+- [x] G2 — Máquina de estados (2.1–2.3) — ApplyTransitionService + model TaskAdvance
 - [ ] G3 — Registro de avanço (3.1–3.6)
 - [ ] G4 — API e autorização (4.1–4.5)
 - [ ] G5 — Modal de avanço (5.1–5.7)

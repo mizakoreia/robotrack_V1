@@ -25,6 +25,11 @@ class Task < ApplicationRecord
   has_many :task_assignees, dependent: :destroy
   has_many :assignees, through: :task_assignees, source: :person
 
+  # progress-advances (D-IMUT/Q1) — soft-delete: tarefa apagada some da leitura,
+  # mas a linha permanece (a trilha de avanços, imutável, aponta para ela). O
+  # `default_scope` do `WorkspaceScoped` é preservado — os dois somam.
+  default_scope { where(deleted_at: nil) }
+
   validates :cat, :desc, presence: true
   validates :weight, numericality: { greater_than: 0 }
   validates :progress, numericality: { only_integer: true, greater_than_or_equal_to: 0, less_than_or_equal_to: 100 }

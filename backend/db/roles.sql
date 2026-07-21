@@ -147,3 +147,16 @@ BEGIN
   END IF;
 END
 $$;
+
+-- Trilha de avanço append-only (progress-advances D-IMUT). Mesmo argumento: o
+-- `pg_dump -x` omite REVOKE, então um rebuild por `db:schema:load` nasceria com o
+-- runtime podendo editar/apagar a trilha imutável de comissionamento. O trigger
+-- de imutabilidade (migration C) é a rede final, mas a negação de privilégio é a
+-- primeira. Guardado por existência.
+DO $$
+BEGIN
+  IF to_regclass('public.task_advances') IS NOT NULL THEN
+    REVOKE UPDATE, DELETE ON task_advances FROM robotrack_app;
+  END IF;
+END
+$$;

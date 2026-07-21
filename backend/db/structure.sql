@@ -153,6 +153,19 @@ $$;
 
 
 --
+-- Name: task_advances_forbid_mutation(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.task_advances_forbid_mutation() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RAISE EXCEPTION 'task_advances é append-only: % proibido (progress-advances D-IMUT)', TG_OP;
+END;
+$$;
+
+
+--
 -- Name: workspaces_owner_immutable(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -400,6 +413,35 @@ CREATE TABLE public.schema_migrations (
 
 
 --
+-- Name: task_advances; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.task_advances (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    workspace_id uuid NOT NULL,
+    task_id uuid NOT NULL,
+    by uuid,
+    author_name_snapshot text NOT NULL,
+    from_progress smallint NOT NULL,
+    to_progress smallint NOT NULL,
+    comment text,
+    legacy boolean DEFAULT false NOT NULL,
+    recorded_at timestamp with time zone NOT NULL,
+    recorded_at_adjusted boolean DEFAULT false NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT chk_ta_author_name CHECK (((length(btrim(author_name_snapshot)) >= 1) AND (length(btrim(author_name_snapshot)) <= 200))),
+    CONSTRAINT chk_ta_author_null_only_legacy CHECK (((by IS NOT NULL) OR legacy)),
+    CONSTRAINT chk_ta_comment_len CHECK (((comment IS NULL) OR (char_length(comment) <= 1000))),
+    CONSTRAINT chk_ta_comment_required CHECK (((to_progress = 100) OR legacy OR ((comment IS NOT NULL) AND (btrim(comment) <> ''::text)))),
+    CONSTRAINT chk_ta_from_range CHECK (((from_progress >= 0) AND (from_progress <= 100))),
+    CONSTRAINT chk_ta_recorded_at CHECK ((recorded_at <= (created_at + '00:10:00'::interval))),
+    CONSTRAINT chk_ta_to_range CHECK (((to_progress >= 0) AND (to_progress <= 100)))
+);
+
+ALTER TABLE ONLY public.task_advances FORCE ROW LEVEL SECURITY;
+
+
+--
 -- Name: task_assignees; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -453,10 +495,12 @@ CREATE TABLE public.tasks (
     lock_version integer DEFAULT 0 NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    deleted_at timestamp with time zone,
     CONSTRAINT chk_tasks_cat CHECK (((length(btrim(cat)) >= 1) AND (length(btrim(cat)) <= 120))),
     CONSTRAINT chk_tasks_desc CHECK (((length(btrim("desc")) >= 1) AND (length(btrim("desc")) <= 200))),
     CONSTRAINT chk_tasks_progress CHECK (((progress >= 0) AND (progress <= 100))),
-    CONSTRAINT chk_tasks_weight CHECK ((weight > (0)::numeric))
+    CONSTRAINT chk_tasks_weight CHECK ((weight > (0)::numeric)),
+    CONSTRAINT tasks_done_implies_full CHECK (((status <> 'Concluído'::public.task_status) OR (progress = 100)))
 );
 
 ALTER TABLE ONLY public.tasks FORCE ROW LEVEL SECURITY;
@@ -654,6 +698,14 @@ ALTER TABLE ONLY public.robots
 
 ALTER TABLE ONLY public.schema_migrations
     ADD CONSTRAINT schema_migrations_pkey PRIMARY KEY (version);
+
+
+--
+-- Name: task_advances task_advances_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.task_advances
+    ADD CONSTRAINT task_advances_pkey PRIMARY KEY (id);
 
 
 --
@@ -938,6 +990,20 @@ CREATE INDEX index_robots_on_workspace_id ON public.robots USING btree (workspac
 
 
 --
+-- Name: index_task_advances_on_workspace_task; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_task_advances_on_workspace_task ON public.task_advances USING btree (workspace_id, task_id);
+
+
+--
+-- Name: index_task_advances_trail; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_task_advances_trail ON public.task_advances USING btree (task_id, recorded_at DESC, created_at DESC, id DESC);
+
+
+--
 -- Name: index_task_assignees_on_person_task; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -966,10 +1032,17 @@ CREATE UNIQUE INDEX index_task_templates_on_workspace_lower_desc ON public.task_
 
 
 --
+-- Name: index_tasks_on_deleted_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_tasks_on_deleted_at ON public.tasks USING btree (deleted_at) WHERE (deleted_at IS NOT NULL);
+
+
+--
 -- Name: index_tasks_on_robot_lower_desc; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE UNIQUE INDEX index_tasks_on_robot_lower_desc ON public.tasks USING btree (robot_id, lower(btrim("desc")));
+CREATE UNIQUE INDEX index_tasks_on_robot_lower_desc ON public.tasks USING btree (robot_id, lower(btrim("desc"))) WHERE (deleted_at IS NULL);
 
 
 --
@@ -1057,6 +1130,13 @@ CREATE TRIGGER memberships_owner_is_not_member BEFORE INSERT OR UPDATE ON public
 
 
 --
+-- Name: task_advances trg_task_advances_immutable; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_task_advances_immutable BEFORE DELETE OR UPDATE ON public.task_advances FOR EACH ROW EXECUTE FUNCTION public.task_advances_forbid_mutation();
+
+
+--
 -- Name: workspaces workspaces_owner_immutable; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -1117,6 +1197,22 @@ ALTER TABLE ONLY public.memberships
 
 ALTER TABLE ONLY public.robots
     ADD CONSTRAINT fk_robots_cell_same_workspace FOREIGN KEY (cell_id, workspace_id) REFERENCES public.cells(id, workspace_id) ON DELETE CASCADE;
+
+
+--
+-- Name: task_advances fk_ta_author_same_workspace; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.task_advances
+    ADD CONSTRAINT fk_ta_author_same_workspace FOREIGN KEY (workspace_id, by) REFERENCES public.people(workspace_id, id) ON DELETE RESTRICT;
+
+
+--
+-- Name: task_advances fk_ta_task_same_workspace; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.task_advances
+    ADD CONSTRAINT fk_ta_task_same_workspace FOREIGN KEY (task_id, workspace_id) REFERENCES public.tasks(id, workspace_id) ON DELETE RESTRICT;
 
 
 --
@@ -1248,6 +1344,14 @@ ALTER TABLE ONLY public.robots
 
 
 --
+-- Name: task_advances task_advances_workspace_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.task_advances
+    ADD CONSTRAINT task_advances_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id);
+
+
+--
 -- Name: task_assignees task_assignees_workspace_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1343,6 +1447,12 @@ CREATE POLICY purge_expired_select ON public.invitations FOR SELECT USING (((cur
 ALTER TABLE public.robots ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: task_advances; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.task_advances ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: task_assignees; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -1410,6 +1520,13 @@ CREATE POLICY tenant_isolation ON public.robots USING ((workspace_id = (NULLIF(c
 
 
 --
+-- Name: task_advances tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.task_advances FOR SELECT USING ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid));
+
+
+--
 -- Name: task_assignees tenant_isolation; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -1440,6 +1557,13 @@ CREATE POLICY tenant_isolation ON public.workspaces USING (((id = (NULLIF(curren
 
 
 --
+-- Name: task_advances tenant_isolation_insert; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation_insert ON public.task_advances FOR INSERT WITH CHECK ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid));
+
+
+--
 -- Name: workspaces; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -1452,6 +1576,11 @@ ALTER TABLE public.workspaces ENABLE ROW LEVEL SECURITY;
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260721160005'),
+('20260721160004'),
+('20260721160003'),
+('20260721160002'),
+('20260721160001'),
 ('20260721150002'),
 ('20260721150001'),
 ('20260721140001'),
