@@ -327,3 +327,33 @@ export const metaApi = {
   robotApplications: () =>
     apiClient.get<RobotApplication[]>('/api/v1/meta/robot_applications'),
 }
+
+// robot-tasks 4.2 (§3.5, §2.7, D-RT-6) — substituição do CONJUNTO de
+// responsáveis. `person_ids` sempre por identidade, nunca nome. A resposta é o
+// diff `{added, removed}` (arrays de person_id) — o que a UI e o tempo real
+// consomem.
+export interface AssigneeDiffDTO {
+  added: string[]
+  removed: string[]
+}
+
+export const taskAssigneesApi = {
+  replace: (taskId: string, personIds: string[]) =>
+    apiClient.put<AssigneeDiffDTO>(
+      `/api/v1/tasks/${encodeURIComponent(taskId)}/assignees`,
+      { person_ids: personIds },
+    ),
+}
+
+// robot-tasks 4.4 — `PersonDTO` e o cadastro de pessoa. O backend `POST /people`
+// é de `workspace-tenancy` (dependência declarada; ainda não entregue). Aqui só
+// o fio do cliente que o modal de atribuição consome.
+export interface PersonDTO {
+  id: string
+  name: string
+}
+
+export const peopleApi = {
+  create: (data: { id: string; name: string }) =>
+    apiClient.post<PersonDTO>('/api/v1/people', data),
+}

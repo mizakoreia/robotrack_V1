@@ -85,6 +85,22 @@ module Api
             task_result(::Tasks::DeleteService.new(context: authorization_context).call(id: params[:id]))
             body false
           end
+
+          # robot-tasks 4.2 — PUT idempotente do CONJUNTO de responsáveis.
+          # `person_ids: []` (ou ausente) zera; `assign?` → owner/edit (view 403).
+          resource :assignees do
+            route_setting :policy, policy: 'TaskPolicy', action: :assign
+            params do
+              optional :person_ids, type: Array[String], default: []
+            end
+            put do
+              result = task_result(
+                ::Tasks::AssigneesService.new(context: authorization_context)
+                  .replace(task_id: params[:id], person_ids: params[:person_ids])
+              )
+              result[:data] # { added: [...], removed: [...] }
+            end
+          end
         end
       end
     end
