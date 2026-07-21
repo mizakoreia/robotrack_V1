@@ -1,0 +1,152 @@
+# authorization-policies 5.6 / D3.11 — checklist de paridade linha a linha com
+# o `firestore.rules` do RoboTrack legado (referência EXTERNA de leitura:
+# mizakoreia/RoboTrack@50c7a2f — nenhum arquivo daquele repo entra aqui).
+#
+# Uma entrada por declaração `allow` (22 no total; `allow update, delete` numa
+# linha conta uma). Cada entrada tem OU `covered_by` (onde o porte prova a
+# regra) OU `divergence` (por que o porte diverge, de propósito). O spec
+# `legacy_parity_spec.rb` confere a contagem, exige um dos dois campos e
+# imprime o relatório de divergências.
+
+# ---- /workspaces/{wsId} -----------------------------------------------------
+- rule: "workspaces allow read"
+  line: 16
+  legacy: "dono (uid == wsId) ou membro leem o workspace"
+  covered_by: "matrix_conformance_spec — read_workspace × 3 papéis; cross_tenant_spec — não-membro recebe 404"
+
+- rule: "workspaces allow create"
+  line: 17
+  legacy: "cria o próprio workspace (uid == wsId, ownerUid == uid)"
+  divergence: >-
+    D-B: o id do workspace deixou de ser o uid do dono. No porte o workspace
+    nasce no bootstrap autenticado (workspace-tenancy), com owner_user_id
+    resolvido no servidor — uid nunca é inferência de posse (§4.1 inv. 2).
+
+- rule: "workspaces allow update"
+  line: 18
+  legacy: "dono, ou membro edit sem mudar ownerUid"
+  divergence: >-
+    Endurecimento: renomear é hoje owner-only no endpoint (mais restrito que a
+    matriz manage_catalog; revisar em workspace-settings), e a imutabilidade de
+    ownerUid virou TRIGGER + REVOKE de coluna (inv. 5), válida até para papel
+    privilegiado — não é mais condição de rule contornável.
+
+- rule: "workspaces allow delete"
+  line: 20
+  legacy: "só o dono exclui o workspace"
+  covered_by: "matrix_conformance_spec — destroy_workspace owner-only (célula da matriz; HTTP pending por workspace-settings)"
+
+# ---- /workspaces/{wsId}/members/{memberUid} ---------------------------------
+- rule: "members allow read"
+  line: 23
+  legacy: "só o dono e o PRÓPRIO membro leem a membership"
+  divergence: >-
+    Afrouxamento deliberado: o painel de equipe (§3.9) mostra a equipe a
+    qualquer membro — MembershipPolicy.index? = read_workspace. A leitura
+    continua confinada ao tenant (RLS); nada vaza entre workspaces.
+
+- rule: "members allow create"
+  line: 26
+  legacy: "dono cria direto, ou o convidado consome convite válido (não usado, não expirado, e-mail/papel batendo)"
+  covered_by: "inv_6_invite_single_use_spec + workspace-invitations spec/invitations (aceite atômico, e-mail comparado ao autenticado, expiração)"
+
+- rule: "members allow update, delete"
+  line: 35
+  legacy: "só o dono muda papel ou remove membro"
+  covered_by: "matrix_conformance_spec — manage_membership: Bruno/Clara 403, Ana executa; team_panel_spec (remoção e papel)"
+
+# ---- /workspaces/{wsId}/projects/{projectId} --------------------------------
+- rule: "projects allow read"
+  line: 41
+  legacy: "dono e membros leem projetos"
+  covered_by: "matrix_conformance_spec — read_workspace (célula); HTTP pending por commissioning-hierarchy"
+
+- rule: "projects allow write"
+  line: 42
+  legacy: "dono e membros edit escrevem projetos"
+  covered_by: "matrix_conformance_spec — manage_commissioning (célula: view false, edit true); HTTP pending por commissioning-hierarchy"
+
+# ---- /workspaces/{wsId}/logs/{logId} ----------------------------------------
+- rule: "logs allow read"
+  line: 47
+  legacy: "dono e membros leem o log"
+  covered_by: "resource_policies_spec — AuditLogPolicy.index? com view true"
+
+- rule: "logs allow create"
+  line: 48
+  legacy: "dono e membros edit criam entrada de log"
+  covered_by: "resource_policies_spec — AuditLogPolicy.create? edit true / view false"
+
+- rule: "logs allow update, delete (if false)"
+  line: 49
+  legacy: "NINGUÉM edita ou apaga log — nem o dono"
+  covered_by: "inv_3_audit_log_append_only_spec — policy sem update?/destroy?; REVOKE no banco pending por audit-log"
+
+# ---- /workspaces/{wsId}/notifications/{notifId} -----------------------------
+- rule: "notifications allow read"
+  line: 55
+  legacy: "dono e membros leem notificações"
+  covered_by: "resource_policies_spec — NotificationPolicy.index? = read_workspace"
+
+- rule: "notifications allow create"
+  line: 56
+  legacy: "dono/edit criam; read nasce false; msg string ≤ 500"
+  covered_by: "resource_policies_spec — create? = create_log (view false); DEFAULT/CHECK pending por in-app-notifications (inv_8)"
+
+- rule: "notifications allow update"
+  line: 61
+  legacy: "qualquer membro atualiza DESDE QUE só a chave read mude — inclusive notificação alheia"
+  divergence: >-
+    D-A: a rule legada deixava marcar como lida a notificação ALHEIA; a §4.1
+    inv. 4 exige a própria — NotificationPolicy.mark_read? checa o
+    destinatário (inv_4 spec). A restrição de colunas hasOnly(['read']) vira
+    TRIGGER de banco, para todos os papéis inclusive owner (pending por
+    in-app-notifications).
+
+- rule: "notifications allow delete"
+  line: 63
+  legacy: "só o dono apaga notificação"
+  divergence: >-
+    Endurecimento: o porte não expõe rota de exclusão e NotificationPolicy não
+    define destroy? — apagar notificação não existe. Se in-app-notifications
+    precisar, nasce lá com action da matriz.
+
+# ---- /invites/{token} -------------------------------------------------------
+- rule: "invites allow get"
+  line: 68
+  legacy: "qualquer autenticado lê um convite pelo token"
+  divergence: >-
+    A pré-visualização virou PÚBLICA (pré-login, D-INV-6) porém MASCARADA:
+    email_masked, sem workspace_id — menos exigência de auth, menos conteúdo.
+    Acesso continua só por token exato (função por token sob RLS), nunca
+    listagem.
+
+- rule: "invites allow list"
+  line: 70
+  legacy: "o criador lista os próprios convites"
+  covered_by: "route_sweep + matrix_conformance — GET /invitations com InvitationPolicy#index (owner-only, 403 para edit/view)"
+
+- rule: "invites allow create"
+  line: 72
+  legacy: "criador == uid, wsId == uid, used=false, role em [view,edit], email ≤ 254"
+  covered_by: "inv_7_invite_scope_spec — role owner 422 + enum; workspace alheio 403; CHECKs de email na tabela (schema da onda 4)"
+
+- rule: "invites allow update (consumo)"
+  line: 79
+  legacy: "só marca used=true, e-mail do convite tem de ser o meu"
+  covered_by: "inv_6_invite_single_use_spec + workspace-invitations accept_service specs (409 no segundo uso, 403 email_mismatch)"
+
+- rule: "invites allow delete"
+  line: 81
+  legacy: "o criador revoga o próprio convite"
+  covered_by: "matrix_conformance + team_panel_spec — DELETE /invitations/:id owner-only; cross_tenant_spec — convite de WS-A invisível a WS-B (404)"
+
+# ---- /users/{uid} -----------------------------------------------------------
+- rule: "users allow read, write"
+  line: 84
+  legacy: "cada usuário lê/escreve o próprio doc de índice de UI"
+  divergence: >-
+    O índice de UI não existe no porte: users é credencial (Devise) e NENHUMA
+    policy lê users para decidir papel (§4.1 inv. 2 — inv_2 spec prova que
+    claim/índice adulterado não concede nada). O equivalente funcional é
+    GET /api/v1/workspaces, derivado AO VIVO de workspaces + memberships.

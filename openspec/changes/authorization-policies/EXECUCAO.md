@@ -253,7 +253,7 @@ npx --yes @fission-ai/openspec@1.6.0 show     authorization-policies --json --de
 - [x] G2 — Gate no Grape (2.1–2.7) — backend 346 → 353
 - [x] G3 — Invariantes no banco (3.1–3.5) — backend 353 → 357 (1 pending)
 - [x] G4 — Cross-tenant (4.1–4.4) — backend 357 → 363 (1 pending)
-- [ ] G5 — Conformidade (5.1–5.7)
+- [x] G5 — Conformidade (5.1–5.7) — backend 363 → 461 (9 pending)
 - [ ] G6 — Fechamento (6.1–6.4)
 
 ## RETOMADA
