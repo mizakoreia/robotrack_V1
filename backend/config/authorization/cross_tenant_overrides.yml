@@ -1,0 +1,18 @@
+# authorization-policies 4.2 / D3.10 — rotas com id que o GERADOR da varredura
+# negativa não cobre, cada uma com o motivo. Rota elegível sem gerador E sem
+# entrada aqui FALHA o spec — um endpoint novo não escapa por omissão.
+- path: /api/v1/users/:id
+  method: GET
+  reason: "Superfície GLOBAL do template (gestão OG), fora do mundo de tenant: users não tem workspace_id nem RLS; o acesso é negado pelo gate OG (user_type_gate_spec)."
+- path: /api/v1/users/:id
+  method: DELETE
+  reason: "Idem GET /users/:id — global OG, sem tenant."
+- path: /api/v1/users/:id
+  method: PUT
+  reason: "Idem GET /users/:id — global OG, sem tenant."
+- path: /api/v1/users/:id
+  method: PATCH
+  reason: "Idem GET /users/:id — global OG, sem tenant."
+- path: /api/v1/workspaces/:id
+  method: PATCH
+  reason: "Isenta de tenant (workspace vem do path); anti-enumeração provada em team_panel_spec: workspace alheio e inexistente respondem o MESMO 403 workspace_access_denied."
