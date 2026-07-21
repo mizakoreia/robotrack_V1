@@ -154,6 +154,16 @@ Total: ~30 tarefas em 6 grupos de código.
    robô, que é o intent literal de §1.5. Também: `tasks` ganhou
    `index_tasks_on_workspace_id` porque a `schema_guard_spec` exige um índice
    liderado por `workspace_id` em toda tabela de domínio.
+8. **O 4.4 (modal de atribuição) enfrenta a ausência de `GET/POST /people`** —
+   endpoints de workspace-tenancy, declarados como dependência, ainda não
+   entregues. Resolução: a lista de pessoas do modal vem HOJE dos MEMBROS
+   (`membershipsApi.list`, endpoint real); `peopleApi.create` (`POST /people`) é
+   o fio do cliente para a dependência, mockado no teste. O que robot-tasks
+   possui é real e testado: `useReplaceAssignees` (invalida as tarefas do robô) e
+   `useAssigneeSelection` (toggle, cadastro-e-marca com uuid do cliente + cache
+   otimista que sobrevive ao fechamento). O `AssigneesService` filtra `person_id`
+   em branco — lixo, e também o `[""]` que o form-encoding produz para conjunto
+   vazio (a UI manda JSON; a fila offline e os testes variam).
 
 ## Progresso
 
@@ -162,7 +172,7 @@ Total: ~30 tarefas em 6 grupos de código.
 - [x] G2 — `task_assignees` (2.1–2.4) — backend 723 → 735 (11→10 pending: a
   contract spec de cascade `task_assignees→tasks` destravou)
 - [x] G3 — API de leitura e CRUD (3.1–3.7) — backend 735 → 767
-- [ ] G4 — Atribuição de responsáveis (4.1–4.5)
+- [x] G4 — Atribuição de responsáveis (4.1–4.5) — backend 767 → 780, frontend 80 → 84
 - [ ] G5 — Criação de robôs em lote (5.1–5.7)
 - [ ] G6 — Carga, fronteira e handoff (6.1–6.3)
 

@@ -48,7 +48,9 @@ RSpec.describe 'Varredura negativa de vazamento entre tenants', :tenancy, type: 
     'GET /api/v1/robots/:robot_id/tasks' => ->(ids) { ["/api/v1/robots/#{ids[:robot]}/tasks", {}] },
     'POST /api/v1/robots/:robot_id/tasks' => ->(ids) { ["/api/v1/robots/#{ids[:robot]}/tasks", { cat: 'A. Hardware', desc: 'X' }] },
     'PATCH /api/v1/tasks/:id' => ->(ids) { ["/api/v1/tasks/#{ids[:task]}", { desc: 'X', lock_version: 0 }] },
-    'DELETE /api/v1/tasks/:id' => ->(ids) { ["/api/v1/tasks/#{ids[:task]}", {}] }
+    'DELETE /api/v1/tasks/:id' => ->(ids) { ["/api/v1/tasks/#{ids[:task]}", {}] },
+    # robot-tasks G4: atribuição de responsáveis.
+    'PUT /api/v1/tasks/:id/assignees' => ->(ids) { ["/api/v1/tasks/#{ids[:task]}/assignees", { person_ids: [] }] }
   }.freeze
 
   it 'toda rota com id tem gerador OU override — e nenhum órfão' do
