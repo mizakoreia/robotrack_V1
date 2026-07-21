@@ -33,13 +33,13 @@
 
 ## 5. Interface do modal de avanço
 
-- [ ] 5.1 `features/advances/useAdvanceDraft.ts` — slider controlado por `draft ?? serverProgress`; cancelar e `Esc` limpam o rascunho e devolvem o foco ao controle de origem. (§2.4 item 5, D-UI/D9 — arrastar até `60` e cancelar devolve o slider a `45` sem nenhuma requisição de escrita; não existe `useEffect` sincronizando progresso do servidor para estado local)
-- [ ] 5.2 Handlers `−10`/`+10` lendo o progresso de `queryClient.getQueryData` no instante do clique, com clamp `[0, 100]`. (§2.4 item 1 — dois `+10` seguidos sem recarregar produzem `+20`, não `+10`; `+10` em `95` abre o modal em `100`)
-- [ ] 5.3 Modal com `de`/`para`, campo `para` editável, rótulo de comentário condicional do módulo pt-BR, e confirmar bloqueado quando `para < 100` e o comentário é vazio ou só espaços. (§2.4 itens 2–3, D14 — alterar `para` de `60` para `100` troca o rótulo e habilita o confirmar com campo vazio; três espaços não habilitam)
-- [ ] 5.4 Mutation gerando `uuid` no cliente, enviando `recorded_at` da confirmação e `lock_version` da abertura do modal, invalidando as duas query keys no sucesso. (D1/D8/D9 — duplo clique em menos de 300 ms envia o mesmo uuid e a trilha ganha 1 entrada, não 2)
-- [ ] 5.5 Tratamento de `409`: preserva o comentário, exibe autor/valor/`recorded_at` do avanço concorrente, oferece "recalcular a partir de X%" (novo uuid) ou descartar, sem retentativa automática. (D-409 — após `409` de um `+10` sobre `70`, o modal passa a `70 → 80` e o uuid enviado é diferente do que falhou)
-- [ ] 5.6 Estado somente-leitura para papel `view`: botões ocultos, slider `aria-disabled`, modal não abre. (§4.1 — remover `disabled` pelo devtools e forçar o envio resulta em `403` e recarga da tarefa, não em escrita)
-- [ ] 5.7 Testes Vitest + Testing Library dos cinco casos concretos: `45 → 100` sem comentário, `45 → 60` sem comentário, dois `+10` = `+20`, arrastar-e-cancelar, e `409` preservando o comentário. (§2.4 — cada teste nomeia o valor final esperado, não "modal funciona")
+- [x] 5.1 `features/advances/useAdvanceDraft.ts` — slider controlado por `draft ?? serverProgress`; cancelar e `Esc` limpam o rascunho e devolvem o foco ao controle de origem. (§2.4 item 5, D-UI/D9 — arrastar até `60` e cancelar devolve o slider a `45` sem nenhuma requisição de escrita; não existe `useEffect` sincronizando progresso do servidor para estado local)
+- [x] 5.2 Handlers `−10`/`+10` lendo o progresso de `queryClient.getQueryData` no instante do clique, com clamp `[0, 100]`. (§2.4 item 1 — dois `+10` seguidos sem recarregar produzem `+20`, não `+10`; `+10` em `95` abre o modal em `100`)
+- [x] 5.3 Modal com `de`/`para`, campo `para` editável, rótulo de comentário condicional do módulo pt-BR, e confirmar bloqueado quando `para < 100` e o comentário é vazio ou só espaços. (§2.4 itens 2–3, D14 — alterar `para` de `60` para `100` troca o rótulo e habilita o confirmar com campo vazio; três espaços não habilitam)
+- [x] 5.4 Mutation gerando `uuid` no cliente, enviando `recorded_at` da confirmação e `lock_version` da abertura do modal, invalidando as duas query keys no sucesso. (D1/D8/D9 — duplo clique em menos de 300 ms envia o mesmo uuid e a trilha ganha 1 entrada, não 2)
+- [x] 5.5 Tratamento de `409`: preserva o comentário, exibe autor/valor/`recorded_at` do avanço concorrente, oferece "recalcular a partir de X%" (novo uuid) ou descartar, sem retentativa automática. (D-409 — após `409` de um `+10` sobre `70`, o modal passa a `70 → 80` e o uuid enviado é diferente do que falhou)
+- [x] 5.6 Estado somente-leitura para papel `view`: botões ocultos, slider `aria-disabled`, modal não abre. (§4.1 — remover `disabled` pelo devtools e forçar o envio resulta em `403` e recarga da tarefa, não em escrita)
+- [x] 5.7 Testes Vitest + Testing Library dos cinco casos concretos: `45 → 100` sem comentário, `45 → 60` sem comentário, dois `+10` = `+20`, arrastar-e-cancelar, e `409` preservando o comentário. (§2.4 — cada teste nomeia o valor final esperado, não "modal funciona")
 
 ## 6. Integração e fechamento
 

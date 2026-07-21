@@ -149,7 +149,17 @@ Aplicar (migrations dev+test como migrator; re-rodar roles.sql quando houver REV
   entity o exige) com `dependent: :restrict_with_exception` — a FK no banco já é RESTRICT e a tarefa é
   soft-deletada, nunca destruída. O corpo do 409 sai com `task`/`latest_advance` no TOPO (D-409), não em
   `details` — o endpoint faz `error!({ error: ... }.merge(details), 409)`.
-- [ ] G5 — Modal de avanço (5.1–5.7)
+- [x] G5 — Modal de avanço (5.1–5.7) — `features/advances/`: useAdvanceDraft (slider draft??server,
+  step lê cache vivo, sem useEffect de sync), useRecordAdvance (uuid vem de fora = idempotência;
+  invalida robotTasks + trilha), AdvanceModal (rótulo condicional, confirm bloqueado <100 sem comentário,
+  409 preserva comentário + recalcular com uuid novo), AdvanceControls (±10/slider role-gated, view read-only).
+  i18n `advances.ts`, `advanceKeys.ts`. **Decisão 9 (nova):** defini `TaskDTO`/`TaskAdvanceDTO` no
+  `endpoints.ts` AGORA (a leitura da lista `GET /robots/:id/tasks` é de `robot-task-table`, futura, mas o
+  TIPO e o `taskAdvancesApi` são necessários já; o modal lê `progress`/`lock_version` do cache
+  `catalogKeys.robotTasks`). **Decisão 10:** o modal abre ao mexer no slider/±10 (o rascunho vira não-nulo);
+  o modal É o passo de confirmação — não há um segundo botão "abrir". 95 testes vitest (era 88), tsc limpo.
+  Pendência para `robot-task-table`: quem POPULA o cache `catalogKeys.robotTasks(wsId, robotId)` com `TaskDTO[]`
+  é aquela change; sem ela o modal lê progress 0 (fallback). O contrato do tipo está aqui.
 - [ ] G6 — Integração e fechamento (6.1, 6.2, 6.4)
 
 ## RETOMADA (para o próximo agente)
