@@ -108,6 +108,17 @@ Total: 34 tarefas em 6 grupos.
    caminho do seed. O teste do bootstrap que afirmava "não semeia catálogo"
    foi atualizado para afirmar os 31 templates, e ganhou o cenário de falha
    injetada (weight 0 → CHECK → rollback → zero workspace).
+7. **`GET /api/v1/meta/robot_applications` é `access: :authenticated` e isento de
+   tenant, servindo `Robot::APPLICATIONS` (não `enum_range`).** Coerente com a
+   decisão 1 (não há tipo enum a consultar) e com a natureza do dado: o enum de
+   Aplicações é global, igual para todo workspace, então exigir `X-Workspace-Id`
+   seria ruído — a rota entrou em `TENANT_EXEMPT_ROUTES`. Como não há recurso de
+   tenant a proteger, a autorização fina não se aplica (`access: :authenticated`,
+   que o gate reconhece e o route-sweep de policy aceita). O predicado `sync?` da
+   `TaskTemplatePolicy` foi adicionado já no G4 (junto do resto da matriz do
+   catálogo) e unit-testado; o endpoint que o usa é do G6. As três rotas com
+   `:id` (`show`/`patch`/`delete`) entraram no gerador cross-tenant no mesmo
+   grupo — a varredura só cresce.
 
 ## Armadilhas previstas
 
@@ -147,7 +158,7 @@ Total: 34 tarefas em 6 grupos.
 - [x] G1 — Esquema (1.1–1.7; 1.1–1.3 nao aplicadas, decisao 1) — backend 604 → 617
 - [x] G2 — Model e filtro de aplicabilidade (2.1–2.4) — backend 617 → 652
 - [x] G3 — Catálogo padrão e seed (3.1–3.6) — backend 652 → 666
-- [ ] G4 — Policy e API (4.1–4.6)
+- [x] G4 — Policy e API (4.1–4.6) — backend 666 → 712
 - [ ] G5 — Cliente (6.1–6.4)
 - [ ] G6 — Sincronização retroativa (5.1–5.7) — depende de `robot-tasks`
 

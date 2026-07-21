@@ -72,6 +72,9 @@ module Api
       %r{^/api/v1/countries},
       %r{^/api/v1/uploads},
       %r{^/api/v1/downloads},
+      # Metadados globais (task-catalog 4.5): o enum de Aplicações é o mesmo para
+      # todo tenant; a rota exige login (não é pública) mas não workspace-scoped.
+      %r{^/api/v1/meta/},
       ['GET',  %r{^/api/v1/invitations/[^/]+/?$}],
       ['POST', %r{^/api/v1/invitations/[^/]+/accept/?$}]
     ].freeze

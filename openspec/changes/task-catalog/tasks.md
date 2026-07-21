@@ -96,25 +96,34 @@ Pré-requisito de todas: `commissioning-hierarchy` entregue (tabelas `projects`,
 
 ## 4. Policy e API do catálogo
 
-- [ ] 4.1 `TaskTemplatePolicy` (`index?`/`show?` para `owner`/`edit`/`view`;
+- [x] 4.1 `TaskTemplatePolicy` (`index?`/`show?` para `owner`/`edit`/`view`;
       `create?`/`update?`/`destroy?` para `owner`/`edit`), no idioma singleton de D3.
       (§4.1 — `view` em `create?` retorna `false`; a policy é testada isoladamente, sem
       passar por HTTP.)
-- [ ] 4.2 Entity `Api::Entities::TaskTemplate` (`id`, `cat`, `desc`, `weight`,
+      *(A policy já existia do G1 de `authorization-policies`; aqui foi verificada e
+      ganhou o predicado `sync?` → `manage_catalog` (§4.1 "sincronização"), unit-testado
+      agora. O endpoint que o consome (5.4) nasce no G6, com a tabela `tasks`.)*
+- [x] 4.2 Entity `Api::Entities::TaskTemplate` (`id`, `cat`, `desc`, `weight`,
       `appFilters` em camelCase) e endpoints de leitura `GET /api/v1/task_templates` e
       `GET /api/v1/task_templates/:id`, montados em `api/v1/base.rb` com policy declarada.
       (§1.4 item 3 / §3.9 — a resposta nunca contém a chave `apps`; buscar id de outro
       workspace responde `404`, não `403`, com zero linhas retornadas pela RLS.)
-- [ ] 4.3 Endpoint `POST /api/v1/task_templates` com coerce de params que aceita `apps` e
+- [x] 4.3 Endpoint `POST /api/v1/task_templates` com coerce de params que aceita `apps` e
       `appFilters`, `appFilters` vencendo em caso de conflito, com log estruturado do
       conflito. (§1.4 item 3 — `{"apps":["Sealing"]}` cria template com filtro `Sealing`;
       enviar os dois grava `Sealing` e emite o warning.)
-- [ ] 4.4 Endpoints `PATCH` e `DELETE /api/v1/task_templates/:id` com a mesma tolerância de
+- [x] 4.4 Endpoints `PATCH` e `DELETE /api/v1/task_templates/:id` com a mesma tolerância de
       `apps`. (§3.9 — `PATCH` com `appFilters: ["Misto / Geral"]` num template `Sealing`
       persiste `{}` e o template passa a valer para robô `Solda MIG`.)
-- [ ] 4.5 Endpoint `GET /api/v1/meta/robot_applications` devolvendo `enum_range` do tipo.
+- [x] 4.5 Endpoint `GET /api/v1/meta/robot_applications` devolvendo `enum_range` do tipo.
       (§1.2 — a resposta tem 6 itens na ordem do enum e não inclui `"Todas"`.)
-- [ ] 4.6 **Verificação:** request specs negativos — `view` em `POST`/`PATCH`/`DELETE`
+      *(Serve `Robot::APPLICATIONS` — fonte única no model — e NÃO `enum_range`, porque o
+      enum Postgres não foi criado (decisão 1: `robots.application` é `text`+CHECK). Mesmo
+      contrato: 6 itens na ordem da §1.2, sem `"Todas"`. Declarada `access: :authenticated`
+      e isenta de tenant (o enum é global, igual para todo workspace); exige login, não
+      `X-Workspace-Id`. Entrou em `TENANT_EXEMPT_ROUTES`, fora da varredura de tenant, e o
+      route-sweep de policy aceita `access: :authenticated`.)*
+- [x] 4.6 **Verificação:** request specs negativos — `view` em `POST`/`PATCH`/`DELETE`
       recebe `403` com contagem de linhas idêntica antes e depois; `edit` do workspace A
       em template do workspace B recebe `404` e o `desc` original permanece. (§4.1 inv. 1 e
       2 — bloqueio de UI não conta; o teste bate direto no endpoint com token válido.)

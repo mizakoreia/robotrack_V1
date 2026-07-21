@@ -21,7 +21,7 @@ main (48497fd)                     ← ondas 1–4, sem nada desta sessão
 
 | Suíte | Resultado |
 |---|---|
-| Backend `bundle exec rspec` (como `robotrack_app`) | **666 / 0 falhas / 12 pending** |
+| Backend `bundle exec rspec` (como `robotrack_app`) | **712 / 0 falhas / 12 pending** |
 | Frontend `vitest run` | **75 / 0** |
 | Frontend `tsc --noEmit` | limpo |
 
@@ -67,13 +67,23 @@ cenário de falha injetada provando rollback); scope `TaskTemplate.ordered` com 
 O seed deixou de passar pelo evento `workspace.bootstrapped` (não satisfaz a atomicidade
 da §1.3) — ver EXECUCAO decisão 6.
 
-**Próximo passo — TC-G4** (tarefas 4.1–4.6): policy `TaskTemplatePolicy` (verificação +
-predicado), entity `Api::Entities::TaskTemplate` (com `appFilters` em camelCase), CRUD
-`GET/POST/PATCH/DELETE /api/v1/task_templates` (coerce que tolera `apps`, `appFilters`
-vence com warning), `GET /api/v1/meta/robot_applications` servindo `Robot::APPLICATIONS`,
-e a varredura negativa (route-sweep + cross-tenant crescem juntas). Depois: **TC-G5**
-(cliente), **TC-G6** (sincronização retroativa §2.6 — **depende da tabela `tasks`**, de
-`robot-tasks`; por isso foi movido para o fim).
+Feito (G4 — tarefas 4.1–4.6): `TaskTemplatePolicy` verificada + predicado `sync?`
+(unit-testado; endpoint só no G6); entity `Api::Entities::TaskTemplate` (`appFilters`
+camelCase, `weight` inteiro quando integral); CRUD `GET/POST/PATCH/DELETE
+/api/v1/task_templates` (coerce que tolera `apps`, `appFilters` vence com warning
+estruturado; 404 byte-idêntico cross-tenant; 409 por id do cliente); `GET
+/api/v1/meta/robot_applications` servindo `Robot::APPLICATIONS` (`access: :authenticated`,
+isento de tenant — ver EXECUCAO decisão 7); route-sweep, cross-tenant e superfície do
+swagger cresceram no mesmo grupo.
+
+**Próximo passo — TC-G5** (tarefas 6.1–6.4): cliente TS — grupo `taskTemplates` em
+`endpoints.ts` (list/create/update/destroy) + `robots.syncTaskTemplates`, tipados com
+`appFilters` (nunca `apps`); hooks React Query (`['ws', wsId, 'taskTemplates']`,
+`['meta','robotApplications']` com `staleTime: Infinity`), a mutation de sync invalidando
+`['ws', wsId, 'robot', robotId, 'tasks']`; tipo `RobotApplication` derivado do endpoint de
+metadados (sem lista literal em TS); e o teste ponta a ponta de §3.9. Depois: **TC-G6**
+(sincronização retroativa §2.6 — **depende da tabela `tasks`**, de `robot-tasks`; por isso
+foi movido para o fim).
 
 ## Depois de `task-catalog`
 
