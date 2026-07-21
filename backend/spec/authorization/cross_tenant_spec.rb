@@ -32,7 +32,14 @@ RSpec.describe 'Varredura negativa de vazamento entre tenants', :tenancy, type: 
   GERADORES = {
     'DELETE /api/v1/invitations/:id' => ->(ids) { ["/api/v1/invitations/#{ids[:invitation]}", {}] },
     'PATCH /api/v1/memberships/:id' => ->(ids) { ["/api/v1/memberships/#{ids[:membership]}", { role: 'edit' }] },
-    'DELETE /api/v1/memberships/:id' => ->(ids) { ["/api/v1/memberships/#{ids[:membership]}", {}] }
+    'DELETE /api/v1/memberships/:id' => ->(ids) { ["/api/v1/memberships/#{ids[:membership]}", {}] },
+    # commissioning-hierarchy G3: os endpoints novos nascem DENTRO da varredura.
+    'PATCH /api/v1/projects/:id' => ->(ids) { ["/api/v1/projects/#{ids[:project]}", { name: 'X', lock_version: 0 }] },
+    'DELETE /api/v1/projects/:id' => ->(ids) { ["/api/v1/projects/#{ids[:project]}", {}] },
+    'PATCH /api/v1/cells/:id' => ->(ids) { ["/api/v1/cells/#{ids[:cell]}", { name: 'X', lock_version: 0 }] },
+    'DELETE /api/v1/cells/:id' => ->(ids) { ["/api/v1/cells/#{ids[:cell]}", {}] },
+    'PATCH /api/v1/robots/:id' => ->(ids) { ["/api/v1/robots/#{ids[:robot]}", { name: 'X', lock_version: 0 }] },
+    'DELETE /api/v1/robots/:id' => ->(ids) { ["/api/v1/robots/#{ids[:robot]}", {}] }
   }.freeze
 
   it 'toda rota com id tem gerador OU override — e nenhum órfão' do
@@ -71,7 +78,14 @@ RSpec.describe 'Varredura negativa de vazamento entre tenants', :tenancy, type: 
           created_by_person_id: pessoa_ana.id
         ).id
       end
-      { membership: membership_id, invitation: invitation_id }
+      hierarquia = in_workspace(ws_a) do
+        projeto = Project.create!(name: 'P de A')
+        celula = Cell.create!(project_id: projeto.id, name: 'C de A')
+        robo = Robot.create!(cell_id: celula.id, name: 'R de A')
+        { project: projeto.id, cell: celula.id, robot: robo.id }
+      end
+
+      { membership: membership_id, invitation: invitation_id }.merge(hierarquia)
     end
 
     def headers_diego

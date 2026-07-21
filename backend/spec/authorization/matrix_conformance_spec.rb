@@ -80,9 +80,30 @@ RSpec.describe 'Conformidade papel × ação com a §4.1', :tenancy, type: :requ
       expect(response).to have_http_status(:created)
     end
 
-    it 'manage_commissioning por HTTP (projetos, células, robôs, tarefas)' do
-      pending 'bloqueada por commissioning-hierarchy — os endpoints de projeto/célula/robô/tarefa não existem'
-      raise 'implementar quando commissioning-hierarchy expuser as rotas'
+    it 'manage_commissioning por HTTP: Clara (view) não cria/edita/exclui; Bruno (edit) executa' do
+      projeto = in_workspace(ws) { Project.create!(name: 'Linha HTTP') }
+      celula  = in_workspace(ws) { Cell.create!(project_id: projeto.id, name: 'Célula HTTP') }
+      robo    = in_workspace(ws) { Robot.create!(cell_id: celula.id, name: 'Robô HTTP') }
+
+      post '/api/v1/projects', params: { name: 'De Clara' }, headers: headers(clara)
+      expect(response).to have_http_status(:forbidden)
+      patch "/api/v1/cells/#{celula.id}", params: { name: 'X', lock_version: 0 }, headers: headers(clara)
+      expect(response).to have_http_status(:forbidden)
+      delete "/api/v1/robots/#{robo.id}", headers: headers(clara)
+      expect(response).to have_http_status(:forbidden)
+      expect(in_workspace(ws) { Robot.count }).to eq(1)
+
+      post '/api/v1/projects', params: { name: 'De Bruno' }, headers: headers(bruno)
+      expect(response).to have_http_status(:created)
+      patch "/api/v1/cells/#{celula.id}", params: { name: 'Renomeada', lock_version: 0 }, headers: headers(bruno)
+      expect(response).to have_http_status(:ok)
+      delete "/api/v1/robots/#{robo.id}", headers: headers(bruno)
+      expect(response).to have_http_status(:no_content)
+    end
+
+    it 'manage_commissioning por HTTP para TAREFAS' do
+      pending 'bloqueada por robot-tasks — os endpoints de tarefa não existem'
+      raise 'implementar quando robot-tasks expuser as rotas'
     end
 
     it 'record_progress por HTTP (avanços, atribuição, reordenação)' do
