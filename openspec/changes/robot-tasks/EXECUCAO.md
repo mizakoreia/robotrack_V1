@@ -165,6 +165,17 @@ Total: ~30 tarefas em 6 grupos de código.
    em branco — lixo, e também o `[""]` que o form-encoding produz para conjunto
    vazio (a UI manda JSON; a fila offline e os testes variam).
 
+9. **D-RT-4 divergiu da realidade: o índice único de nome por célula JÁ EXISTE.**
+   `commissioning-hierarchy` entregou `index_robots_on_cell_lower_name UNIQUE
+   (cell_id, lower(name))`. D-RT-4 assumia que ele NÃO existiria (para permitir
+   "dois robôs homônimos em levas diferentes na mesma célula"). Como ele existe,
+   esse comportamento legado NÃO é preservado — e está correto para o alvo (nome
+   repetido na mesma célula é erro). A dedup na leva (5.1) continua necessária,
+   senão o `insert_all` da própria leva violaria o índice; um nome colidindo com
+   robô já existente na célula faz a leva inteira dar rollback (422 `name_taken`).
+   Registrado; se algum consumidor precisar de homônimos por célula, é decisão de
+   `commissioning-hierarchy` (dona do índice).
+
 ## Progresso
 
 - [x] G1 — Esquema `tasks` (1.1–1.6) — backend 712 → 723 (12→11 pending: a
@@ -173,7 +184,7 @@ Total: ~30 tarefas em 6 grupos de código.
   contract spec de cascade `task_assignees→tasks` destravou)
 - [x] G3 — API de leitura e CRUD (3.1–3.7) — backend 735 → 767
 - [x] G4 — Atribuição de responsáveis (4.1–4.5) — backend 767 → 780, frontend 80 → 84
-- [ ] G5 — Criação de robôs em lote (5.1–5.7)
+- [x] G5 — Criação de robôs em lote (5.1–5.7) — backend 780 → 796, frontend 84 → 88
 - [ ] G6 — Carga, fronteira e handoff (6.1–6.3)
 
 ## RETOMADA

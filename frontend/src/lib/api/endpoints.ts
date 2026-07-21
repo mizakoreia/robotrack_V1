@@ -278,6 +278,26 @@ export const hierarchyApi = {
     apiClient.post<SyncResultDTO>(
       `/api/v1/robots/${encodeURIComponent(robotId)}/sync_task_templates`,
     ),
+
+  // robot-tasks 5.5 (§2.5) — criação de robôs em lote numa única requisição. O
+  // servidor normaliza (trim, dedup, clamp 50) e materializa as tarefas-base
+  // filtradas pela Aplicação. `id` por robô é uuid do cliente (D1).
+  batchCreateRobots: (cellId: string, data: { application: string; robots: BatchRobotInput[] }) =>
+    apiClient.post<BatchResultDTO>(
+      `/api/v1/cells/${encodeURIComponent(cellId)}/robots/batch`,
+      data,
+    ),
+}
+
+export interface BatchRobotInput {
+  id: string
+  name: string
+}
+
+export interface BatchResultDTO {
+  robots: { id: string; name: string; application: string; position: number }[]
+  robot_count: number
+  tasks_per_robot: number
 }
 
 // task-catalog 6.1 (§1.1, §3.9, §1.4 item 3, D-TC-5) — catálogo de tarefas-base.
