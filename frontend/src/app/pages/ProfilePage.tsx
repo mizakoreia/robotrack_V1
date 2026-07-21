@@ -5,7 +5,6 @@ import { withHistory, HistoryEditor } from 'slate-history'
  
 import { useAuthStore } from '@/store/authStore'
 import { authApi, usersApi } from '@/lib/api/endpoints'
-import { authService } from '@/lib/api/auth'
 import { apiClient } from '@/lib/api/client'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
@@ -330,7 +329,8 @@ export function ProfilePage() {
   }
 
   useEffect(() => {
-    authApi.me().then((u) => {
+    authApi.me().then((r) => {
+      const u: any = r.data.user
       setOriginal(u)
       setValues({
         name: u.name || '',
@@ -348,9 +348,6 @@ export function ProfilePage() {
       })
       setBio((u as any).biography_html || (u as any).biography || (u as any).biography_text || '')
       setUser(u)
-    }).catch(() => {})
-    authService.checkSessionStatus().then((res: any) => {
-      if (res?.csrf_token) localStorage.setItem('csrf_token', res.csrf_token)
     }).catch(() => {})
   }, [])
 
@@ -436,15 +433,15 @@ export function ProfilePage() {
     setIsSaving(true)
     setShowActions(false)
     try {
-      let updated = original
+      let updated: any = original
       if (Object.keys(dirtyFields).length) {
-        updated = await authApi.updateMe(dirtyFields)
+        updated = (await authApi.updateMe(dirtyFields)).data.user
         setOriginal(updated)
         setUser(updated)
       }
       if (bioDirty && original?.id) {
-        await usersApi.update(original.id, { biography: bio })
-        const refetched = await authApi.me()
+        await usersApi.update(original.id, { biography: bio } as any)
+        const refetched: any = (await authApi.me()).data.user
         setOriginal(refetched)
         setUser(refetched)
       }

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { createConsumer } from '@rails/actioncable'
+import { useAuthStore } from '../store/authStore'
 
 const WS_URL = import.meta.env.VITE_WS_URL || (window.location.origin.replace('http', 'ws').replace('5173', '3000'))
 
@@ -7,7 +8,7 @@ export function useCable() {
   const [consumer, setConsumer] = useState<any>(null)
 
   useEffect(() => {
-    const token = localStorage.getItem('access_token') || localStorage.getItem('token')
+    const token = useAuthStore.getState().accessToken
 
     let endpoint = WS_URL
     if (!endpoint.endsWith('/cable')) {

@@ -1,8 +1,9 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios'
 import { useWorkspaceStore } from '../../store/workspaceStore'
-/* import { toast } from 'sonner' */
+import { useAuthStore } from '../../store/authStore'
+import { queryClient } from '../queryClient'
 
-const API_URL = import.meta.env.VITE_API_URL || (() => {
+export const API_URL = import.meta.env.VITE_API_URL || (() => {
   try {
     const u = new URL(window.location.origin)
     u.port = '3000'
@@ -15,32 +16,41 @@ const API_URL = import.meta.env.VITE_API_URL || (() => {
 /** Config interna: `skipAuth` marca chamadas que não devem levar `Authorization`. */
 type PublicRequestConfig = AxiosRequestConfig & { skipAuth?: boolean }
 
+// Encerra a sessão local no 401 (identity-and-auth 6.3 / D4.3). NÃO há renovação
+// transparente: um 401 significa "sessão acabou" — limpa store + cache e volta
+// para /entrar. Isso mata a classe de bug em que o interceptor entra em laço de
+// refresh contra um token permanentemente inválido (o comportamento do template).
+function endSession() {
+  useAuthStore.getState().clearSession()
+  queryClient.clear()
+  try {
+    if (window.location.pathname !== '/entrar') {
+      window.location.href = '/entrar'
+    }
+  } catch {
+    /* ambiente sem window (teste): nada a redirecionar */
+  }
+}
+
 class ApiClient {
   private client: AxiosInstance
-  private isRefreshing = false
-  private refreshQueue: Array<(token: string | null) => void> = []
 
   constructor() {
     this.client = axios.create({
       baseURL: `${API_URL}`,
       timeout: 30000,
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
     })
-
     this.setupInterceptors()
   }
 
   private setupInterceptors() {
-    // Request interceptor
     this.client.interceptors.request.use(
       (config) => {
-        // Marcador interno: nunca trafega na requisição. O backend não tem —
-        // nem pode ter — um header que desligue autenticação.
         const skip = (config as PublicRequestConfig).skipAuth === true
         if (!skip) {
-          const token = localStorage.getItem('access_token') || localStorage.getItem('token')
+          // Fonte ÚNICA do token: o authStore, nunca `localStorage` direto (D4.9).
+          const token = useAuthStore.getState().accessToken
           if (token) {
             config.headers.Authorization = `Bearer ${token}`
           }
@@ -53,107 +63,51 @@ class ApiClient {
         }
         return config
       },
-      (error) => {
-        return Promise.reject(error)
-      }
+      (error) => Promise.reject(error),
     )
 
     this.client.interceptors.response.use(
       (response) => response,
-      async (error: AxiosError) => {
-        const original = error.config as AxiosRequestConfig & { _retry?: boolean }
+      (error: AxiosError) => {
+        const config = (error.config || {}) as PublicRequestConfig
         const status = error.response?.status || 0
-        const isUnauthorized = status === 401
-        if (!isUnauthorized || original._retry) {
-          return Promise.reject(error)
+        // 401 numa chamada AUTENTICADA (não pública) encerra a sessão. Chamadas
+        // públicas (login/cadastro) tratam o 401 no próprio formulário — não é
+        // "sessão expirada", é credencial inválida.
+        if (status === 401 && config.skipAuth !== true) {
+          endSession()
         }
-
-        const refreshToken = localStorage.getItem('refresh_token')
-        if (!refreshToken) {
-          // Sem refresh: sessão inválida, limpar e redirecionar
-          localStorage.removeItem('access_token')
-          localStorage.removeItem('refresh_token')
-          try { (window as any).location.href = '/login' } catch {}
-          return Promise.reject(error)
-        }
-
-        if (this.isRefreshing) {
-          return new Promise((resolve, reject) => {
-            this.refreshQueue.push((token) => {
-              if (!token) {
-                reject(error)
-                return
-              }
-              original._retry = true
-              original.headers = { ...(original.headers || {}), Authorization: `Bearer ${token}` }
-              this.client.request(original).then(resolve).catch(reject)
-            })
-          })
-        }
-
-        this.isRefreshing = true
-        try {
-          const { data } = await this.client.post<{ access_token: string; refresh_token: string }>(
-            '/auth/v1/sessions/refresh',
-            { refresh_token: refreshToken }
-          )
-          const newAccess = data.access_token
-          const newRefresh = data.refresh_token
-          if (newAccess) localStorage.setItem('access_token', newAccess)
-          if (newRefresh) localStorage.setItem('refresh_token', newRefresh)
-          this.refreshQueue.forEach((cb) => cb(newAccess || null))
-          this.refreshQueue = []
-          original._retry = true
-          original.headers = { ...(original.headers || {}), Authorization: `Bearer ${newAccess}` }
-          return this.client.request(original)
-        } catch (e) {
-          this.refreshQueue.forEach((cb) => cb(null))
-          this.refreshQueue = []
-          // Refresh falhou: sessão inválida, limpar e redirecionar
-          localStorage.removeItem('access_token')
-          localStorage.removeItem('refresh_token')
-          try { (window as any).location.href = '/login' } catch {}
-          return Promise.reject(error)
-        } finally {
-          this.isRefreshing = false
-        }
-      }
+        return Promise.reject(error)
+      },
     )
   }
 
   async get<T>(url: string, config?: AxiosRequestConfig) {
-    const response = await this.client.get<T>(url, config)
-    return response.data
+    return (await this.client.get<T>(url, config)).data
   }
 
   async getPublic<T>(url: string, config?: AxiosRequestConfig) {
-    const response = await this.client.get<T>(url, { ...(config || {}), skipAuth: true } as PublicRequestConfig)
-    return response.data
+    return (await this.client.get<T>(url, { ...(config || {}), skipAuth: true } as PublicRequestConfig)).data
   }
 
   async post<T>(url: string, data?: any, config?: AxiosRequestConfig) {
-    const response = await this.client.post<T>(url, data, config)
-    return response.data
+    return (await this.client.post<T>(url, data, config)).data
   }
 
   async postPublic<T>(url: string, data?: any, config?: AxiosRequestConfig) {
-    const response = await this.client.post<T>(url, data, { ...(config || {}), skipAuth: true } as PublicRequestConfig)
-    return response.data
+    return (await this.client.post<T>(url, data, { ...(config || {}), skipAuth: true } as PublicRequestConfig)).data
   }
 
   async put<T>(url: string, data?: any, config?: AxiosRequestConfig) {
-    const response = await this.client.put<T>(url, data, config)
-    return response.data
+    return (await this.client.put<T>(url, data, config)).data
   }
 
   async patch<T>(url: string, data?: any, config?: AxiosRequestConfig) {
-    const response = await this.client.patch<T>(url, data, config)
-    return response.data
+    return (await this.client.patch<T>(url, data, config)).data
   }
 
   async delete<T>(url: string, config?: AxiosRequestConfig) {
-    const response = await this.client.delete<T>(url, config)
-    return response.data
+    return (await this.client.delete<T>(url, config)).data
   }
 }
 

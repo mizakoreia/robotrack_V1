@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import { useRef, useState } from 'react'
 import { useTheme } from '@/hooks/useTheme'
 import { useAuthStore } from '@/store/authStore'
+import { performLogout } from '@/lib/auth/session'
 
 export function Layout() {
   const navigate = useNavigate()
@@ -18,11 +19,10 @@ export function Layout() {
   const currentUser = useAuthStore((s) => s.user)
 
   const handleLogout = () => {
-    localStorage.removeItem('access_token')
-    localStorage.removeItem('refresh_token')
-    useAuthStore.getState().logout()
-    toast.success('Logout realizado com sucesso!')
-    navigate('/login')
+    // DELETE /auth/v1/session + limpeza dos storages + queryClient.clear() +
+    // redirect; a limpeza local ocorre mesmo se a chamada falhar (identity-and-auth 6.7).
+    void performLogout((path) => navigate(path))
+    toast.success('Sessão encerrada.')
   }
 
   return (

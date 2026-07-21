@@ -35,7 +35,7 @@ export function BuildPage() {
                   className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full transition-transform duration-200 ${theme === 'dark' ? 'translate-x-6 bg-white' : 'translate-x-0 bg-black'}`}
                 />
               </button>
-              <a href="/login">
+              <a href="/entrar">
                 <Button variant="uiverse" className="px-3.5 py-1.5 text-[0.875rem] h-10">
                   <span className="inline-flex items-center justify-center gap-2">Entrar</span>
                 </Button>
@@ -82,7 +82,7 @@ export function BuildPage() {
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="text-sm text-muted-foreground">© {new Date().getFullYear()} {APP_NAME}. Todos os direitos reservados.</div>
           <div className="flex items-center gap-4 text-sm">
-            <Link to="/login" className="text-muted-foreground hover:text-foreground">Acessar</Link>
+            <Link to="/entrar" className="text-muted-foreground hover:text-foreground">Acessar</Link>
             <Link to="/dashboard" className="text-muted-foreground hover:text-foreground">Dashboard</Link>
           </div>
         </div>

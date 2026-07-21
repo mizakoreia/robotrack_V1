@@ -4,8 +4,9 @@ import { Toaster } from 'sonner'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import { Layout } from '@/components/Layout'
 import { HomePage } from '@/app/pages/HomePage'
-import { LoginPage } from '@/app/pages/LoginPage'
+import { AuthPage } from '@/features/auth/AuthPage'
 import { OAuthCallbackPage } from '@/features/auth/OAuthCallbackPage'
+import { InviteRoute } from '@/features/auth/InviteRoute'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { DashboardPage } from '@/app/pages/DashboardPage'
 import { UsersPage } from '@/app/pages/UsersPage'
@@ -19,10 +20,11 @@ function App() {
       <div className="min-h-screen bg-background font-sans antialiased">
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/login" element={<LoginPage />} />
+          <Route path="/entrar" element={<AuthPage />} />
           <Route path="/build" element={<BuildPage />} />
 
           <Route path="/auth/callback" element={<OAuthCallbackPage />} />
+          <Route path="/convite/:token" element={<InviteRoute />} />
           <Route
             element={
               <ProtectedRoute>

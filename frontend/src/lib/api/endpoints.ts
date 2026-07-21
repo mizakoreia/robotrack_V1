@@ -1,41 +1,64 @@
-import { apiClient } from './client'
-import type { 
-  LoginRequest, 
-  LoginResponse, 
-  RefreshTokenResponse,
-  User,
-} from './types'
+import { apiClient, API_URL } from './client'
+import type { User } from './types'
+
+// Superfície de autenticação (identity-and-auth). O envelope de sucesso é
+// `{ data: { access_token, user } }`; erros vêm em `error`/`errors` (mapeados
+// pelo interceptor de erro no cliente). O Google é um REDIRECT de página inteira
+// para o backend — não um endpoint XHR.
+export interface AuthUserDTO {
+  id: string
+  name: string
+  email: string
+  avatar_url?: string | null
+}
+
+export interface AuthEnvelope {
+  data: { access_token: string; user: AuthUserDTO }
+}
+
+export interface RegisterInput {
+  name: string
+  email: string
+  password: string
+  remember_me: boolean
+}
+
+export interface LoginInput {
+  email: string
+  password: string
+  remember_me: boolean
+}
 
 export const authApi = {
-  // OAuth URLs
-  getGoogleAuthUrl: (redirectUri?: string) =>
-    apiClient.get<{ url: string }>(`/auth/v1/oauth/google_url${redirectUri ? `?redirect_uri=${redirectUri}` : ''}`),
-  
-  getFacebookAuthUrl: (redirectUri?: string) =>
-    apiClient.get<{ url: string }>(`/auth/v1/oauth/facebook_url${redirectUri ? `?redirect_uri=${redirectUri}` : ''}`),
-  
-  // OAuth callback
-  handleOAuthCallback: (provider: 'google' | 'facebook', code: string, state?: string) =>
-    apiClient.post<LoginResponse>('/auth/v1/oauth/callback', { provider, code, state }),
-  
-  // Session management
-  refresh: (refreshToken: string) =>
-    apiClient.post<RefreshTokenResponse>('/auth/v1/sessions/refresh', { refresh_token: refreshToken }),
-  
-  logout: () =>
-    apiClient.post('/auth/v1/sessions/logout'),
-  
-  getSessionStatus: () =>
-    apiClient.get<{ valid: boolean; user?: User }>('/auth/v1/sessions/status'),
+  register: (data: RegisterInput) =>
+    apiClient.postPublic<AuthEnvelope>('/auth/v1/registration', data),
 
-  // Legacy endpoints (deprecated)
-  login: (data: LoginRequest) => 
-    apiClient.post<LoginResponse>('/auth/v1/login', data),
-  
+  login: (data: LoginInput) =>
+    apiClient.postPublic<AuthEnvelope>('/auth/v1/session', data),
+
+  logout: () =>
+    apiClient.delete('/auth/v1/session'),
+
+  renew: () =>
+    apiClient.post<AuthEnvelope>('/auth/v1/session/renew'),
+
   me: () =>
-    apiClient.get<User>('/auth/v1/me'),
-  updateMe: (data: Partial<User>) =>
-    apiClient.patch<User>('/auth/v1/me', data, { headers: { 'X-CSRF-Token': localStorage.getItem('csrf_token') || 'dev' } }),
+    apiClient.get<{ data: { user: AuthUserDTO } }>('/auth/v1/me'),
+
+  // Edição de perfil é do template (fora do escopo de identity-and-auth, que
+  // enxugou GET /auth/v1/me). Mantido para compat de ProfilePage.
+  updateMe: (data: Record<string, unknown>) =>
+    apiClient.patch<{ data: { user: AuthUserDTO } }>('/auth/v1/me', data),
+
+  // Redirect de página inteira para o Google (D4.4). `remember_me` viaja em
+  // omniauth.params e volta ao callback.
+  googleRedirectUrl: (remember: boolean) =>
+    `${API_URL}/users/auth/google_oauth2?remember_me=${remember ? 'true' : 'false'}`,
+
+  // Aceite do convite — servido por `workspace-invitations`. Aqui o cliente só
+  // repassa o token opaco capturado antes do login.
+  acceptInvite: (token: string) =>
+    apiClient.post(`/api/v1/invitations/${encodeURIComponent(token)}/accept`),
 }
 
 export const usersApi = {

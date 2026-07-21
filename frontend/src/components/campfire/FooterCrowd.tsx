@@ -146,7 +146,7 @@ export function FooterCrowd() {
             <div className="text-xs md:text-sm">{new Date().getFullYear()} © RoboTrack - Todos os direitos reservados.</div>
             <div className="text-2xl md:text-3xl font-bold">Construído por makers que chegaram<br/>muito antes do seu claudinho.</div>
             <div className="flex items-center gap-4 text-sm">
-              <a href="/login" className="underline">Acessar</a>
+              <a href="/entrar" className="underline">Acessar</a>
               <a href="/dashboard" className="underline">Dashboard</a>
             </div>
           </div>

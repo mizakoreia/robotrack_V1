@@ -1,37 +1,38 @@
 import { describe, it, expect } from 'vitest'
-import { authService } from '../auth'
 import { authApi } from '../endpoints'
 
-// A versão anterior deste arquivo definia um objeto mock e então afirmava que
-// esse mesmo objeto tinha os métodos que ela acabara de escrever nele — verde
-// sem tocar em código de produção. Aqui se asserta a superfície real.
-describe('superfície de autenticação', () => {
-  it('expõe o fluxo de OAuth e de sessão', () => {
-    expect(typeof authService.getGoogleAuthUrl).toBe('function')
-    expect(typeof authService.handleOAuthCallback).toBe('function')
-    expect(typeof authService.checkSessionStatus).toBe('function')
-    expect(typeof authService.refreshAccessToken).toBe('function')
-    expect(typeof authService.logout).toBe('function')
+// Superfície de autenticação (identity-and-auth). A do template (OAuth por URL
+// XHR + refresh token + magic-login) deu lugar a: cadastro/login por senha,
+// logout que revoga, renovação explícita, e Google por REDIRECT de página
+// inteira (não um endpoint XHR).
+describe('superfície de autenticação (authApi)', () => {
+  it('expõe cadastro, login, logout, renovação e me', () => {
+    expect(typeof authApi.register).toBe('function')
+    expect(typeof authApi.login).toBe('function')
+    expect(typeof authApi.logout).toBe('function')
+    expect(typeof authApi.renew).toBe('function')
+    expect(typeof authApi.me).toBe('function')
   })
 
-  it('não expõe mais nada do magic-login de 6 dígitos', () => {
-    const removidos = [
-      'requestMagicLogin',
-      'validateMagicCode',
-      'preRegister',
-      'verifyPreRegisterCode',
-      'completeRegistration',
-    ]
-
-    removidos.forEach((metodo) => {
-      expect(authService[metodo as keyof typeof authService]).toBeUndefined()
-    })
+  it('o Google é um REDIRECT, não um endpoint XHR', () => {
+    expect(typeof authApi.googleRedirectUrl).toBe('function')
+    const url = authApi.googleRedirectUrl(true)
+    expect(url).toContain('/users/auth/google_oauth2')
+    expect(url).toContain('remember_me=true')
+    // Não há mais fetch de URL de OAuth nem troca de code.
+    expect('getGoogleAuthUrl' in authApi).toBe(false)
+    expect('handleOAuthCallback' in authApi).toBe(false)
   })
 
-  it('authApi não expõe mais os endpoints de código', () => {
-    expect('requestMagicCode' in authApi).toBe(false)
-    expect('validateMagicCode' in authApi).toBe(false)
-    expect('canResendCode' in authApi).toBe(false)
-    expect(typeof authApi.getGoogleAuthUrl).toBe('function')
+  it('não há mais refresh token nem magic-login', () => {
+    expect('refresh' in authApi).toBe(false)
+    expect('getSessionStatus' in authApi).toBe(false)
+    for (const metodo of ['requestMagicCode', 'validateMagicCode', 'canResendCode', 'preRegister']) {
+      expect(metodo in authApi).toBe(false)
+    }
+  })
+
+  it('expõe o repasse do token de convite', () => {
+    expect(typeof authApi.acceptInvite).toBe('function')
   })
 })

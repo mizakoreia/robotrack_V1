@@ -5,12 +5,11 @@ import { Navigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
 
 export function OgRoute({ children }: { children: React.ReactNode }) {
-  const { user, isAuthenticated } = useAuthStore()
-  const token = localStorage.getItem('access_token')
+  const { user, isAuthenticated, accessToken } = useAuthStore()
 
-  if (!token) return <Navigate to="/login" replace />
+  if (!accessToken) return <Navigate to="/entrar" replace />
 
-  const t = (user?.user_type || '').toLowerCase()
+  const t = ((user as { user_type?: string } | null)?.user_type || '').toLowerCase()
   const allowed = isAuthenticated && (t.includes('og') || t.includes('super'))
   if (!allowed) return <Navigate to="/dashboard" replace />
 

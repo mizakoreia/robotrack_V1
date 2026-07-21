@@ -1,55 +1,46 @@
-// Componente de guarda de rotas protegidas
-// Verifica a presença de token e confirma a sessão no servidor antes de liberar o conteúdo.
-// Em caso de sessão inválida, remove tokens, limpa store e redireciona para login.
+// Guarda de rotas protegidas (identity-and-auth 6.x). O token tem uma fonte
+// única — o authStore. Sem token, redireciona para /entrar. Com token, confirma
+// a identidade em GET /auth/v1/me e sincroniza o usuário; um 401 já encerra a
+// sessão pelo interceptor do cliente.
 import React, { useEffect, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
-import { authService } from '@/lib/api/auth'
+import { authApi } from '@/lib/api/endpoints'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
 }
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { setUser, logout, isAuthenticated } = useAuthStore()
-  const [checking, setChecking] = useState(true)
-  /* const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null */
-
-  // Não sair cedo, sempre verificar sessão no servidor; caso não exista token,
-  // a verificação cairá no bloco de erro/invalid e fará logout + redirect.
+  const accessToken = useAuthStore((s) => s.accessToken)
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const [checking, setChecking] = useState(!!accessToken)
 
   useEffect(() => {
-    let mounted = true
-    // Função que valida a sessão atual no backend e sincroniza o usuário no store
-    async function verify() {
-      try {
-        const res = await authService.checkSessionStatus()
-        if ((res?.authenticated || res?.valid) && res.user) {
-          setUser?.(res.user as any)
-          if (mounted) setChecking(false)
-        } else {
-          // Sessão inválida: remove tokens e força logout
-          localStorage.removeItem('access_token')
-          localStorage.removeItem('refresh_token')
-          logout()
-          if (mounted) setChecking(false)
-        }
-      } catch {
-        // Erro na verificação: assume sessão inválida e faz logout defensivo
-        localStorage.removeItem('access_token')
-        localStorage.removeItem('refresh_token')
-        logout()
-        if (mounted) setChecking(false)
-      }
+    if (!accessToken) {
+      setChecking(false)
+      return
     }
-    verify()
+    let mounted = true
+    authApi
+      .me()
+      .then(({ data }) => {
+        if (mounted) {
+          useAuthStore.getState().setUser(data.user)
+          setChecking(false)
+        }
+      })
+      .catch(() => {
+        // 401 é tratado pelo interceptor (encerra a sessão). Outros erros: solta.
+        if (mounted) setChecking(false)
+      })
     return () => {
       mounted = false
     }
-  }, [setUser, logout])
+  }, [accessToken])
 
-  if (!checking && (!localStorage.getItem('access_token') || !isAuthenticated)) {
-    return <Navigate to="/login" replace />
+  if (!accessToken || !isAuthenticated) {
+    return <Navigate to="/entrar" replace />
   }
 
   if (checking) {
