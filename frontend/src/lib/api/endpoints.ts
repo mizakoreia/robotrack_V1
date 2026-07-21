@@ -378,3 +378,94 @@ export const peopleApi = {
   create: (data: { id: string; name: string }) =>
     apiClient.post<PersonDTO>('/api/v1/people', data),
 }
+
+// progress-advances 4.3 — a Tarefa como o backend a serializa (entity `Task`).
+// `advances_count`/`last_comment` alimentam o aviso "trilha faltando" de
+// `robot-task-table` (0<progress<100 AND advances_count=0) sem consulta extra.
+// A leitura da lista (GET /robots/:id/tasks) pertence a `robot-task-table`; aqui
+// só o TIPO, que o modal de avanço lê do cache para decidir `de`/`lock_version`.
+export interface TaskDTO {
+  id: string
+  robot_id: string
+  cat: string
+  desc: string
+  weight: number
+  progress: number
+  status: 'Pendente' | 'Em Andamento' | 'Concluído' | 'N/A'
+  position: number
+  lock_version: number
+  updated_at: string
+  assignees: { id: string; name: string }[]
+  advances_count: number
+  last_comment: string | null
+}
+
+// progress-advances 4.3 — uma entrada da trilha de avanço (entity `TaskAdvance`).
+// `synced_late` é derivado no servidor (anotado no dispositivo >1h antes de
+// chegar); `recorded_at_adjusted` marca `recorded_at` clampado (relógio errado).
+export interface TaskAdvanceDTO {
+  id: string
+  task_id: string
+  from_progress: number
+  to_progress: number
+  comment: string | null
+  author_name_snapshot: string
+  legacy: boolean
+  recorded_at: string
+  created_at: string
+  recorded_at_adjusted: boolean
+  synced_late: boolean
+}
+
+// A resposta do POST: o avanço criado + a tarefa já com progress/status/
+// lock_version novos (o cliente reconcilia o cache com ela). `replay: true` num
+// reenvio idempotente do mesmo uuid (D-ID).
+export interface RecordAdvanceResult {
+  advance: TaskAdvanceDTO
+  task: TaskDTO
+  replay: boolean
+}
+
+// O corpo do 409 (D-409): NÃO é erro de rede, traz o estado atual para a UI
+// oferecer "recalcular a partir de X%". `latest_advance` pode faltar (tarefa
+// nunca avançada, conflito por outra via) — por isso opcional.
+export interface AdvanceConflict {
+  error: 'conflito_de_versao'
+  task: { id: string; progress: number; status: string; lock_version: number }
+  latest_advance?: {
+    author_name_snapshot: string
+    to_progress: number
+    recorded_at: string
+    comment: string | null
+  }
+}
+
+export interface RecordAdvanceInput {
+  id: string
+  progress?: number
+  status?: string
+  comment?: string
+  recorded_at?: string
+  lock_version?: number
+}
+
+export const taskAdvancesApi = {
+  // progress-advances 4.2 — registra um avanço. `id` (uuid do cliente, D1) é a
+  // chave de idempotência: reenviar o mesmo devolve 200 replay, não duplica.
+  create: (taskId: string, data: RecordAdvanceInput) =>
+    apiClient.post<RecordAdvanceResult>(
+      `/api/v1/tasks/${encodeURIComponent(taskId)}/advances`,
+      data,
+    ),
+
+  // A trilha paginada, mais recentes primeiro. `robot-task-table`/histórico a lê.
+  list: (taskId: string, params?: { page?: number; perPage?: number }) => {
+    const q = new URLSearchParams()
+    if (params?.page) q.set('page', String(params.page))
+    if (params?.perPage) q.set('per_page', String(params.perPage))
+    const suffix = q.toString() ? `?${q}` : ''
+    return apiClient.get<TaskAdvanceDTO[]>(
+      `/api/v1/tasks/${encodeURIComponent(taskId)}/advances${suffix}`,
+    )
+  },
+}
