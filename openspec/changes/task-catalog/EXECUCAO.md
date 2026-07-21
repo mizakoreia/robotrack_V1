@@ -170,7 +170,40 @@ Total: 34 tarefas em 6 grupos.
 - [x] G3 — Catálogo padrão e seed (3.1–3.6) — backend 652 → 666
 - [x] G4 — Policy e API (4.1–4.6) — backend 666 → 712
 - [x] G5 — Cliente (6.1–6.4) — frontend 75 → 80, tsc limpo
-- [ ] G6 — Sincronização retroativa (5.1–5.7) — depende de `robot-tasks`
+- [x] G6 — Sincronização retroativa (5.1–5.7) — backend +sync, frontend fix do DTO
+
+## CONCLUSÃO
+
+Change **task-catalog ENTREGUE — 6 de 6 grupos.** O G6 (sync retroativo §2.6),
+que estava bloqueado pela tabela `tasks`, fechou depois que `robot-tasks` a criou
+(empilhada sobre esta branch). O catálogo é agora a fonte completa de toda tarefa:
+seed dos 31 na criação do workspace, CRUD autorizado, filtro §2.5 único, e a
+sincronização que aplica os templates faltantes a robôs já existentes.
+
+O G6 entregou:
+
+- **`TaskTemplates::SyncToRobotService`** — `SELECT ... FOR UPDATE` na linha do
+  robô, seleção por `ApplicabilityFilter`, diff por `lower(btrim(desc))`,
+  `insert_all` só das faltantes (`progress 0`, `Pendente`, sem responsável, `weight`
+  do template, `position` continuando a maior). NUNCA sobrescreve; retorna
+  `{ added_count }` = linhas inseridas. O índice único `(robot_id, lower(btrim(desc)))`
+  (de robot-tasks) é o backstop da corrida.
+- **`POST /api/v1/robots/:id/sync_task_templates`** com `TaskTemplatePolicy.sync?`;
+  resposta camelCase `addedCount`. Entrou no route-sweep e no gerador cross-tenant.
+- Specs: aplicabilidade (Handling recebe Gripper e pula Calibração de Cola; MIG não
+  recebe nenhum dos dois), não-sobrescrita (progresso/status/responsável preservados;
+  `"tcp check "` bloqueia `"TCP Check"`; tarefa manual bloqueia o template),
+  contagem honesta (28 quando 2 já existem; 0 no re-sync; rollback sem contagem
+  parcial), isolamento (view 403, robô alheio 404, catálogo do workspace do robô) e
+  **concorrência** (duas syncs → 29, nunca 58).
+- **Correção do contrato do cliente:** o TC-G5 tipara `added_count`; o endpoint
+  responde `addedCount`. Alinhado o `SyncResultDTO` (o cliente já invalidava a
+  chave das tarefas do robô; só o tipo estava errado).
+
+Suítes ao fim: **backend 801 → 820 / 0 falhas / 10 pending**, **frontend 88 / 0**,
+`tsc` limpo. Decisões de execução da change: 1 (não criar o enum), 6 (seed direto na
+transação do bootstrap), 7 (meta `access: :authenticated`), 8 (e2e do sync no nível
+do cliente, agora fechado pelo backend).
 
 ## RETOMADA
 

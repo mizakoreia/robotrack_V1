@@ -130,31 +130,34 @@ Pré-requisito de todas: `commissioning-hierarchy` entregue (tabelas `projects`,
 
 ## 5. Sincronização retroativa
 
-- [ ] 5.1 Registrar como dependência explícita em `robot-tasks` o índice único
+- [x] 5.1 Registrar como dependência explícita em `robot-tasks` o índice único
       `(robot_id, lower(btrim(desc)))` em `tasks`, e falhar a implementação desta
       capacidade se ele não existir. (§2.6 — sem o índice, duas sincronizações concorrentes
       do mesmo robô produzem 58 tarefas em vez de 29.)
-- [ ] 5.2 `TaskTemplates::SyncToRobotService`: lock na linha do robô, seleção por
+      *(SATISFEITA: `robot-tasks` G1 criou `index_tasks_on_robot_lower_desc UNIQUE
+      (robot_id, lower(btrim(desc)))` — justamente por este requisito (robot-tasks
+      EXECUCAO decisão 1). O spec de concorrência prova o backstop: duas syncs → 29.)*
+- [x] 5.2 `TaskTemplates::SyncToRobotService`: lock na linha do robô, seleção por
       `ApplicabilityFilter`, diferença por `lower(btrim(desc))` contra as tarefas do robô,
       `insert_all` das faltantes com `progress: 0`, `status: "Pendente"`, sem responsável, e
       `position` continuando a maior atual. (§2.6 — robô `Handling` com `TCP Check` em
       progresso `60` termina com 30 tarefas, `TCP Check` ainda em `60` e `position 0`.)
-- [ ] 5.3 Retorno `{ added_count: N }` contando linhas efetivamente inseridas, não o
+- [x] 5.3 Retorno `{ added_count: N }` contando linhas efetivamente inseridas, não o
       tamanho do conjunto aplicável. (§2.6 — robô com `TCP Check` e `Power On` pré-existentes
       responde `addedCount: 28`, não `30`.)
-- [ ] 5.4 Endpoint `POST /api/v1/robots/:id/sync_task_templates` com
+- [x] 5.4 Endpoint `POST /api/v1/robots/:id/sync_task_templates` com
       `TaskTemplatePolicy.sync?` declarada. (§4.1 — `view` recebe `403` e a contagem de
       tarefas do robô não muda.)
-- [ ] 5.5 Spec de aplicabilidade concreta na sincronização: robô `Solda MIG` não recebe
+- [x] 5.5 Spec de aplicabilidade concreta na sincronização: robô `Solda MIG` não recebe
       `Calibração de Cola`; robô `Sealing` recebe `Calibração de Cola` e não recebe `Check
       sinais de Gripper`; robô `Handling` recebe `Check sinais de Gripper`. (§2.5/§2.6 —
       inverter os dois filtros do seed faz este spec falhar em três pontos.)
-- [ ] 5.6 Spec de não-sobrescrita e de tolerância de descrição: tarefa `Power On` com
+- [x] 5.6 Spec de não-sobrescrita e de tolerância de descrição: tarefa `Power On` com
       progresso `100`, responsável `Ana` e 3 entradas de histórico permanece intacta, e o
       robô com a tarefa `"tcp check "` não recebe `"TCP Check"`. (§2.6 — um `upsert` no
       lugar do `insert` das faltantes zeraria progresso e histórico; comparação por
       igualdade exata duplicaria TCP Check em todo robô importado do legado.)
-- [ ] 5.7 **Verificação:** spec de concorrência — duas chamadas simultâneas de
+- [x] 5.7 **Verificação:** spec de concorrência — duas chamadas simultâneas de
       sincronização no mesmo robô, partindo de zero tarefas, terminam com exatamente 29
       tarefas e a segunda informa `0` ou falha. (§2.6 — sem o lock e o índice, o resultado
       é 58.)

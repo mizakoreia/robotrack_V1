@@ -54,6 +54,10 @@ RSpec.describe 'Varredura negativa de vazamento entre tenants', :tenancy, type: 
     # robot-tasks G5: criação em lote (célula de outro workspace → 404).
     'POST /api/v1/cells/:cell_id/robots/batch' => lambda { |ids|
       ["/api/v1/cells/#{ids[:cell]}/robots/batch", { application: 'Sealing', robots: [{ name: 'R-lote' }] }]
+    },
+    # task-catalog TC-G6: sincronização retroativa (robô de outro workspace → 404).
+    'POST /api/v1/robots/:robot_id/sync_task_templates' => lambda { |ids|
+      ["/api/v1/robots/#{ids[:robot]}/sync_task_templates", {}]
     }
   }.freeze
 
