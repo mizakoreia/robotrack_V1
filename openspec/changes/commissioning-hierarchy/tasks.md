@@ -70,26 +70,26 @@
 
 ## 4. Services e endpoints de CRUD
 
-- [ ] 4.1 `ProjectsService` (create/update/destroy) no contrato `ApiResponseHandler`,
+- [x] 4.1 `ProjectsService` (create/update/destroy) no contrato `ApiResponseHandler`,
   gravando `updated_by_person_id`/`updated_at` e a entrada de auditoria na **mesma**
   transação do `DELETE`. (§2.8 — auditoria que falha reverte a exclusão; a célula continua
   existindo e a API responde `500`, não `204`)
-- [ ] 4.2 `CellsService`, mesmo contrato, validando que o `project_id` alvo é visível sob
+- [x] 4.2 `CellsService`, mesmo contrato, validando que o `project_id` alvo é visível sob
   RLS antes de criar. (§3.3 — criar célula sob projeto de outro workspace responde `404`,
   não `403`)
-- [ ] 4.3 `RobotsService`, mesmo contrato, com `application` default e validação de enum.
+- [x] 4.3 `RobotsService`, mesmo contrato, com `application` default e validação de enum.
   (§3.4 — robô criado sem `application` sai como `Misto / Geral`, não `NULL`)
-- [ ] 4.4 Entities `Api::Entities::{Project,Cell,Robot}` que sempre emitem coleções como
+- [x] 4.4 Entities `Api::Entities::{Project,Cell,Robot}` que sempre emitem coleções como
   array e traduzem `progress_cache = '{}'` em `{weighted: 0, done: 0, total: 0}`.
   (§1.4 — projeto sem células serializa `"cells": []`; se sair `null`, a grade de
   `hierarchy-screens` quebra no `.map`)
-- [ ] 4.5 Endpoints Grape em `app/controllers/api/v1/{projects,cells,robots}.rb` + as três
+- [x] 4.5 Endpoints Grape em `app/controllers/api/v1/{projects,cells,robots}.rb` + as três
   linhas de `mount` em `api/v1/base.rb`, cada rota declarando sua policy. (D3 — o
   route-sweep de `authorization-policies` falha se uma rota subir sem declaração)
-- [ ] 4.6 Policies `ProjectPolicy`, `CellPolicy`, `RobotPolicy` em `app/policies/`,
+- [x] 4.6 Policies `ProjectPolicy`, `CellPolicy`, `RobotPolicy` em `app/policies/`,
   idioma singleton, mapeando §4.1: leitura para os três papéis, escrita só `owner`/`edit`.
   (§4.1 — membro `view` recebe `403` no `POST` e `200` no `GET`, na mesma sessão)
-- [ ] 4.7 **Verificação:** suíte de request cobrindo os cenários negativos — `view`
+- [x] 4.7 **Verificação:** suíte de request cobrindo os cenários negativos — `view`
   criando, `view` excluindo, `view` reordenando, usuário de `W2` lendo e escrevendo em
   `W1`, e renomeação concorrente `409`. (§4.1 — cada um desses cinco tem de falhar pelo
   motivo certo: `403` para papel, `404` para tenant, `409` para `lock_version`)

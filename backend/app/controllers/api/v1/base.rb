@@ -19,6 +19,11 @@ module Api
 
       mount Api::V1::Workspaces
 
+      # Hierarquia de comissionamento (commissioning-hierarchy 4.5)
+      mount Api::V1::Projects
+      mount Api::V1::Cells
+      mount Api::V1::Robots
+
       mount Api::V1::Invitations
       mount Api::V1::InvitationTokens
 
