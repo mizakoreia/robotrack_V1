@@ -124,12 +124,21 @@ Aplicar (migrations dev+test como migrator; re-rodar roles.sql quando houver REV
 `rspec` (0 falhas); G5 também `vitest`+`tsc` → marcar `- [x]` → `validate progress-advances
 --strict` → UM commit `G<n>:` → resumir e pedir autorização.
 
+7. **`TaskAdvances::CreateService` usa `transaction(requires_new: true)` (savepoint).**
+   O request já roda dentro de UMA transação (o middleware de tenant abre uma; nos testes
+   `Tenant.with` também). Uma `ActiveRecord::Base.transaction` aninhada SEM `requires_new`
+   não cria savepoint: um `StaleObjectError` do `task.update!` marcaria só a interna, o
+   `advance.create!` seguiria pendente na EXTERNA, e ela commitaria — o 409 persistiria o
+   avanço. Com savepoint, o rollback desfaz a entrada. Bug real, pego pelo teste de
+   concorrência (dava 2 avanços). Vale para qualquer service que rode dentro do request e
+   precise reverter parcialmente.
+
 ## Progresso
 
 - [x] G1 — Esquema + soft-delete (1.1–1.7, 6.3) — task_advances imutável, CHECKs, RLS,
   done⇒100, soft-delete em tasks; 2 specs herdados ajustados (boundary; FK RESTRICT)
 - [x] G2 — Máquina de estados (2.1–2.3) — ApplyTransitionService + model TaskAdvance
-- [ ] G3 — Registro de avanço (3.1–3.6)
+- [x] G3 — Registro de avanço (3.1–3.6) — CreateService (idempotência, 409, clamp, auto-atribuição, requires_new)
 - [ ] G4 — API e autorização (4.1–4.5)
 - [ ] G5 — Modal de avanço (5.1–5.7)
 - [ ] G6 — Integração e fechamento (6.1, 6.2, 6.4)
