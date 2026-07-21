@@ -142,7 +142,7 @@ request). Cada grupo abaixo termina em verificação.
 
 ## 5. Suíte de conformidade
 
-- [ ] 5.1 Escrever `spec/authorization/route_sweep_spec.rb` com a asserção de
+- [x] 5.1 Escrever `spec/authorization/route_sweep_spec.rb` com a asserção de
       igualdade `policies + allowlist == Api::Root.routes.size`, mensagem listando as
       ofensoras uma por linha, e detecção de entrada órfã na allowlist.
       (D3.5 — montar um `GET /workspaces/:workspace_id/gadgets` sem declaração falha
@@ -150,33 +150,33 @@ request). Cada grupo abaixo termina em verificação.
       cuja rota o `seal-template-baseline` removeu, falha em vez de virar permissão
       morta)
 
-- [ ] 5.2 Criar `spec/authorization/invariants/` com os 8 arquivos numerados e
+- [x] 5.2 Criar `spec/authorization/invariants/` com os 8 arquivos numerados e
       `invariants_completeness_spec.rb` contando 8.
       (§4.1 — excluir `inv_5_owner_immutable_spec.rb` faz o meta-spec falhar por
       contar 7; e `pending` sem motivo nomeando a capacidade bloqueadora também falha)
 
-- [ ] 5.3 Implementar `inv_1`, `inv_2`, `inv_4` e `inv_5` — as quatro que esta
+- [x] 5.3 Implementar `inv_1`, `inv_2`, `inv_4` e `inv_5` — as quatro que esta
       capacidade fecha sozinha — por HTTP.
       (§4.1 inv. 1/2/4/5 — `inv_2` prova que JWT com claim `role:"owner"` e índice de
       UI adulterado não concedem nada)
 
-- [ ] 5.4 Implementar `inv_3`, `inv_6`, `inv_7` e `inv_8` como provas reais, marcadas
+- [x] 5.4 Implementar `inv_3`, `inv_6`, `inv_7` e `inv_8` como provas reais, marcadas
       `pending` com motivo enquanto `audit-log`, `workspace-invitations` e
       `in-app-notifications` não existirem.
       (§4.1 inv. 3/6/7/8 — `inv_8` falha se um `INSERT` com `message` de 501 chars for
       aceito; `inv_3` falha se `audit_logs` ainda aceitar `UPDATE` do papel da app)
 
-- [ ] 5.5 Escrever a matriz completa de request specs papel × ação: 3 papéis × as 8
+- [x] 5.5 Escrever a matriz completa de request specs papel × ação: 3 papéis × as 8
       linhas da §4.1, com maioria de casos negativos.
       (§4.1 tabela — Bruno (`edit`) recebe `403` em `POST /invitations`,
       `PATCH /memberships/<clara>`, `DELETE /workspaces/WS-A` e `POST /factory_reset`)
 
-- [ ] 5.6 Portar `firestore.rules` para `config/authorization/legacy_parity.yml`,
+- [x] 5.6 Portar `firestore.rules` para `config/authorization/legacy_parity.yml`,
       uma entrada por `allow`, com a contagem conferida pelo spec.
       (D3.11 — omitir a entrada de L61-62 faz a contagem divergir e o spec falhar;
       não dá para esquecer uma rule)
 
-- [ ] 5.7 Escrever `legacy_parity_spec.rb` exigindo `covered_by` ou `divergence` por
+- [x] 5.7 Escrever `legacy_parity_spec.rb` exigindo `covered_by` ou `divergence` por
       entrada, e imprimindo o relatório de divergências.
       (D3.11 — as divergências D-A (notificação alheia) e D-B (dono por uid) aparecem
       no output com texto, em vez de sumirem na tradução)
