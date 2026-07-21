@@ -131,7 +131,7 @@ Total: 34 tarefas em 6 grupos.
 
 ## Progresso
 
-- [ ] G1 — Esquema (1.1–1.7)
+- [x] G1 — Esquema (1.1–1.7; 1.1–1.3 nao aplicadas, decisao 1) — backend 604 → 617
 - [ ] G2 — Model e filtro de aplicabilidade (2.1–2.4)
 - [ ] G3 — Catálogo padrão e seed (3.1–3.6)
 - [ ] G4 — Policy e API (4.1–4.6)

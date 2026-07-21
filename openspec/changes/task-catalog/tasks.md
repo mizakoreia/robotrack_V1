@@ -10,30 +10,40 @@ Pré-requisito de todas: `commissioning-hierarchy` entregue (tabelas `projects`,
       `down` faz `DROP TYPE`. (§1.2 — `SELECT enum_range(NULL::robot_application)` devolve
       6 rótulos na ordem declarada; um 7º valor não existe e `'Solda a Laser'::robot_application`
       levanta `InvalidTextRepresentation`.)
+      *(NÃO APLICADA — EXECUCAO decisão 1: `commissioning-hierarchy` já entregou
+      `robots.application` como `text` + CHECK dos 6 literais (D-H10, que
+      descartou enum por não ser reversível em migration transacional). A
+      INVARIANTE que 1.1 defende — banco rejeita valor fora da lista — já vale e
+      tem spec. Criar o tipo agora exigiria ALTER TYPE destrutivo para trocar
+      uma constraint funcionando por outra menos reversível.)*
 - [ ] 1.2 **Backup antes de destrutivo:** dump de `robots` (`pg_dump -t robots`) e task de
       rollback documentada, antes de qualquer `ALTER TYPE` na coluna existente. (§1.2 —
       se `robots.application` já existir como `varchar` com algum valor fora do enum, a
       conversão do 1.3 aborta e o dump é o único caminho de volta.)
+      *(SEM EFEITO — não há `ALTER TYPE` a fazer; ver 1.1.)*
 - [ ] 1.3 Migration que converte `robots.application` para `robot_application` (`USING
       application::robot_application`) **ou**, se `commissioning-hierarchy` ainda não criou
       a coluna, apenas registra a dependência do tipo. (§1.2 — após a migration,
       `UPDATE robots SET application = 'xpto'` falha no banco, não no model.)
-- [ ] 1.4 Migration `CREATE TABLE task_templates`: `id uuid PK DEFAULT gen_random_uuid()`,
+      *(JÁ VALE — `chk_robots_application` faz exatamente isso desde
+      `commissioning-hierarchy`, provado em `spec/models/hierarchy_models_spec.rb`
+      ("application fora do CHECK é rejeitada pelo banco").)*
+- [x] 1.4 Migration `CREATE TABLE task_templates`: `id uuid PK DEFAULT gen_random_uuid()`,
       `workspace_id uuid NOT NULL REFERENCES workspaces`, `cat text NOT NULL`,
       `desc text NOT NULL`, `weight numeric NOT NULL DEFAULT 1 CHECK (weight > 0)`,
       `app_filters text[] NOT NULL DEFAULT '{}'`, timestamps. (§1.1 — `INSERT` sem
       `workspace_id` falha; `INSERT` com `app_filters = NULL` falha; `weight = 0` falha.)
-- [ ] 1.5 CHECK de domínio em `app_filters` (`app_filters <@ ARRAY['Misto / Geral','Solda
+- [x] 1.5 CHECK de domínio em `app_filters` (`app_filters <@ ARRAY['Misto / Geral','Solda
       Ponto','Solda MIG','Handling','Sealing','Outros','Todas']`) mais os índices
       `(workspace_id, cat, desc)` e único `(workspace_id, lower(btrim(desc)))`. (§1.2/§3.9
       — `'{"solda ponto"}'` é rejeitado e `'{"Todas"}'` é aceito, porque o importador legado
       precisa gravá-lo; e criar um segundo `" payload "` no mesmo workspace falha com
       `23505`.)
-- [ ] 1.6 Policy RLS em `task_templates` amarrada a `app.current_workspace_id`, no mesmo
+- [x] 1.6 Policy RLS em `task_templates` amarrada a `app.current_workspace_id`, no mesmo
       padrão de D2. (§4.1 inv. 1 — `SET app.current_workspace_id = '<A>'; SELECT * FROM
       task_templates WHERE workspace_id = '<B>'` retorna zero linhas mesmo como
       `SELECT *` sem `WHERE`.)
-- [ ] 1.7 **Verificação:** spec de schema que roda os cinco casos negativos acima direto no
+- [x] 1.7 **Verificação:** spec de schema que roda os cinco casos negativos acima direto no
       banco, com o model desabilitado (`ActiveRecord::Base.connection.execute`). (§4.1
       inv. 1 — se algum CHECK/RLS estiver só no model, o spec passa por SQL cru e falha.)
 
