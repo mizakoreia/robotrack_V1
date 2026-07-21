@@ -119,6 +119,16 @@ Total: 34 tarefas em 6 grupos.
    catálogo) e unit-testado; o endpoint que o usa é do G6. As três rotas com
    `:id` (`show`/`patch`/`delete`) entraram no gerador cross-tenant no mesmo
    grupo — a varredura só cresce.
+8. **G5 (cliente) entrega o fio da sincronização, mas o teste 6.4 é de nível de
+   cliente, não cross-sistema.** O `syncRobotTaskTemplates` (endpoints.ts) e o
+   hook `useSyncTaskTemplates` apontam para `POST /robots/:id/sync_task_templates`,
+   cujo BACKEND é do G6 (depende de `tasks`). O teste 6.4 prova o contrato do
+   cliente — `appFilters` (nunca `apps`) na rede, editar envia `["Misto / Geral"]`,
+   e a sync invalida `['ws', wsId, 'robot', robotId, 'tasks']`. A normalização
+   servidor-side e a materialização da tarefa NÃO são testáveis sem `tasks`;
+   fazê-lo com mock seria mock testando mock. O e2e real fecha no G6 (5.5).
+   Também aqui: o literal `ROBOT_APPLICATIONS` saiu do TS (6.3), `RobotApplication`
+   virou alias de `string`, e a lista passou a vir só do endpoint de metadados.
 
 ## Armadilhas previstas
 
@@ -159,7 +169,7 @@ Total: 34 tarefas em 6 grupos.
 - [x] G2 — Model e filtro de aplicabilidade (2.1–2.4) — backend 617 → 652
 - [x] G3 — Catálogo padrão e seed (3.1–3.6) — backend 652 → 666
 - [x] G4 — Policy e API (4.1–4.6) — backend 666 → 712
-- [ ] G5 — Cliente (6.1–6.4)
+- [x] G5 — Cliente (6.1–6.4) — frontend 75 → 80, tsc limpo
 - [ ] G6 — Sincronização retroativa (5.1–5.7) — depende de `robot-tasks`
 
 ## RETOMADA

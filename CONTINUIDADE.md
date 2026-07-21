@@ -22,7 +22,7 @@ main (48497fd)                     ← ondas 1–4, sem nada desta sessão
 | Suíte | Resultado |
 |---|---|
 | Backend `bundle exec rspec` (como `robotrack_app`) | **712 / 0 falhas / 12 pending** |
-| Frontend `vitest run` | **75 / 0** |
+| Frontend `vitest run` | **80 / 0** |
 | Frontend `tsc --noEmit` | limpo |
 
 Todos os 12 pending nomeiam a capacidade que os desbloqueia — nenhum é dívida
@@ -76,14 +76,24 @@ estruturado; 404 byte-idêntico cross-tenant; 409 por id do cliente); `GET
 isento de tenant — ver EXECUCAO decisão 7); route-sweep, cross-tenant e superfície do
 swagger cresceram no mesmo grupo.
 
-**Próximo passo — TC-G5** (tarefas 6.1–6.4): cliente TS — grupo `taskTemplates` em
-`endpoints.ts` (list/create/update/destroy) + `robots.syncTaskTemplates`, tipados com
-`appFilters` (nunca `apps`); hooks React Query (`['ws', wsId, 'taskTemplates']`,
-`['meta','robotApplications']` com `staleTime: Infinity`), a mutation de sync invalidando
-`['ws', wsId, 'robot', robotId, 'tasks']`; tipo `RobotApplication` derivado do endpoint de
-metadados (sem lista literal em TS); e o teste ponta a ponta de §3.9. Depois: **TC-G6**
-(sincronização retroativa §2.6 — **depende da tabela `tasks`**, de `robot-tasks`; por isso
-foi movido para o fim).
+Feito (G5 — tarefas 6.1–6.4): cliente TS — grupo `taskTemplatesApi` (list/create/update/
+destroy) + `hierarchyApi.syncRobotTaskTemplates` + `metaApi.robotApplications` em
+`endpoints.ts`, tipados com `appFilters` (nunca `apps`); hooks em
+`src/features/catalog/useTaskTemplates.ts` (`useTaskTemplates`, create/update/delete,
+`useSyncTaskTemplates`, `useRobotApplications`) com chaves em `catalogKeys.ts`
+(`['ws', wsId, 'taskTemplates']`, `['meta','robotApplications']` staleTime Infinity, sync
+invalidando `['ws', wsId, 'robot', robotId, 'tasks']`); o literal `ROBOT_APPLICATIONS` foi
+REMOVIDO e `RobotApplication` virou alias de `string` (6.3, grep zero fora de testes); teste
+de integração no nível do cliente (o e2e cross-sistema fecha no G6 — ver EXECUCAO decisão 8).
+
+**Próximo passo — TC-G6** (tarefas 5.1–5.7, sincronização retroativa §2.6): **BLOQUEADO
+até `robot-tasks` criar a tabela `tasks`** e o índice único `(robot_id, lower(btrim(desc)))`.
+Entrega o `TaskTemplates::SyncToRobotService` (lock na linha do robô, seleção por
+`ApplicabilityFilter`, diff por `lower(btrim(desc))`, `insert_all` das faltantes, retorno
+`{ added_count }`), o endpoint `POST /api/v1/robots/:id/sync_task_templates` com
+`TaskTemplatePolicy.sync?` (já existe), e as specs de aplicabilidade/não-sobrescrita/
+concorrência. Se ao chegar nele a tabela `tasks` não existir, a change fecha honestamente
+como "5 de 6 grupos" (EXECUCAO decisão 5) — o próximo trabalho passa a ser `robot-tasks`.
 
 ## Depois de `task-catalog`
 
