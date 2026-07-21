@@ -43,6 +43,27 @@ module Api
           present result[:data][:record], with: Api::Entities::Project
         end
 
+        # §2.9 — reordenação em LOTE; `position` não é editável item a item.
+        # Para projetos o escopo É o workspace da sessão: `scope_id` do corpo
+        # tem de bater com o X-Workspace-Id (coerência D-H4; EXECUCAO decisão 7).
+        # Definida ANTES de `patch ':id'` — senão 'reorder' casaria como :id.
+        route_setting :policy, policy: 'ProjectPolicy', action: :reorder
+        params do
+          requires :scope_id, type: String
+          requires :ordered_ids, type: Array[String]
+        end
+        patch 'reorder' do
+          if params[:scope_id] != env['api.current_workspace_id']
+            error!({ error: 'scope_mismatch' }, 422)
+          end
+
+          result = hierarchy_result(
+            ::Hierarchy::ReorderService.new(model: ::Project)
+              .call(scope_id: params[:scope_id], ordered_ids: params[:ordered_ids])
+          )
+          present result[:data][:records], with: Api::Entities::Project
+        end
+
         route_setting :policy, policy: 'ProjectPolicy', action: :update
         params do
           requires :id, type: String
