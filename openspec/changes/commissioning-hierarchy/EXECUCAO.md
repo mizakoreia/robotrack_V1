@@ -170,7 +170,73 @@ Total: 32 tarefas em 6 grupos. Sequencial.
 - [x] G3 — CRUD (4.1–4.7) — backend 512 → 578
 - [x] G4 — Reordenação (5.1–5.4) — backend 578 → 598
 - [x] G5 — Cliente (6.1–6.6) — frontend 63 → 75, backend inalterado (598)
-- [ ] G6 — Fechamento (7.1–7.2)
+- [x] G6 — Fechamento (7.1–7.2) — backend 598 → 604
+
+## CONCLUSÃO (21/07/2026)
+
+**Change 100% aplicada: 32/32 tarefas, 6 grupos, 7 commits locais (G0..G6).**
+
+| Suíte | Antes (baseline) | Depois |
+|---|---|---|
+| Backend (`rspec`, como `robotrack_app`) | 464 / 0 (9 pending) | **604 / 0** (12 pending, todos com dono) |
+| Frontend (`vitest run`) | 63 / 0 | **75 / 0** |
+| Frontend (`tsc --noEmit`) | limpo | **limpo** |
+
+**O esqueleto do domínio existe.** `projects → cells → robots` com tenancy no
+BANCO (FK composta `(pai_id, workspace_id)` + RLS forçada), PK `uuid` gerável no
+cliente com replay idempotente (D-H2 completo: 201/200/409/404), `position`
+única contígua 0-based com reordenação em lote transacional, `progress_cache`
+desde a migration de origem e leitura tolerante no servidor (coleção nunca
+`null`).
+
+**As garantias herdadas cresceram junto, sem exceção:**
+- route-sweep: as 15 rotas novas nasceram declarando policy (nenhuma allowlist).
+- cross-tenant: GERADORES += 6 rotas, 404 byte-a-byte provado.
+- matriz §4.1: o pending `manage_commissioning por HTTP` VIROU teste real
+  (Clara `view` 403 ×3 sem efeito; Bruno `edit` 201/200/204).
+- schema-guard da Onda 1 aceitou as 3 tabelas sem ajuste.
+- runtime segue como `robotrack_app` (sem SUPERUSER/BYPASSRLS) — inclusive o
+  seed de demonstração.
+
+**Adaptações registradas (todas em `tasks.md`, com o motivo):**
+1. `WorkspaceScoped` da Onda 1 REUSADO; a proteção contra `workspace_id`
+   injetado é o WITH CHECK da RLS, não validação de model (que mascararia a
+   violação de política como erro de validação).
+2. `PositionScoped`/`ReorderService` usam **advisory lock transacional**, não
+   `FOR UPDATE` no pai: a armadilha 2 se confirmou — o pai de `projects` é a
+   linha do workspace e `robotrack_app` não tem UPDATE de tabela nela.
+3. Auditoria da exclusão é log estruturado dentro da transação, isolada em
+   `audit_destroy!` — `audit-log` troca pelo INSERT em `audit_logs` e só então
+   "auditoria falhou → não exclui" ganha dente.
+4. Rollback do create otimista sem teste: no vitest 1.x + jsdom a rejeição de
+   mutation vira unhandled rejection e reprova o arquivo (com `onError` no
+   hook, no `mutate` e no MutationCache). Mesmo padrão coberto pelo caminho de
+   conflito de `useReorder`.
+
+**Bug real encontrado pelos testes:** Rails 8 incrementa `lock_version` em
+`update_all` a menos que a chave venha explícita — o que violaria D-H9
+(reordenar invalidaria um renome concorrente legítimo). Corrigido com
+`lock_version: Arel.sql('lock_version')`.
+
+**Pendências para OUTRAS changes:**
+- `robot-tasks`: `tasks` (+ `task_assignees`) — o `hierarchy_fk_contract_spec`
+  já COBRA `ON DELETE CASCADE` e passa a falhar se vier RESTRICT/SET NULL;
+  remover os pendings de tarefa na matriz e no contrato de FK.
+- `progress-advances`: `task_advances` (mesmo contrato de cascade).
+- `progress-rollup`: a SEMÂNTICA de `progress_cache` (as colunas já existem, com
+  default `{}` e `progress_cached_at`); `updated_by_person_id` NÃO deve ser
+  tocado por propagação de rollup (pergunta em aberto 3 do design, proposta
+  desta change).
+- `hierarchy-screens`: as telas de §3.3/§3.4 — os hooks, o `newId()`, as query
+  keys de D9 e o handler de drag & drop já existem e são plugáveis; a ALÇA
+  visual e os estados vazios são de lá.
+- `offline-pwa`: a fila de mutations tem a pré-condição pronta (id do cliente +
+  replay idempotente).
+- `legacy-data-migration`: preservar ids UUID válidos do export e renumerar
+  `position` pela ordem de leitura (o `_ord`-timestamp é descartado).
+- `quality-and-accessibility`: subir o vitest e restaurar o teste de rollback.
+
+**Não arquivada** (padrão das ondas anteriores). **Sem push.**
 
 ## RETOMADA
 
