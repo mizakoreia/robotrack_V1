@@ -31,6 +31,9 @@ module Api
       # Tarefas do robô (robot-tasks 3.1–3.6)
       mount Api::V1::Tasks
 
+      # Criação de robôs em lote (robot-tasks 5.5)
+      mount Api::V1::RobotBatches
+
       mount Api::V1::Invitations
       mount Api::V1::InvitationTokens
 
