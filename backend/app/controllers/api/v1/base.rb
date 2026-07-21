@@ -28,6 +28,9 @@ module Api
       mount Api::V1::TaskTemplates
       mount Api::V1::Meta
 
+      # Tarefas do robô (robot-tasks 3.1–3.6)
+      mount Api::V1::Tasks
+
       mount Api::V1::Invitations
       mount Api::V1::InvitationTokens
 
