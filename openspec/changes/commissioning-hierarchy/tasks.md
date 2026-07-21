@@ -112,24 +112,32 @@
 
 ## 6. Cliente — API, hooks e drag & drop
 
-- [ ] 6.1 `lib/api/endpoints.ts`: grupo `hierarchy` com os 10 verbos (3× create, 3× update,
+- [x] 6.1 `lib/api/endpoints.ts`: grupo `hierarchy` com os 10 verbos (3× create, 3× update,
   3× destroy, reorder por escopo) tipados. (D9 — nenhuma chamada nova usa
   `useEffect + apiClient`, o padrão de dívida do template)
-- [ ] 6.2 `lib/ids.ts` com `newId()` sobre `crypto.randomUUID()` e fallback para ambiente
+- [x] 6.2 `lib/ids.ts` com `newId()` sobre `crypto.randomUUID()` e fallback para ambiente
   sem `crypto.randomUUID` (Safari antigo, contexto não-seguro). (D1 — o fallback tem de
   gerar UUID v4 válido; se gerar string qualquer, todo `POST` offline volta `422` ao
   sincronizar)
-- [ ] 6.3 Hooks React Query `useProjects`, `useCells`, `useRobots` com as chaves de D9
+- [x] 6.3 Hooks React Query `useProjects`, `useCells`, `useRobots` com as chaves de D9
   (`['ws', wsId, 'projects']`, `['ws', wsId, 'project', pid, 'cells']`,
   `['ws', wsId, 'cell', cid, 'robots']`). (D9 — as chaves são as que
   `realtime-collaboration` vai invalidar; divergir delas quebra o tempo real sem erro visível)
-- [ ] 6.4 Mutations de create/rename/destroy com atualização otimista usando o `id` gerado
+- [x] 6.4 Mutations de create/rename/destroy com atualização otimista usando o `id` gerado
   em 6.2 e rollback no `onError`. (§4.2 — criar robô com a rede caída mostra o card na
   hora e o card **não** duplica quando a sincronização confirma)
-- [ ] 6.5 Handler de drag & drop com alça dedicada que monta `ordered_ids` completo e trata
+  *(o "não duplica" tem teste; o ROLLBACK do create não — no vitest 1.x + jsdom
+  a rejeição de mutation do React Query vira unhandled rejection e reprova o
+  arquivo, com `onError` no hook, no `mutate` E no MutationCache. O mesmo padrão
+  snapshot→restore está coberto pelo caminho de conflito de `useReorder`.
+  Revisitar quando `quality-and-accessibility` subir o vitest)*
+- [x] 6.5 Handler de drag & drop com alça dedicada que monta `ordered_ids` completo e trata
   `409` recarregando o escopo. (§2.9 — arrastar depois que outra pessoa criou um irmão
   mostra aviso e recarrega, em vez de gravar uma ordem que apaga o item novo da lista)
-- [ ] 6.6 **Verificação:** teste Vitest do fluxo de reordenação com `409` mockado e do
+  *(a ALÇA visual é de `hierarchy-screens`; aqui entram a função pura `moveItem`,
+  o `submitReorder` que classifica o 409 e o hook `useReorder` que restaura a
+  lista — tudo plugável na tela futura, EXECUCAO decisão 5)*
+- [x] 6.6 **Verificação:** teste Vitest do fluxo de reordenação com `409` mockado e do
   fallback de `newId()`. (§2.9 — após o `409` a lista volta ao estado do servidor, não fica
   presa na ordem otimista que o servidor rejeitou)
 
