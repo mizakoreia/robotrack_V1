@@ -20,6 +20,7 @@ module Api
       mount Api::V1::Workspaces
 
       mount Api::V1::Invitations
+      mount Api::V1::InvitationTokens
 
       mount Api::V1::Countries
 

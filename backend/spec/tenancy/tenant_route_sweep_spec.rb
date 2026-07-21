@@ -23,7 +23,7 @@ RSpec.describe 'Varredura de tenant das rotas', :tenancy, type: :request do
     method = route.request_method.to_s.upcase
     next if method == 'HEAD'
     next if Api::Root.public_route?(method, path)
-    next if Api::Root.tenant_exempt?(path)
+    next if Api::Root.tenant_exempt?(method, path)
 
     [method, path]
   end.uniq

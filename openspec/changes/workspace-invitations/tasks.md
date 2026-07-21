@@ -54,26 +54,26 @@
 
 ## 3. Consumo atômico
 
-- [ ] 3.1 `Invitations::AcceptService`: transação com `lock('FOR UPDATE')` e as seis
+- [x] 3.1 `Invitations::AcceptService`: transação com `lock('FOR UPDATE')` e as seis
   validações da invariante 6 na ordem de D-INV-3, cada uma com código de erro HTTP
   distinto (§4.1 inv. 6 — `404`/`409`/`410`/`422`/`403`/`422`, nunca um `422`
   genérico que impeça o cliente de distinguir "expirado" de "e-mail errado")
-- [ ] 3.2 Resolução de `Person` dentro da mesma transação (D-INV-5): casar por
+- [x] 3.2 Resolução de `Person` dentro da mesma transação (D-INV-5): casar por
   e-mail com `user_id IS NULL`, ou criar nova; `409 person_email_conflict` se já
   vinculada a outro usuário (D10 — responsável pré-cadastrado com 12 tarefas
   mantém as 12 tarefas após o aceite, não vira uma segunda `Person`)
-- [ ] 3.3 Endpoint `POST /api/v1/invitations/:token/accept` que **rejeita** `role`
+- [x] 3.3 Endpoint `POST /api/v1/invitations/:token/accept` que **rejeita** `role`
   no corpo com `422 unexpected_parameter` em vez de ignorar (§4.1 inv. 6 — enviar
   `{"role":"edit"}` num convite `view` retorna erro e não consome o convite)
-- [ ] 3.4 Endpoint público `GET /api/v1/invitations/:token` com `email_masked`,
+- [x] 3.4 Endpoint público `GET /api/v1/invitations/:token` com `email_masked`,
   adicionado à allowlist de regex de `api/root.rb` (§3.10 — a resposta não contém
   `joao@fabrica.com`, `workspace_id` nem lista de membros; só
   `j***@fabrica.com`)
-- [ ] 3.5 Spec de concorrência: duas threads com conexões distintas aceitando o
+- [x] 3.5 Spec de concorrência: duas threads com conexões distintas aceitando o
   mesmo token simultaneamente (§4.1 inv. 6 — exatamente um `200` e um `409
   invitation_already_used`; `Membership.where(invitation_id:).count == 1`; nenhum
   `500` e nenhum deadlock)
-- [ ] 3.6 Spec de carga: 50 aceites concorrentes de 50 tokens **distintos** dentro
+- [x] 3.6 Spec de carga: 50 aceites concorrentes de 50 tokens **distintos** dentro
   do `statement_timeout` configurado (verificação do grupo 3 — o `FOR UPDATE` não
   serializa tokens diferentes; se serializar, o teste estoura o timeout)
 

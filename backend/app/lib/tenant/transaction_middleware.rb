@@ -17,7 +17,7 @@ module Tenant
     end
 
     def call(env)
-      return @app.call(env) if Api::Root.tenant_exempt?(env['PATH_INFO'].to_s)
+      return @app.call(env) if Api::Root.tenant_exempt?(env['REQUEST_METHOD'].to_s, env['PATH_INFO'].to_s)
 
       response = nil
       ActiveRecord::Base.transaction { response = @app.call(env) }

@@ -29,7 +29,13 @@ module Api
       ['POST', %r{^/auth/v1/registration/?$}],
       # Google OAuth por redirect Devise (D4.8). O request phase e o callback são
       # rotas Rails, fora da varredura Grape; a entrada aqui é defensiva.
-      %r{^/users/auth/google_oauth2}
+      %r{^/users/auth/google_oauth2},
+      # Pré-visualização do convite (workspace-invitations 3.4 / D-INV-6): o
+      # token chega ANTES do login, e o convidado precisa saber para onde ele
+      # leva. Só `GET`, e só com um segmento após `invitations/` — a listagem
+      # (`GET /api/v1/invitations`) continua protegida, e o aceite (`POST`) exige
+      # autenticação porque compara o e-mail do convite com o AUTENTICADO.
+      ['GET', %r{^/api/v1/invitations/[^/]+/?$}]
     ].freeze
 
     def self.public_route?(method, path)
@@ -49,6 +55,15 @@ module Api
     # jusante) cai fora desta lista e a spec de varredura (4.6) o obriga a se
     # declarar. `users`/`uploads`/`downloads` são globais do template (gestão OG);
     # se virarem tenant, saem daqui e a varredura cobra.
+    #
+    # Entradas são regex (qualquer método) OU pares `['METHOD', regex]`, mesma
+    # forma de PUBLIC_ROUTES. O par existe por causa dos convites: a
+    # pré-visualização (`GET /api/v1/invitations/:token`) e o aceite
+    # (`POST /api/v1/invitations/:token/accept`) acontecem FORA de um workspace
+    # corrente — o convidado ainda não é membro de nada —, enquanto
+    # `DELETE /api/v1/invitations/:id` é rota de domínio comum e continua na
+    # varredura de tenant. Sem ciência de método, a isenção de um arrastaria o
+    # outro (workspace-invitations, decisão de execução 6).
     TENANT_EXEMPT_ROUTES = [
       %r{^/swagger_doc},
       %r{^/auth/},
@@ -56,11 +71,19 @@ module Api
       %r{^/api/v1/users},
       %r{^/api/v1/countries},
       %r{^/api/v1/uploads},
-      %r{^/api/v1/downloads}
+      %r{^/api/v1/downloads},
+      ['GET',  %r{^/api/v1/invitations/[^/]+/?$}],
+      ['POST', %r{^/api/v1/invitations/[^/]+/accept/?$}]
     ].freeze
 
-    def self.tenant_exempt?(path)
-      TENANT_EXEMPT_ROUTES.any? { |regex| path =~ regex }
+    def self.tenant_exempt?(method, path)
+      TENANT_EXEMPT_ROUTES.any? do |entry|
+        if entry.is_a?(Array)
+          entry[0] == method.to_s.upcase && entry[1].match?(path)
+        else
+          entry.match?(path)
+        end
+      end
     end
 
     before do
@@ -96,7 +119,7 @@ module Api
 
       # Contexto de tenant das rotas de domínio (workspace-tenancy 4.2). Roda
       # dentro da transação aberta por Tenant::TransactionMiddleware.
-      unless Api::Root.tenant_exempt?(request.path)
+      unless Api::Root.tenant_exempt?(request.request_method, request.path)
         ws_id = headers['X-Workspace-Id'] || headers['HTTP_X_WORKSPACE_ID']
         resolution = Workspaces::ResolveCurrentService.new(user: @current_user, workspace_id: ws_id).call
         error!({ error: resolution.error }, resolution.status) unless resolution.ok

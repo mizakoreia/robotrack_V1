@@ -74,7 +74,7 @@ RSpec.describe 'Varredura de autenticação das rotas', type: :request do
 
   describe 'a allowlist em si' do
     it 'contém exatamente os padrões públicos previstos (POST em session/registration)' do
-      expect(Api::Root::PUBLIC_ROUTES.size).to eq(5)
+      expect(Api::Root::PUBLIC_ROUTES.size).to eq(6)
       expect(Api::Root.public_route?('POST', '/auth/v1/session')).to be(true)
       expect(Api::Root.public_route?('POST', '/auth/v1/registration')).to be(true)
       expect(Api::Root.public_route?('GET', '/swagger_doc')).to be(true)
@@ -83,6 +83,14 @@ RSpec.describe 'Varredura de autenticação das rotas', type: :request do
       expect(Api::Root.public_route?('POST', '/users/auth/google_oauth2')).to be(true)
       # O OAuth manual legado (/auth/v1/oauth/*) foi removido.
       expect(Api::Root.public_route?('GET', '/auth/v1/oauth/google_url')).to be(false)
+      # Pré-visualização do convite (workspace-invitations 3.4): pública só no
+      # GET por token. A LISTAGEM e o ACEITE continuam exigindo autenticação —
+      # senão o token viraria uma porta para enumerar convites e para consumir
+      # em nome de quem não autenticou.
+      expect(Api::Root.public_route?('GET', '/api/v1/invitations/rt_inv_ABC')).to be(true)
+      expect(Api::Root.public_route?('GET', '/api/v1/invitations')).to be(false)
+      expect(Api::Root.public_route?('POST', '/api/v1/invitations/rt_inv_ABC/accept')).to be(false)
+      expect(Api::Root.public_route?('DELETE', '/api/v1/invitations/rt_inv_ABC')).to be(false)
     end
 
     it 'mantém a auth sensível PROTEGIDA (allowlist ancorada, D4.8)' do
