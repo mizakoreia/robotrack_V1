@@ -400,6 +400,21 @@ CREATE TABLE public.schema_migrations (
 
 
 --
+-- Name: task_assignees; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.task_assignees (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    workspace_id uuid NOT NULL,
+    task_id uuid NOT NULL,
+    person_id uuid NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+ALTER TABLE ONLY public.task_assignees FORCE ROW LEVEL SECURITY;
+
+
+--
 -- Name: task_templates; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -642,6 +657,14 @@ ALTER TABLE ONLY public.schema_migrations
 
 
 --
+-- Name: task_assignees task_assignees_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.task_assignees
+    ADD CONSTRAINT task_assignees_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: task_templates task_templates_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -703,6 +726,14 @@ ALTER TABLE ONLY public.robots
 
 ALTER TABLE ONLY public.robots
     ADD CONSTRAINT uq_robots_position UNIQUE (cell_id, "position") DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: task_assignees uq_task_assignees_task_person; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.task_assignees
+    ADD CONSTRAINT uq_task_assignees_task_person UNIQUE (task_id, person_id);
 
 
 --
@@ -907,6 +938,20 @@ CREATE INDEX index_robots_on_workspace_id ON public.robots USING btree (workspac
 
 
 --
+-- Name: index_task_assignees_on_person_task; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_task_assignees_on_person_task ON public.task_assignees USING btree (person_id, task_id);
+
+
+--
+-- Name: index_task_assignees_on_workspace_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_task_assignees_on_workspace_id ON public.task_assignees USING btree (workspace_id);
+
+
+--
 -- Name: index_task_templates_on_workspace_cat_desc; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1075,6 +1120,22 @@ ALTER TABLE ONLY public.robots
 
 
 --
+-- Name: task_assignees fk_task_assignees_person_same_workspace; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.task_assignees
+    ADD CONSTRAINT fk_task_assignees_person_same_workspace FOREIGN KEY (workspace_id, person_id) REFERENCES public.people(workspace_id, id) ON DELETE RESTRICT;
+
+
+--
+-- Name: task_assignees fk_task_assignees_task_same_workspace; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.task_assignees
+    ADD CONSTRAINT fk_task_assignees_task_same_workspace FOREIGN KEY (task_id, workspace_id) REFERENCES public.tasks(id, workspace_id) ON DELETE CASCADE;
+
+
+--
 -- Name: tasks fk_tasks_robot_same_workspace; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1187,6 +1248,14 @@ ALTER TABLE ONLY public.robots
 
 
 --
+-- Name: task_assignees task_assignees_workspace_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.task_assignees
+    ADD CONSTRAINT task_assignees_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id);
+
+
+--
 -- Name: task_templates task_templates_workspace_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1274,6 +1343,12 @@ CREATE POLICY purge_expired_select ON public.invitations FOR SELECT USING (((cur
 ALTER TABLE public.robots ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: task_assignees; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.task_assignees ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: task_templates; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -1335,6 +1410,13 @@ CREATE POLICY tenant_isolation ON public.robots USING ((workspace_id = (NULLIF(c
 
 
 --
+-- Name: task_assignees tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.task_assignees USING ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid)) WITH CHECK ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid));
+
+
+--
 -- Name: task_templates tenant_isolation; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -1370,6 +1452,7 @@ ALTER TABLE public.workspaces ENABLE ROW LEVEL SECURITY;
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260721150002'),
 ('20260721150001'),
 ('20260721140001'),
 ('20260721130005'),

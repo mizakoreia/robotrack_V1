@@ -20,6 +20,11 @@ class Task < ApplicationRecord
 
   belongs_to :robot
 
+  # D10/D11 — responsáveis por identidade. `assignees` é o conjunto de `Person`;
+  # tarefa sem responsável responde `[]`, nunca um registro "Não Atribuído".
+  has_many :task_assignees, dependent: :destroy
+  has_many :assignees, through: :task_assignees, source: :person
+
   validates :cat, :desc, presence: true
   validates :weight, numericality: { greater_than: 0 }
   validates :progress, numericality: { only_integer: true, greater_than_or_equal_to: 0, less_than_or_equal_to: 100 }
