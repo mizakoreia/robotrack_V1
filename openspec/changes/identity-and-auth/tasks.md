@@ -36,7 +36,7 @@
 - [x] 5.2 Implementar validação de cliente espelhando o servidor (senha ≥ 6, e-mail com formato) e mapeamento dos erros 422/409 para o campo correspondente (§3.1 — a falha a caçar é 409 de e-mail duplicado virar "erro inesperado" genérico e apagar a senha digitada).
 - [x] 5.3 Remover `MagicLogin.tsx`, `CodeValidation.tsx`, `CompleteRegistration.tsx`, `AuthFlow.tsx`, `LoginPage.tsx` e seus testes, junto com os métodos de magic-login em `lib/api/endpoints.ts` (proposta/BREAKING — deixar as duas telas coexistindo cria dois caminhos de sessão com contratos de token diferentes).
 - [x] 5.4 Implementar `OAuthCallbackPage`: lê o fragmento, grava conforme o "manter conectado" escolhido antes do redirect, chama `history.replaceState` e trata `#error=` (D4.4 — a falha a caçar é o token permanecer na barra de endereço e no histórico do navegador).
-- [ ] 5.5 Testes Vitest da tela: alternância preserva e-mail digitado; senha de 5 caracteres não dispara requisição; 401 limpa só a senha; cadastro sem nome não envia (§3.1 — a falha a caçar é a alternância remontar o formulário e apagar o que o usuário já digitou).
+- [x] 5.5 Testes Vitest da tela: alternância preserva e-mail digitado; senha de 5 caracteres não dispara requisição; 401 limpa só a senha; cadastro sem nome não envia (§3.1 — a falha a caçar é a alternância remontar o formulário e apagar o que o usuário já digitou).
 
 ## 6. Sessão no cliente e ciclo do convite
 
@@ -47,4 +47,4 @@
 - [x] 6.5 Implementar o consumo pós-autenticação: chama o aceite de `workspace-invitations` uma única vez, remove a chave, e trata 410 (expirado) mantendo o usuário autenticado com aviso (§3.10 — a falha a caçar é o convite ser reconsumido a cada recarga, ou um convite expirado prender o usuário numa tela de erro).
 - [x] 6.6 Implementar a detecção de convite perdido no retorno do Google com storage bloqueado, exibindo a instrução de reabrir o link (D4.4 — a falha a caçar é o usuário voltar autenticado, sem workspace e sem nenhuma explicação de por que o convite sumiu).
 - [x] 6.7 Implementar o logout: `DELETE /auth/v1/session`, limpeza dos dois storages, `queryClient.clear()` e redirect para `/entrar`, com limpeza local mesmo se a chamada falhar (§3.1 — a falha a caçar é o cache do React Query do usuário anterior ser servido ao próximo usuário na mesma aba).
-- [ ] 6.8 Testes Vitest do ciclo de sessão: convite guardado antes do login e consumido depois; storage lançando exceção não trava o login; 401 encerra sem laço; logout esvazia o cache (§4.2 — a falha a caçar é o convite ser descartado em silêncio quando `sessionStorage` está bloqueado).
+- [x] 6.8 Testes Vitest do ciclo de sessão: convite guardado antes do login e consumido depois; storage lançando exceção não trava o login; 401 encerra sem laço; logout esvazia o cache (§4.2 — a falha a caçar é o convite ser descartado em silêncio quando `sessionStorage` está bloqueado).
