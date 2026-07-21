@@ -1,0 +1,68 @@
+# authorization-policies 6.2: job DEDICADO e bloqueante para spec/authorization.
+#
+# Separado da suíte geral de propósito: um route-sweep vermelho aparece como
+# falha de AUTORIZAÇÃO, nomeada, não diluída entre centenas de testes. A
+# pipeline completa (suíte geral, frontend, lint) é de
+# `delivery-and-observability` — este job é citado lá como pré-existente.
+#
+# Reproduz o ambiente real: papéis sem SUPERUSER/BYPASSRLS, migrations como
+# robotrack_migrator, suíte como robotrack_app (senão a RLS vira teatro).
+name: authorization
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  authorization:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: robotrack_user
+          POSTGRES_PASSWORD: robotrack_user
+          POSTGRES_DB: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U robotrack_user"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+
+    defaults:
+      run:
+        working-directory: backend
+
+    env:
+      PGPASSWORD: robotrack_user
+      DEVISE_JWT_SECRET_KEY: ci_only_jwt_secret_0123456789abcdef
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2.3'
+          bundler-cache: true
+          working-directory: backend
+
+      - name: Provisiona banco e papéis (roles.sql — sem SUPERUSER/BYPASSRLS)
+        run: |
+          createdb -h localhost -U robotrack_user robotrack_test
+          psql -h localhost -U robotrack_user -d robotrack_test -f db/roles.sql
+          psql -h localhost -U robotrack_user -d robotrack_test \
+            -c "DROP EXTENSION IF EXISTS citext; DROP EXTENSION IF EXISTS pgcrypto;"
+
+      - name: Migra como robotrack_migrator
+        env:
+          RAILS_ENV: test
+          DATABASE_URL: postgres://robotrack_migrator:mig_dev_pw@localhost/robotrack_test
+        run: bundle exec rails db:migrate
+
+      - name: Reaplica roles.sql (blocos guardados por existência de tabela)
+        run: psql -h localhost -U robotrack_user -d robotrack_test -f db/roles.sql
+
+      - name: spec/authorization como robotrack_app
+        env:
+          RAILS_ENV: test
+          DATABASE_URL: postgres://robotrack_app:app_dev_pw@localhost/robotrack_test
+        run: bundle exec rspec spec/authorization --format documentation

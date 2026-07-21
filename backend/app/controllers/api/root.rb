@@ -133,16 +133,10 @@ module Api
         env['api.current_role'] = @current_role
       end
 
-      # authorization-policies G2 (D3.4): a decisão de autorização acontece AQUI,
-      # uma vez por request, antes de qualquer service. `AUTHZ_ENFORCE` existe só
-      # para o rollout dentro da própria change (ligada em `test` desde o dia 1);
-      # a tarefa 6.3 a remove e torna o gate incondicional.
-      authorize_route! if Api::Root.authz_enforced?
-    end
-
-    # Flag de rollout do gate (2.2). Removida em 6.3 — não usar fora daqui.
-    def self.authz_enforced?
-      ENV['AUTHZ_ENFORCE'] == '1'
+      # authorization-policies (D3.4): a decisão de autorização acontece AQUI,
+      # uma vez por request, antes de qualquer service — INCONDICIONAL em todo
+      # ambiente (a flag de rollout da própria change foi removida em 6.3).
+      authorize_route!
     end
 
     helpers do
