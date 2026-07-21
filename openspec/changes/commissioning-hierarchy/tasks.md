@@ -143,10 +143,10 @@
 
 ## 7. Fechamento
 
-- [ ] 7.1 Seed de desenvolvimento com 2 workspaces, 3 projetos, 6 células e 12 robôs, em
+- [x] 7.1 Seed de desenvolvimento com 2 workspaces, 3 projetos, 6 células e 12 robôs, em
   que os dois workspaces têm projetos de **mesmo nome** e ids adjacentes. (§4.1 — dataset
   onde um vazamento de tenant é visível a olho nu no teste, em vez de passar despercebido)
-- [ ] 7.2 **Verificação:** spec de contrato de esquema exigindo que as FKs de `tasks` para
+- [x] 7.2 **Verificação:** spec de contrato de esquema exigindo que as FKs de `tasks` para
   `robots` (declaradas por `robot-tasks`) sejam `ON DELETE CASCADE`, falhando se vierem
   `RESTRICT` ou `SET NULL`. (§ design D-H6 — este spec é a aresta explícita entre esta
   capacidade e `robot-tasks`; sem ele, excluir projeto com tarefas passa a devolver `500`
