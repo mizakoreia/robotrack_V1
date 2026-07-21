@@ -165,7 +165,7 @@ Total: 32 tarefas em 6 grupos. Sequencial.
 
 ## Progresso
 
-- [ ] G1 — Esquema (1.1–1.6)
+- [x] G1 — Esquema (1.1–1.6) — backend 464 → 498
 - [ ] G2 — Models + identidade (2.1–2.4, 3.1–3.3)
 - [ ] G3 — CRUD (4.1–4.7)
 - [ ] G4 — Reordenação (5.1–5.4)

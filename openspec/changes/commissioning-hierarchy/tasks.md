@@ -1,10 +1,10 @@
 ## 1. Fundação de esquema e identidade (D1, D13)
 
-- [ ] 1.1 Migration `enable_pgcrypto` habilitando a extensão e falhando com mensagem
+- [x] 1.1 Migration `enable_pgcrypto` habilitando a extensão e falhando com mensagem
   explícita se o role não tiver permissão de `CREATE EXTENSION`. (§ design D-H1 — sem ela
   `gen_random_uuid()` não existe e a migration de `projects` aborta no meio, deixando a
   base com extensão parcial)
-- [ ] 1.2 Migration `create_projects`: `id uuid PK DEFAULT gen_random_uuid()`,
+- [x] 1.2 Migration `create_projects`: `id uuid PK DEFAULT gen_random_uuid()`,
   `workspace_id uuid NOT NULL REFERENCES workspaces(id)`, `name`, `position integer NOT NULL`,
   `progress_cache jsonb NOT NULL DEFAULT '{}'`, `progress_cached_at`, `lock_version`,
   `updated_by_person_id uuid REFERENCES people(id) ON DELETE SET NULL`, timestamps;
@@ -12,18 +12,18 @@
   `(workspace_id, position) DEFERRABLE INITIALLY DEFERRED` e `(workspace_id, lower(name))`.
   (§1.1, D5 — rodar a migration numa base limpa e conferir que `progress_cache` já existe;
   se faltar, `progress-rollup` terá de retrofitar três migrations já aplicadas)
-- [ ] 1.3 Migration `create_cells`, mesma estrutura, com
+- [x] 1.3 Migration `create_cells`, mesma estrutura, com
   `FOREIGN KEY (project_id, workspace_id) REFERENCES projects (id, workspace_id) ON DELETE CASCADE`
   e escopo de ordem/nome por `project_id`. (§1.1 — `UPDATE cells SET workspace_id = <outro>`
   no console tem de ser rejeitado pelo banco, não passar silenciosamente)
-- [ ] 1.4 Migration `create_robots`, com `application text NOT NULL DEFAULT 'Misto / Geral'`
+- [x] 1.4 Migration `create_robots`, com `application text NOT NULL DEFAULT 'Misto / Geral'`
   + `CHECK` dos seis valores literais de §1.2, e FK composta para `cells`. (§1.2 —
   `INSERT ... application = 'Pintura'` falha no Postgres, não só no model)
-- [ ] 1.5 Migration `enable_rls_on_hierarchy`: `ENABLE` + `FORCE ROW LEVEL SECURITY` e
+- [x] 1.5 Migration `enable_rls_on_hierarchy`: `ENABLE` + `FORCE ROW LEVEL SECURITY` e
   política `tenant_isolation` nas três tabelas, usando
   `current_setting('app.current_workspace_id', true)::uuid`. (§4.1 inv. 1, D2 —
   `SELECT count(*) FROM projects` sem a variável setada devolve `0`, não a tabela inteira)
-- [ ] 1.6 **Verificação:** spec de esquema (`spec/db/hierarchy_schema_spec.rb`) que lê
+- [x] 1.6 **Verificação:** spec de esquema (`spec/db/hierarchy_schema_spec.rb`) que lê
   `information_schema` e `pg_class` e falha se: alguma `id` não for `uuid`; algum
   `workspace_id` for nullable; `relforcerowsecurity` for `false`; faltar qualquer índice
   único declarado em 1.2–1.4. (§1.1, D13 — este spec é o que impede a próxima capacidade
