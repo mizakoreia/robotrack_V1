@@ -3,10 +3,11 @@ import { Outlet, useNavigate } from 'react-router-dom'
 import { LogOut, Bell, ChevronDown } from 'lucide-react'
 import { Topbar } from '@/components/Topbar'
 import { toast } from 'sonner'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTheme } from '@/hooks/useTheme'
 import { useAuthStore } from '@/store/authStore'
 import { performLogout } from '@/lib/auth/session'
+import { registerRevocationNavigator } from '@/lib/workspace/accessRevoked'
 
 export function Layout() {
   const navigate = useNavigate()
@@ -17,6 +18,15 @@ export function Layout() {
   const avatarTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const { theme, setTheme } = useTheme()
   const currentUser = useAuthStore((s) => s.user)
+
+  // Revogação de acesso (workspace-invitations 5.3): a rotina vive fora do React
+  // (é acionada pelo interceptor do apiClient), então o shell empresta a ela o
+  // `navigate` do router. Sem isso a navegação seria um `location.assign`, que
+  // recarrega a página e mata o aviso persistente antes de o usuário lê-lo.
+  useEffect(() => {
+    registerRevocationNavigator((path) => navigate(path))
+    return () => registerRevocationNavigator(null)
+  }, [navigate])
 
   const handleLogout = () => {
     // DELETE /auth/v1/session + limpeza dos storages + queryClient.clear() +

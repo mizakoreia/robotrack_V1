@@ -12,6 +12,7 @@ import { DashboardPage } from '@/app/pages/DashboardPage'
 import { UsersPage } from '@/app/pages/UsersPage'
 import { ProfilePage } from '@/app/pages/ProfilePage'
 import { BuildPage } from '@/app/pages/BuildPage'
+import { TeamPanel } from '@/features/team/TeamPanel'
 
 
 function App() {
@@ -35,6 +36,10 @@ function App() {
             <Route path="dashboard" element={<DashboardPage />} />
             <Route path="users" element={<UsersPage />} />
             <Route path="profile" element={<ProfilePage />} />
+            {/* Painel de equipe (workspace-invitations 4.5). `workspace-settings`
+                (§3.9) vai montá-lo dentro da tela de Configurações; até lá ele é
+                alcançável por rota própria. */}
+            <Route path="configuracoes/equipe" element={<TeamPanel />} />
           </Route>
         </Routes>
         <Toaster />

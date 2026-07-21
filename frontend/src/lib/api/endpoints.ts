@@ -98,6 +98,68 @@ export interface WorkspaceItem {
   role: string
 }
 
+// workspace-invitations — superfície de convite e equipe.
+//
+// `preview` é a ÚNICA chamada pública (o token chega antes do login), por isso
+// vai por `getPublic`: sem `Authorization`, e um 404 dela não é "sessão
+// expirada". As demais são de domínio e levam `X-Workspace-Id` pelo interceptor.
+export interface InvitationDTO {
+  id: string
+  email: string
+  role: 'view' | 'edit'
+  status: 'pending' | 'expired' | 'used'
+  expires_at: string
+  created_at: string
+  invite_url: string
+}
+
+export interface InvitationPreviewDTO {
+  workspace_name: string
+  role: 'view' | 'edit'
+  email_masked: string
+  expires_at: string
+  status: 'pending' | 'expired' | 'used'
+}
+
+export interface MemberDTO {
+  id: string
+  person_id: string | null
+  name: string | null
+  email: string | null
+  role: 'owner' | 'edit' | 'view'
+  is_owner: boolean
+  invitation_id: string | null
+}
+
+export const invitationsApi = {
+  list: () => apiClient.get<InvitationDTO[]>('/api/v1/invitations'),
+
+  create: (data: { email: string; role: 'view' | 'edit' }) =>
+    apiClient.post<InvitationDTO>('/api/v1/invitations', data),
+
+  revoke: (id: string) => apiClient.delete(`/api/v1/invitations/${id}`),
+
+  preview: (token: string) =>
+    apiClient.getPublic<InvitationPreviewDTO>(`/api/v1/invitations/${encodeURIComponent(token)}`),
+
+  // O aceite NÃO leva corpo: o papel vem do convite, e mandar `role` é 422
+  // `unexpected_parameter` no servidor — de propósito, para a tentativa ficar
+  // registrada em vez de ser ignorada.
+  accept: (token: string) =>
+    apiClient.post<{ workspace_id: string; role: 'view' | 'edit' }>(
+      `/api/v1/invitations/${encodeURIComponent(token)}/accept`,
+    ),
+}
+
+export const membershipsApi = {
+  list: () => apiClient.get<MemberDTO[]>('/api/v1/memberships'),
+
+  updateRole: (id: string, role: 'view' | 'edit') =>
+    apiClient.patch<{ id: string; role: string }>(`/api/v1/memberships/${id}`, { role }),
+
+  remove: (id: string) => apiClient.delete(`/api/v1/memberships/${id}`),
+}
+
 export const workspacesApi = {
   list: () => apiClient.get<WorkspaceItem[]>('/api/v1/workspaces'),
   updateName: (id: string, name: string) =>

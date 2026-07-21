@@ -93,10 +93,10 @@
 - [x] 4.4 Endpoints `GET /api/v1/memberships`, `PATCH /api/v1/memberships/:id`,
   `DELETE /api/v1/memberships/:id` com policy declarada, cobertos pelo route-sweep
   de D3 (§4.1 inv. 1 — o route-sweep falha o CI se algum dos três não declarar policy)
-- [ ] 4.5 Componente `features/team/TeamPanel` com as duas listas e chaves React
+- [x] 4.5 Componente `features/team/TeamPanel` com as duas listas e chaves React
   Query `['ws', wsId, 'members']` e `['ws', wsId, 'invitations']` (D9) (§3.10 —
   membro `edit` vê as listas sem nenhum botão de mutação renderizado)
-- [ ] 4.6 Diálogo de criação de convite com "Copiar link" e fallback de campo
+- [x] 4.6 Diálogo de criação de convite com "Copiar link" e fallback de campo
   selecionável quando a Clipboard API é negada (§3.10 — negar a permissão de
   clipboard mostra o link em texto, não uma falha silenciosa)
 - [x] 4.7 Request spec negativo do painel: `view` fazendo `PATCH` de papel, `edit`
@@ -107,13 +107,13 @@
 
 ## 5. Fluxo do convidado e revogação em tempo real
 
-- [ ] 5.1 Rota pública `/convite/:token` que grava o token em `sessionStorage`,
+- [x] 5.1 Rota pública `/convite/:token` que grava o token em `sessionStorage`,
   chama `history.replaceState` para limpar a URL e exibe a pré-visualização
   (§3.10 — o histórico do navegador não contém `rt_inv_ABC` depois da montagem)
-- [ ] 5.2 Consumo pós-autenticação no shell: dispara o aceite quando há token e
+- [x] 5.2 Consumo pós-autenticação no shell: dispara o aceite quando há token e
   sessão, e limpa `sessionStorage` em **qualquer** desfecho (§3.10 — após um
   `403 invitation_email_mismatch`, navegar para outra tela não reemite o aceite)
-- [ ] 5.3 Rotina única `handleAccessRevoked(wsId)` no cliente: aviso persistente,
+- [x] 5.3 Rotina única `handleAccessRevoked(wsId)` no cliente: aviso persistente,
   remoção do índice local, `queryClient.removeQueries(['ws', wsId])` e navegação ao
   workspace próprio; acionada pelo 403 `workspace_access_revoked` do interceptor do
   `apiClient` (§3.10 — sem Cable conectado, a revogação ainda é detectada na
@@ -122,7 +122,7 @@
   de `Memberships::RemoveService`, consumido por `handleAccessRevoked` (D6 — com
   Cable conectado, a detecção ocorre em < 2s sem interação do usuário; a tarefa
   degrada para no-op se `realtime-collaboration` ainda não estiver entregue)
-- [ ] 5.5 E2E do fluxo completo: dono convida → copia link → convidado abre sem
+- [x] 5.5 E2E do fluxo completo: dono convida → copia link → convidado abre sem
   sessão → autentica → vira membro → dono remove → convidado é expulso ao vivo
   (verificação do grupo 5 — o convidado termina no workspace próprio com aviso
   visível, e um reload não o traz de volta a `WS-A`)

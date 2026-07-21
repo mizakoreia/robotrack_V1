@@ -10,14 +10,20 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 // `src/lib/api/__tests__/client.session.test.ts`, que instrumenta o adapter do
 // axios e prova que o 401 limpa o store, não retenta e não dispara renovação.
 
-const { acceptInviteMock, logoutMock, toastMock } = vi.hoisted(() => ({
+// O aceite passou a ser servido por `invitationsApi` quando
+// `workspace-invitations` entregou o endpoint de verdade (antes o cliente
+// chamava uma rota que não existia no backend). O contrato observável destes
+// exemplos — consumir uma vez, limpar em qualquer desfecho — é o mesmo.
+const { acceptInviteMock, previewMock, logoutMock, toastMock } = vi.hoisted(() => ({
   acceptInviteMock: vi.fn(),
+  previewMock: vi.fn(),
   logoutMock: vi.fn(),
   toastMock: { warning: vi.fn(), error: vi.fn(), success: vi.fn(), info: vi.fn() },
 }))
 
 vi.mock('../../api/endpoints', () => ({
-  authApi: { acceptInvite: acceptInviteMock, logout: logoutMock },
+  authApi: { logout: logoutMock },
+  invitationsApi: { accept: acceptInviteMock, preview: previewMock },
 }))
 
 vi.mock('sonner', () => ({ toast: toastMock }))

@@ -32,6 +32,12 @@ function endSession() {
   }
 }
 
+/** Código de erro da API: o envelope de erro é sempre `{ error: '<código>' }`. */
+function errorCode(error: AxiosError): string | undefined {
+  const data = error.response?.data as { error?: string } | undefined
+  return typeof data?.error === 'string' ? data.error : undefined
+}
+
 class ApiClient {
   private client: AxiosInstance
 
@@ -76,6 +82,20 @@ class ApiClient {
         // "sessão expirada", é credencial inválida.
         if (status === 401 && config.skipAuth !== true) {
           endSession()
+        }
+        // 403 `workspace_access_revoked`: o dono removeu este usuário do
+        // workspace enquanto ele estava lá dentro (workspace-invitations 5.3 /
+        // D-INV-7). É o caminho PUXADO da detecção — funciona sem ActionCable
+        // nenhum, porque o gatilho é a própria negação. `workspace_access_denied`
+        // NÃO entra aqui: aquele é o 403 de quem nunca teve acesso, e tratá-lo
+        // como revogação apagaria o índice local de quem só digitou o id errado.
+        if (status === 403 && config.skipAuth !== true && errorCode(error) === 'workspace_access_revoked') {
+          const workspaceId =
+            (error.config?.headers?.['X-Workspace-Id'] as string | undefined) ||
+            useWorkspaceStore.getState().currentWorkspaceId
+          if (workspaceId) {
+            void import('../workspace/accessRevoked').then((m) => m.handleAccessRevoked(workspaceId))
+          }
         }
         return Promise.reject(error)
       },
