@@ -49,19 +49,19 @@ Pré-requisito de todas: `commissioning-hierarchy` entregue (tabelas `projects`,
 
 ## 2. Model, normalização e componente de aplicabilidade
 
-- [ ] 2.1 Model `TaskTemplate` com `belongs_to :workspace`, validações de presença de `cat`
+- [x] 2.1 Model `TaskTemplate` com `belongs_to :workspace`, validações de presença de `cat`
       e `desc` (com `strip` antes) e `weight > 0`. (§3.9 — `desc: "   "` é `422` e não cria
       linha, em vez de criar template com descrição em branco.)
-- [ ] 2.2 Normalização de `app_filters` no model (callback `before_validation`): vazio, ou
+- [x] 2.2 Normalização de `app_filters` no model (callback `before_validation`): vazio, ou
       contém `"Misto / Geral"`, ou contém `"Todas"` → `[]`; senão remove duplicatas
       preservando ordem. (§3.9 — `TaskTemplate.create!(app_filters: ["Handling","Misto /
       Geral"])` chamado do console persiste `{}`, não `{"Handling"}`.)
-- [ ] 2.3 `TaskTemplates::ApplicabilityFilter` — componente único que implementa a
+- [x] 2.3 `TaskTemplates::ApplicabilityFilter` — componente único que implementa a
       predicate de §2.5 (vazio OU `"Misto / Geral"` OU `"Todas"` OU a Aplicação do robô),
       com variante SQL para uso em `WHERE`. (§2.5 — um template `{"Todas"}` gravado direto
       no banco é aplicável a um robô `Solda MIG`; a versão simplificada `app_filters = '{}'
       OR application = ANY(app_filters)` faria esse template sumir.)
-- [ ] 2.4 **Verificação:** tabela de casos compartilhada (6 Aplicações × 4 formas de
+- [x] 2.4 **Verificação:** tabela de casos compartilhada (6 Aplicações × 4 formas de
       filtro) executada contra a versão Ruby e a versão SQL do filtro. (§2.5 — se as duas
       divergirem em qualquer célula, o spec falha; esse é o modo de falha que faz robô
       criado em lote e robô sincronizado terem conjuntos de tarefas diferentes.)
