@@ -43,7 +43,12 @@ RSpec.describe 'Varredura negativa de vazamento entre tenants', :tenancy, type: 
     # task-catalog G4: o catálogo entra na varredura no mesmo grupo que o cria.
     'GET /api/v1/task_templates/:id' => ->(ids) { ["/api/v1/task_templates/#{ids[:task_template]}", {}] },
     'PATCH /api/v1/task_templates/:id' => ->(ids) { ["/api/v1/task_templates/#{ids[:task_template]}", { desc: 'X' }] },
-    'DELETE /api/v1/task_templates/:id' => ->(ids) { ["/api/v1/task_templates/#{ids[:task_template]}", {}] }
+    'DELETE /api/v1/task_templates/:id' => ->(ids) { ["/api/v1/task_templates/#{ids[:task_template]}", {}] },
+    # robot-tasks G3: tarefas do robô entram na varredura no grupo que as cria.
+    'GET /api/v1/robots/:robot_id/tasks' => ->(ids) { ["/api/v1/robots/#{ids[:robot]}/tasks", {}] },
+    'POST /api/v1/robots/:robot_id/tasks' => ->(ids) { ["/api/v1/robots/#{ids[:robot]}/tasks", { cat: 'A. Hardware', desc: 'X' }] },
+    'PATCH /api/v1/tasks/:id' => ->(ids) { ["/api/v1/tasks/#{ids[:task]}", { desc: 'X', lock_version: 0 }] },
+    'DELETE /api/v1/tasks/:id' => ->(ids) { ["/api/v1/tasks/#{ids[:task]}", {}] }
   }.freeze
 
   it 'toda rota com id tem gerador OU override — e nenhum órfão' do
@@ -87,7 +92,9 @@ RSpec.describe 'Varredura negativa de vazamento entre tenants', :tenancy, type: 
         celula = Cell.create!(project_id: projeto.id, name: 'C de A')
         robo = Robot.create!(cell_id: celula.id, name: 'R de A')
         template = TaskTemplate.create!(cat: 'A. Hardware', desc: 'Template de A')
-        { project: projeto.id, cell: celula.id, robot: robo.id, task_template: template.id }
+        tarefa = Task.create!(robot_id: robo.id, cat: 'A. Hardware', desc: 'Tarefa de A', position: 0)
+        { project: projeto.id, cell: celula.id, robot: robo.id,
+          task_template: template.id, task: tarefa.id }
       end
 
       { membership: membership_id, invitation: invitation_id }.merge(hierarquia)
@@ -101,7 +108,12 @@ RSpec.describe 'Varredura negativa de vazamento entre tenants', :tenancy, type: 
       it "#{chave} com id de WS-A responde 404 byte-a-byte igual a id inexistente" do
         method, = chave.split(' ')
         path_real, params = gerador.call(ids)
-        path_fake = path_real.sub(%r{[^/]+\z}, SecureRandom.uuid)
+        # Substitui o UUID do recurso (não o último segmento): rotas aninhadas
+        # como `/robots/:robot_id/tasks` têm o id NO MEIO — trocar o segmento
+        # final (`tasks`) por um uuid daria uma rota inexistente (404 do Rails,
+        # não o 404 do endpoint). Todos os ids destes geradores são uuids.
+        path_fake = path_real.sub(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i,
+                                  SecureRandom.uuid)
 
         send(method.downcase, path_real, params: params, headers: headers_diego)
         status_real = response.status

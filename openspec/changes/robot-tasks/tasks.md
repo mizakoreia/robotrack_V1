@@ -16,13 +16,13 @@
 
 ## 3. API de leitura e CRUD de tarefa
 
-- [ ] 3.1 `Tasks::ListService` + `Api::Entities::Task` (com `assignees: [{id, name}]`) e endpoint `GET /api/v1/robots/:robot_id/tasks` ordenado por `position` (§3.5/§1.4 — robô recém-criado sem tarefas responde `200` com `tasks: []`, não `404`)
-- [ ] 3.2 `Tasks::CreateService` + endpoint `POST /api/v1/robots/:robot_id/tasks` aceitando uuid do cliente, com `position` = máx+1 (§3.5 — repetir o mesmo `POST` com o mesmo uuid retorna `409` e não cria a segunda tarefa)
-- [ ] 3.3 `Tasks::UpdateService` + endpoint `PATCH /api/v1/tasks/:id` para descrição, exigindo `lock_version` e **rejeitando com 422** payloads que contenham `progress` ou `status` (D-RT-3 — enviar `desc` junto de `progress: 50` não pode gravar a descrição "só a parte permitida"; a requisição inteira falha)
-- [ ] 3.4 Tratamento de `ActiveRecord::StaleObjectError` → `409` com o estado atual no corpo (D-RT-7 — dois `PATCH` com `lock_version: 3` produzem um `200` e um `409`, nunca dois `200`)
-- [ ] 3.5 `Tasks::DeleteService` + endpoint `DELETE /api/v1/tasks/:id` (§3.5 — excluir tarefa com 2 responsáveis não pode deixar linhas órfãs em `task_assignees`)
-- [ ] 3.6 `TaskPolicy` declarada em todos os 4 endpoints acima, integrada ao route-sweep de `authorization-policies` (D3/§4.1 — endpoint sem policy declarada quebra o CI; membro `view` recebe `403` em create/update/delete)
-- [ ] 3.7 Request specs cobrindo o caminho negativo do grupo: `view` em cada mutação (403), recurso de outro workspace (404 e corpo sem `desc`), `progress` no `PATCH` (422) e conflito de versão (409) (§4.1 inv. 1/4 — o spec falha se qualquer negação vazar dado do recurso no corpo da resposta)
+- [x] 3.1 `Tasks::ListService` + `Api::Entities::Task` (com `assignees: [{id, name}]`) e endpoint `GET /api/v1/robots/:robot_id/tasks` ordenado por `position` (§3.5/§1.4 — robô recém-criado sem tarefas responde `200` com `tasks: []`, não `404`)
+- [x] 3.2 `Tasks::CreateService` + endpoint `POST /api/v1/robots/:robot_id/tasks` aceitando uuid do cliente, com `position` = máx+1 (§3.5 — repetir o mesmo `POST` com o mesmo uuid retorna `409` e não cria a segunda tarefa)
+- [x] 3.3 `Tasks::UpdateService` + endpoint `PATCH /api/v1/tasks/:id` para descrição, exigindo `lock_version` e **rejeitando com 422** payloads que contenham `progress` ou `status` (D-RT-3 — enviar `desc` junto de `progress: 50` não pode gravar a descrição "só a parte permitida"; a requisição inteira falha)
+- [x] 3.4 Tratamento de `ActiveRecord::StaleObjectError` → `409` com o estado atual no corpo (D-RT-7 — dois `PATCH` com `lock_version: 3` produzem um `200` e um `409`, nunca dois `200`)
+- [x] 3.5 `Tasks::DeleteService` + endpoint `DELETE /api/v1/tasks/:id` (§3.5 — excluir tarefa com 2 responsáveis não pode deixar linhas órfãs em `task_assignees`)
+- [x] 3.6 `TaskPolicy` declarada em todos os 4 endpoints acima, integrada ao route-sweep de `authorization-policies` (D3/§4.1 — endpoint sem policy declarada quebra o CI; membro `view` recebe `403` em create/update/delete)
+- [x] 3.7 Request specs cobrindo o caminho negativo do grupo: `view` em cada mutação (403), recurso de outro workspace (404 e corpo sem `desc`), `progress` no `PATCH` (422) e conflito de versão (409) (§4.1 inv. 1/4 — o spec falha se qualquer negação vazar dado do recurso no corpo da resposta) *(As 4 rotas entraram no gerador cross-tenant e `/api/v1/tasks` na superfície do swagger. O gerador cross-tenant ganhou suporte a id NÃO-terminal — `/robots/:robot_id/tasks` tem o id no meio; o "path falso" passou a trocar o UUID no caminho, não o último segmento.)*
 
 ## 4. Atribuição de responsáveis
 
