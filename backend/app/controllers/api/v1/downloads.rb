@@ -10,6 +10,7 @@ module Api
           summary 'Download autenticado do arquivo de build'
           security [{ Bearer: [] }]
         end
+        route_setting :policy, access: :authenticated
         get :build do
           authenticate_user!
           

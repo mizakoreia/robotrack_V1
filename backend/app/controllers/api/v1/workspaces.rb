@@ -17,6 +17,10 @@ module Api
 
       resource :workspaces do
         # GET /api/v1/workspaces — os workspaces em que o usuário é dono ou membro.
+        # Rota autenticada SEM tenant (o usuário ainda não escolheu workspace):
+        # não há papel a consultar — declaração `access: :authenticated`
+        # (authorization-policies, decisão de execução 2).
+        route_setting :policy, access: :authenticated
         get do
           user = env['api.current_user']
           items = ActiveRecord::Base.transaction do
@@ -27,6 +31,10 @@ module Api
         end
 
         # PATCH /api/v1/workspaces/:id — só o dono, e só o `name`.
+        # Isenta de tenant (workspace vem do PATH, não do header); o papel é
+        # resolvido e exigido DENTRO do fluxo, abaixo. Mantido owner-only — mais
+        # restrito que `manage_catalog`; revisar em `workspace-settings`.
+        route_setting :policy, access: :authenticated
         params do
           requires :id, type: String
           optional :name, type: String

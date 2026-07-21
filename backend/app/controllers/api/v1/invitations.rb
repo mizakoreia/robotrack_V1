@@ -19,19 +19,15 @@ module Api
 
       resource :invitations do
         # GET /api/v1/invitations — convites do workspace corrente (só o dono).
-        route_setting :policy, 'InvitationPolicy#index?'
+        # A decisão é do gate de Api::Root (G2): a policy declarada abaixo é
+        # avaliada ANTES de este bloco rodar.
+        route_setting :policy, policy: 'InvitationPolicy', action: :index
         get do
-          context = ::Authorization::Context.new(
-            user: env['api.current_user'],
-            workspace: ::Workspace.find_by(id: env['api.current_workspace_id'])
-          )
-          error!({ error: 'forbidden' }, 403) unless InvitationPolicy.index?(context)
-
           present ::Invitation.order(created_at: :desc).to_a, with: Api::Entities::Invitation
         end
 
         # POST /api/v1/invitations — cria e devolve o link absoluto.
-        route_setting :policy, 'InvitationPolicy#create?'
+        route_setting :policy, policy: 'InvitationPolicy', action: :create
         params do
           requires :email, type: String
           requires :role, type: String
@@ -54,7 +50,7 @@ module Api
         end
 
         # DELETE /api/v1/invitations/:id — revogação (só o dono, só pendente).
-        route_setting :policy, 'InvitationPolicy#destroy?'
+        route_setting :policy, policy: 'InvitationPolicy', action: :destroy
         params do
           requires :id, type: String
         end

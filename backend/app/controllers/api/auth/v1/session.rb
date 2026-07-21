@@ -37,6 +37,7 @@ module Api
             success [code: 204, message: 'Sessão encerrada']
             failure [{ code: 401, message: 'Não autenticado' }]
           end
+          route_setting :policy, access: :authenticated
           delete do
             # api/root.rb já autenticou (rota protegida); revogamos o próprio token.
             render_auth_result(::Auth::SessionService.logout(token: bearer_token))
@@ -47,6 +48,7 @@ module Api
               success [code: 200, message: 'Renovado']
               failure [{ code: 401, message: 'Sessão expirada' }]
             end
+            route_setting :policy, access: :authenticated
             post do
               render_auth_result(::Auth::SessionService.renew(token: bearer_token))
             end

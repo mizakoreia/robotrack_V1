@@ -31,6 +31,7 @@ module Api
           requires :whatsapp, type: String, desc: 'Número de WhatsApp do usuário (ex: 5548999999999)'
         end
 
+        route_setting :policy, access: :authenticated
         get '', http_codes: [
           [404, 'Usuário não encontrado - retorna URL de login'],
           [400, 'Bad Request'],
@@ -58,6 +59,7 @@ module Api
           optional :per_page, type: Integer, default: 20, desc: 'Itens por página'
         end
 
+        route_setting :policy, access: :authenticated
         get '', http_codes: [
           [200, 'Ok'],
           [401, 'Unauthorized'],
@@ -92,6 +94,7 @@ module Api
           optional :user_type_id, type: Integer, desc: 'Tipo de usuário (UserType)'
         end
 
+        route_setting :policy, access: :authenticated
         post '', http_codes: [
           [201, 'Created'],
           [400, 'Bad Request'],
@@ -115,6 +118,7 @@ module Api
           requires :id, type: String, desc: 'ID do usuário (UUID)'
         end
 
+        route_setting :policy, access: :authenticated
         get '', http_codes: [
           [200, 'Ok'],
           [401, 'Unauthorized'],
@@ -130,6 +134,7 @@ module Api
           failure [{ code: 403, message: 'Forbidden (Somente OG)' }]
         end
 
+        route_setting :policy, access: :authenticated
         delete '', http_codes: [
           [204, 'No Content'],
           [401, 'Unauthorized'],
@@ -167,6 +172,7 @@ module Api
           optional :biography, type: String, desc: 'Biografia (ActionText)'
         end
 
+        route_setting :policy, access: :authenticated
         put '', http_codes: [
           [200, 'Ok'],
           [400, 'Bad Request'],
@@ -179,6 +185,7 @@ module Api
           process_service_response(UsersService.update(params))
         end
 
+        route_setting :policy, access: :authenticated
         patch '', http_codes: [
           [200, 'Ok'],
           [400, 'Bad Request'],
@@ -197,6 +204,7 @@ module Api
       # ===============================================
       resource :stats do
         desc 'Estatísticas de usuários (Somente OG)'
+        route_setting :policy, access: :authenticated
         get '', http_codes: [
           [200, 'Ok'],
           [401, 'Unauthorized'],
