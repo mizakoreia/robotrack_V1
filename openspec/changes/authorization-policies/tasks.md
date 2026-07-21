@@ -79,29 +79,40 @@ request). Cada grupo abaixo termina em verificação.
 
 ## 3. Invariantes no banco
 
-- [ ] 3.1 Migration: trigger `BEFORE UPDATE ON workspaces` que levanta se
+- [x] 3.1 Migration: trigger `BEFORE UPDATE ON workspaces` que levanta se
       `owner_person_id` mudar; `down` faz `DROP TRIGGER` e `DROP FUNCTION`.
       (§4.1 inv. 5 — `UPDATE workspaces SET owner_person_id=...` direto no psql aborta
       a transação; testar por SQL, não pelo model)
+      *(adaptada — EXECUCAO decisão 8: o trigger `workspaces_owner_immutable`
+      sobre `owner_user_id` JÁ existe desde a Onda 1, com prova SQL em
+      `spec/tenancy/schema_constraints_spec.rb`; nenhuma migration nova)*
 
-- [ ] 3.2 Migration: índice único parcial `UNIQUE (workspace_id) WHERE role='owner'`
+- [x] 3.2 Migration: índice único parcial `UNIQUE (workspace_id) WHERE role='owner'`
       em `memberships`, precedida no mesmo arquivo por checagem que **aborta com a
       contagem** se algum workspace tiver 0 ou 2+ donos.
       (§4.1 inv. 5 — promover Bruno a `owner` em WS-A viola o índice; e a migration
       não cria índice pela metade em base suja, ela recusa e diz quantas linhas)
+      *(adaptada — EXECUCAO decisão 8: `'owner'` NEM EXISTE no enum
+      `membership_role`, e o trigger `memberships_owner_is_not_member` impede a
+      linha do dono; provas em `spec/authorization/db_invariants_spec.rb`)*
 
-- [ ] 3.3 Migration: trigger `BEFORE UPDATE ON notifications` rejeitando mudança de
+- [x] 3.3 Migration: trigger `BEFORE UPDATE ON notifications` rejeitando mudança de
       qualquer coluna além de `read`, `read_at`, `updated_at` — para todos os papéis.
       No-op registrado se a tabela ainda não existir.
       (§4.1 inv. 4 / `firestore.rules` L61-62 — `Notification#update_column(:message,…)`
       executado como o dono do workspace levanta exceção do Postgres)
+      *(adaptada — EXECUCAO decisão 9: SEM migration no-op, que se auto-marcaria
+      `up` e esconderia o trigger; o DDL vai na migration de
+      `in-app-notifications` e o exemplo `pending` de inv. 4 cobra)*
 
-- [ ] 3.4 Implementar em `NotificationPolicy.mark_read?` a checagem de destinatário
+- [x] 3.4 Implementar em `NotificationPolicy.mark_read?` a checagem de destinatário
       (`notification.person_id == context.person.id`) e restringir os params do
       endpoint a `read`. (§4.1 inv. 4 — Clara marcando `N-BRUNO` recebe `403`;
       `{"read":true,"message":"x"}` recebe `422` e não aplica nem o `read`)
+      *(metade policy entregue no G1 e testada; a restrição de params é do
+      endpoint de `in-app-notifications`, que ainda não existe)*
 
-- [ ] 3.5 Spec de banco cobrindo os três objetos DDL via SQL cru, sem passar por
+- [x] 3.5 Spec de banco cobrindo os três objetos DDL via SQL cru, sem passar por
       ActiveRecord. (§4.1 inv. 4 e 5 — os testes falham se alguém remover o trigger e
       mantiver só a validação de model)
 
