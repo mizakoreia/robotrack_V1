@@ -25,6 +25,12 @@ class Task < ApplicationRecord
   has_many :task_assignees, dependent: :destroy
   has_many :assignees, through: :task_assignees, source: :person
 
+  # progress-advances — a trilha de avanços da tarefa. `dependent: :restrict...`
+  # NÃO se aplica: a FK `task_advances→tasks` é `ON DELETE RESTRICT` no banco e a
+  # tarefa é soft-deletada, nunca destruída (a trilha é imutável). A associação
+  # existe só para leitura (`advances_count`/`last_comment` na entity).
+  has_many :task_advances, dependent: :restrict_with_exception
+
   # progress-advances (D-IMUT/Q1) — soft-delete: tarefa apagada some da leitura,
   # mas a linha permanece (a trilha de avanços, imutável, aponta para ela). O
   # `default_scope` do `WorkspaceScoped` é preservado — os dois somam.

@@ -139,7 +139,16 @@ Aplicar (migrations dev+test como migrator; re-rodar roles.sql quando houver REV
   done⇒100, soft-delete em tasks; 2 specs herdados ajustados (boundary; FK RESTRICT)
 - [x] G2 — Máquina de estados (2.1–2.3) — ApplyTransitionService + model TaskAdvance
 - [x] G3 — Registro de avanço (3.1–3.6) — CreateService (idempotência, 409, clamp, auto-atribuição, requires_new)
-- [ ] G4 — API e autorização (4.1–4.5)
+- [x] G4 — API e autorização (4.1–4.5) — TaskAdvancePolicy, POST/GET `/tasks/:task_id/advances`,
+  entity TaskAdvance + advances_count/last_comment em Task, hint no 422 do PATCH, request spec das 3 negações.
+  **Decisão 8 (nova):** no `CreateService` movi o check de `person.nil?` (422 `sem_pessoa_do_ator`) para
+  DEPOIS do `Task.find_by → 404`. Motivo: o ator dono do workspace pode não ter `Person` (make_workspace não
+  semeia a do dono); com o check antes, uma tarefa invisível (cross-tenant) respondia 422, não 404, quebrando
+  a varredura byte-idêntica. A ordem agora é: idempotência → 404 → pessoa → 409 → transação. Nenhum spec de G3
+  quebrou (lá o ator sempre tem Person). Também **adicionei `has_many :task_advances` em `Task`** (faltava; a
+  entity o exige) com `dependent: :restrict_with_exception` — a FK no banco já é RESTRICT e a tarefa é
+  soft-deletada, nunca destruída. O corpo do 409 sai com `task`/`latest_advance` no TOPO (D-409), não em
+  `details` — o endpoint faz `error!({ error: ... }.merge(details), 409)`.
 - [ ] G5 — Modal de avanço (5.1–5.7)
 - [ ] G6 — Integração e fechamento (6.1, 6.2, 6.4)
 

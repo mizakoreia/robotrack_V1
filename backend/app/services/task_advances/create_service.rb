@@ -24,17 +24,22 @@ module TaskAdvances
     end
 
     def call(task_id:, id:, progress: nil, status: nil, comment: nil, recorded_at: nil, lock_version: nil)
-      person = @context&.person
-      return error_response('sem_pessoa_do_ator', 422) if person.nil?
-
+      # A idempotência vem antes de tudo (D-ID): um retry de sucesso não pode
+      # ver versão velha e responder 409 falso.
       replay = id.present? ? ::TaskAdvance.find_by(id: id) : nil
       if replay
         task = ::Task.find_by(id: replay.task_id)
         return success_response({ advance: replay, task: task, replay: true }, 200)
       end
 
+      # 404 ANTES do check de pessoa: tarefa invisível (inexistente/alheia) tem
+      # de responder 404 UNIFORME, não vazar "você não tem Person" (422) sobre um
+      # recurso que o ator sequer pode ver.
       task = ::Task.find_by(id: task_id)
       return error_response('not_found', 404) if task.nil?
+
+      person = @context&.person
+      return error_response('sem_pessoa_do_ator', 422) if person.nil?
 
       if lock_version && task.lock_version != lock_version.to_i
         return error_response('conflito_de_versao', 409, details: conflict_body(task))

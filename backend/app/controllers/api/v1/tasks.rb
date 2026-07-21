@@ -73,6 +73,60 @@ module Api
       end
 
       resource :tasks do
+        # progress-advances 4.2 (§2.4, D3, D-409) — a trilha de avanços de uma
+        # tarefa: `POST` registra um avanço (a ÚNICA porta de escrita de
+        # `progress`/`status`), `GET` pagina a trilha (mais recentes primeiro).
+        route_param :task_id do
+          resource :advances do
+            route_setting :policy, policy: 'TaskAdvancePolicy', action: :index
+            params do
+              optional :page, type: Integer, default: 1
+              optional :per_page, type: Integer, default: 50
+            end
+            get do
+              # Tarefa invisível (inexistente/soft-deleted/alheia) → 404 UNIFORME,
+              # byte-idêntico ao de um id inexistente (D3.6).
+              not_found! if ::Task.find_by(id: params[:task_id]).nil?
+              per  = params[:per_page].clamp(1, 100)
+              page = [params[:page], 1].max
+              rel = ::TaskAdvance.where(task_id: params[:task_id])
+                                 .order(recorded_at: :desc, created_at: :desc, id: :desc)
+              header 'X-Total-Count', rel.count.to_s
+              present rel.limit(per).offset((page - 1) * per), with: Api::Entities::TaskAdvance
+            end
+
+            route_setting :policy, policy: 'TaskAdvancePolicy', action: :create
+            params do
+              optional :id, type: String
+              optional :progress, type: Integer
+              optional :status, type: String
+              optional :comment, type: String
+              optional :recorded_at, type: String
+              optional :lock_version, type: Integer
+            end
+            post do
+              result = ::TaskAdvances::CreateService.new(context: authorization_context).call(
+                task_id: params[:task_id], id: params[:id], progress: params[:progress],
+                status: params[:status], comment: params[:comment],
+                recorded_at: params[:recorded_at], lock_version: params[:lock_version]
+              )
+              unless result[:success]
+                # D-409: o corpo do conflito leva `task` e `latest_advance` no
+                # topo (não aninhados em `details`) para o modal recalcular a
+                # partir do estado corrente.
+                if result[:status] == 409
+                  error!({ error: result[:error] }.merge(result[:details] || {}), 409)
+                end
+                error!({ error: result[:error], details: result[:details] }.compact, result[:status])
+              end
+              status result[:status] # 201 novo, 200 replay idempotente (D-ID)
+              present :advance, result[:data][:advance], with: Api::Entities::TaskAdvance
+              present :task, result[:data][:task], with: Api::Entities::Task
+              present :replay, result[:data][:replay]
+            end
+          end
+        end
+
         route_param :id do
           route_setting :policy, policy: 'TaskPolicy', action: :update
           params do
@@ -80,10 +134,14 @@ module Api
             optional :desc, type: String
           end
           patch do
-            # D-RT-3: campos read-only nesta capacidade. A requisição INTEIRA
-            # falha 422 — não grava a `desc` "só a parte permitida".
+            # D-RT-3 / progress-advances 4.4: campos read-only nesta capacidade. A
+            # requisição INTEIRA falha 422 — não grava a `desc` "só a parte
+            # permitida" — e `hint` aponta a porta certa: o endpoint de avanço.
             proibidos = %w[progress status].select { |campo| params.key?(campo) }
-            error!({ error: 'read_only_field', details: { rejected: proibidos } }, 422) if proibidos.any?
+            if proibidos.any?
+              error!({ error: 'read_only_field',
+                       details: { rejected: proibidos, hint: 'POST /api/v1/tasks/:task_id/advances' } }, 422)
+            end
 
             result = task_result(
               ::Tasks::UpdateService.new(context: authorization_context)
