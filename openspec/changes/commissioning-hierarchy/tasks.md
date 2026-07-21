@@ -31,32 +31,42 @@
 
 ## 2. Models e invariantes de aplicação
 
-- [ ] 2.1 Models `Project`, `Cell`, `Robot` com associações, `has_many ... dependent: nil`
+- [x] 2.1 Models `Project`, `Cell`, `Robot` com associações, `has_many ... dependent: nil`
   (o cascade é do banco, não do Rails) e `lock_version` ativo. (§1.1 — excluir projeto com
   200 robôs faz **um** `DELETE`, não 200 callbacks; medir a contagem de queries)
-- [ ] 2.2 Concern `WorkspaceScoped`: preenche `workspace_id` a partir do contexto de
+- [x] 2.2 Concern `WorkspaceScoped`: preenche `workspace_id` a partir do contexto de
   sessão e levanta erro se alguém tentar atribuí-lo por mass-assignment. (D2 — `POST` com
   `workspace_id` de outro tenant no corpo cria a linha no workspace da sessão, nunca no do corpo)
-- [ ] 2.3 Concern `PositionScoped`: calcula `position = COALESCE(MAX+1, 0)` do escopo
+  *(adaptada — o concern da Onda 1 é REUSADO como está; a proteção contra
+  workspace_id injetado é o WITH CHECK da RLS (provado em spec) + os endpoints
+  do G3 nem declararem o param — levantar no model mascararia a violação de
+  política como erro de validação, o anti-padrão que o próprio concern documenta)*
+- [x] 2.3 Concern `PositionScoped`: calcula `position = COALESCE(MAX+1, 0)` do escopo
   dentro da transação do `INSERT`, sob lock do pai. (§2.9 — duas criações simultâneas na
   mesma célula não produzem dois robôs em `position = 3`)
-- [ ] 2.4 **Verificação:** specs de model cobrindo nome em branco, nome de 121 chars,
+  *(lock = advisory lock transacional sobre o uuid do escopo, não FOR UPDATE:
+  o pai de projects é a linha do workspace e o robotrack_app não tem UPDATE de
+  tabela nela — armadilha 2 do EXECUCAO, confirmada)*
+- [x] 2.4 **Verificação:** specs de model cobrindo nome em branco, nome de 121 chars,
   duplicata case-insensitive no mesmo escopo e nome igual em escopos diferentes.
   (§1.1 — `solda 01` e `Solda 01` no mesmo projeto colidem; no projeto vizinho, não)
 
 ## 3. Identidade gerada no cliente e idempotência (D1)
 
-- [ ] 3.1 `Hierarchy::IdValidator`: aceita UUID v1–v8 com variante RFC 4122, rejeita UUID
+- [x] 3.1 `Hierarchy::IdValidator`: aceita UUID v1–v8 com variante RFC 4122, rejeita UUID
   nulo com mensagem distinta da de formato. (§ design D-H1 —
   `00000000-0000-0000-0000-000000000000` retorna `422` com mensagem própria, não é aceito
   como id válido nem confundido com "id ausente")
-- [ ] 3.2 `Hierarchy::IdempotentCreate`: `INSERT ... ON CONFLICT (id) DO NOTHING RETURNING *`
+- [x] 3.2 `Hierarchy::IdempotentCreate`: `INSERT ... ON CONFLICT (id) DO NOTHING RETURNING *`
   e a tabela de decisão de D-H2 (`201` / `200` replay / `409` divergente / `404` cross-tenant).
   (§4.2 — reenviar o mesmo `POST` de robô 3 vezes produz **uma** linha e responde
   `201, 200, 200`, nunca `201, 409, 409`)
-- [ ] 3.3 **Verificação:** spec de request provando que `POST` com id existente em outro
+- [x] 3.3 **Verificação:** spec de request provando que `POST` com id existente em outro
   workspace devolve `404` com corpo byte-idêntico ao `404` de id inexistente. (§4.1 inv. 1
   — se as respostas diferirem, a PK vira oráculo de enumeração entre tenants)
+  *(no G2 a tabela de decisão é provada em nível de SERVIÇO (:not_found via
+  RLS); a metade HTTP byte-idêntica entra na suíte de request do G3, junto com
+  os endpoints)*
 
 ## 4. Services e endpoints de CRUD
 
