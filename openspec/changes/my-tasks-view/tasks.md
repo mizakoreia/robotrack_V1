@@ -29,30 +29,30 @@ sendo criada por `workspace-tenancy` (bootstrap do dono) e `workspace-invitation
 
 ## 2. Consulta e índices
 
-- [ ] 2.1 Migration aditiva com `disable_ddl_transaction!` criando
+- [x] 2.1 Migration aditiva com `disable_ddl_transaction!` criando
   `idx_task_assignees_ws_person ON task_assignees (workspace_id, person_id) INCLUDE (task_id)`
   via `CREATE INDEX CONCURRENTLY IF NOT EXISTS`; `down` faz `DROP INDEX IF EXISTS`.
   (design D-MTV-5 — sem `INCLUDE (task_id)` o driver deixa de ser index-only e o p95 estoura)
-- [ ] 2.2 Migration aditiva criando o índice **parcial**
+- [x] 2.2 Migration aditiva criando o índice **parcial**
   `idx_tasks_open_ws ON tasks (workspace_id, id) WHERE status IN ('pending','in_progress')`,
   idempotente caso `hierarchy-screens`/`progress-rollup` já o tenham criado.
   (D-MTV-5 — índice não-parcial infla com `done`, que domina um workspace maduro e nunca é
   lido por esta tela)
-- [ ] 2.3 Escrever spec que afirma que o enum `tasks.status` tem exatamente
+- [x] 2.3 Escrever spec que afirma que o enum `tasks.status` tem exatamente
   `{pending, in_progress, done, not_applicable}`, com mensagem de falha apontando para
   `design.md` D-MTV-5.
   (§2.2 — um quinto status faria o índice parcial deixar de cobrir a consulta **em
   silêncio**, sem quebrar nada)
-- [ ] 2.4 Implementar `MyTasks::ListService` (singleton, `ApiResponseHandler`) com a
+- [x] 2.4 Implementar `MyTasks::ListService` (singleton, `ApiResponseHandler`) com a
   consulta única de D-MTV-4: driver em `task_assignees`, joins até `projects`, filtro de
   status e de `workspace_id`.
   (§3.6 — partir de `tasks` em vez de `task_assignees` inverte a seletividade e varre as
   28.800 tarefas do workspace para descartar 99%)
-- [ ] 2.5 Implementar a ordenação total de D-MTV-6 (`position` + desempate por `id` nos 4
+- [x] 2.5 Implementar a ordenação total de D-MTV-6 (`position` + desempate por `id` nos 4
   níveis) e paginação `page`/`per_page` (padrão 50, teto 200).
   (§3.6 — sem o desempate por `id`, duas células com a mesma `position` fazem uma linha
   aparecer na página 1 e na página 2 da mesma consulta)
-- [ ] 2.6 **Verificação:** spec de integração com 120 tarefas abertas afirmando que a união
+- [x] 2.6 **Verificação:** spec de integração com 120 tarefas abertas afirmando que a união
   das páginas 1–3 tem 120 `task_id` distintos, e que 5 requisições da página 1 retornam a
   mesma ordem.
   (§3.6 — pega duplicação/omissão por ordenação instável)

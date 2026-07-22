@@ -946,6 +946,20 @@ CREATE UNIQUE INDEX idx_memberships_one_per_invitation ON public.memberships USI
 
 
 --
+-- Name: idx_task_assignees_ws_person; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_task_assignees_ws_person ON public.task_assignees USING btree (workspace_id, person_id) INCLUDE (task_id);
+
+
+--
+-- Name: idx_tasks_open_ws; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_tasks_open_ws ON public.tasks USING btree (workspace_id, id) WHERE (status = ANY (ARRAY['Pendente'::public.task_status, 'Em Andamento'::public.task_status]));
+
+
+--
 -- Name: idx_tasks_ws_robot_status; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1693,6 +1707,8 @@ ALTER TABLE public.workspaces ENABLE ROW LEVEL SECURITY;
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260722130002'),
+('20260722130001'),
 ('20260722120002'),
 ('20260722120001'),
 ('20260721160005'),
