@@ -1,5 +1,6 @@
-import { useEffect, Fragment } from 'react'
+import { useEffect, useState, Fragment } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { toast } from 'sonner'
 import { Icon } from '@/components/icons/Icon'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -9,7 +10,12 @@ import { useRobotTaskFilter, applyFilter, type TaskFilter } from '@/features/rob
 import { StatusCell } from '@/features/robot-tasks/StatusCell'
 import { ResponsaveisCell } from '@/features/robot-tasks/ResponsaveisCell'
 import { TrilhaCell } from '@/features/robot-tasks/TrilhaCell'
+import { AcoesCell } from '@/features/robot-tasks/AcoesCell'
+import { AddTaskModal } from '@/features/robot-tasks/AddTaskModal'
+import { useSyncTemplates } from '@/features/robot-tasks/useTaskCrud'
 import { AdvanceControls } from '@/features/advances/AdvanceControls'
+import { useWorkspaceStore } from '@/store/workspaceStore'
+import { robotTaskText } from '@/lib/i18n/robotTasks'
 import { metricLabel } from '@/lib/i18n/progress'
 
 // robot-task-table 1.4/1.5 (§3.5) — a casca da tela operacional do robô: cabeçalho,
@@ -34,9 +40,24 @@ export function RobotTaskTablePage() {
   const filter = useRobotTaskFilter((s) => s.filter)
   const setFilter = useRobotTaskFilter((s) => s.setFilter)
   const reset = useRobotTaskFilter((s) => s.reset)
+  const role = useWorkspaceStore((s) => s.currentRoleLabel)
+  const canEdit = role === 'owner' || role === 'edit'
+  const [adding, setAdding] = useState(false)
+  const sync = useSyncTemplates(robotId ?? '_')
 
   // D-RTT-1 — reset do filtro na navegação (o `key={robotId}` da rota cobre A→A).
   useEffect(() => reset(), [robotId, reset])
+
+  // §2.6 — sincroniza as tarefas-base, informa a contagem e reseta o filtro para
+  // "Todos" (as novas linhas aparecem mesmo se o filtro estava em "Concluídos").
+  function runSync() {
+    sync.mutate(undefined, {
+      onSuccess: (res) => {
+        setFilter('all')
+        toast.success(res.addedCount > 0 ? robotTaskText.syncResult(res.addedCount) : robotTaskText.syncNone)
+      },
+    })
+  }
 
   if (isLoading) return <TableSkeleton />
   if (isError || !tasks) return <TableError onRetry={() => void refetch()} />
@@ -66,37 +87,58 @@ export function RobotTaskTablePage() {
         )}
       </header>
 
-      {/* filtro segmentado (§3.5, D-RTT-2) */}
-      <div role="tablist" aria-label="Filtro de tarefas" className="surface-panel inline-flex gap-1 rounded-lg border p-1">
-        {FILTERS.map((f) => (
-          <button
-            key={f.key}
-            role="tab"
-            aria-selected={filter === f.key}
-            onClick={() => setFilter(f.key)}
-            className={
-              'label-md min-h-[2rem] rounded-md px-3 font-medium ' +
-              (filter === f.key ? 'bg-accent/15 text-accent-ink' : 'text-text-muted hover:text-text-main')
-            }
-          >
-            {f.label}
-          </button>
-        ))}
+      {/* filtro + ações do cabeçalho. As ações (Adicionar/Sincronizar) só existem
+          para owner/edit (4.4, D-RTT-9) — `view` não vê alvo desabilitado. */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div role="tablist" aria-label="Filtro de tarefas" className="surface-panel inline-flex gap-1 rounded-lg border p-1">
+          {FILTERS.map((f) => (
+            <button
+              key={f.key}
+              role="tab"
+              aria-selected={filter === f.key}
+              onClick={() => setFilter(f.key)}
+              className={
+                'label-md min-h-[2rem] rounded-md px-3 font-medium ' +
+                (filter === f.key ? 'bg-accent/15 text-accent-ink' : 'text-text-muted hover:text-text-main')
+              }
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+
+        {canEdit && (
+          <div className="flex flex-wrap items-center gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={runSync} disabled={sync.isPending}>
+              <Icon name="list" size="sm" className="mr-1" />
+              {sync.isPending ? robotTaskText.syncing : robotTaskText.syncTemplates}
+            </Button>
+            <Button type="button" size="sm" onClick={() => setAdding(true)}>
+              <Icon name="plus" size="sm" className="mr-1" />
+              {robotTaskText.addTask}
+            </Button>
+          </div>
+        )}
       </div>
 
       {tasks.length === 0 ? (
         <TableEmpty robotName={robotName} />
       ) : (
-        <TaskTable robotId={robotId ?? '_'} tasks={visible} />
+        <TaskTable robotId={robotId ?? '_'} tasks={visible} canEdit={canEdit} />
       )}
+
+      {canEdit && robotId && <AddTaskModal robotId={robotId} open={adding} onClose={() => setAdding(false)} />}
     </section>
   )
 }
 
 // A tabela agrupada por categoria (§3.5) — linha separadora na troca de categoria,
 // preservando a ordem persistida das tarefas dentro do grupo.
-function TaskTable({ robotId, tasks }: { robotId: string; tasks: TaskDTO[] }) {
+function TaskTable({ robotId, tasks, canEdit }: { robotId: string; tasks: TaskDTO[]; canEdit: boolean }) {
   let lastCat: string | null = null
+  // 4.4 (D-RTT-9) — a coluna Ações SAI do DOM para `view` (não é `disabled`); o
+  // colSpan do separador acompanha (5 colunas sem Ações).
+  const cols = canEdit ? 6 : 5
   return (
     <div className="surface-panel overflow-hidden rounded-lg border">
       <table className="w-full border-collapse text-left">
@@ -107,7 +149,7 @@ function TaskTable({ robotId, tasks }: { robotId: string; tasks: TaskDTO[] }) {
             <th className="px-4 py-2 font-medium">Progresso</th>
             <th className="px-4 py-2 font-medium">Responsáveis</th>
             <th className="px-4 py-2 font-medium">Trilha</th>
-            <th className="px-4 py-2 font-medium">Ações</th>
+            {canEdit && <th className="px-4 py-2 font-medium">Ações</th>}
           </tr>
         </thead>
         <tbody>
@@ -118,12 +160,12 @@ function TaskTable({ robotId, tasks }: { robotId: string; tasks: TaskDTO[] }) {
               <Fragment key={t.id}>
                 {newGroup && (
                   <tr>
-                    <td colSpan={6} className="panel-header bg-accent/5 px-4 py-2 text-text-muted">
+                    <td colSpan={cols} className="panel-header bg-accent/5 px-4 py-2 text-text-muted">
                       {t.cat}
                     </td>
                   </tr>
                 )}
-                <TaskRow robotId={robotId} task={t} />
+                <TaskRow robotId={robotId} task={t} canEdit={canEdit} />
               </Fragment>
             )
           })}
@@ -133,9 +175,10 @@ function TaskTable({ robotId, tasks }: { robotId: string; tasks: TaskDTO[] }) {
   )
 }
 
-// Status e Progresso interativos (G2); Responsáveis e Trilha com chips/avisos (G3,
-// 3.1–3.4). Ações é leitura até o grupo 4.
-function TaskRow({ robotId, task }: { robotId: string; task: TaskDTO }) {
+// Status e Progresso interativos (G2); Responsáveis e Trilha (G3); Ações (G4, só
+// owner/edit). Os controles de mutação (StatusCell/AdvanceControls) já se auto-
+// gateiam por papel; a coluna Ações é removida na TaskTable.
+function TaskRow({ robotId, task, canEdit }: { robotId: string; task: TaskDTO; canEdit: boolean }) {
   return (
     <tr className="border-t align-top">
       <td className="px-4 py-3">{task.desc}</td>
@@ -152,7 +195,11 @@ function TaskRow({ robotId, task }: { robotId: string; task: TaskDTO }) {
       <td className="px-4 py-3">
         <TrilhaCell robotId={robotId} task={task} />
       </td>
-      <td className="px-4 py-3 align-middle text-text-muted">—</td>
+      {canEdit && (
+        <td className="px-4 py-3 align-middle">
+          <AcoesCell robotId={robotId} task={task} />
+        </td>
+      )}
     </tr>
   )
 }
