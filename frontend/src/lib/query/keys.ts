@@ -21,6 +21,8 @@ export const qk = {
   // audit-log D9 — a trilha de auditoria do workspace (invalidável por
   // realtime-collaboration depois)
   auditLogs: (wsId: string) => ['ws', wsId, 'auditLogs'] as const,
+  // workspace-settings D9 — as pessoas (responsáveis) do workspace (painel Equipe)
+  people: (wsId: string) => ['ws', wsId, 'people'] as const,
   notifications: (wsId: string) => ['ws', wsId, 'notifications'] as const,
   search: (wsId: string, q: string) => ['ws', wsId, 'search', q] as const,
 } as const

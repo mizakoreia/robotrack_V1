@@ -43,6 +43,9 @@ module Api
       # Log de auditoria — leitura (audit-log 5.2)
       mount Api::V1::AuditLogs
 
+      # Pessoas do workspace — painel de Equipe (workspace-settings 2.1)
+      mount Api::V1::People
+
       # Recálculo manual do progresso (progress-rollup 4.5)
       mount Api::V1::ProgressEndpoint
 

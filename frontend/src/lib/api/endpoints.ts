@@ -441,17 +441,25 @@ export const taskAssigneesApi = {
     ),
 }
 
-// robot-tasks 4.4 — `PersonDTO` e o cadastro de pessoa. O backend `POST /people`
-// é de `workspace-tenancy` (dependência declarada; ainda não entregue). Aqui só
-// o fio do cliente que o modal de atribuição consome.
+// robot-tasks 4.4 / workspace-settings 2.1 — `PersonDTO` e o cadastro de pessoa.
+// `has_account` (user_id presente) = a pessoa é MEMBRO; o painel de Equipe usa isso
+// só como dica visual — o servidor recusa o arquivamento de membro com 409 (D-
+// PERSON-DEL). `POST /people` é servido por `workspace-settings` (G2).
 export interface PersonDTO {
   id: string
   name: string
+  has_account?: boolean
 }
 
 export const peopleApi = {
+  list: () => apiClient.get<PersonDTO[]>('/api/v1/people'),
+
   create: (data: { id: string; name: string }) =>
     apiClient.post<PersonDTO>('/api/v1/people', data),
+
+  // Remover = ARQUIVAR (o backend faz o soft-delete + apaga atribuições). 409 se
+  // a pessoa tem conta (membro) — remoção de membro é outra tela.
+  archive: (id: string) => apiClient.delete(`/api/v1/people/${encodeURIComponent(id)}`),
 }
 
 // progress-advances 4.3 — a Tarefa como o backend a serializa (entity `Task`).

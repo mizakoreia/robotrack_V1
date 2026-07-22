@@ -23,15 +23,15 @@ imediatamente antes. Todo grupo termina em tarefa de verificação.
 
 ## 2. Painel de Equipe
 
-- [ ] 2.1 Endpoints `GET/POST /api/v1/workspace/people` com entity, ordenação alfabética
+- [x] 2.1 Endpoints `GET/POST /api/v1/workspace/people` com entity, ordenação alfabética
   e filtro `archived_at IS NULL` (§3.9 — pessoa arquivada não reaparece na listagem)
-- [ ] 2.2 `People::ArchiveService`: arquiva, apaga `task_assignees`, preserva
+- [x] 2.2 `People::ArchiveService`: arquiva, apaga `task_assignees`, preserva
   `task_advances` e `audit_logs`, recusa pessoa com membership com `409`
   (D-PERSON-DEL — arquivar quem tem 5 avanços mantém os 5 com `author_name_snapshot`)
-- [ ] 2.3 Componente de chips com adição e remoção, sem nenhum chip não-removível, e
+- [x] 2.3 Componente de chips com adição e remoção, sem nenhum chip não-removível, e
   rótulo `"Não atribuído"` para conjunto vazio de responsáveis (D11 — nenhuma consulta a
   `people` é feita para renderizar esse texto; nenhum chip é renderizado sem controle "x")
-- [ ] 2.4 Spec de request + Vitest do painel: duplicata por caixa recusada com `422`,
+- [x] 2.4 Spec de request + Vitest do painel: duplicata por caixa recusada com `422`,
   chip de membro recusado com `409`, remoção não apaga a trilha (§3.9 — remover `Bruno`
   deixa seus 5 avanços intactos e some com suas 2 atribuições)
 
