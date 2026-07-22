@@ -225,6 +225,75 @@ export interface ProjectDTO {
 // por `"Solda MIG"` em `frontend/src` fora de testes/fixtures deve dar zero.
 export type RobotApplication = string
 
+// hierarchy-screens 4.1 (D-A / D15) — os tipos dos endpoints agregados. As DUAS
+// métricas são campos SEPARADOS e nomeados: `weighted_progress` (envelope do anel)
+// e `raw_completion` (envelope do hub). NÃO existe um campo genérico `progress` —
+// passar o hub onde o anel é esperado (ou vice-versa) é erro de TIPO, não bug.
+export interface WeightedEnvelope {
+  value: number
+  metric: 'weighted'
+  label: string
+}
+export interface RawCompletionEnvelope {
+  completed: number
+  total: number
+  percent: number
+  metric: 'raw_count'
+  label: string
+}
+export interface OverviewProjectCard {
+  id: string
+  name: string
+  weighted_progress: WeightedEnvelope
+  cells_count: number
+}
+export interface WorkspaceOverviewDTO {
+  counts: { active_projects: number; analyzed_robots: number }
+  raw_completion: RawCompletionEnvelope
+  projects: OverviewProjectCard[]
+}
+export interface OverviewCellCard {
+  id: string
+  name: string
+  weighted_progress: WeightedEnvelope
+  robots_count: number
+}
+export interface ProjectOverviewDTO {
+  counts: { configured_cells: number; analyzed_robots: number }
+  raw_completion: RawCompletionEnvelope
+  cells: OverviewCellCard[]
+}
+export interface OverviewRobotCard {
+  id: string
+  name: string
+  application: string
+  weighted_progress: WeightedEnvelope
+  tasks_count: number
+}
+export interface CellOverviewDTO {
+  counts: { configured_robots: number }
+  raw_completion: RawCompletionEnvelope
+  robots: OverviewRobotCard[]
+}
+export interface SearchResult {
+  type: 'project' | 'cell' | 'robot'
+  id: string
+  name: string
+  path_label: string
+  route: string
+}
+export interface SearchResponse {
+  results: SearchResult[]
+  count: number
+}
+
+export const overviewApi = {
+  workspace: () => apiClient.get<WorkspaceOverviewDTO>('/api/v1/projects/overview'),
+  project: (id: string) => apiClient.get<ProjectOverviewDTO>(`/api/v1/projects/${encodeURIComponent(id)}/overview`),
+  cell: (id: string) => apiClient.get<CellOverviewDTO>(`/api/v1/cells/${encodeURIComponent(id)}/overview`),
+  search: (q: string) => apiClient.get<SearchResponse>(`/api/v1/search?q=${encodeURIComponent(q)}`),
+}
+
 export const hierarchyApi = {
   listProjects: () => apiClient.get<ProjectDTO[]>('/api/v1/projects'),
   createProject: (data: { id: string; name: string }) =>
