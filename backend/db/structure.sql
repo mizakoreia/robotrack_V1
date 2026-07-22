@@ -145,6 +145,24 @@ $$;
 
 
 --
+-- Name: people_forbid_archive_active_member(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.people_forbid_archive_active_member() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF NEW.archived_at IS NOT NULL AND OLD.archived_at IS NULL
+     AND EXISTS (SELECT 1 FROM memberships WHERE person_id = NEW.id) THEN
+    RAISE EXCEPTION 'pessoa com membership ativa não pode ser arquivada por esta tela '
+      '(workspace-settings D-PERSON-DEL: use a remoção de membro)';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+--
 -- Name: purge_expired_invitations(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -614,6 +632,8 @@ CREATE TABLE public.people (
     user_id uuid,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    archived_at timestamp with time zone,
+    CONSTRAINT chk_people_name_not_blank CHECK ((btrim(name) <> ''::text)),
     CONSTRAINT people_name_not_sentinel CHECK ((btrim(lower(name)) <> ALL (ARRAY['não atribuído'::text, 'nao atribuido'::text])))
 );
 
@@ -850,6 +870,24 @@ CREATE TABLE public.users (
     CONSTRAINT users_credential_present CHECK (((provider IS NOT NULL) OR ((encrypted_password)::text <> ''::text))),
     CONSTRAINT users_name_min_length CHECK ((char_length(btrim((name)::text)) >= 2))
 );
+
+
+--
+-- Name: workspace_backups; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.workspace_backups (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    workspace_id uuid NOT NULL,
+    status text DEFAULT 'pending'::text NOT NULL,
+    checksum text,
+    counts jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT chk_wb_status CHECK ((status = ANY (ARRAY['pending'::text, 'completed'::text, 'failed'::text])))
+);
+
+ALTER TABLE ONLY public.workspace_backups FORCE ROW LEVEL SECURITY;
 
 
 --
@@ -1190,6 +1228,14 @@ ALTER TABLE ONLY public.users
 
 
 --
+-- Name: workspace_backups workspace_backups_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.workspace_backups
+    ADD CONSTRAINT workspace_backups_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: workspaces workspaces_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1390,7 +1436,7 @@ CREATE UNIQUE INDEX index_people_on_workspace_id_and_id ON public.people USING b
 -- Name: index_people_on_workspace_id_and_normalized_name; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE UNIQUE INDEX index_people_on_workspace_id_and_normalized_name ON public.people USING btree (workspace_id, lower(btrim(name)));
+CREATE UNIQUE INDEX index_people_on_workspace_id_and_normalized_name ON public.people USING btree (workspace_id, lower(btrim(name))) WHERE (archived_at IS NULL);
 
 
 --
@@ -1548,6 +1594,13 @@ CREATE INDEX index_users_on_user_type_id ON public.users USING btree (user_type_
 
 
 --
+-- Name: index_workspace_backups_on_workspace_created; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_workspace_backups_on_workspace_created ON public.workspace_backups USING btree (workspace_id, created_at DESC);
+
+
+--
 -- Name: index_workspaces_on_owner_user_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1636,6 +1689,13 @@ CREATE TRIGGER memberships_owner_is_not_member BEFORE INSERT OR UPDATE ON public
 --
 
 CREATE TRIGGER trg_audit_logs_immutable BEFORE DELETE OR UPDATE ON public.audit_logs FOR EACH ROW EXECUTE FUNCTION public.audit_logs_forbid_mutation();
+
+
+--
+-- Name: people trg_people_forbid_archive_active_member; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_people_forbid_archive_active_member BEFORE UPDATE OF archived_at ON public.people FOR EACH ROW EXECUTE FUNCTION public.people_forbid_archive_active_member();
 
 
 --
@@ -1901,6 +1961,14 @@ ALTER TABLE ONLY public.tasks
 
 
 --
+-- Name: workspace_backups workspace_backups_workspace_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.workspace_backups
+    ADD CONSTRAINT workspace_backups_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE;
+
+
+--
 -- Name: workspaces workspaces_owner_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2151,6 +2219,13 @@ CREATE POLICY tenant_isolation ON public.tasks USING ((workspace_id = (NULLIF(cu
 
 
 --
+-- Name: workspace_backups tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.workspace_backups FOR SELECT USING ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid));
+
+
+--
 -- Name: workspaces tenant_isolation; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -2209,6 +2284,26 @@ CREATE POLICY tenant_isolation_insert ON public.task_advances FOR INSERT WITH CH
 
 
 --
+-- Name: workspace_backups tenant_isolation_insert; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation_insert ON public.workspace_backups FOR INSERT WITH CHECK ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid));
+
+
+--
+-- Name: workspace_backups tenant_isolation_update; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation_update ON public.workspace_backups FOR UPDATE USING ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid)) WITH CHECK ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid));
+
+
+--
+-- Name: workspace_backups; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.workspace_backups ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: workspaces; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -2221,6 +2316,8 @@ ALTER TABLE public.workspaces ENABLE ROW LEVEL SECURITY;
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260723130002'),
+('20260723130001'),
 ('20260723120003'),
 ('20260723120002'),
 ('20260723120001'),

@@ -114,7 +114,7 @@ regenerar structure.sql. UMA suíte por vez.
 ## Progresso
 
 - [ ] G0 — este mapa (commit G0)
-- [ ] G1 — esquema + autorização (1.1–1.4)
+- [x] G1 — esquema + autorização (1.1–1.4)
 - [ ] G2 — painel de Equipe (2.1–2.4)
 - [ ] G3 — tela do catálogo (3.1–3.6)
 - [ ] G4 — exportar backup (4.1–4.6)

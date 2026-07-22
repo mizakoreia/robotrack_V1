@@ -6,18 +6,18 @@ imediatamente antes. Todo grupo termina em tarefa de verificação.
 
 ## 1. Esquema e autorização
 
-- [ ] 1.1 Migration aditiva em `people`: `archived_at timestamptz NULL`, índice único
+- [x] 1.1 Migration aditiva em `people`: `archived_at timestamptz NULL`, índice único
   parcial `(workspace_id, lower(name)) WHERE archived_at IS NULL`, `CHECK (btrim(name) <> '')`
   e trigger `BEFORE UPDATE OF archived_at` que levanta exceção se houver membership ativa
   (§3.9, D-PERSON-DEL — inserir `"ana"` com `Ana` ativa falha no banco, não só no model;
   `update_column(:archived_at, …)` no `rails console` para um membro ativo levanta erro)
-- [ ] 1.2 Migration da tabela `workspace_backups` (uuid PK, `workspace_id NOT NULL`,
+- [x] 1.2 Migration da tabela `workspace_backups` (uuid PK, `workspace_id NOT NULL`,
   `status`, `checksum`, `counts jsonb`) com política RLS igual às demais tabelas de
   domínio (D1/D2 — `SELECT` sob `app.current_workspace_id = WS-2` não enxerga backup de `WS-1`)
-- [ ] 1.3 Policies `WorkspaceSettingsPolicy`, `WorkspaceBackupPolicy` e
+- [x] 1.3 Policies `WorkspaceSettingsPolicy`, `WorkspaceBackupPolicy` e
   `WorkspaceFactoryResetPolicy` em `app/policies/`, no idioma singleton dos services (D3 —
   o route-sweep spec falha se algum dos novos endpoints não declarar policy)
-- [ ] 1.4 Spec de autorização cobrindo a matriz de §4.1: `view` negado em escrita de
+- [x] 1.4 Spec de autorização cobrindo a matriz de §4.1: `view` negado em escrita de
   catálogo e de equipe, `edit` negado em backup e em reset, dono de `WS-2` negado em `WS-1`
   (§4.1 — `edit` com frase de confirmação e `backup_id` corretos ainda recebe `403`)
 
