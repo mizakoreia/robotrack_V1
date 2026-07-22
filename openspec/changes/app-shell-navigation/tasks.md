@@ -71,26 +71,26 @@ um mock que segue o contrato acordado.
 
 ## 4. Casca, sidebar e topbar
 
-- [ ] 4.1 Criar `app/AppShell.tsx` e converter as rotas autenticadas de `app/App.tsx` em
+- [x] 4.1 Criar `app/AppShell.tsx` e converter as rotas autenticadas de `app/App.tsx` em
   rotas-filhas do layout, mantendo `/login` fora. (§3.10 — navegar de `/` para
   `/minhas-tarefas` não remonta sidebar nem topbar, e só `.main` rola; `document.body` não
   ganha barra de rolagem)
-- [ ] 4.2 Implementar a sidebar com a constante fechada `NAV_DESTINATIONS` de 3 entradas e
+- [x] 4.2 Implementar a sidebar com a constante fechada `NAV_DESTINATIONS` de 3 entradas e
   estado ativo por preenchimento tintado + ícone em `--accent`, sem `border-left` e sem
   pseudo-elemento de barra. (§DESIGN Navegação — a rota `/projeto/8f2a/celula/1c9b` mantém
   "Visão Geral" ativo; nenhum item de configuração aparece na sidebar para papel Dono)
-- [ ] 4.3 Implementar o rodapé da sidebar com o card de usuário (nome sobre e-mail,
+- [x] 4.3 Implementar o rodapé da sidebar com o card de usuário (nome sobre e-mail,
   e-mail truncado com reticências, fallback para e-mail quando o nome é vazio) e o menu
   "Edição e visualização" de 3 itens. (§DESIGN Navegação — usuário sem nome não exibe o
   e-mail duas vezes)
-- [ ] 4.4 Implementar a topbar com o slot de contexto à esquerda, o slot nomeado para o
+- [x] 4.4 Implementar a topbar com o slot de contexto à esquerda, o slot nomeado para o
   gatilho de notificações e o menu da conta com "Adicionar usuário", "Alternar tema" e
   "Sair". (§3.10 — o slot de notificações vazio não desloca o layout da barra; para papel
   "Somente leitura" o item "Adicionar usuário" não é renderizado)
-- [ ] 4.5 Implementar a gaveta abaixo de 768px, com o indicador de gravação promovido à
+- [x] 4.5 Implementar a gaveta abaixo de 768px, com o indicador de gravação promovido à
   topbar enquanto ela está fechada e fechamento ao escolher destino. (§3.10 — a 375px com
   1 mutation em voo o estado `salvando` é visível sem abrir a gaveta)
-- [ ] 4.6 Escrever os testes de casca: contagem de destinos igual a 3, ausência de faixa
+- [x] 4.6 Escrever os testes de casca: contagem de destinos igual a 3, ausência de faixa
   lateral, `aria-current` no destino corrente, scroll ao topo na navegação, e render da
   topbar em 375px. (§3.10 — falha no momento em que alguém promover "Configurações" a
   quarto item da sidebar)

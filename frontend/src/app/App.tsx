@@ -4,12 +4,15 @@ import { Routes, Route } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import { initAmbient } from '@/lib/ambient'
-import { Layout } from '@/components/Layout'
 import { HomePage } from '@/app/pages/HomePage'
 import { AuthPage } from '@/features/auth/AuthPage'
 import { OAuthCallbackPage } from '@/features/auth/OAuthCallbackPage'
 import { InviteRoute } from '@/features/auth/InviteRoute'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
+import { AppShell } from '@/app/AppShell'
+import { OverviewPage } from '@/app/pages/OverviewPage'
+import { MyTasksPage } from '@/app/pages/MyTasksPage'
+import { ReportPage } from '@/app/pages/ReportPage'
 import { DashboardPage } from '@/app/pages/DashboardPage'
 import { UsersPage } from '@/app/pages/UsersPage'
 import { ProfilePage } from '@/app/pages/ProfilePage'
@@ -31,19 +34,28 @@ function App() {
       <div className="ambient" aria-hidden="true" />
       <div className="min-h-screen bg-background font-sans antialiased">
         <Routes>
-          <Route path="/" element={<HomePage />} />
+          {/* app-shell-navigation 4.1 — a landing de marketing do template sai de
+              `/` (que passa a ser a Visão Geral autenticada) e fica alcançável em
+              `/apresentacao` até `seal-template-baseline` decidir seu destino. */}
+          <Route path="/apresentacao" element={<HomePage />} />
           <Route path="/entrar" element={<AuthPage />} />
           <Route path="/build" element={<BuildPage />} />
 
           <Route path="/auth/callback" element={<OAuthCallbackPage />} />
           <Route path="/convite/:token" element={<InviteRoute />} />
+
+          {/* app-shell-navigation 4.1 (§3.10) — a casca PERSISTENTE envolve toda a
+              área autenticada: navegar entre destinos não remonta sidebar/topbar. */}
           <Route
             element={
               <ProtectedRoute>
-                <Layout />
+                <AppShell />
               </ProtectedRoute>
             }
           >
+            <Route path="/" element={<OverviewPage />} />
+            <Route path="/minhas-tarefas" element={<MyTasksPage />} />
+            <Route path="/relatorio" element={<ReportPage />} />
             <Route path="dashboard" element={<DashboardPage />} />
             <Route path="users" element={<UsersPage />} />
             <Route path="profile" element={<ProfilePage />} />
