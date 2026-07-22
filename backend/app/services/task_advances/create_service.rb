@@ -115,16 +115,20 @@ module TaskAdvances
       ::TaskAssignee.create!(task_id: task.id, person_id: person.id, workspace_id: task.workspace_id)
     end
 
-    # Conclusão a 100% grava auditoria na MESMA transação. `audit_logs` (audit-log)
-    # ainda não existe — por ora, log estruturado, mesmo padrão de
-    # `Hierarchy::CrudService#audit_destroy!` (EXECUCAO decisão 2).
+    # audit-log 4.1 (§2.2/§2.8, Decisão 3) — conclusão a 100% grava auditoria na
+    # MESMA transação do avanço: se o INSERT do log falhar, `record!` levanta e o
+    # avanço faz rollback (tarefa concluída sem registro é o buraco que a invariante
+    # 3 existe para impedir). `by` = o autor do avanço; `%{assignees}` = os
+    # responsáveis VIGENTES na conclusão (o `auto_assign!` já garante ao menos o
+    # autor). `ts`/`ts_local` são congelados por `RecordService` (hora do servidor).
     def audit_completion!(task, advance, person)
-      Rails.logger.info(
-        {
-          event: 'task_completed', task_id: task.id, robot_id: task.robot_id,
-          workspace_id: task.workspace_id, by_person_id: person.id,
-          author: person.name, advance_id: advance.id, at: advance.recorded_at
-        }.to_json
+      AuditLog::RecordService.record!(
+        workspace: task.workspace, event: :task_completed, by: person,
+        payload: {
+          robot_name: task.robot.name, task_desc: task[:desc],
+          assignee_names: task.assignees.reload.order(:name).pluck(:name),
+          task_id: task.id, robot_id: task.robot_id, advance_id: advance.id
+        }
       )
     end
 

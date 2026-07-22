@@ -74,14 +74,14 @@ avanço).
 
 ## 4. Gatilho de conclusão a 100%
 
-- [ ] 4.1 Ligar `AuditLog::RecordService.record!` à transição de progresso para `100` em
+- [x] 4.1 Ligar `AuditLog::RecordService.record!` à transição de progresso para `100` em
   `progress-advances`, **dentro** da transação do avanço. (§2.2 — avanço de `90` para
   `100` com `INSERT` de log forçado a falhar tem que deixar a tarefa em `90` e sem
   `task_advance` novo)
-- [ ] 4.2 Garantir que avanços que não atingem 100 não geram registro, incluindo transição
+- [x] 4.2 Garantir que avanços que não atingem 100 não geram registro, incluindo transição
   de `N/A` e reabertura de tarefa. (§2.2 — avanço de `45` para `90` mantém a contagem de
   registros inalterada)
-- [ ] 4.3 **Verificação:** spec que reenvia a mesma mutação offline com o mesmo uuid
+- [x] 4.3 **Verificação:** spec que reenvia a mesma mutação offline com o mesmo uuid
   cliente-gerado e afirma que continua existindo 1 registro `task_completed` para a tarefa.
   (Decisão 3 — a idempotência vem da PK do avanço; se ela deixar de valer, este spec é o
   detector)
