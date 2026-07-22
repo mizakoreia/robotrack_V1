@@ -48,27 +48,27 @@ avanço).
 
 ## 3. Model, service de escrita e locale
 
-- [ ] 3.1 Criar `AuditLog` (readonly no ActiveRecord, `self.primary_key = 'id'`, sem
+- [x] 3.1 Criar `AuditLog` (readonly no ActiveRecord, `self.primary_key = 'id'`, sem
   `has_many` reverso a partir da hierarquia) e a factory correspondente. (§2.8 — chamar
   `save` num registro carregado precisa levantar `ReadOnlyRecord` antes mesmo de tocar o
   banco)
-- [ ] 3.2 Criar `config/locales/pt-BR.audit.yml` com `audit.task_completed.v1` e
+- [x] 3.2 Criar `config/locales/pt-BR.audit.yml` com `audit.task_completed.v1` e
   `audit.workspace_reset.v1`. (D14 — a renderização de `R-014` / `Ana Ribeiro` /
   `"Solda ponto 3"` tem que sair exatamente
   `Em [R-014], Ana Ribeiro concluiu a tarefa "Solda ponto 3" com 100%.`)
-- [ ] 3.3 Implementar `AuditLog::RecordService.record!(workspace:, event:, by:, payload:)`
+- [x] 3.3 Implementar `AuditLog::RecordService.record!(workspace:, event:, by:, payload:)`
   no idioma singleton de `ApiResponseHandler`, renderizando `msg` e `ts_local` no momento
   do `INSERT` e gravando `format_version`. (Decisão 4 — publicar uma `v2` da format string
   não pode alterar o texto de um registro já gravado)
-- [ ] 3.4 Implementar os snapshots de nome do service: `by_person_id` a partir da `Person`
+- [x] 3.4 Implementar os snapshots de nome do service: `by_person_id` a partir da `Person`
   do autor com `by_name` copiado (aceitando `by_person_id NULL`), e a junção de
   responsáveis para `%{assignees}` com os nomes vigentes na conclusão. (D10 — renomear a
   `Person` para `Ana R. Souza` não pode reescrever `by_name = 'Ana Ribeiro'`; dois
   responsáveis produzem `Ana Ribeiro, Bruno Sá ... concluiu`, no singular do `v1`)
-- [ ] 3.5 Adicionar spec de CI que compara as chaves `vN` do locale com as da branch `main`
+- [x] 3.5 Adicionar spec de CI que compara as chaves `vN` do locale com as da branch `main`
   e falha se uma versão publicada foi editada. (Decisão 5 — alterar o texto de `v1` em vez
   de criar `v2` tem que quebrar o build nomeando a chave)
-- [ ] 3.6 **Verificação:** spec do service cobrindo autor sem `Person` resolvível
+- [x] 3.6 **Verificação:** spec do service cobrindo autor sem `Person` resolvível
   (`by_name = '(nota anterior)'`, `by_person_id NULL`) e `by_name` vazio (rejeitado por
   `NOT NULL`). (§1.4 — importação legada não pode ser bloqueada por autor irresolúvel)
 

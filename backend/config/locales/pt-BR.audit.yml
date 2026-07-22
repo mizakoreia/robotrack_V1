@@ -1,0 +1,12 @@
+# audit-log 3.2 (D14/Decisão 5) — os textos do log de auditoria como format strings
+# VERSIONADAS. Regra dura: uma versão publicada (`vN`) NUNCA é editada — mudar o
+# texto cria `vN+1` e incrementa `AuditLog::FORMAT_VERSIONS`. O texto renderizado é
+# CONGELADO na linha no INSERT (Decisão 4); editar aqui não reescreve história (e o
+# spec de guarda compara com o snapshot congelado). O `%%` é o literal `%` (o I18n
+# reserva `%{...}` para interpolação).
+pt-BR:
+  audit:
+    task_completed:
+      v1: 'Em [%{robot}], %{assignees} concluiu a tarefa "%{task}" com 100%%.'
+    workspace_reset:
+      v1: '%{by_name} executou o reset de fábrica do workspace. Projetos removidos: %{projects_count}.'

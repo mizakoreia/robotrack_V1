@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
-module AuditLog
+# `class AuditLog` (não `module`): o model define a classe e serve de namespace
+# explícito (Zeitwerk carrega o model antes deste arquivo aninhado).
+class AuditLog
   # audit-log 1.2 (Decisão 1, plano de migração passo 3) — a rede de deploy: se o
   # processo de RUNTIME (Puma/Sidekiq) subir com a credencial do papel DONO em vez
   # de `robotrack_app`, a camada 1 (REVOKE) fica inerte e a imutabilidade passa a
