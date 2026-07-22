@@ -138,6 +138,39 @@ paralela a partir do contrato.
 - **`format.ts`** formata SÓ datas de exibição (`recorded_at`/`issued_at`) — é
   apresentação, não derivação (D-R1); nada de reduce/Math.round.
 
+### Decisões tomadas na G6 (registro pós-execução)
+
+- **Payload ganhou `signatures` (2 blocos key+label, SEMPRE vazios) e `footer`**
+  (document_id CARIMBADO + generated_at = issued_at — um só instante — +
+  generated_at_label + traceability); `labels` ganhou signature_name/field/date e
+  `history_continues`. Fixture congelada, entity e DTO acompanharam.
+- **Tabela raiz de impressão** = `ReportDocument` (thead `.rpt-running` corrido
+  com título+id, oculto na TELA e `table-header-group` só sob @media print;
+  tfoot com `ReportFooter`, visível na tela uma vez no fim — D-R3).
+- **Unidade indivisível D-R4 = `<tbody class="rpt-task">`** (linha da tarefa +
+  histórico no MESMO tbody; `break-inside: avoid` em tr não é confiável).
+  Limiar `HISTORY_PAGE_CHUNK = 18` exportado de ReportBody: acima disso o
+  histórico é FATIADO em tbodies `.rpt-task-cont` (cada um indivisível),
+  precedidos da faixa `labels.history_continues` (servidor, D-R9), visível só
+  na impressão.
+- **Shell clampava a impressão em 1 página** (`h-screen overflow-hidden` + main
+  overflow-y-auto): `report-print.css` esconde sidebar/topbar e devolve o fluxo
+  (overflow visible/height auto) ESCOPADO com `body:has(.rpt-doc)` — impressão
+  das outras telas não muda.
+- **7.5 exigiu render real** → o stub de ReportPage foi trocado no G6 por uma
+  página MÍNIMA (useReport `qk.report` + ReportDocument); seletor de escopo e
+  estados de carregamento/erro/offline continuam no G7 (8.3). Teste:
+  `frontend/scripts/print-report.mjs` (`npm run test:print`; vite :5173 no ar),
+  Playwright GLOBAL + CDP printToPDF + asserções página a página via pypdf
+  (pip install pypdf no container): 7 páginas, cabeçalho/rodapé em TODAS,
+  nenhuma tarefa curta partida, Conclusões em página própria, assinaturas
+  juntas, faixa da tarefa de 24 entradas presente. Nomeado SEM `.test.` para o
+  vitest não o engolir.
+- **Não há config ESLint no repo** — a "regra ESLint de features/report" citada
+  nos comentários entra como sweep no G7 (8.2), junto do sweep de literais (os
+  rótulos de ReportMetadata ainda são literais pt-BR → o 8.2 os moverá para
+  `labels`/payload).
+
 ## Protocolo por grupo
 
 Aplicar → backend `rspec` dirigido (0 falhas) e/ou frontend `vitest`+`tsc` (0) → marcar
@@ -154,7 +187,7 @@ suítes ao mesmo tempo (contenção de lock no banco de teste — trava as duas)
 - [x] G3 — metadados + id (3.1–3.3)
 - [x] G4 — distribuição + glifos (4.1–4.3)
 - [x] G5 — corpo + histórico + conclusões (5.1–5.5, 6.1–6.4)
-- [ ] G6 — assinaturas + rodapé + impressão A4 (7.1–7.5)
+- [x] G6 — assinaturas + rodapé + impressão A4 (7.1–7.5)
 - [ ] G7 — volume + i18n + tela + fechamento (8.1–8.4)
 
 ## RETOMADA (para o próximo agente)

@@ -149,6 +149,20 @@ module Reports
         status_distribution: build_distribution(status_counts),
         tree: projects,
         conclusions: build_conclusions(task_rows, authorship),
+        # 7.1 (§3.8) — os DOIS blocos de assinatura, sempre vazios: rótulos do
+        # servidor, NENHUM nome pré-preenchido (nem o do usuário logado).
+        signatures: [
+          { key: 'commissioner', label: t(:signature_commissioner) },
+          { key: 'client', label: t(:signature_client) }
+        ],
+        # 7.1 — o rodapé reusa o id CARIMBADO e o `now` da requisição (nunca um
+        # segundo `Time.current` — o documento tem UM instante de emissão).
+        footer: {
+          document_id: document_id,
+          generated_at: now.in_time_zone(time_zone).iso8601,
+          generated_at_label: t(:footer_generated_at),
+          traceability: t(:footer_traceability)
+        },
         labels: build_labels,
         warnings: [] # volume (G7)
       }
@@ -166,7 +180,11 @@ module Reports
         col_symbol: t(:col_symbol), col_description: t(:col_description),
         col_status: t(:col_status), col_percent: t(:col_percent), col_assignees: t(:col_assignees),
         no_assignees: t(:no_assignees),
-        concluded_by: t(:concluded_by), concluded_at: t(:concluded_at)
+        concluded_by: t(:concluded_by), concluded_at: t(:concluded_at),
+        # G6 — linhas dos blocos de assinatura e a faixa de continuação (D-R4)
+        signature_name: t(:signature_name), signature_field: t(:signature_field),
+        signature_date: t(:signature_date),
+        history_continues: t(:history_continues)
       }
     end
 
