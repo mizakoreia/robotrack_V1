@@ -104,6 +104,28 @@ sweep). Baseline a medir no G0.
 7. **`msg`/`ts_local` congelados no INSERT** (Decisão 4) — a leitura usa verbatim, nunca
    re-renderiza; publicar `v2` não pode reescrever registro gravado (o guard do G2 prova).
 
+### Decisões tomadas na G1 (registro pós-execução)
+
+- **RLS NÃO cascateia às partições** (corrige a armadilha 1): trigger de linha e
+  índices herdam do PARENT, mas `relrowsecurity`/`relforcerowsecurity` e as policies
+  NÃO — as partições nascem sem RLS. Como o papel de app tem SELECT/INSERT nelas
+  (grant de ALL TABLES), um `SELECT FROM audit_logs_2026_07` DIRETO vazaria
+  cross-tenant. Fix: função `secure_audit_partition(regclass)` aplica ENABLE+FORCE
+  RLS + as duas policies a CADA partição; a migration a chama p/ as existentes, e o
+  **job de manutenção do G7 tem de chamá-la para toda partição nova**. Prova: teste de
+  SELECT direto na partição (só vê o próprio tenant) + `schema_guard` verde (as
+  partições entram na varredura de tabelas de domínio).
+- **A trigger é pré-filtrada pela RLS para o DONO**: sem policy de UPDATE/DELETE, o
+  migrator (dono) enxerga 0 linhas no UPDATE/DELETE (afeta 0, sem erro) ANTES da
+  trigger. Logo a trigger é o backstop EXCLUSIVO do SUPERUSER (que ignora RLS) —
+  testado via `su - postgres` (skippable fora do ambiente local). As duas camadas
+  provadas: migrator→0 linhas; superuser→RAISE `append-only`.
+- **`by_person_id` = FK SIMPLES `people(id) ON DELETE SET NULL`** (não composta —
+  compor nularia `workspace_id NOT NULL`), espelhando `cells.updated_by_person_id`.
+- **boot-check** guardado a processos de servidor/worker (`Rails::Server`/`Sidekiq.
+  server?`): migração/console/rake/suite conectam como o DONO (UPDATE=true legítimo)
+  e NÃO devem abortar; a prova determinística do papel de app é o spec de privilégio.
+
 ## Protocolo por grupo
 
 Aplicar → backend `rspec` dirigido (0 falhas) e/ou frontend `vitest`+`tsc` (0) → marcar
@@ -115,7 +137,7 @@ rodar duas suítes ao mesmo tempo (contenção de lock no banco de teste).
 ## Progresso
 
 - [ ] G0 — este mapa (commit G0)
-- [ ] G1 — esquema + imutabilidade + papéis (1.1–1.3, 2.1–2.5)
+- [x] G1 — esquema + imutabilidade + papéis (1.1–1.3, 2.1–2.5)
 - [ ] G2 — model + locale + service (3.1–3.6)
 - [ ] G3 — gatilho de conclusão a 100% (4.1–4.3)
 - [ ] G4 — leitura + policy + endpoint (5.1–5.3)

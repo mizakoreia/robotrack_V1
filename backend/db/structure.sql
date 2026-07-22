@@ -69,6 +69,19 @@ CREATE TYPE public.task_status AS ENUM (
 );
 
 
+--
+-- Name: audit_logs_forbid_mutation(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.audit_logs_forbid_mutation() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RAISE EXCEPTION 'audit_logs é append-only: % proibido (audit-log §4.1 inv. 3)', TG_OP;
+END;
+$$;
+
+
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
@@ -150,6 +163,30 @@ BEGIN
   RETURN removidos;
 END;
 $$;
+
+
+--
+-- Name: secure_audit_partition(regclass); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.secure_audit_partition(part regclass) RETURNS void
+    LANGUAGE plpgsql
+    AS $_$
+BEGIN
+  EXECUTE format('ALTER TABLE %s ENABLE ROW LEVEL SECURITY', part);
+  EXECUTE format('ALTER TABLE %s FORCE ROW LEVEL SECURITY', part);
+  BEGIN
+    EXECUTE format($fmt$CREATE POLICY tenant_isolation ON %s FOR SELECT
+      USING (workspace_id = NULLIF(current_setting('app.current_workspace_id', true), '')::uuid)$fmt$, part);
+  EXCEPTION WHEN duplicate_object THEN NULL;
+  END;
+  BEGIN
+    EXECUTE format($fmt$CREATE POLICY tenant_isolation_insert ON %s FOR INSERT
+      WITH CHECK (workspace_id = NULLIF(current_setting('app.current_workspace_id', true), '')::uuid)$fmt$, part);
+  EXCEPTION WHEN duplicate_object THEN NULL;
+  END;
+END;
+$_$;
 
 
 --
@@ -248,6 +285,145 @@ CREATE TABLE public.ar_internal_metadata (
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL
 );
+
+
+--
+-- Name: audit_logs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.audit_logs (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    workspace_id uuid NOT NULL,
+    event_type text NOT NULL,
+    format_version integer DEFAULT 1 NOT NULL,
+    msg text NOT NULL,
+    ts timestamp with time zone DEFAULT now() NOT NULL,
+    ts_local text NOT NULL,
+    by_person_id uuid,
+    by_name text NOT NULL,
+    payload jsonb DEFAULT '{}'::jsonb NOT NULL,
+    CONSTRAINT chk_audit_by_name CHECK (((length(btrim(by_name)) >= 1) AND (length(btrim(by_name)) <= 200))),
+    CONSTRAINT chk_audit_event_type CHECK ((event_type = ANY (ARRAY['task_completed'::text, 'workspace_reset'::text]))),
+    CONSTRAINT chk_audit_msg CHECK ((btrim(msg) <> ''::text))
+)
+PARTITION BY RANGE (ts);
+
+ALTER TABLE ONLY public.audit_logs FORCE ROW LEVEL SECURITY;
+
+
+--
+-- Name: audit_logs_2026_07; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.audit_logs_2026_07 (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    workspace_id uuid NOT NULL,
+    event_type text NOT NULL,
+    format_version integer DEFAULT 1 NOT NULL,
+    msg text NOT NULL,
+    ts timestamp with time zone DEFAULT now() NOT NULL,
+    ts_local text NOT NULL,
+    by_person_id uuid,
+    by_name text NOT NULL,
+    payload jsonb DEFAULT '{}'::jsonb NOT NULL,
+    CONSTRAINT chk_audit_by_name CHECK (((length(btrim(by_name)) >= 1) AND (length(btrim(by_name)) <= 200))),
+    CONSTRAINT chk_audit_event_type CHECK ((event_type = ANY (ARRAY['task_completed'::text, 'workspace_reset'::text]))),
+    CONSTRAINT chk_audit_msg CHECK ((btrim(msg) <> ''::text))
+);
+
+ALTER TABLE ONLY public.audit_logs_2026_07 FORCE ROW LEVEL SECURITY;
+
+
+--
+-- Name: audit_logs_2026_08; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.audit_logs_2026_08 (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    workspace_id uuid NOT NULL,
+    event_type text NOT NULL,
+    format_version integer DEFAULT 1 NOT NULL,
+    msg text NOT NULL,
+    ts timestamp with time zone DEFAULT now() NOT NULL,
+    ts_local text NOT NULL,
+    by_person_id uuid,
+    by_name text NOT NULL,
+    payload jsonb DEFAULT '{}'::jsonb NOT NULL,
+    CONSTRAINT chk_audit_by_name CHECK (((length(btrim(by_name)) >= 1) AND (length(btrim(by_name)) <= 200))),
+    CONSTRAINT chk_audit_event_type CHECK ((event_type = ANY (ARRAY['task_completed'::text, 'workspace_reset'::text]))),
+    CONSTRAINT chk_audit_msg CHECK ((btrim(msg) <> ''::text))
+);
+
+ALTER TABLE ONLY public.audit_logs_2026_08 FORCE ROW LEVEL SECURITY;
+
+
+--
+-- Name: audit_logs_2026_09; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.audit_logs_2026_09 (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    workspace_id uuid NOT NULL,
+    event_type text NOT NULL,
+    format_version integer DEFAULT 1 NOT NULL,
+    msg text NOT NULL,
+    ts timestamp with time zone DEFAULT now() NOT NULL,
+    ts_local text NOT NULL,
+    by_person_id uuid,
+    by_name text NOT NULL,
+    payload jsonb DEFAULT '{}'::jsonb NOT NULL,
+    CONSTRAINT chk_audit_by_name CHECK (((length(btrim(by_name)) >= 1) AND (length(btrim(by_name)) <= 200))),
+    CONSTRAINT chk_audit_event_type CHECK ((event_type = ANY (ARRAY['task_completed'::text, 'workspace_reset'::text]))),
+    CONSTRAINT chk_audit_msg CHECK ((btrim(msg) <> ''::text))
+);
+
+ALTER TABLE ONLY public.audit_logs_2026_09 FORCE ROW LEVEL SECURITY;
+
+
+--
+-- Name: audit_logs_2026_10; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.audit_logs_2026_10 (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    workspace_id uuid NOT NULL,
+    event_type text NOT NULL,
+    format_version integer DEFAULT 1 NOT NULL,
+    msg text NOT NULL,
+    ts timestamp with time zone DEFAULT now() NOT NULL,
+    ts_local text NOT NULL,
+    by_person_id uuid,
+    by_name text NOT NULL,
+    payload jsonb DEFAULT '{}'::jsonb NOT NULL,
+    CONSTRAINT chk_audit_by_name CHECK (((length(btrim(by_name)) >= 1) AND (length(btrim(by_name)) <= 200))),
+    CONSTRAINT chk_audit_event_type CHECK ((event_type = ANY (ARRAY['task_completed'::text, 'workspace_reset'::text]))),
+    CONSTRAINT chk_audit_msg CHECK ((btrim(msg) <> ''::text))
+);
+
+ALTER TABLE ONLY public.audit_logs_2026_10 FORCE ROW LEVEL SECURITY;
+
+
+--
+-- Name: audit_logs_default; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.audit_logs_default (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    workspace_id uuid NOT NULL,
+    event_type text NOT NULL,
+    format_version integer DEFAULT 1 NOT NULL,
+    msg text NOT NULL,
+    ts timestamp with time zone DEFAULT now() NOT NULL,
+    ts_local text NOT NULL,
+    by_person_id uuid,
+    by_name text NOT NULL,
+    payload jsonb DEFAULT '{}'::jsonb NOT NULL,
+    CONSTRAINT chk_audit_by_name CHECK (((length(btrim(by_name)) >= 1) AND (length(btrim(by_name)) <= 200))),
+    CONSTRAINT chk_audit_event_type CHECK ((event_type = ANY (ARRAY['task_completed'::text, 'workspace_reset'::text]))),
+    CONSTRAINT chk_audit_msg CHECK ((btrim(msg) <> ''::text))
+);
+
+ALTER TABLE ONLY public.audit_logs_default FORCE ROW LEVEL SECURITY;
 
 
 --
@@ -692,6 +868,41 @@ ALTER TABLE ONLY public.workspaces FORCE ROW LEVEL SECURITY;
 
 
 --
+-- Name: audit_logs_2026_07; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.audit_logs ATTACH PARTITION public.audit_logs_2026_07 FOR VALUES FROM ('2026-07-01 00:00:00+00') TO ('2026-08-01 00:00:00+00');
+
+
+--
+-- Name: audit_logs_2026_08; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.audit_logs ATTACH PARTITION public.audit_logs_2026_08 FOR VALUES FROM ('2026-08-01 00:00:00+00') TO ('2026-09-01 00:00:00+00');
+
+
+--
+-- Name: audit_logs_2026_09; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.audit_logs ATTACH PARTITION public.audit_logs_2026_09 FOR VALUES FROM ('2026-09-01 00:00:00+00') TO ('2026-10-01 00:00:00+00');
+
+
+--
+-- Name: audit_logs_2026_10; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.audit_logs ATTACH PARTITION public.audit_logs_2026_10 FOR VALUES FROM ('2026-10-01 00:00:00+00') TO ('2026-11-01 00:00:00+00');
+
+
+--
+-- Name: audit_logs_default; Type: TABLE ATTACH; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.audit_logs ATTACH PARTITION public.audit_logs_default DEFAULT;
+
+
+--
 -- Name: jwt_denylist id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -736,6 +947,54 @@ ALTER TABLE ONLY public.active_storage_variant_records
 
 ALTER TABLE ONLY public.ar_internal_metadata
     ADD CONSTRAINT ar_internal_metadata_pkey PRIMARY KEY (key);
+
+
+--
+-- Name: audit_logs audit_logs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.audit_logs
+    ADD CONSTRAINT audit_logs_pkey PRIMARY KEY (ts, id);
+
+
+--
+-- Name: audit_logs_2026_07 audit_logs_2026_07_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.audit_logs_2026_07
+    ADD CONSTRAINT audit_logs_2026_07_pkey PRIMARY KEY (ts, id);
+
+
+--
+-- Name: audit_logs_2026_08 audit_logs_2026_08_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.audit_logs_2026_08
+    ADD CONSTRAINT audit_logs_2026_08_pkey PRIMARY KEY (ts, id);
+
+
+--
+-- Name: audit_logs_2026_09 audit_logs_2026_09_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.audit_logs_2026_09
+    ADD CONSTRAINT audit_logs_2026_09_pkey PRIMARY KEY (ts, id);
+
+
+--
+-- Name: audit_logs_2026_10 audit_logs_2026_10_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.audit_logs_2026_10
+    ADD CONSTRAINT audit_logs_2026_10_pkey PRIMARY KEY (ts, id);
+
+
+--
+-- Name: audit_logs_default audit_logs_default_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.audit_logs_default
+    ADD CONSTRAINT audit_logs_default_pkey PRIMARY KEY (ts, id);
 
 
 --
@@ -936,6 +1195,48 @@ ALTER TABLE ONLY public.users
 
 ALTER TABLE ONLY public.workspaces
     ADD CONSTRAINT workspaces_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: index_audit_logs_on_workspace_ts; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_audit_logs_on_workspace_ts ON ONLY public.audit_logs USING btree (workspace_id, ts DESC);
+
+
+--
+-- Name: audit_logs_2026_07_workspace_id_ts_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX audit_logs_2026_07_workspace_id_ts_idx ON public.audit_logs_2026_07 USING btree (workspace_id, ts DESC);
+
+
+--
+-- Name: audit_logs_2026_08_workspace_id_ts_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX audit_logs_2026_08_workspace_id_ts_idx ON public.audit_logs_2026_08 USING btree (workspace_id, ts DESC);
+
+
+--
+-- Name: audit_logs_2026_09_workspace_id_ts_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX audit_logs_2026_09_workspace_id_ts_idx ON public.audit_logs_2026_09 USING btree (workspace_id, ts DESC);
+
+
+--
+-- Name: audit_logs_2026_10_workspace_id_ts_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX audit_logs_2026_10_workspace_id_ts_idx ON public.audit_logs_2026_10 USING btree (workspace_id, ts DESC);
+
+
+--
+-- Name: audit_logs_default_workspace_id_ts_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX audit_logs_default_workspace_id_ts_idx ON public.audit_logs_default USING btree (workspace_id, ts DESC);
 
 
 --
@@ -1254,10 +1555,87 @@ CREATE UNIQUE INDEX index_workspaces_on_owner_user_id ON public.workspaces USING
 
 
 --
+-- Name: audit_logs_2026_07_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX public.audit_logs_pkey ATTACH PARTITION public.audit_logs_2026_07_pkey;
+
+
+--
+-- Name: audit_logs_2026_07_workspace_id_ts_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX public.index_audit_logs_on_workspace_ts ATTACH PARTITION public.audit_logs_2026_07_workspace_id_ts_idx;
+
+
+--
+-- Name: audit_logs_2026_08_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX public.audit_logs_pkey ATTACH PARTITION public.audit_logs_2026_08_pkey;
+
+
+--
+-- Name: audit_logs_2026_08_workspace_id_ts_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX public.index_audit_logs_on_workspace_ts ATTACH PARTITION public.audit_logs_2026_08_workspace_id_ts_idx;
+
+
+--
+-- Name: audit_logs_2026_09_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX public.audit_logs_pkey ATTACH PARTITION public.audit_logs_2026_09_pkey;
+
+
+--
+-- Name: audit_logs_2026_09_workspace_id_ts_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX public.index_audit_logs_on_workspace_ts ATTACH PARTITION public.audit_logs_2026_09_workspace_id_ts_idx;
+
+
+--
+-- Name: audit_logs_2026_10_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX public.audit_logs_pkey ATTACH PARTITION public.audit_logs_2026_10_pkey;
+
+
+--
+-- Name: audit_logs_2026_10_workspace_id_ts_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX public.index_audit_logs_on_workspace_ts ATTACH PARTITION public.audit_logs_2026_10_workspace_id_ts_idx;
+
+
+--
+-- Name: audit_logs_default_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX public.audit_logs_pkey ATTACH PARTITION public.audit_logs_default_pkey;
+
+
+--
+-- Name: audit_logs_default_workspace_id_ts_idx; Type: INDEX ATTACH; Schema: public; Owner: -
+--
+
+ALTER INDEX public.index_audit_logs_on_workspace_ts ATTACH PARTITION public.audit_logs_default_workspace_id_ts_idx;
+
+
+--
 -- Name: memberships memberships_owner_is_not_member; Type: TRIGGER; Schema: public; Owner: -
 --
 
 CREATE TRIGGER memberships_owner_is_not_member BEFORE INSERT OR UPDATE ON public.memberships FOR EACH ROW EXECUTE FUNCTION public.memberships_owner_is_not_member();
+
+
+--
+-- Name: audit_logs trg_audit_logs_immutable; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_audit_logs_immutable BEFORE DELETE OR UPDATE ON public.audit_logs FOR EACH ROW EXECUTE FUNCTION public.audit_logs_forbid_mutation();
 
 
 --
@@ -1288,6 +1666,22 @@ ALTER TABLE ONLY public.cells
 
 ALTER TABLE ONLY public.cells
     ADD CONSTRAINT cells_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id);
+
+
+--
+-- Name: audit_logs fk_audit_author; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE public.audit_logs
+    ADD CONSTRAINT fk_audit_author FOREIGN KEY (by_person_id) REFERENCES public.people(id) ON DELETE SET NULL;
+
+
+--
+-- Name: audit_logs fk_audit_workspace; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE public.audit_logs
+    ADD CONSTRAINT fk_audit_workspace FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE RESTRICT;
 
 
 --
@@ -1515,6 +1909,42 @@ ALTER TABLE ONLY public.workspaces
 
 
 --
+-- Name: audit_logs; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: audit_logs_2026_07; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.audit_logs_2026_07 ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: audit_logs_2026_08; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.audit_logs_2026_08 ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: audit_logs_2026_09; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.audit_logs_2026_09 ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: audit_logs_2026_10; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.audit_logs_2026_10 ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: audit_logs_default; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.audit_logs_default ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: cells; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -1600,6 +2030,48 @@ ALTER TABLE public.task_templates ENABLE ROW LEVEL SECURITY;
 --
 
 ALTER TABLE public.tasks ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: audit_logs tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.audit_logs FOR SELECT USING ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid));
+
+
+--
+-- Name: audit_logs_2026_07 tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.audit_logs_2026_07 FOR SELECT USING ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid));
+
+
+--
+-- Name: audit_logs_2026_08 tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.audit_logs_2026_08 FOR SELECT USING ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid));
+
+
+--
+-- Name: audit_logs_2026_09 tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.audit_logs_2026_09 FOR SELECT USING ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid));
+
+
+--
+-- Name: audit_logs_2026_10 tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.audit_logs_2026_10 FOR SELECT USING ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid));
+
+
+--
+-- Name: audit_logs_default tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.audit_logs_default FOR SELECT USING ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid));
+
 
 --
 -- Name: cells tenant_isolation; Type: POLICY; Schema: public; Owner: -
@@ -1688,6 +2160,48 @@ CREATE POLICY tenant_isolation ON public.workspaces USING (((id = (NULLIF(curren
 
 
 --
+-- Name: audit_logs tenant_isolation_insert; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation_insert ON public.audit_logs FOR INSERT WITH CHECK ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid));
+
+
+--
+-- Name: audit_logs_2026_07 tenant_isolation_insert; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation_insert ON public.audit_logs_2026_07 FOR INSERT WITH CHECK ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid));
+
+
+--
+-- Name: audit_logs_2026_08 tenant_isolation_insert; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation_insert ON public.audit_logs_2026_08 FOR INSERT WITH CHECK ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid));
+
+
+--
+-- Name: audit_logs_2026_09 tenant_isolation_insert; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation_insert ON public.audit_logs_2026_09 FOR INSERT WITH CHECK ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid));
+
+
+--
+-- Name: audit_logs_2026_10 tenant_isolation_insert; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation_insert ON public.audit_logs_2026_10 FOR INSERT WITH CHECK ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid));
+
+
+--
+-- Name: audit_logs_default tenant_isolation_insert; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation_insert ON public.audit_logs_default FOR INSERT WITH CHECK ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid));
+
+
+--
 -- Name: task_advances tenant_isolation_insert; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -1707,6 +2221,9 @@ ALTER TABLE public.workspaces ENABLE ROW LEVEL SECURITY;
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260723120003'),
+('20260723120002'),
+('20260723120001'),
 ('20260722130002'),
 ('20260722130001'),
 ('20260722120002'),
