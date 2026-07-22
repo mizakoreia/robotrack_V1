@@ -17,10 +17,10 @@
 
 ## 2. Cabeçalho e carimbo
 
-- [ ] 2.1 Implementar o cálculo do carimbo como média aritmética simples do `weighted_progress` dos projetos do escopo, lido da API pública de `progress-rollup` — sem SQL próprio de progresso. (§2.1/D15 — dataset T1 peso 9 a 100% + T2 peso 1 a 0% carimba `90%`, não `50%`)
-- [ ] 2.2 Implementar o rótulo (`CONCLUÍDO` = 100 / `EM ANDAMENTO` > 0 / `PENDENTE` = 0) a partir apenas do percentual, com chaves `report.v1.stamp_label_*`. (§3.8 — escopo com todas as tarefas em `N/A` chega a 100 ponderado e carimba `CONCLUÍDO` sem consultar status)
-- [ ] 2.3 Renderizar o cabeçalho (título, nome do workspace, carimbo) consumindo apenas campos do payload. (§3.8 — a regra ESLint proíbe `reduce`/`Math.round` em `features/report/`; o componente falha o lint se recalcular)
-- [ ] 2.4 **Verificação:** spec comparando o carimbo contra o recálculo ponderado do zero (ignorando `progress_cache`) em 4 datasets: 100%, 0%, projetos de tamanhos díspares (100 e 0 → 50) e escopo vazio (0/`PENDENTE`). (§2.1 — cache podre aparece como falha aqui, não como número errado num documento assinado)
+- [x] 2.1 Implementar o cálculo do carimbo como média aritmética simples do `weighted_progress` dos projetos do escopo, lido da API pública de `progress-rollup` — sem SQL próprio de progresso. (§2.1/D15 — dataset T1 peso 9 a 100% + T2 peso 1 a 0% carimba `90%`, não `50%`)
+- [x] 2.2 Implementar o rótulo (`CONCLUÍDO` = 100 / `EM ANDAMENTO` > 0 / `PENDENTE` = 0) a partir apenas do percentual, com chaves `report.v1.stamp_label_*`. (§3.8 — escopo com todas as tarefas em `N/A` chega a 100 ponderado e carimba `CONCLUÍDO` sem consultar status)
+- [x] 2.3 Renderizar o cabeçalho (título, nome do workspace, carimbo) consumindo apenas campos do payload. (§3.8 — a regra ESLint proíbe `reduce`/`Math.round` em `features/report/`; o componente falha o lint se recalcular)
+- [x] 2.4 **Verificação:** spec comparando o carimbo contra o recálculo ponderado do zero (ignorando `progress_cache`) em 4 datasets: 100%, 0%, projetos de tamanhos díspares (100 e 0 → 50) e escopo vazio (0/`PENDENTE`). (§2.1 — cache podre aparece como falha aqui, não como número errado num documento assinado)
 
 ## 3. Metadados e id do documento
 

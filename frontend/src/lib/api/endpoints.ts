@@ -528,6 +528,73 @@ export const myTasksApi = {
   list: () => apiClient.get<MyTaskRowDTO[]>('/api/v1/my_tasks'),
 }
 
+// commissioning-report 1.1 (§3.8, D-R1) — o Protocolo de Comissionamento como
+// PAYLOAD CONGELADO: todo valor já vem DERIVADO do servidor (carimbo, id, contagens,
+// glifos, árvore com histórico, conclusões, avisos). O cliente NÃO calcula média,
+// soma, ordenação nem autoria — só renderiza. Os textos fixos do documento também
+// vêm resolvidos no payload (D-R9); o front não tem cópia deles.
+export interface ReportAdvanceDTO {
+  recorded_at: string
+  author: string | null
+  from: number
+  to: number
+  comment: string | null
+}
+export interface ReportTaskDTO {
+  id: string
+  description: string
+  status: string
+  symbol: string
+  percent: number
+  assignees: string[]
+  advances: ReportAdvanceDTO[]
+}
+export interface ReportRobotDTO {
+  id: string
+  name: string
+  application: string | null
+  weighted_progress: number
+  tasks: ReportTaskDTO[]
+}
+export interface ReportCellDTO {
+  id: string
+  name: string
+  weighted_progress: number
+  robots: ReportRobotDTO[]
+}
+export interface ReportProjectDTO {
+  id: string
+  name: string
+  weighted_progress: number
+  cells: ReportCellDTO[]
+}
+export interface CommissioningReportDTO {
+  scope: 'all' | 'project'
+  header: { title: string; workspace_name: string | null }
+  stamp: { percent: number; label: string }
+  document_id: string
+  metadata: {
+    scope_label: string
+    document_id: string
+    issued_at: string
+    generated_by: string | null
+    structure: string
+    counts: { projects: number; cells: number; robots: number; tasks: number }
+  }
+  status_distribution: { status: string; glyph: string; label: string; count: number }[]
+  tree: ReportProjectDTO[]
+  conclusions: { task_id: string; description: string; concluded_by: string; concluded_at: string | null }[]
+  warnings: string[]
+}
+
+export const reportApi = {
+  get: (scope: 'all' | 'project', projectId?: string) => {
+    const q = new URLSearchParams({ scope })
+    if (scope === 'project' && projectId) q.set('project_id', projectId)
+    return apiClient.get<CommissioningReportDTO>(`/api/v1/commissioning_report?${q}`)
+  },
+}
+
 // progress-advances 4.3 — uma entrada da trilha de avanço (entity `TaskAdvance`).
 // `synced_late` é derivado no servidor (anotado no dispositivo >1h antes de
 // chegar); `recorded_at_adjusted` marca `recorded_at` clampado (relógio errado).
