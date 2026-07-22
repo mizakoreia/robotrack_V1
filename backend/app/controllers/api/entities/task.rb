@@ -31,6 +31,24 @@ module Api
       expose(:last_comment) do |t, _|
         t.task_advances.max_by { |a| [a.recorded_at, a.created_at, a.id] }&.comment
       end
+
+      # robot-task-table 1.1 (§3.5, D-RTT-4/D8) — `contributors` = quem JÁ registrou
+      # avanço (DISTINCT autor não-nulo; legacy sem autor não entra), conjunto
+      # SEPARADO de `assignees` (responsável agora). `last_advance` traz a data de
+      # AÇÃO `recorded_at` (D8, nunca `created_at`), o autor-snapshot e o marcador
+      # `legacy`. Ambos em memória sobre os `task_advances` já pré-carregados (sem N+1).
+      expose(:contributors) do |t, _|
+        t.task_advances.reject { |a| a.by.nil? }
+         .map { |a| { id: a.by, name: a.author_name_snapshot } }
+         .uniq { |c| c[:id] }
+      end
+      expose(:last_advance) do |t, _|
+        a = t.task_advances.max_by { |x| [x.recorded_at, x.created_at, x.id] }
+        a && {
+          comment: a.comment, recorded_at: a.recorded_at,
+          author_name_snapshot: a.author_name_snapshot, legacy: a.legacy
+        }
+      end
     end
   end
 end

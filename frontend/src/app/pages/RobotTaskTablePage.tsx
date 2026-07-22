@@ -1,0 +1,181 @@
+import { useEffect, Fragment } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { Icon } from '@/components/icons/Icon'
+import { Button } from '@/components/ui/Button'
+import { Badge } from '@/components/ui/Badge'
+import { BackLink } from '@/features/hierarchy/LevelChrome'
+import { useRobotTasks, useRobotHeader, type TaskDTO } from '@/features/robot-tasks/useRobotTasks'
+import { useRobotTaskFilter, applyFilter, type TaskFilter } from '@/features/robot-tasks/filterStore'
+import { metricLabel } from '@/lib/i18n/progress'
+
+// robot-task-table 1.4/1.5 (§3.5) — a casca da tela operacional do robô: cabeçalho,
+// filtro segmentado (reset na navegação, D-RTT-1), tabela agrupada por categoria e os
+// estados. As 6 colunas são LEITURA aqui; as interativas (Status/Progresso, chips,
+// ações) chegam nos grupos 2–4. A rota é montada com `key={robotId}` em App.tsx.
+const FILTERS: { key: TaskFilter; label: string }[] = [
+  { key: 'all', label: 'Todos' },
+  { key: 'pending', label: 'Pendentes' },
+  { key: 'done', label: 'Concluídos' },
+]
+
+export function RobotTaskTablePage() {
+  const { id } = useParams<{ id: string }>()
+  const robotId = id ?? null
+  const navigate = useNavigate()
+  const header = useRobotHeader(robotId)
+  const { data: tasks, isLoading, isError, refetch } = useRobotTasks(robotId)
+  const filter = useRobotTaskFilter((s) => s.filter)
+  const setFilter = useRobotTaskFilter((s) => s.setFilter)
+  const reset = useRobotTaskFilter((s) => s.reset)
+
+  // D-RTT-1 — reset do filtro na navegação (o `key={robotId}` da rota cobre A→A).
+  useEffect(() => reset(), [robotId, reset])
+
+  if (isLoading) return <TableSkeleton />
+  if (isError || !tasks) return <TableError onRetry={() => void refetch()} />
+
+  const visible = applyFilter(tasks, filter)
+  const robotName = header.data?.name ?? 'Robô'
+
+  return (
+    <section aria-labelledby="robot-title" className="mx-auto max-w-6xl space-y-6">
+      <BackLink label="Voltar à célula" onClick={() => navigate(header.data ? `/celula/${header.data.cell_id}` : '/')} />
+
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <h1 id="robot-title" className="title truncate">
+            {robotName}
+          </h1>
+          {header.data && <Badge status="accent">{header.data.application}</Badge>}
+        </div>
+        {header.data && (
+          <span
+            className="label-md text-text-muted"
+            aria-label={`${metricLabel('weighted')}: ${header.data.weighted_progress.value}%`}
+          >
+            <span className="title tabular text-text-main">{header.data.weighted_progress.value}%</span>{' '}
+            {metricLabel('weighted')}
+          </span>
+        )}
+      </header>
+
+      {/* filtro segmentado (§3.5, D-RTT-2) */}
+      <div role="tablist" aria-label="Filtro de tarefas" className="surface-panel inline-flex gap-1 rounded-lg border p-1">
+        {FILTERS.map((f) => (
+          <button
+            key={f.key}
+            role="tab"
+            aria-selected={filter === f.key}
+            onClick={() => setFilter(f.key)}
+            className={
+              'label-md min-h-[2rem] rounded-md px-3 font-medium ' +
+              (filter === f.key ? 'bg-accent/15 text-accent-ink' : 'text-text-muted hover:text-text-main')
+            }
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      {tasks.length === 0 ? (
+        <TableEmpty robotName={robotName} />
+      ) : (
+        <TaskTable tasks={visible} />
+      )}
+    </section>
+  )
+}
+
+// A tabela agrupada por categoria (§3.5) — linha separadora na troca de categoria,
+// preservando a ordem persistida das tarefas dentro do grupo.
+function TaskTable({ tasks }: { tasks: TaskDTO[] }) {
+  let lastCat: string | null = null
+  return (
+    <div className="surface-panel overflow-hidden rounded-lg border">
+      <table className="w-full border-collapse text-left">
+        <thead>
+          <tr className="label-sm text-text-muted">
+            <th className="px-4 py-2 font-medium">Tarefa</th>
+            <th className="px-4 py-2 font-medium">Status</th>
+            <th className="px-4 py-2 font-medium">Progresso</th>
+            <th className="px-4 py-2 font-medium">Responsáveis</th>
+            <th className="px-4 py-2 font-medium">Trilha</th>
+            <th className="px-4 py-2 font-medium">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {tasks.map((t) => {
+            const newGroup = t.cat !== lastCat
+            lastCat = t.cat
+            return (
+              <Fragment key={t.id}>
+                {newGroup && (
+                  <tr>
+                    <td colSpan={6} className="panel-header bg-accent/5 px-4 py-2 text-text-muted">
+                      {t.cat}
+                    </td>
+                  </tr>
+                )}
+                <TaskRow task={t} />
+              </Fragment>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+// Linha de LEITURA (G1). As células interativas substituem estas nos grupos 2–4.
+function TaskRow({ task }: { task: TaskDTO }) {
+  return (
+    <tr className="border-t align-middle">
+      <td className="px-4 py-3">{task.desc}</td>
+      <td className="px-4 py-3">
+        <Badge status="na">{task.status}</Badge>
+      </td>
+      <td className="tabular px-4 py-3">{task.progress}%</td>
+      <td className="px-4 py-3">
+        {task.assignees.length === 0 ? (
+          <span className="text-text-muted">—</span>
+        ) : (
+          task.assignees.map((a) => a.name).join(', ')
+        )}
+      </td>
+      <td className="px-4 py-3 text-text-muted">{task.last_comment ?? '—'}</td>
+      <td className="px-4 py-3 text-text-muted">—</td>
+    </tr>
+  )
+}
+
+function TableEmpty({ robotName }: { robotName: string }) {
+  return (
+    <div className="surface-panel flex flex-col items-center rounded-lg border p-10 text-center">
+      <h2 className="panel-header mb-2">Nenhuma tarefa em {robotName}</h2>
+      <p className="max-w-md text-text-muted">
+        Adicione tarefas ou sincronize as tarefas-base para começar o comissionamento deste robô.
+      </p>
+    </div>
+  )
+}
+
+function TableError({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div className="surface-panel mx-auto mt-6 flex max-w-md flex-col items-center rounded-lg border p-10 text-center">
+      <Icon name="alert" size="md" className="mb-2 text-danger-ink" />
+      <p className="mb-4 text-text-muted">Não foi possível carregar as tarefas do robô.</p>
+      <Button variant="outline" onClick={onRetry}>
+        Tentar novamente
+      </Button>
+    </div>
+  )
+}
+
+function TableSkeleton() {
+  return (
+    <section className="mx-auto max-w-6xl space-y-6" aria-busy="true" aria-label="Carregando">
+      <div className="surface-panel h-8 w-48 animate-pulse rounded-lg border" />
+      <div className="surface-panel h-64 animate-pulse rounded-lg border" />
+    </section>
+  )
+}
