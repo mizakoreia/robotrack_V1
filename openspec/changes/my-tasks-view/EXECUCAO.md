@@ -98,6 +98,24 @@ qualquer papel, viewer só do token (nunca param).
   spec de G2 que assere `row['id']`).
 - **swagger allowlist** ganhou `/api/v1/my_tasks` (mesma lacuna do `/api/v1/search`).
 
+### Decisões tomadas na G5 (registro pós-execução)
+
+- **Sidebar já registrada** (NAV_DESTINATIONS tem "Minhas Tarefas" → `/minhas-tarefas`);
+  a rota já estava em App.tsx. 6.1 = só trocar o stub pela tela + o hook `qk.myTasks`.
+- **3 estados via React Query** (D-MTV-8): `isPersonMissing(error)` detecta o 409
+  `person_missing` e mostra o estado de IDENTIDADE (role=alert), distinto do vazio
+  (200 []) e do erro de rede (5xx). O hook NÃO retenta o 409 (é estado de produto).
+- **Linha = `<a href="/robo/:id?task=:taskId">`** (D-MTV-9, rota real do app; task em
+  query string). Alvo ≥40px, navegável por Tab/Enter e ctrl+clique (é âncora real).
+- **Mobile em cartões** via `useMediaQuery` (mesma técnica da tela do robô), caminho
+  projeto·célula·robô como linha secundária.
+- **6.6 ao vivo**: `useMyTasksLive` assina `WorkspaceChannel` via `useChannel` e
+  invalida `qk.myTasks` em `task.advanced/assigned/updated`. Degrada em silêncio até
+  `realtime-collaboration` existir (o canal só emite lá). O descarte na TROCA de
+  workspace já é do shell (`switchWorkspace`→`clear()`) + a partição da chave por wsId.
+- **Badge estático** (Pendente→warning, Em Andamento→accent) — leitura pura, sem
+  seletor de status (mudar status é na tela do robô).
+
 ## Armadilhas previstas
 
 1. **Falha silenciosa** — `Person` ausente DEVE dar 409, nunca `200 []`. Spec 4.6 (e2e sem
@@ -127,7 +145,7 @@ Provisionar o banco a cada sessão (ver CONTINUIDADE) + `PATH=/opt/rbenv/shims`.
 - [x] G2 — consulta + índices (2.1–2.6)
 - [x] G3 — endpoint + authz + viewer (3.1–3.5)
 - [x] G4 — provas de §3.6 + isolamento (4.1–4.6, 5.1–5.3)
-- [ ] G5 — tela (6.1–6.7)
+- [x] G5 — tela (6.1–6.7)
 - [ ] G6 — desempenho (7.1–7.2)
 
 ## RETOMADA (para o próximo agente)
