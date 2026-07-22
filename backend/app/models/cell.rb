@@ -10,4 +10,7 @@ class Cell < ApplicationRecord
   belongs_to :project
   has_many :robots, dependent: nil
   belongs_to :updated_by_person, class_name: 'Person', optional: true
+
+  # hierarchy-soft-delete D7 — arquivada some da leitura; compõe com o tenant.
+  default_scope { where(deleted_at: nil) }
 end

@@ -42,6 +42,13 @@ RSpec.describe 'Fronteira de escrita do progresso (D5.b)', type: :model do
   # importador novo com `update_column(:progress, …)` cai aqui.
   PWB_BLESSED = %r{/app/services/(tasks|task_advances|robots|progress)/}
   PWB_RAW_TASK_WRITE = /update_columns?\(\s*:?(progress|status|weight)\b|update_all\(.*\b(progress|status|weight)\s*:|SET\s+(progress|status|weight)\b/i
+  # `status` também é coluna de OUTRAS tabelas (`workspace_backups`,
+  # workspace-settings): um `WorkspaceBackup...update_all(status:)` NÃO é escrita
+  # em tarefa. O sweep é textual e não vê a tabela receptora, então isenta os
+  # receptores não-tarefa conhecidos, pelo nome do model/tabela na MESMA linha.
+  # (hierarchy-soft-delete — reconciliação cross-change; falso positivo latente
+  # desde workspace-settings G4.)
+  PWB_NON_TASK_STATUS_WRITER = /\b(WorkspaceBackup|workspace_backups)\b/
 
   it 'tasks.progress/status/weight só são mutados via os services abençoados' do
     ofensores = []
@@ -50,6 +57,7 @@ RSpec.describe 'Fronteira de escrita do progresso (D5.b)', type: :model do
 
       File.readlines(file).each_with_index do |linha, i|
         next if linha.strip.start_with?('#')
+        next if linha.match?(PWB_NON_TASK_STATUS_WRITER)
 
         ofensores << "#{file.sub(PWB_APP.to_s, 'app')}:#{i + 1}" if linha.match?(PWB_RAW_TASK_WRITE)
       end

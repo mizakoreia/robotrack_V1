@@ -101,6 +101,22 @@ imutável), `progress-rollup` (as 4 views `security_invoker` + `CascadeRecompute
 - Suíte backend na branch atual (workspace-settings), `--seed` fixo, número de exemplos e
   falhas conhecidas (benchmarks de carga). Registrar aqui antes de tocar no código.
 
+## Decisões e reconciliações tomadas na execução
+
+- **G1 — reconciliação cross-change (falso positivo do sweep de progresso):** ao rodar a
+  regressão do G1, `spec/progress/progress_write_boundary_spec.rb` acusou
+  `app/jobs/workspace/backup_export_job.rb:23` (`WorkspaceBackup...update_all(status:
+  'failed')`). O sweep é TEXTUAL e a coluna `status` também existe em `workspace_backups`
+  (workspace-settings) — não é escrita em `tasks`. Falso positivo LATENTE desde
+  `workspace-settings` G4 (`a7d9e3f`), não introduzido por esta change (o arquivo é
+  imutável no meu diff). Corrigi o sweep isentando receptores não-tarefa conhecidos
+  (`WorkspaceBackup`/`workspace_backups`) na mesma linha, sem afrouxar a detecção de escrita
+  crua real em `tasks`. Mantém "varreduras só crescem".
+- **G1 — `structure.sql` regenera sozinho:** `schema_format = :sql`; `db:migrate` já
+  redumpou o `structure.sql` com as views novas e as colunas `deleted_at`. Não precisou de
+  edição à mão (o caveat do audit-log era sobre GRANT/REVOKE, que o dump omite — aqui é
+  definição de view/coluna, que o dump inclui).
+
 ## RETOMADA
 
 Se a sessão cair no meio: ler este arquivo + `design.md`. Estado por grupo marcado em

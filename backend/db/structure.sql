@@ -453,13 +453,14 @@ CREATE TABLE public.cells (
     workspace_id uuid NOT NULL,
     project_id uuid NOT NULL,
     name text NOT NULL,
-    "position" integer NOT NULL,
+    "position" integer,
     progress_cache smallint DEFAULT 0 NOT NULL,
     progress_cached_at timestamp with time zone,
     lock_version integer DEFAULT 0 NOT NULL,
     updated_by_person_id uuid,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    deleted_at timestamp with time zone,
     CONSTRAINT chk_cells_name CHECK (((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 120))),
     CONSTRAINT chk_cells_progress_cache CHECK (((progress_cache >= 0) AND (progress_cache <= 100)))
 );
@@ -477,13 +478,14 @@ CREATE TABLE public.robots (
     cell_id uuid NOT NULL,
     name text NOT NULL,
     application text DEFAULT 'Misto / Geral'::text NOT NULL,
-    "position" integer NOT NULL,
+    "position" integer,
     progress_cache smallint DEFAULT 0 NOT NULL,
     progress_cached_at timestamp with time zone,
     lock_version integer DEFAULT 0 NOT NULL,
     updated_by_person_id uuid,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    deleted_at timestamp with time zone,
     CONSTRAINT chk_robots_application CHECK ((application = ANY (ARRAY['Misto / Geral'::text, 'Solda Ponto'::text, 'Solda MIG'::text, 'Handling'::text, 'Sealing'::text, 'Outros'::text]))),
     CONSTRAINT chk_robots_name CHECK (((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 120))),
     CONSTRAINT chk_robots_progress_cache CHECK (((progress_cache >= 0) AND (progress_cache <= 100)))
@@ -535,6 +537,7 @@ CREATE VIEW public.robot_weighted_progress WITH (security_invoker='true') AS
         END AS value
    FROM (public.robots r
      LEFT JOIN public.tasks t ON (((t.robot_id = r.id) AND (t.workspace_id = r.workspace_id) AND (t.deleted_at IS NULL))))
+  WHERE (r.deleted_at IS NULL)
   GROUP BY r.id, r.workspace_id;
 
 
@@ -547,8 +550,9 @@ CREATE VIEW public.cell_weighted_progress WITH (security_invoker='true') AS
     c.workspace_id,
     (COALESCE(round(avg(rwp.value)), (0)::numeric))::integer AS value
    FROM ((public.cells c
-     LEFT JOIN public.robots r ON (((r.cell_id = c.id) AND (r.workspace_id = c.workspace_id))))
+     LEFT JOIN public.robots r ON (((r.cell_id = c.id) AND (r.workspace_id = c.workspace_id) AND (r.deleted_at IS NULL))))
      LEFT JOIN public.robot_weighted_progress rwp ON (((rwp.robot_id = r.id) AND (rwp.workspace_id = c.workspace_id))))
+  WHERE (c.deleted_at IS NULL)
   GROUP BY c.id, c.workspace_id;
 
 
@@ -648,13 +652,14 @@ CREATE TABLE public.projects (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     workspace_id uuid NOT NULL,
     name text NOT NULL,
-    "position" integer NOT NULL,
+    "position" integer,
     progress_cache smallint DEFAULT 0 NOT NULL,
     progress_cached_at timestamp with time zone,
     lock_version integer DEFAULT 0 NOT NULL,
     updated_by_person_id uuid,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    deleted_at timestamp with time zone,
     CONSTRAINT chk_projects_name CHECK (((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 120))),
     CONSTRAINT chk_projects_progress_cache CHECK (((progress_cache >= 0) AND (progress_cache <= 100)))
 );
@@ -671,8 +676,9 @@ CREATE VIEW public.project_weighted_progress WITH (security_invoker='true') AS
     p.workspace_id,
     (COALESCE(round(avg(cwp.value)), (0)::numeric))::integer AS value
    FROM ((public.projects p
-     LEFT JOIN public.cells c ON (((c.project_id = p.id) AND (c.workspace_id = p.workspace_id))))
+     LEFT JOIN public.cells c ON (((c.project_id = p.id) AND (c.workspace_id = p.workspace_id) AND (c.deleted_at IS NULL))))
      LEFT JOIN public.cell_weighted_progress cwp ON (((cwp.cell_id = c.id) AND (cwp.workspace_id = p.workspace_id))))
+  WHERE (p.deleted_at IS NULL)
   GROUP BY p.id, p.workspace_id;
 
 
@@ -701,6 +707,7 @@ CREATE VIEW public.subtree_raw_completion WITH (security_invoker='true') AS
         END AS percent
    FROM (public.robots r
      LEFT JOIN public.tasks t ON (((t.robot_id = r.id) AND (t.workspace_id = r.workspace_id) AND (t.deleted_at IS NULL))))
+  WHERE (r.deleted_at IS NULL)
   GROUP BY r.id, r.workspace_id
 UNION ALL
  SELECT 'cell'::text AS scope_type,
@@ -713,8 +720,9 @@ UNION ALL
             ELSE (round((((count(t.id) FILTER (WHERE (t.status = 'Concluído'::public.task_status)))::numeric / (count(t.id))::numeric) * (100)::numeric)))::integer
         END AS percent
    FROM ((public.cells c
-     LEFT JOIN public.robots r ON (((r.cell_id = c.id) AND (r.workspace_id = c.workspace_id))))
+     LEFT JOIN public.robots r ON (((r.cell_id = c.id) AND (r.workspace_id = c.workspace_id) AND (r.deleted_at IS NULL))))
      LEFT JOIN public.tasks t ON (((t.robot_id = r.id) AND (t.workspace_id = c.workspace_id) AND (t.deleted_at IS NULL))))
+  WHERE (c.deleted_at IS NULL)
   GROUP BY c.id, c.workspace_id
 UNION ALL
  SELECT 'project'::text AS scope_type,
@@ -727,9 +735,10 @@ UNION ALL
             ELSE (round((((count(t.id) FILTER (WHERE (t.status = 'Concluído'::public.task_status)))::numeric / (count(t.id))::numeric) * (100)::numeric)))::integer
         END AS percent
    FROM (((public.projects p
-     LEFT JOIN public.cells c ON (((c.project_id = p.id) AND (c.workspace_id = p.workspace_id))))
-     LEFT JOIN public.robots r ON (((r.cell_id = c.id) AND (r.workspace_id = p.workspace_id))))
+     LEFT JOIN public.cells c ON (((c.project_id = p.id) AND (c.workspace_id = p.workspace_id) AND (c.deleted_at IS NULL))))
+     LEFT JOIN public.robots r ON (((r.cell_id = c.id) AND (r.workspace_id = p.workspace_id) AND (r.deleted_at IS NULL))))
      LEFT JOIN public.tasks t ON (((t.robot_id = r.id) AND (t.workspace_id = p.workspace_id) AND (t.deleted_at IS NULL))))
+  WHERE (p.deleted_at IS NULL)
   GROUP BY p.id, p.workspace_id
 UNION ALL
  SELECT 'workspace'::text AS scope_type,
@@ -1359,7 +1368,7 @@ CREATE UNIQUE INDEX index_active_storage_variants_uniqueness ON public.active_st
 -- Name: index_cells_on_project_lower_name; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE UNIQUE INDEX index_cells_on_project_lower_name ON public.cells USING btree (project_id, lower(name));
+CREATE UNIQUE INDEX index_cells_on_project_lower_name ON public.cells USING btree (project_id, lower(name)) WHERE (deleted_at IS NULL);
 
 
 --
@@ -1367,6 +1376,13 @@ CREATE UNIQUE INDEX index_cells_on_project_lower_name ON public.cells USING btre
 --
 
 CREATE INDEX index_cells_on_workspace_id ON public.cells USING btree (workspace_id);
+
+
+--
+-- Name: index_cells_on_workspace_id_live; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_cells_on_workspace_id_live ON public.cells USING btree (workspace_id) WHERE (deleted_at IS NULL);
 
 
 --
@@ -1447,17 +1463,24 @@ CREATE UNIQUE INDEX index_people_on_workspace_id_and_user_id ON public.people US
 
 
 --
+-- Name: index_projects_on_workspace_id_live; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_projects_on_workspace_id_live ON public.projects USING btree (workspace_id) WHERE (deleted_at IS NULL);
+
+
+--
 -- Name: index_projects_on_workspace_lower_name; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE UNIQUE INDEX index_projects_on_workspace_lower_name ON public.projects USING btree (workspace_id, lower(name));
+CREATE UNIQUE INDEX index_projects_on_workspace_lower_name ON public.projects USING btree (workspace_id, lower(name)) WHERE (deleted_at IS NULL);
 
 
 --
 -- Name: index_robots_on_cell_lower_name; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE UNIQUE INDEX index_robots_on_cell_lower_name ON public.robots USING btree (cell_id, lower(name));
+CREATE UNIQUE INDEX index_robots_on_cell_lower_name ON public.robots USING btree (cell_id, lower(name)) WHERE (deleted_at IS NULL);
 
 
 --
@@ -1465,6 +1488,13 @@ CREATE UNIQUE INDEX index_robots_on_cell_lower_name ON public.robots USING btree
 --
 
 CREATE INDEX index_robots_on_workspace_id ON public.robots USING btree (workspace_id);
+
+
+--
+-- Name: index_robots_on_workspace_id_live; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_robots_on_workspace_id_live ON public.robots USING btree (workspace_id) WHERE (deleted_at IS NULL);
 
 
 --
@@ -2316,6 +2346,8 @@ ALTER TABLE public.workspaces ENABLE ROW LEVEL SECURITY;
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260723140002'),
+('20260723140001'),
 ('20260723130002'),
 ('20260723130001'),
 ('20260723120003'),

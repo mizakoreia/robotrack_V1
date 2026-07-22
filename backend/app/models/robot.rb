@@ -12,4 +12,7 @@ class Robot < ApplicationRecord
 
   belongs_to :cell
   belongs_to :updated_by_person, class_name: 'Person', optional: true
+
+  # hierarchy-soft-delete D7 — arquivado some da leitura; compõe com o tenant.
+  default_scope { where(deleted_at: nil) }
 end

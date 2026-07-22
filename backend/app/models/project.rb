@@ -13,4 +13,9 @@ class Project < ApplicationRecord
 
   has_many :cells, dependent: nil
   belongs_to :updated_by_person, class_name: 'Person', optional: true
+
+  # hierarchy-soft-delete D7 — some da leitura quando arquivado; compõe (AND) com
+  # o default_scope de tenant do WorkspaceScoped, espelhando `Task`. `unscoped`
+  # remove os dois; a RLS no banco é a garantia real de tenant.
+  default_scope { where(deleted_at: nil) }
 end

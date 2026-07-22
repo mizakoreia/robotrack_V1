@@ -7,23 +7,23 @@ quatro views e a cascata de cache).
 
 ## 1. Esquema: `deleted_at`, índices parciais e views
 
-- [ ] 1.1 Migration adicionando `deleted_at timestamptz NULL` a `projects`, `cells` e
+- [x] 1.1 Migration adicionando `deleted_at timestamptz NULL` a `projects`, `cells` e
   `robots`; tornando `position` nullable nas três; trocando cada índice único de nome
   (`index_projects_on_workspace_lower_name`, `index_cells_on_project_lower_name`,
   `index_robots_on_cell_lower_name`) por versão **parcial** `WHERE deleted_at IS NULL`; e
   criando índice parcial de apoio à leitura viva (`(workspace_id) WHERE deleted_at IS NULL`
   por nível). A constraint DEFERRABLE de posição permanece intacta. (§1.1 — `INSERT` de um
   segundo "R-014" na mesma célula com o primeiro arquivado NÃO pode violar o índice)
-- [ ] 1.2 Migration `CREATE OR REPLACE VIEW` recriando `robot_weighted_progress`,
+- [x] 1.2 Migration `CREATE OR REPLACE VIEW` recriando `robot_weighted_progress`,
   `cell_weighted_progress`, `project_weighted_progress` e `subtree_raw_completion` com
   `deleted_at IS NULL` em cada `FROM`/`LEFT JOIN` de `robots`/`cells`/`projects` (mantendo
   `security_invoker` e o filtro de `tasks` já existente); atualizar `db/structure.sql`.
   (§2.1/§3.2 — um robô arquivado numa célula com um robô a 100% e um a 0% não pode manter a
   média em 50)
-- [ ] 1.3 Adicionar `default_scope { where(deleted_at: nil) }` a `Project`, `Cell` e `Robot`
+- [x] 1.3 Adicionar `default_scope { where(deleted_at: nil) }` a `Project`, `Cell` e `Robot`
   (espelhando `Task`; compõe com o `WorkspaceScoped`). (spec — `Project.all` não pode
   retornar projeto arquivado; `unscoped` continua vendo tudo)
-- [ ] 1.4 **Verificação:** spec de esquema/model que arquiva um robô e prova: (a)
+- [x] 1.4 **Verificação:** spec de esquema/model que arquiva um robô e prova: (a)
   `Robot.all` não o traz e `unscoped` traz; (b) criar outro robô com o mesmo nome na célula
   responde criado, não `name_taken`; (c) a view `cell_weighted_progress` da célula muda de
   `50` para `100` ao arquivar o robô de 0%; (d) `position` do arquivado é `NULL`. (cobre
