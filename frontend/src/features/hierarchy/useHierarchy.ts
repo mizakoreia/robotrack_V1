@@ -7,6 +7,7 @@ import {
   type RobotDTO,
 } from '../../lib/api/endpoints'
 import { hierarchyKeys } from '../../lib/api/hierarchyKeys'
+import { qk } from '../../lib/query/keys'
 import { newId } from '../../lib/ids'
 import { useWorkspaceStore } from '../../store/workspaceStore'
 import { moveItem, submitReorder, type ReorderOutcome } from '../../lib/api/reorder'
@@ -159,6 +160,39 @@ export function useCreateCell(projectId: string) {
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: hierarchyKeys.cells(wsId, projectId) })
       void queryClient.invalidateQueries({ queryKey: hierarchyKeys.projects(wsId) })
+      // hierarchy-screens 5.2 — a grade e o hub da tela de Projeto leem o overview.
+      if (wsId) void queryClient.invalidateQueries({ queryKey: qk.projectOverview(wsId, projectId) })
+    },
+  })
+}
+
+// hierarchy-screens 5.2 — renomear e excluir célula, ligados ao CRUD de
+// commissioning-hierarchy, invalidando o overview do Projeto (a grade e o hub
+// atualizam sem recarregar a página).
+export function useRenameCell(projectId: string) {
+  const wsId = useWorkspaceStore((s) => s.currentWorkspaceId)
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, name, lockVersion }: { id: string; name: string; lockVersion: number }) =>
+      hierarchyApi.updateCell(id, { name, lock_version: lockVersion }),
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: hierarchyKeys.cells(wsId, projectId) })
+      if (wsId) void queryClient.invalidateQueries({ queryKey: qk.projectOverview(wsId, projectId) })
+    },
+  })
+}
+
+export function useDeleteCell(projectId: string) {
+  const wsId = useWorkspaceStore((s) => s.currentWorkspaceId)
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: string) => hierarchyApi.deleteCell(id),
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: hierarchyKeys.cells(wsId, projectId) })
+      void queryClient.invalidateQueries({ queryKey: hierarchyKeys.projects(wsId) })
+      if (wsId) void queryClient.invalidateQueries({ queryKey: qk.projectOverview(wsId, projectId) })
     },
   })
 }
