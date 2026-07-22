@@ -39,5 +39,26 @@ export const robotTaskText = {
   historyNoComment: 'sem comentário',
   historyFullComing: 'A trilha completa chega no próximo passo.',
 
+  // Coluna Ações (4.3) + cabeçalho (4.2)
+  editAction: 'Editar',
+  editAria: (desc: string) => `Editar a descrição de ${desc}`,
+  deleteAction: 'Excluir',
+  deleteAria: (desc: string) => `Excluir ${desc}`,
+  editTitle: 'Editar tarefa',
+  editField: 'Descrição',
+  save: 'Salvar',
+  deleteTitle: 'Excluir tarefa',
+  deleteConfirm: (desc: string) => `Excluir “${desc}”? Esta ação não pode ser desfeita.`,
+  addTask: 'Adicionar tarefa',
+  addTitle: 'Nova tarefa',
+  addCategory: 'Categoria',
+  addDescription: 'Descrição',
+  add: 'Adicionar',
+  syncTemplates: 'Sincronizar tarefas-base',
+  syncing: 'Sincronizando…',
+  syncResult: (n: number) => `${n} ${n === 1 ? 'tarefa adicionada' : 'tarefas adicionadas'}`,
+  syncNone: 'Nenhuma tarefa nova a adicionar',
+  cancel: 'Cancelar',
+
   close: 'Fechar',
 } as const

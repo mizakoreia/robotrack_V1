@@ -496,6 +496,14 @@ export const robotTasksApi = {
   listForRobot: (robotId: string) =>
     apiClient.get<TaskDTO[]>(`/api/v1/robots/${encodeURIComponent(robotId)}/tasks`),
   getRobot: (robotId: string) => apiClient.get<RobotHeaderDTO>(`/api/v1/robots/${encodeURIComponent(robotId)}`),
+  // robot-task-table 4.3 — CRUD avulso consumindo robot-tasks. `PATCH` só mexe na
+  // `desc` (progress/status são porta do avanço — o backend rejeita 422). `DELETE`
+  // devolve 204.
+  create: (robotId: string, data: { id: string; cat: string; desc: string }) =>
+    apiClient.post<TaskDTO>(`/api/v1/robots/${encodeURIComponent(robotId)}/tasks`, data),
+  update: (taskId: string, data: { desc: string; lock_version: number }) =>
+    apiClient.patch<TaskDTO>(`/api/v1/tasks/${encodeURIComponent(taskId)}`, data),
+  remove: (taskId: string) => apiClient.delete(`/api/v1/tasks/${encodeURIComponent(taskId)}`),
 }
 
 // progress-advances 4.3 — uma entrada da trilha de avanço (entity `TaskAdvance`).

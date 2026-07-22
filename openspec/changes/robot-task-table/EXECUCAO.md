@@ -120,6 +120,24 @@ D-RTT-11 decomposição p/ paralelismo. D8 recorded_at; D11 identidade; D15 % ro
   assignees = []`; 100 > 0, então o aviso aparece (extrapolado dos cenários 0/30 do
   spec, coerente com a letra da regra). Registrado na matriz de teco.
 
+### Decisões tomadas na G4 (registro pós-execução)
+
+- **4.1 já vinha da G1**: cabeçalho com nome + Badge de Aplicação + % ponderado
+  rotulado já existia; o valor "N/A → 100%" é garantia do `progress-rollup` no
+  servidor (a tela só exibe `weighted_progress.value`). Marcado sem novo código.
+- **4.5 backend já satisfeito por specs existentes**: 403 de `view` em `PATCH
+  /tasks/:id` e `DELETE /tasks/:id` (`spec/requests/tasks_spec.rb`, robot-tasks) e no
+  sync (`spec/requests/task_template_sync_spec.rb`, task-catalog) já são verdes. O
+  novo entregável do 4.5 é o teste de RENDER (ausência de controles p/ `view`), feito
+  em `acoesHeader.test.tsx`. Verifiquei os 2 specs backend (2/0).
+- **CRUD via `robotTasksApi` estendido** (create/update/remove) + `useTaskCrud` com o
+  MESMO trio de invalidação da G2 (robotTasks + qk.robot exato + qk.projects). Sem
+  `tasksApi` novo — a leitura e a escrita da tarefa moram na mesma API da tabela.
+- **"Adicionar tarefa" e "Sincronizar" no cabeçalho** (só owner/edit). Sync usa
+  `toast` (sonner, já montado) para a contagem e reseta o filtro para "Todos".
+- **Coluna Ações SAI do DOM para `view`** (não `disabled`); o `colSpan` do separador
+  de categoria vira 5. Edição/exclusão em `Modal` do design-system (focus trap/Esc).
+
 ## Armadilhas previstas
 
 1. **N+1 na trilha** — manter `includes(:task_advances)`; contributors/last_advance em
@@ -145,7 +163,7 @@ completa fica para o G7. Provisionar o banco a cada sessão (ver CONTINUIDADE).
 - [x] G1 — Esqueleto + contrato (1.1–1.6)
 - [x] G2 — Status + Progresso (2.1–2.4)
 - [x] G3 — Responsáveis + Trilha + avisos (3.1–3.5)
-- [ ] G4 — Cabeçalho + Ações + sync + gating (4.1–4.5)
+- [x] G4 — Cabeçalho + Ações + sync + gating (4.1–4.5)
 - [ ] G5 — Modais histórico + atribuição (5.1–5.5)
 - [ ] G6 — Mobile + a11y + pulso (6.1–6.5)
 - [ ] G7 — Integração + E2E + carga (7.1–7.3)

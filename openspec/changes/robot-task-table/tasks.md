@@ -99,22 +99,22 @@ componente de célula — quem chegar depois consome a interface já publicada e
 
 ## 4. Cabeçalho e coluna Ações (paralelo)
 
-- [ ] 4.1 Implementar o cabeçalho com nome, badge de Aplicação e percentual
+- [x] 4.1 Implementar o cabeçalho com nome, badge de Aplicação e percentual
   **ponderado rotulado** vindo de `progress-rollup` (§2.1, D15 — robô com progressos
   `100,50,0,0` peso 1 exibe `38%` com o rótulo `Progresso ponderado`; robô só com
   `N/A` exibe `100%`, não `0%`)
-- [ ] 4.2 Ligar a ação "Sincronizar tarefas-base" ao endpoint de `task-catalog`,
+- [x] 4.2 Ligar a ação "Sincronizar tarefas-base" ao endpoint de `task-catalog`,
   exibindo a contagem retornada e resetando o filtro para `Todos` (§2.6 — resposta de
   7 adicionadas exibe `7 tarefas adicionadas` e as novas linhas ficam visíveis mesmo
   que o filtro estivesse em `Concluídos`)
-- [ ] 4.3 Implementar a coluna Ações: editar descrição e excluir tarefa, com diálogo
+- [x] 4.3 Implementar a coluna Ações: editar descrição e excluir tarefa, com diálogo
   de confirmação na exclusão, consumindo o CRUD de `robot-tasks` (§3.5 — excluir uma
   tarefa de peso 1 recalcula o percentual do cabeçalho na mesma render, sem F5)
-- [ ] 4.4 Aplicar as restrições de papel na tela: para `view`, remover do DOM
+- [x] 4.4 Aplicar as restrições de papel na tela: para `view`, remover do DOM
   "Adicionar tarefa", "Sincronizar", coluna Ações, slider e `±`, e renderizar o status
   como `Badge` estático (§4.1, D-RTT-9 — membro `view` não vê select desabilitado nem
   alvo morto; badge sem chevron)
-- [ ] 4.5 **Verificação:** specs de request confirmando `403` para `view` em
+- [x] 4.5 **Verificação:** specs de request confirmando `403` para `view` em
   `PATCH /tasks/:id`, `DELETE /tasks/:id` e no endpoint de sincronização, e teste de
   render confirmando ausência dos controles (§4.1 inv. 1 e 4 — bloqueio na UI é
   conveniência; a prova é o 403)
