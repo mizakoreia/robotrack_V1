@@ -26,18 +26,27 @@ export const robotTaskText = {
   trailCountAria: (n: number, desc: string) =>
     `Ver histórico de ${desc}: ${n} ${n === 1 ? 'entrada' : 'entradas'}`,
 
-  // Modal de atribuição (mínimo na G3, enriquecido na G5)
+  // Modal de atribuição (5.3/5.4)
   assignTitle: 'Responsáveis',
-  assignResponsibles: 'Responsáveis atuais',
-  assignContributors: 'Contribuíram (avançaram sem ser responsáveis)',
-  assignEditComing: 'A edição de responsáveis chega no próximo passo.',
+  assignPeople: 'Pessoas do workspace',
+  assignEmpty: 'Nenhuma pessoa cadastrada ainda.',
+  assignAddLabel: 'Cadastrar nova pessoa',
+  assignAddPlaceholder: 'Nome da pessoa',
+  assignAddButton: 'Adicionar',
+  assignSave: 'Salvar responsáveis',
+  assignSaving: 'Salvando…',
+  assignDuplicate: (name: string) => `${name} já existe — marcada.`,
+  assignBlank: 'Informe um nome.',
+  assignLoadError: 'Não foi possível carregar as pessoas.',
 
-  // Modal de histórico (mínimo na G3, timeline completa na G5)
+  // Modal de histórico (timeline completa, 5.1/5.2)
   historyTitle: 'Histórico da tarefa',
   historyEmpty: 'Nenhum avanço registrado ainda.',
   historyLegacy: 'importado',
   historyNoComment: 'sem comentário',
-  historyFullComing: 'A trilha completa chega no próximo passo.',
+  historyFromTo: (from: number, to: number) => `${from}% → ${to}%`,
+  historyLoadError: 'Não foi possível carregar o histórico.',
+  historyLoading: 'Carregando…',
 
   // Coluna Ações (4.3) + cabeçalho (4.2)
   editAction: 'Editar',

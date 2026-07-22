@@ -1,67 +1,58 @@
-import { useEffect, useRef } from 'react'
-import { Button } from '@/components/ui/Button'
+import { Modal } from '@/components/ui/Modal'
+import { useTaskTrail } from './useTaskTrail'
 import { robotTaskText } from '@/lib/i18n/robotTasks'
 import type { TaskDTO } from '@/lib/api/endpoints'
 
-// robot-task-table 3.2 (§3.5, D8) — o modal de histórico em sua forma MÍNIMA da
-// G3: exibe a entrada MAIS RECENTE (`last_advance`, resolvida no servidor por
-// `recorded_at DESC`), com autor, comentário, data de AÇÃO e marcador `legacy`. A
-// G5 (5.1/5.2) troca isto pela timeline paginada completa (via
-// `taskAdvancesApi.list`), com `de% → para%` por entrada. A casca é a definitiva.
+// robot-task-table 5.1/5.2 (§3.5, §2.4 item 3, D8) — a timeline completa de avanços.
+//
+// Ordem pelo SERVIDOR (recorded_at DESC, created_at DESC, id DESC) — o cliente NÃO
+// reordena; dois `recorded_at` iguais mantêm a mesma ordem entre recarregamentos.
+// Cada entrada exibe autor, `de% → para%`, a data de AÇÃO (`recorded_at`, não
+// `created_at` — D8) e o comentário. Entradas `legacy` ganham marcador. Um avanço
+// `→100` sem comentário mostra marcador EXPLÍCITO de ausência ("sem comentário"),
+// nunca herdando visualmente o texto da entrada vizinha (§2.4 item 3).
+//
+// A casca (focus trap, Esc devolve o foco ao gatilho) é o `Modal` do design-system.
 
 export function HistoryModal({ task, onClose }: { task: TaskDTO; onClose: () => void }) {
-  const ref = useRef<HTMLDivElement>(null)
-  const last = task.last_advance
-
-  useEffect(() => {
-    ref.current?.focus()
-  }, [])
+  const { data: trail, isLoading, isError } = useTaskTrail(task.id, true)
 
   return (
-    <div
-      ref={ref}
-      role="dialog"
-      aria-modal="true"
-      aria-label={`${robotTaskText.historyTitle}: ${task.desc}`}
-      tabIndex={-1}
-      onKeyDown={(e) => {
-        if (e.key === 'Escape') {
-          e.stopPropagation()
-          onClose()
-        }
-      }}
-      className="mt-2 rounded-lg border bg-background p-4"
-    >
-      <h3 className="font-medium">{robotTaskText.historyTitle}</h3>
-
-      {last ? (
-        <div className="mt-3 border-l-2 border-accent/40 pl-3">
-          <div className="flex items-center gap-2">
-            <span className="font-medium">{last.author_name_snapshot}</span>
-            {last.legacy && (
-              <span className="label-sm rounded-pill bg-na/15 px-2 py-0.5 text-na-ink">
-                {robotTaskText.historyLegacy}
-              </span>
-            )}
-          </div>
-          <time className="label-sm text-text-muted" dateTime={last.recorded_at}>
-            {new Date(last.recorded_at).toLocaleString('pt-BR')}
-          </time>
-          <p className="mt-1 text-text-muted">
-            {last.comment ?? <em>{robotTaskText.historyNoComment}</em>}
-          </p>
-        </div>
+    <Modal open onClose={onClose} title={robotTaskText.historyTitle}>
+      {isLoading ? (
+        <p className="text-text-muted">{robotTaskText.historyLoading}</p>
+      ) : isError ? (
+        <p className="text-danger-ink">{robotTaskText.historyLoadError}</p>
+      ) : !trail || trail.length === 0 ? (
+        <p className="text-text-muted">{robotTaskText.historyEmpty}</p>
       ) : (
-        <p className="mt-3 text-text-muted">{robotTaskText.historyEmpty}</p>
+        <ol className="space-y-3">
+          {trail.map((a) => (
+            <li key={a.id} className="border-l-2 border-accent/40 pl-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-medium">{a.author_name_snapshot}</span>
+                <span className="label-sm tabular-nums text-text-muted">
+                  {robotTaskText.historyFromTo(a.from_progress, a.to_progress)}
+                </span>
+                {a.legacy && (
+                  <span className="label-sm rounded-pill bg-na/15 px-2 py-0.5 text-na-ink">
+                    {robotTaskText.historyLegacy}
+                  </span>
+                )}
+              </div>
+              <time className="label-sm text-text-muted" dateTime={a.recorded_at}>
+                {new Date(a.recorded_at).toLocaleString('pt-BR')}
+              </time>
+              {/* marcador explícito de ausência: não herda o comentário do vizinho */}
+              {a.comment ? (
+                <p className="mt-0.5 text-text-muted">{a.comment}</p>
+              ) : (
+                <p className="mt-0.5 italic text-text-muted/70">{robotTaskText.historyNoComment}</p>
+              )}
+            </li>
+          ))}
+        </ol>
       )}
-
-      <p className="label-sm mt-3 text-text-muted">{robotTaskText.historyFullComing}</p>
-
-      <div className="mt-4">
-        <Button type="button" variant="outline" onClick={onClose}>
-          {robotTaskText.close}
-        </Button>
-      </div>
-    </div>
+    </Modal>
   )
 }

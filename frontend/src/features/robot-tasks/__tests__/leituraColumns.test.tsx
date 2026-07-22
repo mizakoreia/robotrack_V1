@@ -29,7 +29,7 @@ beforeEach(() => {
 describe('Responsáveis — chips 1º/2º (D-RTT-4)', () => {
   it('assignee Ana + avanço de Bruno: Ana primário e Bruno secundário (2 chips)', () => {
     render(
-      <ResponsaveisCell
+      <ResponsaveisCell robotId="r1"
         task={task({ assignees: [{ id: 'ana', name: 'Ana' }], contributors: [{ id: 'bruno', name: 'Bruno' }] })}
       />,
     )
@@ -39,7 +39,7 @@ describe('Responsáveis — chips 1º/2º (D-RTT-4)', () => {
 
   it('Ana responsável E única contribuidora: um único chip Ana', () => {
     render(
-      <ResponsaveisCell
+      <ResponsaveisCell robotId="r1"
         task={task({
           progress: 60,
           assignees: [{ id: 'ana', name: 'Ana' }],
@@ -63,7 +63,7 @@ describe('Aviso "Atribuir…" — matriz progresso × responsável (D-RTT-7)', (
   ]
   it.each(cases)('progress=%s, responsavel=%s → aviso=%s', (progress, temResp, espera) => {
     const { unmount } = render(
-      <ResponsaveisCell
+      <ResponsaveisCell robotId="r1"
         task={task({ progress, assignees: temResp ? [{ id: 'ana', name: 'Ana' }] : [] })}
       />,
     )
@@ -74,7 +74,7 @@ describe('Aviso "Atribuir…" — matriz progresso × responsável (D-RTT-7)', (
 
   it('progress=45, sem responsável, contribuidor Bruno: aviso E chip secundário Bruno', () => {
     render(
-      <ResponsaveisCell task={task({ progress: 45, assignees: [], contributors: [{ id: 'bruno', name: 'Bruno' }] })} />,
+      <ResponsaveisCell robotId="r1" task={task({ progress: 45, assignees: [], contributors: [{ id: 'bruno', name: 'Bruno' }] })} />,
     )
     expect(screen.getByText('Atribuir…')).toBeInTheDocument()
     expect(screen.getByText('Bruno')).toBeInTheDocument()

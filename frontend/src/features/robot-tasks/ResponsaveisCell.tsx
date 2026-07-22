@@ -3,6 +3,7 @@ import { Icon } from '@/components/icons/Icon'
 import { Chip } from '@/components/ui/Chip'
 import { AssignmentModal } from './AssignmentModal'
 import { robotTaskText } from '@/lib/i18n/robotTasks'
+import { useWorkspaceStore } from '@/store/workspaceStore'
 import type { TaskDTO } from '@/lib/api/endpoints'
 
 // robot-task-table 3.1/3.3 (§3.5, D-RTT-4/7) — a célula Responsáveis.
@@ -25,7 +26,9 @@ function secondaryContributors(task: TaskDTO) {
   return task.contributors.filter((c) => !assigneeIds.has(c.id))
 }
 
-export function ResponsaveisCell({ task }: { task: TaskDTO }) {
+export function ResponsaveisCell({ robotId, task }: { robotId: string; task: TaskDTO }) {
+  const role = useWorkspaceStore((s) => s.currentRoleLabel)
+  const canEdit = role === 'owner' || role === 'edit'
   const [open, setOpen] = useState(false)
   const secondary = secondaryContributors(task)
   const showWarning = task.progress > 0 && task.assignees.length === 0
@@ -60,7 +63,9 @@ export function ResponsaveisCell({ task }: { task: TaskDTO }) {
         )}
       </button>
 
-      {open && <AssignmentModal task={task} onClose={() => setOpen(false)} />}
+      {open && (
+        <AssignmentModal robotId={robotId} task={task} canEdit={canEdit} onClose={() => setOpen(false)} />
+      )}
     </>
   )
 }

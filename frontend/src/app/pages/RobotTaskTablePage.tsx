@@ -190,7 +190,7 @@ function TaskRow({ robotId, task, canEdit }: { robotId: string; task: TaskDTO; c
         <AdvanceControls robotId={robotId} taskId={task.id} />
       </td>
       <td className="px-4 py-3">
-        <ResponsaveisCell task={task} />
+        <ResponsaveisCell robotId={robotId} task={task} />
       </td>
       <td className="px-4 py-3">
         <TrilhaCell robotId={robotId} task={task} />
