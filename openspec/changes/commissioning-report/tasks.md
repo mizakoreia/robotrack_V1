@@ -30,9 +30,9 @@
 
 ## 4. Distribuição de status e glifos
 
-- [ ] 4.1 Definir o mapa único `STATUS_GLYPH` (`✓ ◐ ○ —`) no servidor e as contagens agregadas por status do escopo, com as 4 linhas sempre presentes inclusive zeradas. (§3.8/§5.1 — escopo sem nenhuma tarefa `N/A` exibe `— N/A 0`, não omite a linha)
-- [ ] 4.2 Renderizar a distribuição no documento consumindo os glifos do payload, sem repetir caractere em JSX. (§5.1 — glifo duplicado no componente é o vetor pelo qual um emoji entra depois)
-- [ ] 4.3 **Verificação:** spec afirmando que a soma das 4 contagens é igual ao total de tarefas dos metadados, em dataset 12/9/15/4 = 40. (§3.8 — tarefa contada em dois status, ou status desconhecido caindo fora das 4 linhas, faz a soma divergir do total)
+- [x] 4.1 Definir o mapa único `STATUS_GLYPH` (`✓ ◐ ○ —`) no servidor e as contagens agregadas por status do escopo, com as 4 linhas sempre presentes inclusive zeradas. (§3.8/§5.1 — escopo sem nenhuma tarefa `N/A` exibe `— N/A 0`, não omite a linha)
+- [x] 4.2 Renderizar a distribuição no documento consumindo os glifos do payload, sem repetir caractere em JSX. (§5.1 — glifo duplicado no componente é o vetor pelo qual um emoji entra depois)
+- [x] 4.3 **Verificação:** spec afirmando que a soma das 4 contagens é igual ao total de tarefas dos metadados, em dataset 12/9/15/4 = 40. (§3.8 — tarefa contada em dois status, ou status desconhecido caindo fora das 4 linhas, faz a soma divergir do total)
 
 ## 5. Corpo hierárquico e histórico por tarefa
 

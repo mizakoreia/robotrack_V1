@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { ReportHeader } from '@/features/report/ReportHeader'
 import { ReportMetadata } from '@/features/report/ReportMetadata'
+import { ReportDistribution } from '@/features/report/ReportDistribution'
 import type { CommissioningReportDTO } from '@/features/report/types'
 
 // commissioning-report 2.3 (§3.8, D-R1) — o cabeçalho renderiza SÓ campos já
@@ -66,5 +67,19 @@ describe('ReportMetadata (3.2)', () => {
     expect(screen.getByText('Workspace inteiro')).toBeInTheDocument()
     expect(screen.getByText('Marina Alves')).toBeInTheDocument()
     expect(screen.getByText('1 projeto(s) · 1 célula(s) · 1 robô(s) · 2 tarefa(s)')).toBeInTheDocument()
+  })
+})
+
+describe('ReportDistribution (4.2)', () => {
+  it('mostra as 4 linhas com glifo do payload e contagem (inclusive zeradas)', () => {
+    render(<ReportDistribution report={reportFixture} />)
+    for (const glyph of ['✓', '◐', '○', '—']) {
+      expect(screen.getByText(glyph)).toBeInTheDocument()
+    }
+    expect(screen.getByText('Concluído')).toBeInTheDocument()
+    expect(screen.getByText('Pendente')).toBeInTheDocument()
+    // zeradas presentes
+    const pendente = screen.getByText('Pendente').closest('li')!
+    expect(pendente.textContent).toContain('0')
   })
 })
