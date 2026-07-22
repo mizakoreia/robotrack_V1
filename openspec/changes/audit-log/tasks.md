@@ -155,10 +155,10 @@ avanço).
 
 ## 9. Encerramento
 
-- [ ] 9.1 Registrar em `seal-template-baseline` a recomendação de remover `paper_trail` do
+- [x] 9.1 Registrar em `seal-template-baseline` a recomendação de remover `paper_trail` do
   Gemfile, com o parecer da Decisão 8 anexado. (design Decisão 8 — a gem tem `destroy_all`
   e poda por `limit` na API pública, incompatíveis com §4.1 inv. 3)
-- [ ] 9.2 **Verificação final:** suíte de contorno reunindo `update_column`, `update_all`,
+- [x] 9.2 **Verificação final:** suíte de contorno reunindo `update_column`, `update_all`,
   `delete_all`, `UPDATE` cru pelo papel de app e `UPDATE` cru pelo papel dono, todos
   esperando falha de banco. (§4.1 inv. 3 — se qualquer um desses passar, a invariante é
   teatro)
