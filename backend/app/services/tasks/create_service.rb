@@ -28,6 +28,9 @@ module Tasks
       task = ::Task.new(attrs)
 
       if task.save
+        # progress-rollup 2.3 — nova tarefa muda o ponderado do robô (uma Pendente
+        # num robô 100% o derruba). Cascata na transação ambiente do request.
+        ::Progress::CascadeRecompute.call(robot_id: task.robot_id)
         success_response({ record: task }, 201)
       else
         error_response('validation_error', 422, details: task.errors.messages)

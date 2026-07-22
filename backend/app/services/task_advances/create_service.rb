@@ -65,6 +65,9 @@ module TaskAdvances
         task.update!(status: resolved.status, progress: resolved.progress)
         auto_assign!(task, person)
         audit_completion!(task, advance, person) if resolved.completed
+        # progress-rollup 2.2 — cascata NA MESMA transação (o savepoint do avanço):
+        # rollback por 409 deixa os três progress_cache nos valores anteriores.
+        ::Progress::CascadeRecompute.call(robot_id: task.robot_id)
       end
 
       publish_event(task, advance)

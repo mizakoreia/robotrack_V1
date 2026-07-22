@@ -23,6 +23,9 @@ module Tasks
       ::Task.transaction do
         ::TaskAssignee.where(task_id: task.id).delete_all
         task.update_columns(deleted_at: Time.current) # rubocop:disable Rails/SkipsModelValidations
+        # progress-rollup 2.3 — excluir a última tarefa Concluído leva o cache do
+        # robô de 100 para 0 (robô sem tarefas), na mesma transação.
+        ::Progress::CascadeRecompute.call(robot_id: task.robot_id)
       end
       success_response({}, 204)
     end

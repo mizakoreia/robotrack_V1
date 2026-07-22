@@ -34,7 +34,9 @@ module Hierarchy
       result = IdempotentCreate.call(model: model, attributes: attributes,
                                      match_keys: [:name, parent_key].compact)
       case result.outcome
-      when :created    then success_response({ record: result.record }, 201)
+      when :created
+        cascade_after_create(result.record) # progress-rollup 2.4
+        success_response({ record: result.record }, 201)
       when :replay     then success_response({ record: result.record }, 200)
       when :conflict   then error_response('id_conflict', 409, details: snapshot(result.record))
       when :name_taken then error_response('name_taken', 409)
@@ -67,7 +69,9 @@ module Hierarchy
 
       model.transaction do
         audit_destroy!(record)
+        parent = destroy_parent_ref(record) # capturar ANTES de destruir
         record.destroy!
+        cascade_after_destroy(parent) # progress-rollup 2.4
       end
       success_response({}, 204)
     end
@@ -77,6 +81,33 @@ module Hierarchy
     def model = self.class::MODEL
     def parent_key = self.class::PARENT_KEY
     def parent_model = self.class::PARENT_MODEL
+
+    # progress-rollup 2.4 — a cascata por nível. Criar um robô/célula vazio muda a
+    # média do pai (§2.1: robô vazio arrasta a célula para baixo).
+    def cascade_after_create(record)
+      case record
+      when ::Robot   then ::Progress::CascadeRecompute.call(robot_id: record.id)
+      when ::Cell    then ::Progress::CascadeRecompute.for_cell(cell_id: record.id)
+      when ::Project then ::Progress::CascadeRecompute.for_project(project_id: record.id)
+      end
+    end
+
+    # Antes de destruir, guarda o pai a recalcular (o registro some depois).
+    def destroy_parent_ref(record)
+      case record
+      when ::Robot then [:cell, record.cell_id]
+      when ::Cell  then [:project, record.project_id]
+      end
+    end
+
+    def cascade_after_destroy(parent)
+      return if parent.nil?
+
+      case parent.first
+      when :cell    then ::Progress::CascadeRecompute.for_cell(cell_id: parent.last)
+      when :project then ::Progress::CascadeRecompute.for_project(project_id: parent.last)
+      end
+    end
 
     def valid_name?(name)
       name.to_s.strip.length.between?(1, 120)
