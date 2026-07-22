@@ -18,6 +18,9 @@ export const qk = {
   myTasks: (wsId: string) => ['ws', wsId, 'my-tasks'] as const,
   // commissioning-report D9 — o documento por escopo ('all' | id do projeto)
   report: (wsId: string, scope: string) => ['ws', wsId, 'report', scope] as const,
+  // audit-log D9 — a trilha de auditoria do workspace (invalidável por
+  // realtime-collaboration depois)
+  auditLogs: (wsId: string) => ['ws', wsId, 'auditLogs'] as const,
   notifications: (wsId: string) => ['ws', wsId, 'notifications'] as const,
   search: (wsId: string, q: string) => ['ws', wsId, 'search', q] as const,
 } as const
