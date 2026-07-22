@@ -34,6 +34,10 @@ module ProgressDivergenceDataset
     3.times { |i| robot_helper.call(r2, desc: "R2 na #{i}", weight: 1, progress: 0, status: 'N/A', position: i) }
     # R3 sem tarefas.
 
+    # Os rows foram criados via model (sem cascata) — popula o cache uma vez, para
+    # os testes que leem `progress_cache` (overview) verem os valores das views.
+    ::Progress::BulkRecompute.call(workspace_id: projeto.workspace_id)
+
     Ids.new(project: projeto.id, cell: c1.id, r1: r1.id, r2: r2.id, r3: r3.id)
   end
 

@@ -30,6 +30,16 @@ module Api
           present ::Project.order(:position).to_a, with: Api::Entities::Project
         end
 
+        # progress-rollup 3.2/3.5 — a Visão Geral LEVE (§3.2): anel ponderado por
+        # projeto (lê progress_cache, sem aninhar) + hub de contagem crua do
+        # workspace, em 2 queries constantes. Definida ANTES de `patch ':id'` para
+        # 'overview' não casar como :id. A árvore aninhada continua no `GET
+        # /api/v1/projects` (hierarchy-screens). Ver EXECUCAO decisão de G3.
+        route_setting :policy, policy: 'ProjectPolicy', action: :index
+        get 'overview' do
+          ::Progress::OverviewQuery.call(workspace_id: env['api.current_workspace_id'])
+        end
+
         route_setting :policy, policy: 'ProjectPolicy', action: :create
         params do
           optional :id, type: String

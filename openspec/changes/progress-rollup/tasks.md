@@ -19,12 +19,12 @@
 
 ## 3. Leitura, envelopes e orçamento de query
 
-- [ ] 3.1 Expor `weighted_progress` como envelope `{ value, metric, label }` nas entidades de projeto, célula e robô, lendo `progress_cache` — nunca as views. (D15 — a resposta não contém nenhuma chave `"progress": 58` solta)
-- [ ] 3.2 Expor `raw_completion` como envelope `{ completed, total, percent, metric, label }` nos endpoints de hub analítico dos três níveis. (§3.2 — 12 de 40 responde `percent: 30` com `metric: "raw_count"`)
-- [ ] 3.3 Escrever o spec de sweep de entidades Grape que falha em qualquer campo numérico com `progress`/`percent` no nome fora dos dois envelopes. (D15 — `expose :progress` novo numa entidade falha nomeando entidade, campo e a decisão)
-- [ ] 3.4 Construir o dataset de carga (20 projetos × 10 células × 15 robôs × 31 tarefas = 93.000 tarefas) como seed de spec compartilhado com `quality-and-accessibility`. (§3.2 — semear em ≤ 60 s; se levar minutos ninguém roda o orçamento e ele apodrece)
-- [ ] 3.5 Implementar o helper `issue_at_most(n).queries` sobre `sql.active_record` e aplicá-lo a `GET /api/v1/projects` com teto de 2 queries, rodando com 20 projetos. (§3.2 — serializar o anel por projeto reporta 22 queries contra o teto de 2; com 1 projeto o N+1 seria invisível)
-- [ ] 3.6 Fixar no CI, no mesmo job do 3.5, os orçamentos de latência: Visão Geral p95 ≤ 120 ms, cascata p95 ≤ 25 ms, `BulkRecompute` do dataset ≤ 8 s. (§3.2 — estourar o orçamento falha o build; não vira número num relatório que ninguém lê)
+- [x] 3.1 Expor `weighted_progress` como envelope `{ value, metric, label }` nas entidades de projeto, célula e robô, lendo `progress_cache` — nunca as views. (D15 — a resposta não contém nenhuma chave `"progress": 58` solta)
+- [x] 3.2 Expor `raw_completion` como envelope `{ completed, total, percent, metric, label }` nos endpoints de hub analítico dos três níveis. (§3.2 — 12 de 40 responde `percent: 30` com `metric: "raw_count"`)
+- [x] 3.3 Escrever o spec de sweep de entidades Grape que falha em qualquer campo numérico com `progress`/`percent` no nome fora dos dois envelopes. (D15 — `expose :progress` novo numa entidade falha nomeando entidade, campo e a decisão)
+- [x] 3.4 Construir o dataset de carga (20 projetos × 10 células × 15 robôs × 31 tarefas = 93.000 tarefas) como seed de spec compartilhado com `quality-and-accessibility`. (§3.2 — semear em ≤ 60 s; se levar minutos ninguém roda o orçamento e ele apodrece)
+- [x] 3.5 Implementar o helper `issue_at_most(n).queries` sobre `sql.active_record` e aplicá-lo a `GET /api/v1/projects` com teto de 2 queries, rodando com 20 projetos. (§3.2 — serializar o anel por projeto reporta 22 queries contra o teto de 2; com 1 projeto o N+1 seria invisível)
+- [x] 3.6 Fixar no CI, no mesmo job do 3.5, os orçamentos de latência: Visão Geral p95 ≤ 120 ms, cascata p95 ≤ 25 ms, `BulkRecompute` do dataset ≤ 8 s. (§3.2 — estourar o orçamento falha o build; não vira número num relatório que ninguém lê)
 
 ## 4. Reconciliação e observabilidade
 
