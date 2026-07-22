@@ -69,9 +69,9 @@ quatro views e a cascata de cache).
 
 ## 4. Verificação transversal e fechamento
 
-- [ ] 4.1 Rodar a suíte de backend dirigida às áreas afetadas (hierarquia, progresso,
+- [x] 4.1 Rodar a suíte de backend dirigida às áreas afetadas (hierarquia, progresso,
   relatório, minhas-tarefas) com 0 falhas, e depois a suíte completa para confirmar ausência
   de regressão. Registrar o número no EXECUCAO.
-- [ ] 4.2 Confirmar que o contrato do endpoint de exclusão segue `204` e que nenhuma spec de
+- [x] 4.2 Confirmar que o contrato do endpoint de exclusão segue `204` e que nenhuma spec de
   `commissioning-hierarchy`/`progress-rollup` regrediu; `npx --yes @fission-ai/openspec@1.6.0
   validate hierarchy-soft-delete --strict`.

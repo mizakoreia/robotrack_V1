@@ -68,7 +68,12 @@ RSpec.describe 'Varredura negativa de vazamento entre tenants', :tenancy, type: 
     'GET /api/v1/projects/:id/overview' => ->(ids) { ["/api/v1/projects/#{ids[:project]}/overview", {}] },
     'GET /api/v1/cells/:id/overview' => ->(ids) { ["/api/v1/cells/#{ids[:cell]}/overview", {}] },
     # robot-task-table G1: o cabeçalho do robô (GET /robots/:id) entra na varredura.
-    'GET /api/v1/robots/:id' => ->(ids) { ["/api/v1/robots/#{ids[:robot]}", {}] }
+    'GET /api/v1/robots/:id' => ->(ids) { ["/api/v1/robots/#{ids[:robot]}", {}] },
+    # workspace-settings G1: arquivar pessoa (DELETE lógico) — pessoa de outro
+    # tenant é escondida pela RLS, então o find_by devolve nil → 404 (People::
+    # ArchiveService). Registro faltante desde workspace-settings; exposto na
+    # primeira suíte COMPLETA (reconciliação hierarchy-soft-delete G4).
+    'DELETE /api/v1/people/:id' => ->(ids) { ["/api/v1/people/#{ids[:person]}", {}] }
   }.freeze
 
   it 'toda rota com id tem gerador OU override — e nenhum órfão' do
@@ -113,8 +118,9 @@ RSpec.describe 'Varredura negativa de vazamento entre tenants', :tenancy, type: 
         robo = Robot.create!(cell_id: celula.id, name: 'R de A')
         template = TaskTemplate.create!(cat: 'A. Hardware', desc: 'Template de A')
         tarefa = Task.create!(robot_id: robo.id, cat: 'A. Hardware', desc: 'Tarefa de A', position: 0)
+        pessoa = Person.create!(name: 'Pessoa Alvo A') # workspace-settings: alvo do DELETE de pessoa
         { project: projeto.id, cell: celula.id, robot: robo.id,
-          task_template: template.id, task: tarefa.id }
+          task_template: template.id, task: tarefa.id, person: pessoa.id }
       end
 
       { membership: membership_id, invitation: invitation_id }.merge(hierarquia)

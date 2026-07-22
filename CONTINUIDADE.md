@@ -23,7 +23,8 @@ main (48497fd)                       ← ondas 1–4, sem nada desta sessão
                                             └── commissioning-report   change COMPLETA — 8 de 8 grupos
                                                 └── audit-log          change COMPLETA — 8 de 8 grupos
                                                     └── workspace-settings   PARCIAL — G0..G4 verdes, G5/G6 PAUSADOS
-                                                        └── hierarchy-soft-delete (atual)  pré-requisito do reset
+                                                        └── hierarchy-soft-delete   change COMPLETA — 4 de 4 grupos
+                                                            └── (retomar workspace-settings G5/G6, agora DESBLOQUEADO)
 ```
 
 **A branch atual contém todo o trabalho** (empilhamento full-stack). É nela que se
@@ -34,15 +35,16 @@ continua. Push por branch canônica (`git push origin HEAD:<change>`). Os PRs pa
 > catálogo, backup — todos verdes), mas o G5 (reset de fábrica) esbarrou num bloqueio
 > estrutural: `task_advances` é IMUTÁVEL (REVOKE DELETE + trigger) e trava as tarefas
 > com FK `ON DELETE RESTRICT`, então `DELETE FROM projects` é impossível quando há
-> avanços (o caso normal). O reset precisa ARQUIVAR, não apagar. Isso exige primeiro o
-> **soft-delete de hierarquia** — a change `hierarchy-soft-delete` (atual), que também
-> quita a pendência D-H6×D-IMUT. Depois volta-se ao G5/G6 de `workspace-settings`.
+> avanços (o caso normal). O reset precisa ARQUIVAR, não apagar. Isso exigiu primeiro o
+> **soft-delete de hierarquia** — a change `hierarchy-soft-delete` (agora COMPLETA, 4/4),
+> que também quitou a pendência D-H6×D-IMUT. **`workspace-settings` G5/G6 estão
+> DESBLOQUEADOS** — o reset passa a arquivar via `Hierarchy::SoftDeleteService`.
 
-## Suítes (medidas na branch `audit-log`)
+## Suítes (medidas na branch `hierarchy-soft-delete`)
 
 | Suíte | Resultado |
 |---|---|
-| Backend `bundle exec rspec` (como `robotrack_app`, `--seed 12345`) | **~1090+ / 2** (audit-log somou ~55 specs a `spec/audit`, todos verdes isolados) — as 2 falhas conhecidas são os BENCHMARKS de tempo do `spec/progress/load_dataset_spec.rb` (93k tarefas, runner lento), NÃO regressão. Total exato confirmado ao fim da suíte completa desta sessão. |
+| Backend `bundle exec rspec --tag ~slow` (como `robotrack_app`, `--seed 12345`) | **1203 exemplos / 0 falhas / 8 pending** — suíte COMPLETA desta sessão (ex-benchmarks `:slow`). Expôs 2 falhas PRÉ-EXISTENTES (factory morta `:audit_log` de audit-log G2; `DELETE /api/v1/people/:id` sem gerador no cross_tenant sweep, de workspace-settings G1) — ambas corrigidas em `hierarchy-soft-delete` G4 como reconciliações cross-change. Os benchmarks `:slow` (`spec/progress/load_dataset_spec.rb`, 93k tarefas) ficam fora: são medição de tempo dependente de hardware, não regressão. |
 | Frontend `vitest run` | **329 / 0** (57 arquivos) |
 | Frontend `tsc --noEmit` | limpo |
 | Frontend `pnpm build` | limpo |
@@ -71,7 +73,7 @@ destravaram e viraram verdes ao longo de `robot-tasks`.)
 > suíte completa (estado do Rack::Attack sensível à ordem aleatória do RSpec);
 > passa isolado. Não é regressão desta sessão. Rodar com `--seed` fixo estabiliza.
 
-## Changes concluídas (17 de 24)
+## Changes concluídas (18 de 24)
 
 `seal-template-baseline`, `workspace-tenancy`, `identity-and-auth`,
 `workspace-invitations` (anteriores) e:
@@ -257,27 +259,50 @@ destravaram e viraram verdes ao longo de `robot-tasks`.)
   BYPASSRLS read-only p/ arquivamento cross-tenant, agendamento Sidekiq, alerta de queda de
   contagem. `paper_trail` recomendado p/ remoção (registrado em seal-template-baseline).
   Decisões G1..G8 no EXECUCAO. Suíte de contorno (9.2) reúne todos os vetores de burla.
+- **`hierarchy-soft-delete`** (G0..G4, COMPLETA, backend-only) — estende o soft-delete que só
+  existia em `tasks` para `projects`/`cells`/`robots`, fechando a tensão **D-H6×D-IMUT**
+  (excluir robô/projeto com avanços dava 500: a FK `task_advances→tasks` é `ON DELETE
+  RESTRICT` e a trilha é imutável) e DESBLOQUEANDO o reset de fábrica de `workspace-settings`.
+  `deleted_at` nas 3 tabelas + `default_scope` (espelha `Task`); `position` NULLABLE zerada no
+  soft-delete (D1 — sai do domínio da constraint DEFERRABLE de posição, sem tocá-la); índices
+  únicos de nome viram PARCIAIS `WHERE deleted_at IS NULL` (nome reusável, D2); as 4 views de
+  progresso recriadas excluindo a hierarquia arquivada (D5 — senão o arquivado arrasta a
+  média). `Hierarchy::SoftDeleteService` arquiva a subárvore (tarefas→robôs→células→nó) num
+  UPDATE por nível + remove `task_assignees`; `CrudService#destroy` chama-o no lugar de
+  `destroy!`, preservando auditoria+recompute na transação e o **204**. Blindagem dos leitores
+  em SQL cru (D6): relatório/minhas-tarefas/cache_dump/reconciliação filtram `deleted_at`;
+  agregadores por JOIN de associação (overview/project-overview) filtram no **ON do LEFT JOIN**
+  (para o pai sem filho vivo ainda aparecer com contagem 0); busca filtra o lado juntado no
+  WHERE; `cascade_recompute` NÃO filtra (navega ao pai a recalcular). **Reconciliações:**
+  corrigido falso positivo do sweep de escrita de progresso (`WorkspaceBackup.status`, latente
+  desde workspace-settings G4) e falha pré-existente do relatório (listava tarefa excluída
+  individualmente — `t.deleted_at` agora filtrado). Decisões D1–D7 no EXECUCAO.
 
 Cada change tem seu `openspec/changes/<nome>/EXECUCAO.md` com o mapa de grupos, as
 decisões tomadas na execução, as armadilhas encontradas e a CONCLUSÃO com o relatório
 final. **Leia o EXECUCAO.md antes de tocar no código de uma change.**
 
-## Onde parou: `workspace-settings` PARCIAL (G0..G4) → desvio para `hierarchy-soft-delete`
+## Onde parou: `hierarchy-soft-delete` COMPLETA (4/4) → retomar `workspace-settings` G5/G6
 
-`workspace-settings` entregou G0..G4 (todos verdes): painel de **Equipe** (pessoas do
-workspace como chips, arquivamento com guarda de membro ativo), tela do **catálogo** de
-tarefas-base, e **exportar backup** (`RoboTrack_Database.json`, envelope `_rt`
-schemaVersion 2 + checksum, síncrono/202). Esquema: `people.archived_at` (índice único
-parcial), `workspace_backups` (RLS sem DELETE), 3 policies. Ver
-`openspec/changes/workspace-settings/EXECUCAO.md`.
+`hierarchy-soft-delete` (backend-only) fechou os 4 grupos: soft-delete de
+`projects`/`cells`/`robots` (`deleted_at` + `default_scope`, `position` nullable zerada no
+arquivamento, índices de nome parciais, 4 views de progresso excluindo o arquivado);
+`Hierarchy::SoftDeleteService` (cascade em UPDATE por nível + remove `task_assignees`);
+`CrudService#destroy` arquiva em vez de `destroy!`, mantendo **204** e auditoria+recompute na
+transação; e a blindagem de todos os leitores em SQL cru (relatório, minhas-tarefas, overviews,
+busca, dump, reconciliação). Fechou a tensão **D-H6×D-IMUT** e DESTRAVOU o reset de fábrica.
+Ver `openspec/changes/hierarchy-soft-delete/EXECUCAO.md`.
 
-**G5/G6 PAUSADOS.** Ao mapear o reset de fábrica ANTES de codar, descobri que ele é
-impossível como projetado: `task_advances` é imutável (progress-advances D-IMUT: REVOKE
-DELETE + trigger para todos os papéis) e trava as tarefas com FK `ON DELETE RESTRICT`,
-então `DELETE FROM projects` falha sempre que há avanços — a mesma classe de contradição
-que a D12 resolveu para `audit_logs`. O reset tem de ARQUIVAR a hierarquia e preservar a
-trilha imutável, o que exige o **soft-delete de hierarquia** primeiro. Decisão do cliente:
-fazer `hierarchy-soft-delete` como change dedicada, depois voltar ao G5/G6.
+**Próximo passo — `workspace-settings` G5/G6 (DESBLOQUEADO).** O reset de fábrica (D12) agora
+é viável: em vez de `DELETE FROM projects` (impossível — avanços imutáveis + FK RESTRICT),
+**arquiva** cada projeto do workspace via `Hierarchy::SoftDeleteService`, reusa
+`AuditLog::RecordService.record!(event: :workspace_reset, …)` na MESMA transação (o log
+sobrevive porque `audit_logs` não tem FK para a hierarquia), e monta o `AuditLogModal` no
+painel Utilitários (G6, + preferência de tema). O `AskUserQuestion` que originou o desvio já
+foi respondido ("Soft-delete primeiro"); o pré-requisito existe.
+
+**`workspace-settings` G0..G4** seguem verdes (Equipe, catálogo, backup —
+`people.archived_at`, `workspace_backups`, 3 policies). Ver o EXECUCAO da change.
 
 **`audit-log` fechou antes** (8/8) — `audit_logs` append-only, imutável no BANCO para
 todos inclusive o dono (§4.1 inv. 3), particionada por mês, 3 camadas (REVOKE + trigger +
@@ -301,10 +326,10 @@ workspace, sweep de convenção).
   é o ponto de rollback do G8.
 - **design-system:** p50 de frame da luz ambiente é medição de hardware (o CI trava
   só o determinístico) — job de perf de `delivery-and-observability` (HANDOFF lá).
-- Tensão D-H6×D-IMUT (de progress-advances): hard delete de robô/projeto com
-  tarefas que têm avanços daria 500 no trigger de imutabilidade. **EM CURSO:** a
-  change `hierarchy-soft-delete` (atual) converte o delete físico da hierarquia em
-  soft-delete, quitando esta pendência E destravando o reset de `workspace-settings`.
+- ~~Tensão D-H6×D-IMUT (de progress-advances): hard delete de robô/projeto com
+  tarefas que têm avanços daria 500.~~ **RESOLVIDA** por `hierarchy-soft-delete`
+  (COMPLETA): a exclusão da hierarquia virou soft-delete em cascata; o endpoint
+  segue 204 e a trilha imutável fica intacta. Destravou o reset de `workspace-settings`.
 - Os p95 de latência de `progress-rollup` (120ms/25ms/8s) são alvo de hardware; o
   CI trava o NÚMERO de statements (determinístico) e mede latência com teto
   tolerante (EXECUCAO decisão 7). O job de perf real é de `delivery-and-observability`.

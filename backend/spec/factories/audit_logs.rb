@@ -1,17 +1,12 @@
 # frozen_string_literal: true
 
-# audit-log 3.1 — factory de conveniência. `workspace_id` é auto-atribuído pelo
-# WorkspaceScoped a partir do contexto de tenant (use dentro de `in_workspace`);
-# passe `workspace_id:` explícito fora de contexto.
-FactoryBot.define do
-  factory :audit_log do
-    id { SecureRandom.uuid }
-    event_type { 'task_completed' }
-    format_version { 1 }
-    msg { 'Em [R-01], Ana concluiu a tarefa "T" com 100%.' }
-    ts { Time.current }
-    ts_local { '01/01/2026 00:00' }
-    by_name { 'Ana' }
-    payload { {} }
-  end
-end
+# audit-log 3.1 — SEM factory de propósito (reconciliação hierarchy-soft-delete G4).
+#
+# `AuditLog` é model de tenant: sob RLS, `create(:audit_log)` FORA de um
+# `in_workspace` (como faz o `factories_spec` genérico, que roda toda factory sem
+# contexto) tem `workspace_id` nulo e estoura no NOT NULL/`WITH CHECK`. É a MESMA
+# razão pela qual `projects`/`cells`/`robots`/`tasks` não têm factory (ver o
+# comentário de `spec/support/tenancy_helpers.rb`): linhas de tenant nascem por
+# helper dentro de contexto, não por FactoryBot. A factory anterior era código
+# MORTO (nenhum spec a usava) e quebrava o `factories_spec` desde `audit-log` G2 —
+# falha só exposta agora, na primeira suíte COMPLETA desde então. Removida.

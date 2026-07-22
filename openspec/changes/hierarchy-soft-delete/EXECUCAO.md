@@ -116,6 +116,48 @@ imutável), `progress-rollup` (as 4 views `security_invoker` + `CascadeRecompute
   redumpou o `structure.sql` com as views novas e as colunas `deleted_at`. Não precisou de
   edição à mão (o caveat do audit-log era sobre GRANT/REVOKE, que o dump omite — aqui é
   definição de view/coluna, que o dump inclui).
+- **G3 — falha pré-existente do relatório (tarefa excluída individualmente):** ao blindar
+  `fetch_tasks`/`fetch_status_counts`, notei que o SQL cru NÃO filtrava `t.deleted_at` — uma
+  tarefa soft-deletada individualmente (via `Tasks::DeleteService`) vazava para o relatório.
+  Falha latente desde o soft-delete de `tasks` (progress-advances). Adicionei `t.deleted_at
+  IS NULL` junto com os filtros de hierarquia.
+- **G4 — duas falhas PRÉ-EXISTENTES expostas pela primeira suíte COMPLETA desta sessão**
+  (git prova: ambas em arquivos que esta change NÃO tocou):
+  1. `spec/factories/audit_logs.rb` — `factory :audit_log` (audit-log G2, `d6197dd`) era
+     código MORTO (0 usos) e estourava no `factories_spec` genérico, que roda toda factory
+     SEM `in_workspace`: `AuditLog` é model de tenant e sob RLS o `workspace_id` nulo viola
+     o `NOT NULL`/`WITH CHECK`. É a MESMA razão da convenção "models de tenant não têm
+     factory" (`tenancy_helpers`). Removi a factory morta (não-destrutivo: reescrevi o
+     arquivo com o comentário da decisão).
+  2. `DELETE /api/v1/people/:id` (workspace-settings G1, `b7c7b46`) não estava no gerador
+     do `cross_tenant_spec` (robot-task-table `f202dd2`) — violava "varreduras só crescem":
+     nenhuma prova de que arquivar pessoa de outro tenant dá 404. Registrei o gerador (o
+     endpoint já responde 404 via `People::ArchiveService` → `find_by` nil sob RLS) e um
+     `person` na fixture de ids. Aditivo. Ambas as correções são reconciliações
+     cross-change (não regressões desta change), feitas aqui por terem sido expostas no G4.
+
+## CONCLUSÃO
+
+`hierarchy-soft-delete` COMPLETA (4/4 grupos, backend-only). Entregou:
+
+- **G1** — `deleted_at` em projects/cells/robots + `default_scope`; `position` nullable
+  (zerada no soft-delete, D1); índices únicos de nome PARCIAIS (D2); as 4 views de progresso
+  recriadas excluindo a hierarquia arquivada (D5). `structure.sql` regenerado.
+- **G2** — `Hierarchy::SoftDeleteService` (cascade em UPDATE por nível + remove
+  `task_assignees`, D3); `CrudService#destroy` arquiva em vez de `destroy!`, mantendo
+  auditoria+recompute na transação e o **204** (D4). O robô com avanços que dava 500 responde
+  204; trilha imutável intacta; cross-tenant 404.
+- **G3** — blindagem dos leitores em SQL cru (relatório, minhas-tarefas, cache_dump,
+  reconciliação) + filtro do lado juntado nos agregadores por JOIN (overview/project-overview
+  no ON do LEFT JOIN para o pai sem filho vivo aparecer; busca no WHERE dos INNER JOIN);
+  `cascade_recompute` de fora (D6).
+- **G4** — suíte completa de backend (ex-benchmarks `:slow`, `--seed 12345`): **1203
+  exemplos, 0 falhas** após as duas reconciliações acima (as 2 falhas expostas eram
+  pré-existentes de audit-log/workspace-settings, não desta change). Contrato do endpoint de
+  exclusão confirmado **204**. `openspec validate --strict` ✓.
+
+Fechou a tensão **D-H6×D-IMUT** e DESBLOQUEOU o reset de fábrica de `workspace-settings`
+(G5 passa a arquivar via `Hierarchy::SoftDeleteService`).
 
 ## RETOMADA
 
