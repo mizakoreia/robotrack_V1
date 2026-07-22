@@ -118,6 +118,14 @@ function TaskRows({ task, labels: L }: { task: ReportTaskDTO; labels: Labels }) 
           <td className="px-2 py-1">{task.assignees.length ? task.assignees.join(', ') : L.no_assignees}</td>
         </tr>
         {chunks.length > 0 && <HistoryRow advances={chunks[0]} labels={L} />}
+        {task.truncated_notice && (
+          <tr className="rpt-truncated">
+            <td />
+            <td colSpan={4} className="px-2 pb-2 text-xs italic text-text-muted">
+              {task.truncated_notice}
+            </td>
+          </tr>
+        )}
       </tbody>
       {chunks.slice(1).map((slice, i) => (
         <tbody key={i} className="rpt-task-cont">

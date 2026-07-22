@@ -34,6 +34,8 @@ const LABELS = {
   concluded_by: 'Concluído por', concluded_at: 'Em',
   signature_name: 'Nome', signature_field: 'Assinatura', signature_date: 'Data',
   history_continues: '— histórico continua na próxima página —',
+  meta_scope: 'Escopo', meta_document_id: 'Id do documento', meta_issued_at: 'Emitido em',
+  meta_generated_by: 'Gerado por', meta_structure: 'Estrutura',
 }
 const adv = (t, j) => ({
   recorded_at: '2026-07-18T14:02:00-03:00', author: 'Ana Lima', from: j, to: j + 1,
@@ -41,7 +43,7 @@ const adv = (t, j) => ({
 })
 const task = (id, advCount) => ({
   id, description: `TASKD-${id}`, status: 'Em Andamento', symbol: '◐', percent: 45,
-  assignees: ['Ana Lima'],
+  assignees: ['Ana Lima'], truncated_notice: null,
   advances: Array.from({ length: advCount }, (_, j) => adv(id, j)),
 })
 const robot = (id, tasks) => ({ id, name: `R-${id}`, application: 'Sealing', weighted_progress: 45, tasks })

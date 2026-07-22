@@ -549,6 +549,9 @@ export interface ReportTaskDTO {
   percent: number
   assignees: string[]
   advances: ReportAdvanceDTO[]
+  // D-R8 — presente (string pronta do servidor) só quando o histórico da tarefa
+  // foi truncado por volume: `(+N entradas anteriores omitidas)`.
+  truncated_notice: string | null
 }
 export interface ReportRobotDTO {
   id: string
@@ -612,6 +615,11 @@ export interface CommissioningReportDTO {
     signature_field: string
     signature_date: string
     history_continues: string
+    meta_scope: string
+    meta_document_id: string
+    meta_issued_at: string
+    meta_generated_by: string
+    meta_structure: string
   }
   warnings: string[]
 }

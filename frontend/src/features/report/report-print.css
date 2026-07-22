@@ -20,6 +20,12 @@
 }
 
 @media print {
+  /* O chrome da TELA do relatório (seletor de escopo, botão Imprimir) não sai
+   * no papel. */
+  .rpt-no-print {
+    display: none !important;
+  }
+
   /* O shell do app clampa a rolagem (`h-screen overflow-hidden` + main com
    * overflow-y-auto) — impresso assim, o documento sai com UMA página (só o
    * viewport). Quando o Protocolo está na tela (`body:has(.rpt-doc)`), a

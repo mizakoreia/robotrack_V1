@@ -40,6 +40,13 @@ export function ReportDocument({ report }: { report: CommissioningReportDTO }) {
           <td>
             <div className="space-y-8">
               <ReportHeader report={report} />
+              {report.warnings.length > 0 && (
+                <ul className="rpt-warnings space-y-1 rounded-md border border-warning/50 p-3 text-sm">
+                  {report.warnings.map((w) => (
+                    <li key={w}>{w}</li>
+                  ))}
+                </ul>
+              )}
               <ReportMetadata report={report} />
               <section className="rpt-distribution-section space-y-2">
                 <h2 className="panel-header">{L.section_distribution}</h2>

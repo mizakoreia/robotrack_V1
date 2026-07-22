@@ -16,6 +16,7 @@ pt-BR:
       scope_all: 'Workspace inteiro'
       scope_project: 'Projeto'
       # Metadados
+      meta_scope: 'Escopo'
       meta_document_id: 'Id do documento'
       meta_issued_at: 'Emitido em'
       meta_generated_by: 'Gerado por'
@@ -56,3 +57,4 @@ pt-BR:
       warning_large_scope: 'Escopo grande: considere emitir o relatório por projeto para um documento mais enxuto.'
       warning_truncated: 'Histórico truncado às 10 entradas mais recentes por tarefa. O documento está incompleto por volume — emita por projeto para a trilha completa.'
       truncated_omitted: '(+%{count} entradas anteriores omitidas)'
+      error_scope_too_large: 'Escopo grande demais: %{count} tarefas excedem o teto de %{max}. Emita por projeto (scope=project).'

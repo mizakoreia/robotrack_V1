@@ -32,17 +32,24 @@ module Reports
         return error_response('not_found', 404) if ::Project.find_by(id: project_id).nil?
       end
 
+      # 8.1 (D-R8) — o teto absoluto é checado ANTES de montar qualquer coisa: a
+      # contagem por status (Q4, barata) vem primeiro e dá o total de tarefas.
+      status_counts = fetch_status_counts(scope, project_id)
+      total_tasks = status_counts.values.sum
+      if total_tasks > Budget::MAX_TASKS
+        return error_response(t(:error_scope_too_large, count: total_tasks, max: Budget::MAX_TASKS), 422)
+      end
+
       tree_rows = fetch_tree(scope, project_id)
       task_rows = fetch_tasks(scope, project_id)
       task_ids  = task_rows.map { |t| t['id'] }
       advances  = fetch_advances(task_ids)
-      status_counts = fetch_status_counts(scope, project_id)
       authorship = CompletionAuthorship.resolve(task_ids.select { |id| completed?(task_rows, id) })
 
       success_response(build_payload(
         scope: scope, now: now, time_zone: time_zone,
         tree_rows: tree_rows, task_rows: task_rows, advances: advances,
-        status_counts: status_counts, authorship: authorship
+        status_counts: status_counts, authorship: authorship, total_tasks: total_tasks
       ))
     end
 
@@ -127,11 +134,19 @@ module Reports
 
     # ---- Montagem do payload ----
 
-    def build_payload(scope:, now:, time_zone:, tree_rows:, task_rows:, advances:, status_counts:, authorship:)
+    def build_payload(scope:, now:, time_zone:, tree_rows:, task_rows:, advances:, status_counts:, authorship:, total_tasks:)
       document_id = DocumentId.for(now, time_zone)
-      projects = assemble_tree(tree_rows, task_rows, advances)
+      # 8.1 (D-R8) — acima do teto de entradas, o histórico é truncado às
+      # KEEP_PER_TASK mais recentes POR TAREFA, e o truncamento é ANUNCIADO no
+      # documento (warnings no topo/rodapé + nota por tarefa truncada).
+      total_advances = advances.values.sum(&:size)
+      truncate = total_advances > Budget::TRUNCATE_ADVANCES
+      projects = assemble_tree(tree_rows, task_rows, advances, truncate)
       stamp = build_stamp(projects)
       counts = build_counts(tree_rows, task_rows)
+      warnings = []
+      warnings << t(:warning_large_scope) if total_tasks > Budget::WARN_TASKS
+      warnings << t(:warning_truncated) if truncate
 
       {
         scope: scope,
@@ -164,7 +179,7 @@ module Reports
           traceability: t(:footer_traceability)
         },
         labels: build_labels,
-        warnings: [] # volume (G7)
+        warnings: warnings
       }
     end
 
@@ -184,7 +199,12 @@ module Reports
         # G6 — linhas dos blocos de assinatura e a faixa de continuação (D-R4)
         signature_name: t(:signature_name), signature_field: t(:signature_field),
         signature_date: t(:signature_date),
-        history_continues: t(:history_continues)
+        history_continues: t(:history_continues),
+        # G7 (8.2) — os rótulos do bloco de metadados também viajam no payload:
+        # o sweep de literais reprova qualquer pt-BR fixo em features/report/.
+        meta_scope: t(:meta_scope), meta_document_id: t(:meta_document_id),
+        meta_issued_at: t(:meta_issued_at), meta_generated_by: t(:meta_generated_by),
+        meta_structure: t(:meta_structure)
       }
     end
 
@@ -223,7 +243,7 @@ module Reports
 
     # Árvore aninhada projeto → célula → robô → tarefa (+ histórico), tolerante a
     # níveis vazios (LEFT JOIN traz linhas com c_id/r_id nulos).
-    def assemble_tree(tree_rows, task_rows, advances)
+    def assemble_tree(tree_rows, task_rows, advances, truncate = false)
       tasks_by_robot = task_rows.group_by { |t| t['robot_id'] }
       projects = {}
       tree_rows.each do |row|
@@ -240,7 +260,7 @@ module Reports
         c[:robots][row['r_id']] ||= {
           id: row['r_id'], name: row['r_name'], application: row['r_app'],
           weighted_progress: row['r_prog'].to_i,
-          tasks: (tasks_by_robot[row['r_id']] || []).map { |tk| build_task(tk, advances) }
+          tasks: (tasks_by_robot[row['r_id']] || []).map { |tk| build_task(tk, advances, truncate) }
         }
       end
       # Hash → array preservando a ordem (as queries já vêm ordenadas por position).
@@ -250,12 +270,21 @@ module Reports
       end
     end
 
-    def build_task(tk, advances)
+    def build_task(tk, advances, truncate = false)
+      # As entradas vêm ASC por recorded_at — sob truncamento sobrevivem as
+      # ÚLTIMAS (mais recentes), e a nota anuncia quantas anteriores sumiram.
+      entries = advances[tk['id']] || []
+      omitted = 0
+      if truncate && entries.size > Budget::KEEP_PER_TASK
+        omitted = entries.size - Budget::KEEP_PER_TASK
+        entries = entries.last(Budget::KEEP_PER_TASK)
+      end
       {
         id: tk['id'], description: tk['description'], status: tk['status'],
         symbol: StatusGlyph.for(tk['status']), percent: tk['progress'].to_i,
         assignees: pg_array(tk['assignees']),
-        advances: (advances[tk['id']] || []).map do |a|
+        truncated_notice: omitted.positive? ? t(:truncated_omitted, count: omitted) : nil,
+        advances: entries.map do |a|
           from = a['from_progress'].to_i
           to = a['to_progress'].to_i
           { recorded_at: a['recorded_at'], author: a['author_name_snapshot'],
