@@ -40,15 +40,15 @@
 
 ## 3. Endpoint de busca
 
-- [ ] 3.1 `Hierarchy::SearchService` + `GET /api/v1/workspaces/:id/search?q=`: `ILIKE` sobre
+- [x] 3.1 `Hierarchy::SearchService` + `GET /api/v1/workspaces/:id/search?q=`: `ILIKE` sobre
   `projects.name`, `cells.name`, `robots.name`, ordenado projeto → célula → robô e por nome.
   O termo é escapado para `%`, `_` e `\` antes do `ILIKE`. (§3.7 — buscar `sol` retorna
   "Solda 01" e "R02 - Solda" e NÃO retorna a tarefa "Solda MIG"; buscar `%` num workspace
   com 12 itens retorna 0 resultados, não os 12)
-- [ ] 3.2 Montar `path_label` no servidor com format string versionada em
+- [x] 3.2 Montar `path_label` no servidor com format string versionada em
   `config/locales/pt-BR.hierarchy.yml`. (D14 + §3.7 — robô devolve `"Robô · em Solda 01 ·
   Linha 300"`; um robô órfão de célula não pode gerar `"Robô · em  · "`)
-- [ ] 3.3 Spec de request negativo: busca em workspace onde a pessoa não é membro responde
+- [x] 3.3 Spec de request negativo: busca em workspace onde a pessoa não é membro responde
   403/404 e nomes homônimos de outro tenant não aparecem no contador. (§4.1 — `W1` buscando
   `solda` com "Solda 99" em `W2` devolve count 1)
 
