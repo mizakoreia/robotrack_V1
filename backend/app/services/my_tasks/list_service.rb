@@ -31,13 +31,15 @@ module MyTasks
       pg  = [page.to_i, 1].max
       offset = (pg - 1) * per
 
+      # UMA consulta (D-MTV-4/5.3): `COUNT(*) OVER()` traz o total ANTES do LIMIT na
+      # mesma leitura — sem um segundo SELECT de contagem. Página fora do intervalo
+      # devolve `[]` e total 0 (aceitável no volume real; a paginação é por offset).
       rows = ActiveRecord::Base.connection.exec_query(
         list_sql, 'my_tasks.list', [workspace_id, person_id, per, offset]
       ).to_a
 
-      total = ActiveRecord::Base.connection.exec_query(
-        count_sql, 'my_tasks.count', [workspace_id, person_id]
-      ).first['total'].to_i
+      total = rows.empty? ? 0 : rows.first['total_count'].to_i
+      rows.each { |r| r.delete('total_count') }
 
       success_response({ rows: rows, page: pg, per_page: per, total: total })
     end
@@ -60,7 +62,8 @@ module MyTasks
                t.cat     AS category,
                r.id AS robot_id,   r.name AS robot_name,
                c.id AS cell_id,    c.name AS cell_name,
-               p.id AS project_id, p.name AS project_name
+               p.id AS project_id, p.name AS project_name,
+               COUNT(*) OVER() AS total_count
         FROM task_assignees ta
         JOIN tasks    t ON t.id = ta.task_id
         JOIN robots   r ON r.id = t.robot_id
@@ -71,17 +74,6 @@ module MyTasks
           AND t.status IN ('Pendente', 'Em Andamento')
         ORDER BY p.position, p.id, c.position, c.id, r.position, r.id, t.position, t.id
         LIMIT $3 OFFSET $4
-      SQL
-    end
-
-    def count_sql
-      <<~SQL
-        SELECT COUNT(*) AS total
-        FROM task_assignees ta
-        JOIN tasks t ON t.id = ta.task_id
-        WHERE ta.workspace_id = $1
-          AND ta.person_id    = $2
-          AND t.status IN ('Pendente', 'Em Andamento')
       SQL
     end
   end

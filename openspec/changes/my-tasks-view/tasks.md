@@ -84,27 +84,27 @@ sendo criada por `workspace-tenancy` (bootstrap do dono) e `workspace-invitation
 
 ## 4. Provas de comportamento de §3.6
 
-- [ ] 4.1 Spec: tarefa `in_progress` com `progress: 45` atribuída ao viewer aparece com os
+- [x] 4.1 Spec: tarefa `in_progress` com `progress: 45` atribuída ao viewer aparece com os
   6 campos das colunas corretos.
   (§3.6 — caminho feliz; falha se algum nome de coluna do payload divergir do contrato)
-- [ ] 4.2 Spec: a mesma tarefa recebe avanço `45 → 100` pelo fluxo real de
+- [x] 4.2 Spec: a mesma tarefa recebe avanço `45 → 100` pelo fluxo real de
   `progress-advances`, vai a `done` por §2.2, e some da lista na consulta seguinte.
   (§2.2 + §3.6 — filtro aplicado no cliente em vez do servidor passaria neste teste só por
   sorte; combinar com 5.2, que conta as queries)
-- [ ] 4.3 Spec: tarefa `not_applicable` atribuída ao viewer não aparece; tarefa `pending`
+- [x] 4.3 Spec: tarefa `not_applicable` atribuída ao viewer não aparece; tarefa `pending`
   com `progress: 0` aparece.
   (§3.6 — filtrar por `progress > 0` em vez de por status esconderia a tarefa pendente
   legítima e exibiria a `N/A`)
-- [ ] 4.4 Spec: tarefa atribuída só a `P2` não aparece para `P1`; tarefa com
+- [x] 4.4 Spec: tarefa atribuída só a `P2` não aparece para `P1`; tarefa com
   `[P1, P2, P3]` aparece exatamente uma vez para `P1`.
   (§3.6 — join com `task_assignees` sem `DISTINCT`/sem partir da linha do viewer duplica a
   tarefa uma vez por responsável)
-- [ ] 4.5 Spec: `Person(user_id: NULL)` como único responsável de uma tarefa aberta — a
+- [x] 4.5 Spec: `Person(user_id: NULL)` como único responsável de uma tarefa aberta — a
   tarefa não aparece na lista de ninguém, inclusive do dono, e continua aparecendo nos
   chips da tela do robô.
   (D10 / D-MTV-3 — "consertar" isso mostrando a tarefa ao dono transformaria a tela pessoal
   numa fila de gestão que a spec não pede)
-- [ ] 4.6 **Verificação (regressão da `Person` faltante):** spec end-to-end que cria um
+- [x] 4.6 **Verificação (regressão da `Person` faltante):** spec end-to-end que cria um
   usuário novo, roda o bootstrap real, cria projeto → célula → robô → tarefa **sem
   responsável**, registra um avanço `0 → 20` (auto-atribuição §2.3) e afirma
   `200` com exatamente 1 linha. Proibido usar factory de `Person`.
@@ -113,13 +113,13 @@ sendo criada por `workspace-tenancy` (bootstrap do dono) e `workspace-invitation
 
 ## 5. Isolamento de tenant
 
-- [ ] 5.1 Spec negativo: `U1` com `Person` em `W1` e `W9`; tarefa aberta de `W9` não
+- [x] 5.1 Spec negativo: `U1` com `Person` em `W1` e `W9`; tarefa aberta de `W9` não
   aparece em `GET /workspaces/W1/my_tasks`, e as contagens por workspace são 3 e 1.
   (D2 — filtro por `user_id` sem escopo de workspace misturaria as duas listas)
-- [ ] 5.2 Spec de RLS: com o predicado `task_assignees.workspace_id = :ws` removido por
+- [x] 5.2 Spec de RLS: com o predicado `task_assignees.workspace_id = :ws` removido por
   stub, nenhuma linha de `W9` retorna.
   (D2 — prova que o isolamento está no banco e não numa cláusula `WHERE` esquecível)
-- [ ] 5.3 **Verificação:** spec de contagem de queries afirmando exatamente 1 consulta SQL
+- [x] 5.3 **Verificação:** spec de contagem de queries afirmando exatamente 1 consulta SQL
   de domínio por requisição com 50 linhas.
   (D-MTV-4 — pega N+1 introduzido por entity ou por serializer)
 
