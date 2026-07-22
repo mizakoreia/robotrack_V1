@@ -139,7 +139,7 @@ rodar duas suítes ao mesmo tempo (contenção de lock no banco de teste).
 - [ ] G0 — este mapa (commit G0)
 - [x] G1 — esquema + imutabilidade + papéis (1.1–1.3, 2.1–2.5)
 - [x] G2 — model + locale + service (3.1–3.6)
-- [ ] G3 — gatilho de conclusão a 100% (4.1–4.3)
+- [x] G3 — gatilho de conclusão a 100% (4.1–4.3)
 - [ ] G4 — leitura + policy + endpoint (5.1–5.3)
 - [ ] G5 — modal frontend (6.1–6.3)
 - [ ] G6 — fronteira com o reset D12 (7.1–7.3)
