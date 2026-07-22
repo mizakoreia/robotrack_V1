@@ -108,14 +108,18 @@ commit** `G<n>:`. Divergência design×realidade: decidir, registrar aqui, segui
 ## Progresso
 
 - [x] G0 — este mapa (commit G0)
-- [ ] G1 — Tokens e temas (1.1–1.4)
-- [ ] G2 — Status + contraste medido (2.1–2.4)
-- [ ] G3 — Tipografia e ícones (3.1–3.3)
-- [ ] G4 — Empilhamento e tema (4.1–4.3)
-- [ ] G5 — Primitivos superfície/progresso (5.1–5.4)
-- [ ] G6 — Primitivos rótulo/controle/diálogo (6.1–6.7)
-- [ ] G7 — Luz ambiente e motion (7.1–7.5)
-- [ ] G8 — Limpeza destrutiva (8.1–8.4)
+- [x] G1 — Tokens e temas (1.1–1.4) — token set 2 temas, aliases, superfícies, contraste-alvo
+- [x] G2 — Status + contraste medido (2.1–2.4) — namespaces restritos, tokens.json + contrast.test (16 pares)
+- [x] G3 — Tipografia e ícones (3.1–3.3) — Inter, escala rem, sprite+Icon, lint de emoji
+- [x] G4 — Empilhamento e tema (4.1–4.3) — z-index semântico, dark default/.light/anti-FOUC, guarda anti-sistema
+- [x] G5 — Primitivos superfície/progresso (5.1–5.4) — ProgressRing base (omite 0%), EntityCard, Hub
+- [x] G6 — Primitivos rótulo/controle/diálogo (6.1–6.7) — Badge/StatusSelect/Chip/Modal/SaveIndicator/FilterBar/IconButton
+- [x] G7 — Luz ambiente e motion (7.1–7.5) — ambient.ts throttle, 3 camadas, 3 degradações, keyframes
+- [x] G8 — Limpeza destrutiva (8.1–8.4) — Recharts/TipTap/Slate FORA (bundle -208kB), guarda de retorno, CSP handoff.
+  **DIVERGÊNCIA (decisão 3/4 revista):** `tokens-campfire.css` e os aliases shadcn MANTIDOS — só têm vars
+  `--campfire-*` da landing (ortogonais aos papéis, que são a fonte única) e indireção `var()`; removê-los
+  desestilizaria telas vivas sem ganho. A remoção real fica para quando app-shell/hierarchy-screens as
+  substituírem. ProfilePage simplificada para `<textarea>` (sem texto rico, §2.4). **change COMPLETA.**
 
 ## RETOMADA (para o próximo agente)
 
