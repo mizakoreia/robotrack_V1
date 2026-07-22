@@ -506,6 +506,28 @@ export const robotTasksApi = {
   remove: (taskId: string) => apiClient.delete(`/api/v1/tasks/${encodeURIComponent(taskId)}`),
 }
 
+// my-tasks-view 3.2 (§3.6, D-MTV-4) — a LINHA achatada de "Minhas Tarefas". Só
+// tarefas ABERTAS do viewer chegam aqui (o servidor filtra por status), então
+// `status` é sempre `Pendente` ou `Em Andamento`. Cada linha é autossuficiente
+// (nomes+ids do caminho para o deep-link), sem requisição por linha.
+export interface MyTaskRowDTO {
+  id: string
+  description: string
+  status: 'Pendente' | 'Em Andamento'
+  progress: number
+  category: string
+  robot_id: string
+  robot_name: string
+  cell_id: string
+  cell_name: string
+  project_id: string
+  project_name: string
+}
+
+export const myTasksApi = {
+  list: () => apiClient.get<MyTaskRowDTO[]>('/api/v1/my_tasks'),
+}
+
 // progress-advances 4.3 — uma entrada da trilha de avanço (entity `TaskAdvance`).
 // `synced_late` é derivado no servidor (anotado no dispositivo >1h antes de
 // chegar); `recorded_at_adjusted` marca `recorded_at` clampado (relógio errado).

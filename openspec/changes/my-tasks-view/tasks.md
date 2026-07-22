@@ -125,32 +125,32 @@ sendo criada por `workspace-tenancy` (bootstrap do dono) e `workspace-invitation
 
 ## 6. Tela
 
-- [ ] 6.1 Criar `MinhasTarefasPage` com React Query sob `['ws', wsId, 'my-tasks']` (D9) e
+- [x] 6.1 Criar `MinhasTarefasPage` com React Query sob `['ws', wsId, 'my-tasks']` (D9) e
   registrar a rota na sidebar do shell.
   (D9 — `useEffect + apiClient` é dívida do template e não se propaga; sem a chave
   correta, `realtime-collaboration` não consegue invalidar)
-- [ ] 6.2 Renderizar a tabela com as 6 colunas de §3.6: `%` com `tabular-nums`, status como
+- [x] 6.2 Renderizar a tabela com as 6 colunas de §3.6: `%` com `tabular-nums`, status como
   **badge** do `design-system`, sem nenhum controle de mutação.
   (§3.6 + regra dura do DESIGN — badge que se parece com seletor faz o usuário tentar
   mudar status daqui e a tela não responder)
-- [ ] 6.3 Implementar a linha clicável como `<a href="/ws/:wsId/robots/:robotId?task=:taskId">`
+- [x] 6.3 Implementar a linha clicável como `<a href="/ws/:wsId/robots/:robotId?task=:taskId">`
   cobrindo a linha, alvo ≥ 32px, funcional por `Tab` + `Enter` e por "abrir em nova aba".
   (D-MTV-9 — `onClick` numa `div` quebra teclado, foco e ctrl+clique; PRODUCT.md descreve
   uso com luva)
-- [ ] 6.4 Implementar os três estados de D-MTV-8 (vazio legítimo, `409 person_missing`,
+- [x] 6.4 Implementar os três estados de D-MTV-8 (vazio legítimo, `409 person_missing`,
   erro de rede) como componentes distintos, com todas as strings vindas do módulo único
   (D14).
   (D-MTV-8 — colapsar `409` em estado vazio reintroduz a falha silenciosa no cliente,
   mesmo com o servidor correto)
-- [ ] 6.5 Implementar o refluxo mobile da tabela (empilhamento em cartão, caminho
+- [x] 6.5 Implementar o refluxo mobile da tabela (empilhamento em cartão, caminho
   projeto/célula/robô como linha secundária) sem rolagem horizontal.
   (PRODUCT.md — a tela é usada em celular no chão de fábrica; 6 colunas em 375px sem
   refluxo forçam zoom)
-- [ ] 6.6 Assinar a invalidação de `['ws', wsId, 'my-tasks']` em eventos de tarefa e de
+- [x] 6.6 Assinar a invalidação de `['ws', wsId, 'my-tasks']` em eventos de tarefa e de
   atribuição do `WorkspaceChannel` (D6), e garantir descarte do cache ao trocar de
   workspace.
   (D6 — sem isso o usuário conclui a tarefa no robô, volta, e ela ainda está listada)
-- [ ] 6.7 **Verificação:** testes de componente (Vitest + Testing Library) cobrindo os três
+- [x] 6.7 **Verificação:** testes de componente (Vitest + Testing Library) cobrindo os três
   estados, a navegação por `Enter`, a ausência de controles de mutação, e a troca de
   workspace não exibindo linhas do workspace anterior em nenhum quadro.
   (D-MTV-8 + D-MTV-2 — o teste do `409` é o que impede o cliente de reintroduzir a lista
