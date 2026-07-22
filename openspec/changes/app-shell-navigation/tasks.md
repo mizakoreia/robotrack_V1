@@ -45,27 +45,27 @@ um mock que segue o contrato acordado.
 
 ## 3. Primitivo de menu em portal
 
-- [ ] 3.1 Criar o contêiner `#rt-overlays` como filho direto de `<body>` e o `<PortalMenu>`
+- [x] 3.1 Criar o contêiner `#rt-overlays` como filho direto de `<body>` e o `<PortalMenu>`
   com `createPortal`, `position: fixed` e `z-index` da camada `dropdown` da escala
   semântica de `design-system`. (§D-C — com a área de conteúdo rolada 400px, a altura
   visível do menu é igual à altura medida: nenhum recorte por `overflow-y: auto`)
-- [ ] 3.2 Implementar a medição prévia em layout effect: monta com `visibility: hidden`
+- [x] 3.2 Implementar a medição prévia em layout effect: monta com `visibility: hidden`
   (nunca `display: none`), lê os retângulos e resolve direção vertical, alinhamento
   horizontal e altura máxima com rolagem interna. (§D-C — gatilho com `bottom = 780` numa
   viewport de 800px e menu de 220px abre para cima com `top >= 8`; nenhum frame pinta o
   menu em posição provisória)
-- [ ] 3.3 Implementar o fechamento: `pointerdown` fora, `Escape` com `stopPropagation`,
+- [x] 3.3 Implementar o fechamento: `pointerdown` fora, `Escape` com `stopPropagation`,
   `scroll` em capture no contêiner rolável e na janela, `resize`, e escolha de item — com
   devolução do foco ao gatilho. (§D-C — `Escape` deixa `document.activeElement` igual ao
   gatilho; o clique fora não aciona o card sob o ponteiro no mesmo gesto)
-- [ ] 3.4 Tratar o `resize` do teclado virtual: só fecha se a largura mudar ou a altura
+- [x] 3.4 Tratar o `resize` do teclado virtual: só fecha se a largura mudar ou a altura
   variar mais de 120px. (§D-C — `resize` com mesma largura e −80px de altura mantém o
   menu aberto no iOS Safari)
-- [ ] 3.5 Implementar navegação por teclado (`ArrowDown`/`ArrowUp` com ciclo, `Home`,
+- [x] 3.5 Implementar navegação por teclado (`ArrowDown`/`ArrowUp` com ciclo, `Home`,
   `End`), `role="menu"`/`menuitem`, `aria-haspopup` e `aria-expanded` no gatilho.
   (§5.1 a11y — `ArrowUp` no primeiro de 3 itens leva ao terceiro; `aria-expanded` reflete
   o estado real)
-- [ ] 3.6 Escrever os testes do primitivo: abre para cima, abre para baixo, menu maior que
+- [x] 3.6 Escrever os testes do primitivo: abre para cima, abre para baixo, menu maior que
   a viewport, estouro à direita, os cinco gatilhos de fechamento, `Escape` sobre modal
   fechando só o menu. (§D-C — falha se alguém trocar o portal por `position: absolute`)
 
