@@ -56,25 +56,25 @@ imediatamente antes. Todo grupo termina em tarefa de verificação.
 
 ## 4. Exportar backup
 
-- [ ] 4.1 Fixture versionado `spec/fixtures/backup/roboTrack_database_v2.json` com o
+- [x] 4.1 Fixture versionado `spec/fixtures/backup/roboTrack_database_v2.json` com o
   esqueleto legado + envelope `_rt`, publicado como contrato para `legacy-data-migration`
   (D-EXP — o fixture traz `assignees` e `assigneeIds` na mesma tarefa, e `history` e
   `advances` no mesmo robô)
-- [ ] 4.2 `Workspace::BackupExportService`: serialização com chaves ordenadas,
+- [x] 4.2 `Workspace::BackupExportService`: serialização com chaves ordenadas,
   `_rt.schemaVersion = 2`, `counts`, `checksum` sha256 do payload sem `_rt`, e as coleções
   de topo `people`, `memberships`, `invitations`, `notifications`, `auditLogs`,
   `taskTemplates` (D-EXP — dois exports sem alteração produzem payloads iguais byte a
   byte, desconsiderando `exportedAt`; workspace com 47 registros de auditoria exporta 47)
-- [ ] 4.3 Endpoint `POST /api/v1/workspace/backups`, `owner`-only, com
+- [x] 4.3 Endpoint `POST /api/v1/workspace/backups`, `owner`-only, com
   `Content-Disposition: attachment; filename="RoboTrack_Database.json"` e persistência da
   linha em `workspace_backups` (§3.11 — `edit` recebe `403` e nenhuma linha é criada)
-- [ ] 4.4 Job Sidekiq acima do teto de 5.000 tarefas, com `202`, `status` e link de
+- [x] 4.4 Job Sidekiq acima do teto de 5.000 tarefas, com `202`, `status` e link de
   download (D-EXP — workspace com 12.000 tarefas não estoura o timeout da requisição;
   job falho grava `status = "failed"` e esse id não satisfaz o gate do reset)
-- [ ] 4.5 Botão "Exportar backup" no painel Utilitários, com estado de progresso para o
+- [x] 4.5 Botão "Exportar backup" no painel Utilitários, com estado de progresso para o
   caminho assíncrono (§3.11 — o arquivo salvo pelo navegador se chama
   `RoboTrack_Database.json`, não `backup.json`)
-- [ ] 4.6 Specs de contrato: isolamento de tenant (exportar `WS-1` com `WS-2` populado não
+- [x] 4.6 Specs de contrato: isolamento de tenant (exportar `WS-1` com `WS-2` populado não
   produz nenhum id, nome ou e-mail de `WS-2`) e round-trip export → import → export com
   3 projetos / 24 robôs / 500 tarefas exigindo igualdade byte a byte e uuid preservados
   (D-EXP — falha se alguma capacidade downstream acrescentar campo sem bump de `schemaVersion`)

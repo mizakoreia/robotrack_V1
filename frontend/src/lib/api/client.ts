@@ -130,6 +130,13 @@ class ApiClient {
   async delete<T>(url: string, config?: AxiosRequestConfig) {
     return (await this.client.delete<T>(url, config)).data
   }
+
+  // POST que devolve a RESPOSTA crua (corpo como texto + headers) — para downloads
+  // (o backup vem com Content-Disposition e o id no header X-Backup-Id).
+  async postRaw(url: string, data?: unknown, config?: AxiosRequestConfig) {
+    const resp = await this.client.post(url, data, { ...(config || {}), responseType: 'text' })
+    return { body: resp.data as string, headers: resp.headers as Record<string, string>, status: resp.status }
+  }
 }
 
 export const apiClient = new ApiClient()

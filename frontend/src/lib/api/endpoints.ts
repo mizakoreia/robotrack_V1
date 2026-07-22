@@ -652,6 +652,24 @@ export const auditLogsApi = {
   list: () => apiClient.get<AuditLogDTO[]>('/api/v1/audit_logs'),
 }
 
+// workspace-settings 4.5 (§3.11, D-EXP) — o export de backup. `postRaw` devolve o
+// corpo (o JSON do arquivo) e os headers; o painel dispara o download e captura o
+// `X-Backup-Id` (o reset exige um backup recente). 202 (assíncrono) devolve o
+// backup_id no corpo, sem arquivo.
+export interface BackupResult {
+  json: string | null
+  backupId: string | null
+  status: number
+}
+
+export const backupApi = {
+  create: async (): Promise<BackupResult> => {
+    const { body, headers, status } = await apiClient.postRaw('/api/v1/workspace/backups')
+    const backupId = headers['x-backup-id'] ?? (status === 202 ? (JSON.parse(body).backup_id as string) : null)
+    return { json: status === 202 ? null : body, backupId, status }
+  },
+}
+
 export const reportApi = {
   get: (scope: 'all' | 'project', projectId?: string) => {
     const q = new URLSearchParams({ scope })

@@ -14,6 +14,15 @@ export const settingsText = {
   errorNameBlank: 'Informe um nome.',
   errorHasMembership: 'Essa pessoa é membro do workspace — remova-a pela tela de Equipe/Membros.',
   errorGeneric: 'Não foi possível concluir. Tente novamente.',
+  // Painel de Utilitários (§3.11)
+  utilitiesTitle: 'Utilitários',
+  exportTitle: 'Backup do workspace',
+  exportSubtitle: 'Baixa um arquivo com todo o estado do workspace (RoboTrack_Database.json).',
+  exportButton: 'Exportar backup',
+  exportPending: 'Gerando…',
+  exportDone: 'Backup gerado e baixado.',
+  exportAsync: 'Backup grande: geração em andamento; o download ficará disponível em instantes.',
+  exportError: 'Não foi possível gerar o backup.',
   // Painel de Tarefas-base / catálogo (§3.9)
   catalogTitle: 'Tarefas-base',
   catalogSubtitle: 'O catálogo aplicado aos robôs. "Misto / Geral" vale para todas as aplicações.',

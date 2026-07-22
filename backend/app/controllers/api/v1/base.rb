@@ -46,6 +46,9 @@ module Api
       # Pessoas do workspace — painel de Equipe (workspace-settings 2.1)
       mount Api::V1::People
 
+      # Backup do workspace (workspace-settings 4.3)
+      mount Api::V1::WorkspaceBackups
+
       # Recálculo manual do progresso (progress-rollup 4.5)
       mount Api::V1::ProgressEndpoint
 

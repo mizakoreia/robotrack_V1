@@ -1,0 +1,53 @@
+{
+  "_rt": {
+    "schemaVersion": 2,
+    "exportedAt": "2026-07-22T12:00:00Z",
+    "workspaceId": "00000000-0000-0000-0000-000000000000",
+    "counts": {
+      "projects": 1,
+      "cells": 1,
+      "robots": 1,
+      "tasks": 1,
+      "people": 1,
+      "auditLogs": 0,
+      "taskTemplates": 1
+    },
+    "checksum": "<sha256 do payload sem _rt>"
+  },
+  "workspace": { "id": "00000000-0000-0000-0000-000000000000", "name": "Exemplo" },
+  "projects": [
+    {
+      "id": "p-1", "name": "Linha A", "position": 0,
+      "cells": [
+        {
+          "id": "c-1", "name": "Célula 01", "position": 0,
+          "robots": [
+            {
+              "id": "r-1", "name": "R03", "application": "Sealing", "position": 0,
+              "tasks": [
+                {
+                  "id": "t-1", "cat": "A. Hardware", "desc": "Fixação da base", "weight": 1,
+                  "progress": 100, "status": "Concluído", "position": 0,
+                  "assignees": ["Ana Lima"], "assigneeIds": ["pe-1"],
+                  "advances": [
+                    { "id": "a-1", "from": 40, "to": 100, "comment": "Torqueado", "author": "Ana Lima", "legacy": false, "recordedAt": "2026-07-18T17:02:00Z", "createdAt": "2026-07-18T17:41:00Z" }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "people": [
+    { "id": "pe-1", "name": "Ana Lima", "email": null, "userId": null, "archivedAt": null }
+  ],
+  "memberships": [],
+  "invitations": [],
+  "taskTemplates": [
+    { "id": "tt-1", "cat": "A. Hardware", "desc": "Fixação da base", "weight": 1, "appFilters": [] }
+  ],
+  "auditLogs": [],
+  "notifications": []
+}
