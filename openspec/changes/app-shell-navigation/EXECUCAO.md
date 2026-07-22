@@ -84,6 +84,12 @@ O `proposal.md` descreve o estado do TEMPLATE; ondas anteriores já resolveram p
    são stubs/outlets (o conteúdo é de hierarchy-screens etc.).
 6. **Migração de leitura do template (6.3):** a "única página que usa React Query" — identifico
    qual e realinho; coordeno para não portar leituras de Leads/WhatsApp (mortas, seal-template).
+7. **`/` passa a ser a Visão Geral autenticada (G4).** A casca envolve toda a área autenticada
+   (`ProtectedRoute > AppShell`), e o índice `/` é o destino "Visão Geral". A landing de marketing
+   do template (HomePage), que ocupava `/`, foi movida para `/apresentacao` — reachable até
+   `seal-template-baseline` decidir seu destino. Anônimo em `/` cai em `/entrar` pelo ProtectedRoute.
+   As três telas de destino (`OverviewPage`/`MyTasksPage`/`ReportPage`) são STUBS: o conteúdo real
+   vem de `hierarchy-screens`/`my-tasks-view`/`commissioning-report`.
 
 ## Armadilhas previstas
 
@@ -107,10 +113,10 @@ registrar aqui, seguir.
 ## Progresso
 
 - [x] G0 — este mapa (commit G0)
-- [ ] G1 — Fundação D9 (1.1–1.4)
-- [ ] G2 — Dívida do token (2.1–2.4)
-- [ ] G3 — Menu em portal (3.1–3.6)
-- [ ] G4 — Casca/sidebar/topbar (4.1–4.6)
+- [x] G1 — Fundação D9 (1.1–1.4)
+- [x] G2 — Dívida do token (2.1–2.4)
+- [x] G3 — Menu em portal (3.1–3.6)
+- [x] G4 — Casca/sidebar/topbar (4.1–4.6)
 - [ ] G5 — Contexto e troca de workspace (5.1–5.9)
 - [ ] G6 — Persistência e convenção (6.1–6.4)
 
