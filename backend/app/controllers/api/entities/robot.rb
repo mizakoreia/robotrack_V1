@@ -15,8 +15,10 @@ module Api
       expose :updated_at
       expose :updated_by_person_id
 
-      expose :progress do |robot, _|
-        { 'weighted' => 0, 'done' => 0, 'total' => 0 }.merge(robot.progress_cache || {})
+      # progress-rollup 3.1 (D15) — o anel lê `progress_cache` (smallint, só o
+      # ponderado) no envelope rotulado. NUNCA um inteiro solto `progress`.
+      expose :weighted_progress do |robot, _|
+        ProgressMetric.weighted(robot.progress_cache)
       end
 
       expose(:tasks) { |_, _| [] }

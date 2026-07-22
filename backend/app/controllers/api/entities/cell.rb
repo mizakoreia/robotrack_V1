@@ -12,8 +12,9 @@ module Api
       expose :updated_at
       expose :updated_by_person_id
 
-      expose :progress do |cell, _|
-        { 'weighted' => 0, 'done' => 0, 'total' => 0 }.merge(cell.progress_cache || {})
+      # progress-rollup 3.1 (D15) — envelope rotulado do ponderado.
+      expose :weighted_progress do |cell, _|
+        ProgressMetric.weighted(cell.progress_cache)
       end
 
       expose :robots, using: Api::Entities::Robot do |cell, _|

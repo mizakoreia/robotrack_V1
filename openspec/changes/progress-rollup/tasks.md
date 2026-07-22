@@ -1,11 +1,11 @@
 ## 1. Fundação de esquema e cálculo em SQL
 
-- [ ] 1.1 Escrever spec de verificação de esquema que exige `progress_cache` em `projects`, `cells` e `robots` como `smallint NOT NULL DEFAULT 0 CHECK (BETWEEN 0 AND 100)`, falhando com mensagem que nomeia `commissioning-hierarchy` como dona da migration. (§D5 — se a coluna nascer `NULL`-able, o teste falha na inicialização em vez de o anel exibir `nil` como `0` seis ondas depois)
-- [ ] 1.2 Migration reversível criando a view `robot_weighted_progress` com os três ramos de §2.1 num único `CASE` sobre agregados condicionais, em `numeric` (nunca `float`). (§2.1 — robô com 3 tarefas `N/A` retorna 100 e robô sem tarefas retorna 0; não os dois iguais)
-- [ ] 1.3 Estender a migration com `cell_weighted_progress` e `project_weighted_progress` como média aritmética **simples** dos valores já arredondados do nível abaixo. (§2.1 — célula com robô de 10 tarefas a 100% e robô de 1 tarefa a 0% retorna 50, não 91)
-- [ ] 1.4 Migration reversível criando `subtree_raw_completion` (`completed`, `total`, `percent`) com `N/A` **no denominador**, mais o índice parcial `idx_tasks_ws_robot_status`. (§3.2 — projeto com 5 `Concluído` e 5 `N/A` retorna 50%, não 100%)
-- [ ] 1.5 Escrever `spec/support/progress_divergence_dataset.rb` produzindo `R1=75/50%`, `R2=100/0%`, `R3=0/—` e `C1=58/20%`. (D15 — o dataset é rejeitado se algum nível tiver ponderado igual à contagem crua)
-- [ ] 1.6 Suíte SQL das views cobrindo os 6 cenários de robô, os 5 de célula/projeto e os 4 de contagem crua do spec, com os números literais. (§2.1/§3.2 — peso 2@100 + peso 1@0 dá exatamente 67, não 66 nem 66.67; peso 0 não divide por zero)
+- [x] 1.1 Escrever spec de verificação de esquema que exige `progress_cache` em `projects`, `cells` e `robots` como `smallint NOT NULL DEFAULT 0 CHECK (BETWEEN 0 AND 100)`, falhando com mensagem que nomeia `commissioning-hierarchy` como dona da migration. (§D5 — se a coluna nascer `NULL`-able, o teste falha na inicialização em vez de o anel exibir `nil` como `0` seis ondas depois)
+- [x] 1.2 Migration reversível criando a view `robot_weighted_progress` com os três ramos de §2.1 num único `CASE` sobre agregados condicionais, em `numeric` (nunca `float`). (§2.1 — robô com 3 tarefas `N/A` retorna 100 e robô sem tarefas retorna 0; não os dois iguais)
+- [x] 1.3 Estender a migration com `cell_weighted_progress` e `project_weighted_progress` como média aritmética **simples** dos valores já arredondados do nível abaixo. (§2.1 — célula com robô de 10 tarefas a 100% e robô de 1 tarefa a 0% retorna 50, não 91)
+- [x] 1.4 Migration reversível criando `subtree_raw_completion` (`completed`, `total`, `percent`) com `N/A` **no denominador**, mais o índice parcial `idx_tasks_ws_robot_status`. (§3.2 — projeto com 5 `Concluído` e 5 `N/A` retorna 50%, não 100%)
+- [x] 1.5 Escrever `spec/support/progress_divergence_dataset.rb` produzindo `R1=75/50%`, `R2=100/0%`, `R3=0/—` e `C1=58/20%`. (D15 — o dataset é rejeitado se algum nível tiver ponderado igual à contagem crua)
+- [x] 1.6 Suíte SQL das views cobrindo os 6 cenários de robô, os 5 de célula/projeto e os 4 de contagem crua do spec, com os números literais. (§2.1/§3.2 — peso 2@100 + peso 1@0 dá exatamente 67, não 66 nem 66.67; peso 0 não divide por zero)
 
 ## 2. Cache: cascata em transação
 
