@@ -17,7 +17,7 @@ import type { TaskDTO } from '@/lib/api/endpoints'
 // o AdvanceControls ao lado já se remove) o controle NEM RENDERIZA — Badge
 // estático, sem chevron, sem alvo morto. A garantia real é o 403 do servidor.
 
-const STATUS_COLOR: Record<TaskStatus, BadgeStatus> = {
+export const STATUS_COLOR: Record<TaskStatus, BadgeStatus> = {
   Pendente: 'warning',
   'Em Andamento': 'accent',
   Concluído: 'success',

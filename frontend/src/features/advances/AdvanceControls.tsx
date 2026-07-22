@@ -38,12 +38,15 @@ export function AdvanceControls({ robotId, taskId }: { robotId: string; taskId: 
   }
 
   return (
-    <div className="flex items-center gap-2">
+    // robot-task-table 6.1 — `flex-wrap`: em 375px (cartão mobile) os controles
+    // quebram linha em vez de estourar a borda e rolar a página na horizontal.
+    <div className="flex flex-wrap items-center gap-2">
       {canEdit && (
         <Button
           type="button"
           size="sm"
           variant="outline"
+          className="min-h-[40px] min-w-[40px]" // robot-task-table 6.2 — alvo de toque ≥40px
           aria-label={advanceText.decrease}
           onClick={(e) => {
             remember(e)
@@ -63,6 +66,9 @@ export function AdvanceControls({ robotId, taskId }: { robotId: string; taskId: 
         aria-label={advanceText.progressLabel}
         aria-disabled={!canEdit}
         disabled={!canEdit}
+        // robot-task-table 6.2 — `pan-y`: arrastar o dedo na vertical ROLA a página
+        // em vez de mudar o progresso; só o gesto horizontal move o slider.
+        className="touch-pan-y"
         onKeyDown={onSliderKeyDown}
         onChange={(e) => {
           if (!canEdit) return
@@ -70,13 +76,23 @@ export function AdvanceControls({ robotId, taskId }: { robotId: string; taskId: 
           draft.setDraft(Number(e.target.value))
         }}
       />
-      <span className="w-10 text-sm tabular-nums">{draft.value}%</span>
+      {/* robot-task-table 6.4 — leitura com role=progressbar para o leitor de tela */}
+      <span
+        className="w-10 text-sm tabular-nums"
+        role="progressbar"
+        aria-valuenow={draft.value}
+        aria-valuemin={0}
+        aria-valuemax={100}
+      >
+        {draft.value}%
+      </span>
 
       {canEdit && (
         <Button
           type="button"
           size="sm"
           variant="outline"
+          className="min-h-[40px] min-w-[40px]" // robot-task-table 6.2 — alvo de toque ≥40px
           aria-label={advanceText.increase}
           onClick={(e) => {
             remember(e)

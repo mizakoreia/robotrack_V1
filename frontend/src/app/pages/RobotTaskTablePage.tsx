@@ -13,6 +13,8 @@ import { TrilhaCell } from '@/features/robot-tasks/TrilhaCell'
 import { AcoesCell } from '@/features/robot-tasks/AcoesCell'
 import { AddTaskModal } from '@/features/robot-tasks/AddTaskModal'
 import { useSyncTemplates } from '@/features/robot-tasks/useTaskCrud'
+import { useSuccessPulse } from '@/features/robot-tasks/useSuccessPulse'
+import { useMediaQuery } from '@/lib/useMediaQuery'
 import { AdvanceControls } from '@/features/advances/AdvanceControls'
 import { useWorkspaceStore } from '@/store/workspaceStore'
 import { robotTaskText } from '@/lib/i18n/robotTasks'
@@ -132,13 +134,35 @@ export function RobotTaskTablePage() {
   )
 }
 
-// A tabela agrupada por categoria (§3.5) — linha separadora na troca de categoria,
-// preservando a ordem persistida das tarefas dentro do grupo.
+// A tabela agrupada por categoria (§3.5). Dois layouts que consomem as MESMAS
+// células (§6.1, D-RTT-8): tabela em `md+`, cartões abaixo de `md` — os cabeçalhos
+// de categoria viram separadores de seção em ambos. O documento nunca rola na
+// horizontal no celular (o `<table>` fica `hidden`, não espremido).
 function TaskTable({ robotId, tasks, canEdit }: { robotId: string; tasks: TaskDTO[]; canEdit: boolean }) {
-  let lastCat: string | null = null
-  // 4.4 (D-RTT-9) — a coluna Ações SAI do DOM para `view` (não é `disabled`); o
-  // colSpan do separador acompanha (5 colunas sem Ações).
+  // §6.1 (D-RTT-8) — UM layout por vez (não os dois escondidos por CSS): evita
+  // montar duas árvores e mantém o DOM limpo (importa p/ §7.1 e leitores de tela).
+  const isDesktop = useMediaQuery('(min-width: 768px)')
+  // 4.4 (D-RTT-9) — a coluna Ações SAI do DOM para `view`; o colSpan acompanha.
   const cols = canEdit ? 6 : 5
+  let lastCat: string | null = null
+
+  if (!isDesktop) {
+    return (
+      <div className="space-y-3">
+        {tasks.map((t) => {
+          const newGroup = t.cat !== lastCat
+          lastCat = t.cat
+          return (
+            <Fragment key={t.id}>
+              {newGroup && <h2 className="panel-header px-1 pt-2 text-text-muted">{t.cat}</h2>}
+              <MobileTaskCard robotId={robotId} task={t} canEdit={canEdit} />
+            </Fragment>
+          )
+        })}
+      </div>
+    )
+  }
+
   return (
     <div className="surface-panel overflow-hidden rounded-lg border">
       <table className="w-full border-collapse text-left">
@@ -176,11 +200,15 @@ function TaskTable({ robotId, tasks, canEdit }: { robotId: string; tasks: TaskDT
 }
 
 // Status e Progresso interativos (G2); Responsáveis e Trilha (G3); Ações (G4, só
-// owner/edit). Os controles de mutação (StatusCell/AdvanceControls) já se auto-
-// gateiam por papel; a coluna Ações é removida na TaskTable.
+// owner/edit). O pulso aos 100% (§6.3) vive na linha, disparado uma vez e suprimido
+// por `prefers-reduced-motion` (o CSS global zera a animação).
 function TaskRow({ robotId, task, canEdit }: { robotId: string; task: TaskDTO; canEdit: boolean }) {
+  const { pulsing, clear } = useSuccessPulse(task.progress)
   return (
-    <tr className="border-t align-top">
+    <tr
+      className={'border-t align-top ' + (pulsing ? 'animate-success-pulse' : '')}
+      onAnimationEnd={clear}
+    >
       <td className="px-4 py-3">{task.desc}</td>
       <td className="px-4 py-3 align-middle">
         <StatusCell robotId={robotId} task={task} />
@@ -201,6 +229,46 @@ function TaskRow({ robotId, task, canEdit }: { robotId: string; task: TaskDTO; c
         </td>
       )}
     </tr>
+  )
+}
+
+// O cartão mobile (§6.1, D-RTT-8) — as SEIS informações preservadas em linhas
+// rotuladas, sem scroll lateral. Reusa as mesmas células da tabela.
+function MobileTaskCard({ robotId, task, canEdit }: { robotId: string; task: TaskDTO; canEdit: boolean }) {
+  const { pulsing, clear } = useSuccessPulse(task.progress)
+  return (
+    <article
+      className={'surface-panel rounded-lg border p-4 ' + (pulsing ? 'animate-success-pulse' : '')}
+      onAnimationEnd={clear}
+    >
+      <div className="mb-3 flex items-start justify-between gap-2">
+        <h3 className="font-medium">{task.desc}</h3>
+        {canEdit && <AcoesCell robotId={robotId} task={task} />}
+      </div>
+      <dl className="space-y-2">
+        <CardRow label="Status">
+          <StatusCell robotId={robotId} task={task} />
+        </CardRow>
+        <CardRow label="Progresso">
+          <AdvanceControls robotId={robotId} taskId={task.id} />
+        </CardRow>
+        <CardRow label="Responsáveis">
+          <ResponsaveisCell robotId={robotId} task={task} />
+        </CardRow>
+        <CardRow label="Trilha">
+          <TrilhaCell robotId={robotId} task={task} />
+        </CardRow>
+      </dl>
+    </article>
+  )
+}
+
+function CardRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <dt className="label-sm w-24 shrink-0 text-text-muted">{label}</dt>
+      <dd className="min-w-0 flex-1">{children}</dd>
+    </div>
   )
 }
 
