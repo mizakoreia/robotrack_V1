@@ -82,6 +82,16 @@
       "concluded_at": "2026-07-18T14:02:00-03:00"
     }
   ],
+  "signatures": [
+    { "key": "commissioner", "label": "Comissionador" },
+    { "key": "client", "label": "Cliente / Aceite" }
+  ],
+  "footer": {
+    "document_id": "RT-20260720-1432",
+    "generated_at": "2026-07-20T14:32:00-03:00",
+    "generated_at_label": "Documento gerado em",
+    "traceability": "Documento de rastreabilidade — os horários refletem o momento do registro de cada avanço (recorded_at), não o de sincronização."
+  },
   "labels": {
     "section_distribution": "Distribuição de status",
     "section_body": "Comissionamento por projeto",
@@ -94,7 +104,11 @@
     "col_assignees": "Responsáveis",
     "no_assignees": "—",
     "concluded_by": "Concluído por",
-    "concluded_at": "Em"
+    "concluded_at": "Em",
+    "signature_name": "Nome",
+    "signature_field": "Assinatura",
+    "signature_date": "Data",
+    "history_continues": "— histórico continua na próxima página —"
   },
   "warnings": []
 }

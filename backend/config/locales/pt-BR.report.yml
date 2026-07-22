@@ -39,6 +39,7 @@ pt-BR:
       col_assignees: 'Responsáveis'
       no_assignees: '—'
       history_transition: 'de %{from}% para %{to}%'
+      history_continues: '— histórico continua na próxima página —'
       # Conclusões
       concluded_by: 'Concluído por'
       concluded_at: 'Em'
@@ -46,6 +47,9 @@ pt-BR:
       # Assinaturas / rodapé
       signature_commissioner: 'Comissionador'
       signature_client: 'Cliente / Aceite'
+      signature_name: 'Nome'
+      signature_field: 'Assinatura'
+      signature_date: 'Data'
       footer_generated_at: 'Documento gerado em'
       footer_traceability: 'Documento de rastreabilidade — os horários refletem o momento do registro de cada avanço (recorded_at), não o de sincronização.'
       # Avisos de volume (D-R8)

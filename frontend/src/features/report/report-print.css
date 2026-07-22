@@ -1,0 +1,113 @@
+/* commissioning-report 7.2–7.4 (report-print-layout, D-R2/D-R3/D-R4, §5.1) —
+ * o contrato de impressão A4 do Protocolo. A impressão é o CSS `@page` do
+ * navegador (D-R2) — nenhum PDF server-side. */
+
+/* 7.2 — A4 retrato, margens fixas. */
+@page {
+  size: A4 portrait;
+  margin: 18mm 14mm 20mm 14mm;
+}
+
+/* O cabeçalho corrido (thead da tabela raiz) só existe na impressão — na tela o
+ * documento tem o ReportHeader completo, e o corrido duplicaria. */
+.rpt-running {
+  display: none;
+}
+
+/* A faixa de continuação (D-R4) idem: na tela não há página para continuar. */
+.rpt-continuation {
+  display: none;
+}
+
+@media print {
+  /* O shell do app clampa a rolagem (`h-screen overflow-hidden` + main com
+   * overflow-y-auto) — impresso assim, o documento sai com UMA página (só o
+   * viewport). Quando o Protocolo está na tela (`body:has(.rpt-doc)`), a
+   * impressão esconde o chrome (sidebar/topbar) e devolve o fluxo normal para o
+   * conteúdo paginar. Escopado com :has para não afetar a impressão de outras
+   * telas. */
+  body:has(.rpt-doc) aside,
+  body:has(.rpt-doc) header:not(.rpt-header) {
+    display: none !important;
+  }
+  body:has(.rpt-doc) * {
+    overflow: visible !important;
+  }
+  body:has(.rpt-doc) .h-screen {
+    height: auto !important;
+  }
+
+  /* 7.2 — neutralização do tema: imprimir com o tema escuro ativo sai papel
+   * branco e texto escuro, sem fundos nem sombras da tela. */
+  html,
+  body {
+    background: #fff !important;
+  }
+  .rpt-doc,
+  .rpt-doc * {
+    background-color: transparent !important;
+    color: #111 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* Barras de progresso legíveis em monocromático: contorno + preenchimento
+   * sólido, não apenas matiz (§5.1). */
+  .rpt-doc .rpt-bar-track {
+    border: 1px solid #555;
+    background-color: #fff !important;
+  }
+  .rpt-doc .rpt-bar-fill {
+    background-color: #444 !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .rpt-doc .rpt-sign-line {
+    border-color: #555 !important;
+  }
+
+  /* 7.3 (D-R3) — thead/tfoot da tabela raiz repetem em TODAS as páginas
+   * reservando espaço (position:fixed repetiria por cima do corpo). */
+  .rpt-doc > .rpt-running {
+    display: table-header-group;
+  }
+  .rpt-doc > tfoot {
+    display: table-footer-group;
+  }
+
+  /* 7.4 (D-R4) — a unidade indivisível é a tarefa + TODO o seu histórico. */
+  .rpt-task {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  /* Acima do limiar (HISTORY_PAGE_CHUNK) o bloco pode quebrar — as fatias de
+   * continuação anunciam a quebra com a faixa. */
+  .rpt-task--long {
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+  .rpt-task-cont {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .rpt-continuation {
+    display: table-row;
+  }
+
+  /* Cabeçalhos de nível (projeto/célula/robô) não ficam órfãos no pé da página. */
+  .rpt-level {
+    break-after: avoid;
+    page-break-after: avoid;
+    break-inside: avoid;
+  }
+
+  /* Assinaturas indivisíveis; Conclusões iniciam em página nova. */
+  .rpt-signatures {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .rpt-conclusions {
+    break-before: page;
+    page-break-before: always;
+  }
+}

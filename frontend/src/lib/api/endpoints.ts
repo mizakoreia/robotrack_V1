@@ -585,6 +585,16 @@ export interface CommissioningReportDTO {
   status_distribution: { status: string; glyph: string; label: string; count: number }[]
   tree: ReportProjectDTO[]
   conclusions: { task_id: string; description: string; concluded_by: string; concluded_at: string | null }[]
+  // 7.1 — os DOIS blocos de assinatura, sempre vazios (nenhum nome pré-preenchido);
+  // o rodapé reusa o id CARIMBADO (byte-idêntico ao dos metadados) e o instante de
+  // emissão — o cliente não gera um segundo relógio.
+  signatures: { key: string; label: string }[]
+  footer: {
+    document_id: string
+    generated_at: string
+    generated_at_label: string
+    traceability: string
+  }
   labels: {
     section_distribution: string
     section_body: string
@@ -598,6 +608,10 @@ export interface CommissioningReportDTO {
     no_assignees: string
     concluded_by: string
     concluded_at: string
+    signature_name: string
+    signature_field: string
+    signature_date: string
+    history_continues: string
   }
   warnings: string[]
 }

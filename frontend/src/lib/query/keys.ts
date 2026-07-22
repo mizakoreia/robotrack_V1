@@ -16,6 +16,8 @@ export const qk = {
   robot: (wsId: string, id: string) => ['ws', wsId, 'robot', id] as const,
   tasks: (wsId: string, robotId: string) => ['ws', wsId, 'robot', robotId, 'tasks'] as const,
   myTasks: (wsId: string) => ['ws', wsId, 'my-tasks'] as const,
+  // commissioning-report D9 — o documento por escopo ('all' | id do projeto)
+  report: (wsId: string, scope: string) => ['ws', wsId, 'report', scope] as const,
   notifications: (wsId: string) => ['ws', wsId, 'notifications'] as const,
   search: (wsId: string, q: string) => ['ws', wsId, 'search', q] as const,
 } as const

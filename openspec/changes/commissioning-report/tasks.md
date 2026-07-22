@@ -51,11 +51,11 @@
 
 ## 7. Assinaturas, rodapé e layout de impressão A4
 
-- [ ] 7.1 Renderizar os blocos `Comissionador` e `Cliente / Aceite` com áreas em branco, e o rodapé com id, data de geração e nota de rastreabilidade da chave de locale. (§3.8 — nenhum bloco vem pré-preenchido com o usuário logado, e o id do rodapé é o carimbado, não um segundo `Time.current`)
-- [ ] 7.2 Escrever `report-print.css` com `@page A4 portrait`, margens `18mm 14mm 20mm 14mm` e neutralização do tema escuro na impressão. (§5.1 — imprimir com tema escuro ativo não pode sair com fundo preto nem barras indistinguíveis em monocromático)
-- [ ] 7.3 Implementar a tabela raiz de impressão com `<thead>`/`<tfoot>` para repetir cabeçalho e rodapé, apenas sob `@media print`. (D-R3 — `position: fixed` repete mas não reserva espaço; a partir da página 2 o corpo passaria por baixo do cabeçalho)
-- [ ] 7.4 Aplicar as regras de quebra (`.rpt-task` indivisível, cabeçalhos de nível com `break-after: avoid`, assinaturas indivisíveis, Conclusões em nova página) e a faixa `— histórico continua na próxima página —` acima de 18 entradas, com o limiar como constante nomeada. (D-R4 — tarefa com 6 entradas iniciando a 3 linhas do fim vai inteira para a página seguinte; a de 24 entradas não cabe e precisa da faixa)
-- [ ] 7.5 **Verificação:** teste Playwright que gera PDF via `Page.printToPDF` sobre dataset fixo e afirma nº de páginas, cabeçalho e rodapé em **todas** as páginas, e ausência de quebra dentro de `.rpt-task`. (D-R3/D-R4 — CSS de impressão não é testável por unidade; sem este teste as duas decisões são só texto)
+- [x] 7.1 Renderizar os blocos `Comissionador` e `Cliente / Aceite` com áreas em branco, e o rodapé com id, data de geração e nota de rastreabilidade da chave de locale. (§3.8 — nenhum bloco vem pré-preenchido com o usuário logado, e o id do rodapé é o carimbado, não um segundo `Time.current`)
+- [x] 7.2 Escrever `report-print.css` com `@page A4 portrait`, margens `18mm 14mm 20mm 14mm` e neutralização do tema escuro na impressão. (§5.1 — imprimir com tema escuro ativo não pode sair com fundo preto nem barras indistinguíveis em monocromático)
+- [x] 7.3 Implementar a tabela raiz de impressão com `<thead>`/`<tfoot>` para repetir cabeçalho e rodapé, apenas sob `@media print`. (D-R3 — `position: fixed` repete mas não reserva espaço; a partir da página 2 o corpo passaria por baixo do cabeçalho)
+- [x] 7.4 Aplicar as regras de quebra (`.rpt-task` indivisível, cabeçalhos de nível com `break-after: avoid`, assinaturas indivisíveis, Conclusões em nova página) e a faixa `— histórico continua na próxima página —` acima de 18 entradas, com o limiar como constante nomeada. (D-R4 — tarefa com 6 entradas iniciando a 3 linhas do fim vai inteira para a página seguinte; a de 24 entradas não cabe e precisa da faixa)
+- [x] 7.5 **Verificação:** teste Playwright que gera PDF via `Page.printToPDF` sobre dataset fixo e afirma nº de páginas, cabeçalho e rodapé em **todas** as páginas, e ausência de quebra dentro de `.rpt-task`. (D-R3/D-R4 — CSS de impressão não é testável por unidade; sem este teste as duas decisões são só texto)
 
 ## 8. Volume, i18n, tela e fechamento
 

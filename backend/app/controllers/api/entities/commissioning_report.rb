@@ -17,6 +17,8 @@ module Api
       expose(:status_distribution)  { |o, _| o[:status_distribution] }
       expose(:tree)                 { |o, _| o[:tree] }
       expose(:conclusions)          { |o, _| o[:conclusions] }
+      expose(:signatures)           { |o, _| o[:signatures] }
+      expose(:footer)               { |o, _| o[:footer] }
       expose(:labels)               { |o, _| o[:labels] }
       expose(:warnings)             { |o, _| o[:warnings] }
     end
