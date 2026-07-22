@@ -24,9 +24,9 @@
 
 ## 3. Metadados e id do documento
 
-- [ ] 3.1 Implementar `Reports::DocumentId.for(instant, time_zone)` formatando `RT-%Y%m%d-%H%M`, gerado uma única vez por requisição e congelado no payload. (§3.8 — 20/07/2026 14:32 → `RT-20260720-1432`; 05/03/2026 09:07 → `RT-20260305-0907`, com zero-padding)
-- [ ] 3.2 Montar o bloco de metadados (escopo rotulado, id, emitido em, gerado por, estrutura `N projeto(s) · N célula(s) · N robô(s) · N tarefa(s)`), contando apenas o escopo emitido. (§3.8 — `scope=project` sobre projeto com 3 células conta `1 projeto(s)`, não os 2 do workspace)
-- [ ] 3.3 **Verificação:** spec de id com relógio congelado em 3 instantes (incluindo 23:59 num fuso diferente do UTC) provando que o id dos metadados e o do rodapé são byte a byte iguais. (§3.8 — id gerado duas vezes na mesma requisição pode cruzar o minuto e produzir documento com dois ids)
+- [x] 3.1 Implementar `Reports::DocumentId.for(instant, time_zone)` formatando `RT-%Y%m%d-%H%M`, gerado uma única vez por requisição e congelado no payload. (§3.8 — 20/07/2026 14:32 → `RT-20260720-1432`; 05/03/2026 09:07 → `RT-20260305-0907`, com zero-padding)
+- [x] 3.2 Montar o bloco de metadados (escopo rotulado, id, emitido em, gerado por, estrutura `N projeto(s) · N célula(s) · N robô(s) · N tarefa(s)`), contando apenas o escopo emitido. (§3.8 — `scope=project` sobre projeto com 3 células conta `1 projeto(s)`, não os 2 do workspace)
+- [x] 3.3 **Verificação:** spec de id com relógio congelado em 3 instantes (incluindo 23:59 num fuso diferente do UTC) provando que o id dos metadados e o do rodapé são byte a byte iguais. (§3.8 — id gerado duas vezes na mesma requisição pode cruzar o minuto e produzir documento com dois ids)
 
 ## 4. Distribuição de status e glifos
 

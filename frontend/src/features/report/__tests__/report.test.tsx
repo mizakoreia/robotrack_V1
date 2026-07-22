@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { ReportHeader } from '@/features/report/ReportHeader'
+import { ReportMetadata } from '@/features/report/ReportMetadata'
 import type { CommissioningReportDTO } from '@/features/report/types'
 
 // commissioning-report 2.3 (§3.8, D-R1) — o cabeçalho renderiza SÓ campos já
@@ -55,5 +56,15 @@ describe('ReportHeader (2.3)', () => {
     expect(screen.getByText('Comissionamento Pintura 3')).toBeInTheDocument()
     expect(screen.getByText('62%')).toBeInTheDocument()
     expect(screen.getByText('EM ANDAMENTO')).toBeInTheDocument()
+  })
+})
+
+describe('ReportMetadata (3.2)', () => {
+  it('renderiza id, escopo, gerado por e estrutura do payload (sem reformatar o id)', () => {
+    render(<ReportMetadata report={reportFixture} />)
+    expect(screen.getByText('RT-20260720-1432')).toBeInTheDocument() // id byte a byte
+    expect(screen.getByText('Workspace inteiro')).toBeInTheDocument()
+    expect(screen.getByText('Marina Alves')).toBeInTheDocument()
+    expect(screen.getByText('1 projeto(s) · 1 célula(s) · 1 robô(s) · 2 tarefa(s)')).toBeInTheDocument()
   })
 })
