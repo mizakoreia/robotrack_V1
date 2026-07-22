@@ -128,6 +128,17 @@ export default {
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', '"Segoe UI"', 'sans-serif'],
       },
+      zIndex: {
+        // design-system 4.1 (D-DS-4) — os 7 níveis semânticos. Use `z-modal`,
+        // nunca `z-[90]`.
+        ambient: 'var(--z-ambient)',
+        content: 'var(--z-content)',
+        sticky: 'var(--z-sticky)',
+        sidebar: 'var(--z-sidebar)',
+        dropdown: 'var(--z-dropdown)',
+        modal: 'var(--z-modal)',
+        login: 'var(--z-login)',
+      },
       keyframes: {
         'accordion-down': {
           from: { height: 0 },
