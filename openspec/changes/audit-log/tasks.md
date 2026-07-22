@@ -131,25 +131,25 @@ avanço).
 
 ## 8. Retenção e observabilidade
 
-- [ ] 8.1 Implementar job mensal de manutenção de partições: cria as dos 3 meses seguintes
+- [x] 8.1 Implementar job mensal de manutenção de partições: cria as dos 3 meses seguintes
   e alerta se a partição `DEFAULT` tiver linhas. (spec `audit-log-retention` — mês corrente
   sem partição não pode derrubar conclusão de tarefa)
-- [ ] 8.2 Implementar exportação de partição para JSONL comprimido em storage frio, com
+- [x] 8.2 Implementar exportação de partição para JSONL comprimido em storage frio, com
   contagem de linhas e checksum gravados no manifesto. (spec `audit-log-retention` —
   `AUDIT_ARCHIVE_BUCKET` ausente tem que falhar com erro nomeando a variável)
-- [ ] 8.3 **Backup/prova antes do passo destrutivo:** implementar a verificação que compara
+- [x] 8.3 **Backup/prova antes do passo destrutivo:** implementar a verificação que compara
   contagem e checksum do arquivo com a partição e aborta em divergência. (spec
   `audit-log-retention` — partição de 4.312 linhas com arquivo de 4.310 aborta e preserva
   tudo)
-- [ ] 8.4 Implementar o `DETACH PARTITION` + `DROP TABLE` da partição, gated pela
+- [x] 8.4 Implementar o `DETACH PARTITION` + `DROP TABLE` da partição, gated pela
   verificação de 8.3 e por uma flag de confirmação da janela de 24 meses (default:
   desligada). (design §Perguntas em aberto 3 — enquanto a janela não for confirmada,
   partição de 30 meses é arquivada mas não destacada)
-- [ ] 8.5 Expor métricas de contagem e tamanho por partição e o alerta de queda de
+- [x] 8.5 Expor métricas de contagem e tamanho por partição e o alerta de queda de
   contagem fora de janela de manutenção, coordenando com
   `delivery-and-observability`. (spec `audit-log-retention` — queda de 812.400 para 640.100
   sem manutenção declarada alerta; queda igual ao arquivado não alerta)
-- [ ] 8.6 **Verificação:** spec do job afirmando que o SQL emitido contém `DETACH
+- [x] 8.6 **Verificação:** spec do job afirmando que o SQL emitido contém `DETACH
   PARTITION` e `DROP TABLE` e não contém `DELETE FROM audit_logs`. (spec
   `audit-log-retention` — retenção por DML é o modo de falha que a invariante 3 proíbe)
 
