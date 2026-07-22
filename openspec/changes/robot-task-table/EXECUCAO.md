@@ -101,6 +101,25 @@ D-RTT-11 decomposição p/ paralelismo. D8 recorded_at; D11 identidade; D15 % ro
 - **`step={5}` no slider** entrou no `AdvanceControls` (progress-advances) — é a única
   mudança visual lá; os botões continuam ±10.
 
+### Decisões tomadas na G3 (registro pós-execução)
+
+- **Chip 1º/2º por `className`, não `variant`**: o `<Chip>` do design-system não tem
+  prop `variant` (só `label`/`onRemove`/`className`). Primário = default (fundo
+  sólido); secundário = contorno esmaecido (`border border-current/25 bg-transparent
+  text-text-muted`). A subtração da intersecção (D-RTT-4) é por `id`.
+- **Modais MÍNIMOS reais na G3, enriquecidos na G5**: `AssignmentModal` mostra
+  responsáveis/contribuidores só-leitura (a G5 5.3/5.4 troca por checkboxes de todas
+  as pessoas + cadastro + PUT); `HistoryModal` mostra a entrada mais recente de
+  `last_advance` (a G5 5.1/5.2 troca pela timeline paginada com `de%→para%`). As
+  CASCAS (título, foco, Esc, Fechar, aria) já são as definitivas — só o corpo cresce.
+  Evita botão morto sem antecipar o grosso da G5.
+- **Aviso "Registre o avanço…" abre o `AdvanceModal` da G2** (from/initialTo =
+  progresso atual, lock_version da tarefa); o botão de contagem abre o `HistoryModal`.
+  São gatilhos distintos (D-RTT-7). Para `view` o aviso vira adorno estático.
+- **"Atribuir…" em progresso 100 sem responsável**: o requisito é `progress > 0 AND
+  assignees = []`; 100 > 0, então o aviso aparece (extrapolado dos cenários 0/30 do
+  spec, coerente com a letra da regra). Registrado na matriz de teco.
+
 ## Armadilhas previstas
 
 1. **N+1 na trilha** — manter `includes(:task_advances)`; contributors/last_advance em
@@ -125,7 +144,7 @@ completa fica para o G7. Provisionar o banco a cada sessão (ver CONTINUIDADE).
 - [x] G0 — este mapa (commit G0)
 - [x] G1 — Esqueleto + contrato (1.1–1.6)
 - [x] G2 — Status + Progresso (2.1–2.4)
-- [ ] G3 — Responsáveis + Trilha + avisos (3.1–3.5)
+- [x] G3 — Responsáveis + Trilha + avisos (3.1–3.5)
 - [ ] G4 — Cabeçalho + Ações + sync + gating (4.1–4.5)
 - [ ] G5 — Modais histórico + atribuição (5.1–5.5)
 - [ ] G6 — Mobile + a11y + pulso (6.1–6.5)

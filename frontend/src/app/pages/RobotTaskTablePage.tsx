@@ -7,6 +7,8 @@ import { BackLink } from '@/features/hierarchy/LevelChrome'
 import { useRobotTasks, useRobotHeader, type TaskDTO } from '@/features/robot-tasks/useRobotTasks'
 import { useRobotTaskFilter, applyFilter, type TaskFilter } from '@/features/robot-tasks/filterStore'
 import { StatusCell } from '@/features/robot-tasks/StatusCell'
+import { ResponsaveisCell } from '@/features/robot-tasks/ResponsaveisCell'
+import { TrilhaCell } from '@/features/robot-tasks/TrilhaCell'
 import { AdvanceControls } from '@/features/advances/AdvanceControls'
 import { metricLabel } from '@/lib/i18n/progress'
 
@@ -131,28 +133,26 @@ function TaskTable({ robotId, tasks }: { robotId: string; tasks: TaskDTO[] }) {
   )
 }
 
-// Status e Progresso interativos (G2, 2.1–2.3); Responsáveis/Trilha/Ações são
-// leitura até os grupos 3–4.
+// Status e Progresso interativos (G2); Responsáveis e Trilha com chips/avisos (G3,
+// 3.1–3.4). Ações é leitura até o grupo 4.
 function TaskRow({ robotId, task }: { robotId: string; task: TaskDTO }) {
   return (
-    <tr className="border-t align-middle">
+    <tr className="border-t align-top">
       <td className="px-4 py-3">{task.desc}</td>
-      <td className="px-4 py-3">
+      <td className="px-4 py-3 align-middle">
         <StatusCell robotId={robotId} task={task} />
       </td>
-      <td className="px-4 py-3">
+      <td className="px-4 py-3 align-middle">
         {/* leitura % + − slider + vivem no AdvanceControls (D-RTT-5) */}
         <AdvanceControls robotId={robotId} taskId={task.id} />
       </td>
       <td className="px-4 py-3">
-        {task.assignees.length === 0 ? (
-          <span className="text-text-muted">—</span>
-        ) : (
-          task.assignees.map((a) => a.name).join(', ')
-        )}
+        <ResponsaveisCell task={task} />
       </td>
-      <td className="px-4 py-3 text-text-muted">{task.last_comment ?? '—'}</td>
-      <td className="px-4 py-3 text-text-muted">—</td>
+      <td className="px-4 py-3">
+        <TrilhaCell robotId={robotId} task={task} />
+      </td>
+      <td className="px-4 py-3 align-middle text-text-muted">—</td>
     </tr>
   )
 }

@@ -76,24 +76,24 @@ componente de célula — quem chegar depois consome a interface já publicada e
 
 ## 3. Colunas de leitura e avisos — Responsáveis e Trilha (paralelo)
 
-- [ ] 3.1 Implementar a célula Responsáveis com chips primários (`assignees`) e
+- [x] 3.1 Implementar a célula Responsáveis com chips primários (`assignees`) e
   secundários (`contributors` menos a intersecção), abrindo o modal de atribuição no
   clique (§3.5, D-RTT-4 — `assignees=[Ana]` com avanço de Bruno mostra `Ana` primário
   e `Bruno` secundário; `assignees=[Ana]` com avanço de Ana mostra um único chip)
-- [ ] 3.2 Implementar a célula Trilha com o comentário de `last_advance` e o botão de
+- [x] 3.2 Implementar a célula Trilha com o comentário de `last_advance` e o botão de
   contagem com `aria-label` informando o número de entradas (§3.5 — tarefa com 3
   avanços exibe o comentário do mais recente por `recorded_at`, não o de maior
   `created_at`)
-- [ ] 3.3 Implementar o aviso "Atribuir…" com ícone de alerta, condicionado a
+- [x] 3.3 Implementar o aviso "Atribuir…" com ícone de alerta, condicionado a
   `progress > 0 AND assignees = []`, não bloqueante (§3.5 — progresso 30 sem
   responsável mostra o aviso; progresso 0 sem responsável **não** mostra; progresso 45
   com contribuidor Bruno e zero responsáveis mostra aviso **e** chip secundário)
-- [ ] 3.4 Implementar o aviso "Registre o avanço…" condicionado a
+- [x] 3.4 Implementar o aviso "Registre o avanço…" condicionado a
   `0 < progress < 100 AND advances_count = 0`, com a cláusula "nem nota" removida e a
   remoção comentada no código apontando para D-RTT-6 (§3.5, §1.4, D8 — tarefa migrada
   com `obs` convertida em avanço `legacy` tem `advances_count = 1` e **não** mostra o
   aviso; progresso 100 sem avanços também não)
-- [ ] 3.5 **Verificação:** teste de matriz dos dois avisos cobrindo os 6 pares
+- [x] 3.5 **Verificação:** teste de matriz dos dois avisos cobrindo os 6 pares
   (progresso 0/30/100 × com/sem responsável, e 0/50/100 × com/sem avanço) (§3.5 — a
   matriz falha se alguém reintroduzir `obs` ou trocar `>` por `>=` na condição)
 
