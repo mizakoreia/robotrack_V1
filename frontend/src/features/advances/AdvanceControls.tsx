@@ -58,6 +58,7 @@ export function AdvanceControls({ robotId, taskId }: { robotId: string; taskId: 
         type="range"
         min={0}
         max={100}
+        step={5} // robot-task-table 2.2 (§3.5) — arrastar uma posição a partir de 30 propõe 35
         value={draft.value}
         aria-label={advanceText.progressLabel}
         aria-disabled={!canEdit}

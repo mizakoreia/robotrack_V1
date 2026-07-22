@@ -56,20 +56,20 @@ componente de célula — quem chegar depois consome a interface já publicada e
 
 ## 2. Colunas de mutação — Status e Progresso (paralelo)
 
-- [ ] 2.1 Implementar a célula de Status com o `StatusSelect` do `design-system`
+- [x] 2.1 Implementar a célula de Status com o `StatusSelect` do `design-system`
   (chevron obrigatório) e as 4 opções, disparando a abertura do modal de avanço de
   `progress-advances` com o `para%` derivado de §2.2 (§3.5, §2.2 — escolher
   `Concluído` numa tarefa de progresso 60 abre o modal com `60 → 100`; a pílula só
   muda depois de confirmar)
-- [ ] 2.2 Implementar a célula de Progresso: leitura `%` com `tabular-nums`, `−`,
+- [x] 2.2 Implementar a célula de Progresso: leitura `%` com `tabular-nums`, `−`,
   slider passo 5 e `+`, com `persisted` vindo sempre da query e `draft` local
   descartável (§2.4, D-RTT-5 — dois `+` seguidos sem recarregar produzem +20, não
   +10; o segundo modal abre com `30 → 40`)
-- [ ] 2.3 Ligar o resultado do modal (confirmar/cancelar/erro 409) ao estado da célula
+- [x] 2.3 Ligar o resultado do modal (confirmar/cancelar/erro 409) ao estado da célula
   e à invalidação de `['ws',wsId,'robot',robotId,'tasks']` e `['ws',wsId,'projects']`
   (§2.4 item 5, D5 — arrastar de 30 para 70 e cancelar devolve o slider a 30 e não
   envia nenhuma requisição; 409 de `lock_version` recarrega e reabre com o valor novo)
-- [ ] 2.4 **Verificação:** testes de componente para incremento duplo, cancelamento,
+- [x] 2.4 **Verificação:** testes de componente para incremento duplo, cancelamento,
   conflito 409 e para o status devolvido pelo servidor sobrepondo o rascunho (§2.2,
   §2.4 — confirmar `para 100` exibe `Concluído` mesmo que o usuário tenha escolhido
   outro status antes)

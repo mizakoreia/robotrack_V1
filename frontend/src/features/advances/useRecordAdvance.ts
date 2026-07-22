@@ -6,6 +6,7 @@ import {
 } from '../../lib/api/endpoints'
 import { catalogKeys } from '../../lib/api/catalogKeys'
 import { advanceKeys } from '../../lib/api/advanceKeys'
+import { qk } from '../../lib/query/keys'
 import { useWorkspaceStore } from '../../store/workspaceStore'
 
 // progress-advances 5.4–5.5 (§2.4 item 4, D1/D8/D-409) — a mutation do registro
@@ -23,7 +24,11 @@ import { useWorkspaceStore } from '../../store/workspaceStore'
 export interface RecordAdvanceVars {
   taskId: string
   id: string
-  toProgress: number
+  // XOR (§2.2): `toProgress` quando o gesto foi slider/±; `toStatus` quando foi o
+  // StatusSelect (robot-task-table 2.1). Enviar status deixa a tabela-verdade com
+  // o servidor — mandar `progress: 0` no lugar de `N/A` viraria `Pendente`.
+  toProgress?: number
+  toStatus?: string
   comment?: string
   recordedAt?: string
   lockVersion?: number
@@ -47,6 +52,7 @@ export function useRecordAdvance(robotId: string) {
       taskAdvancesApi.create(vars.taskId, {
         id: vars.id,
         progress: vars.toProgress,
+        status: vars.toStatus,
         comment: vars.comment,
         recorded_at: vars.recordedAt,
         lock_version: vars.lockVersion,
@@ -54,6 +60,11 @@ export function useRecordAdvance(robotId: string) {
     onSuccess: (_result, vars) => {
       void queryClient.invalidateQueries({ queryKey: catalogKeys.robotTasks(wsId, robotId) })
       void queryClient.invalidateQueries({ queryKey: advanceKeys.trail(wsId, vars.taskId) })
+      // robot-task-table 2.3 (D-RTT-10) — o avanço mexe nos agregados ponderados:
+      // os anéis da hierarquia (prefixo `projects`) e o % do cabeçalho do robô
+      // (`qk.robot` EXATO — o filho `…,'tasks'` já foi invalidado acima).
+      void queryClient.invalidateQueries({ queryKey: qk.projects(wsId ?? '_') })
+      void queryClient.invalidateQueries({ queryKey: qk.robot(wsId ?? '_', robotId), exact: true })
     },
   })
 }
