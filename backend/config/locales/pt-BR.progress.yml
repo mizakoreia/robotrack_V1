@@ -1,0 +1,11 @@
+# progress-rollup 6.1 (D15/D14) — os rótulos das DUAS métricas de progresso, como
+# format strings versionadas. Fonte única no backend; nenhum literal de rótulo
+# vive fora daqui (o lint de progress_label_lint_spec reprova). O espelho no
+# frontend é frontend/src/lib/i18n/progress.ts.
+pt-BR:
+  progress:
+    metrics:
+      weighted:
+        label: "Progresso ponderado"
+      raw_count:
+        label: "Progresso físico (tarefas concluídas)"
