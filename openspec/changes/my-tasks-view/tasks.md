@@ -59,24 +59,24 @@ sendo criada por `workspace-tenancy` (bootstrap do dono) e `workspace-invitation
 
 ## 3. Endpoint, autorização e resolução do viewer
 
-- [ ] 3.1 Implementar a resolução do viewer por
+- [x] 3.1 Implementar a resolução do viewer por
   `Person.find_by(workspace_id:, user_id:)` no service, retornando `409 person_missing` +
   registro no rastreio de erro quando ausente; nenhuma criação de `Person`.
   (D-MTV-2 — responder `200 []` aqui é a falha silenciosa que motivou esta capacidade:
   indistinguível de "não tenho tarefas")
-- [ ] 3.2 Criar `Api::Entities::MyTaskRow` com o payload achatado (descrição, status,
+- [x] 3.2 Criar `Api::Entities::MyTaskRow` com o payload achatado (descrição, status,
   progresso, nomes e ids de robô/célula/projeto).
   (D-MTV-4 — entity que resolve associação por método dispara N+1 e destrói o orçamento)
-- [ ] 3.3 Criar o endpoint `GET /api/v1/workspaces/:workspace_id/my_tasks`, montá-lo em
+- [x] 3.3 Criar o endpoint `GET /api/v1/workspaces/:workspace_id/my_tasks`, montá-lo em
   `api/v1/base.rb`, declarar `MyTasksPolicy` (D3) exigindo membership em qualquer papel, e
   aplicar `set_pagination_headers`.
   (§4.1 inv. 1 — endpoint sem policy declarada é reprovado pelo route-sweep de
   `authorization-policies`)
-- [ ] 3.4 Garantir que o endpoint **não** aceita `person_id` como parâmetro: qualquer
+- [x] 3.4 Garantir que o endpoint **não** aceita `person_id` como parâmetro: qualquer
   parâmetro nesse sentido é ignorado, e o viewer vem só do token.
   (D-MTV-10 — `?person_id=` aceito transformaria uma tela pessoal em leitura das tarefas
   de qualquer colega)
-- [ ] 3.5 **Verificação:** specs de request cobrindo `401` sem token (inclusive com
+- [x] 3.5 **Verificação:** specs de request cobrindo `401` sem token (inclusive com
   `X-Skip-Auth: 1`), `403` para não-membro, `200` para papel `view`, e `?person_id=P2`
   retornando apenas tarefas de `P1`.
   (§4.1 inv. 1 e 4 — `X-Skip-Auth` é a brecha do template; se `seal-template-baseline`

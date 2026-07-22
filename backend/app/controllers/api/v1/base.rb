@@ -34,6 +34,9 @@ module Api
       # Tarefas do robô (robot-tasks 3.1–3.6)
       mount Api::V1::Tasks
 
+      # Minhas Tarefas — a lista pessoal do viewer (my-tasks-view 3.3)
+      mount Api::V1::MyTasks
+
       # Recálculo manual do progresso (progress-rollup 4.5)
       mount Api::V1::ProgressEndpoint
 
