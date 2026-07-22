@@ -139,3 +139,18 @@ As 6 falhas pós-G0, todas em specs de módulos a remover:
 - `auth/checkout_session_service_spec.rb` (3) — cobrança → sai em G3/G8
 - `permissions_sync_service_spec.rb` (1) — `uninitialized constant PlanFeature`,
   RBAC por planos → sai em G4/G8
+
+## Dívidas registradas por changes posteriores
+
+- **`paper_trail` (gem não usada) — recomendação de REMOÇÃO do Gemfile**
+  (registrado por `audit-log` 9.1, parecer da Decisão 8). A gem está no Gemfile
+  (`gem 'paper_trail'`, 17.0.0) e não é usada em lugar nenhum. `audit-log` a
+  avaliou e REJEITOU para o log de auditoria de domínio, por quatro razões
+  independentes: (1) semântica errada — grava diffs por registro, não a narrativa
+  de evento de negócio em pt-BR de §2.8; (2) a tabela `versions` é MUTÁVEL por
+  design (a API pública tem `destroy_all`, `limit` de poda, `reify`/rollback) —
+  incompatível com a invariante 3 (append-only para todos, inclusive o dono);
+  (3) sem tenancy (`versions` não tem `workspace_id`, a gem não conhece RLS →
+  2ª superfície de vazamento, contra D2); (4) volume desproporcional. Log de
+  auditoria de domínio ≠ versionamento de registro. Ação: remover do Gemfile a
+  menos que outra capacidade a reivindique.

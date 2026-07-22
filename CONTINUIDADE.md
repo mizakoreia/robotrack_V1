@@ -20,20 +20,21 @@ main (48497fd)                       ← ondas 1–4, sem nada desta sessão
                                 └── hierarchy-screens          change COMPLETA — 7 de 7 grupos
                                     └── robot-task-table       change COMPLETA — 7 de 7 grupos
                                         └── my-tasks-view          change COMPLETA — 7 de 7 grupos
-                                            └── commissioning-report (atual)  change COMPLETA — 8 de 8 grupos
+                                            └── commissioning-report   change COMPLETA — 8 de 8 grupos
+                                                └── audit-log (atual)  change COMPLETA — 8 de 8 grupos
 ```
 
-**A branch atual contém todo o trabalho** (`commissioning-report` empilhada sobre
-`my-tasks-view`; full-stack). É nela que se continua. Push por branch canônica
-(`git push origin HEAD:commissioning-report`). Os PRs para a `main` podem ser
+**A branch atual contém todo o trabalho** (`audit-log` empilhada sobre
+`commissioning-report`; full-stack). É nela que se continua. Push por branch canônica
+(`git push origin HEAD:audit-log`). Os PRs para a `main` podem ser
 abertos depois, na ordem do empilhamento.
 
-## Suítes (medidas na branch `commissioning-report`)
+## Suítes (medidas na branch `audit-log`)
 
 | Suíte | Resultado |
 |---|---|
-| Backend `bundle exec rspec` (como `robotrack_app`, `--seed 1234`) | **1059 / 2 / 9pending** — as 2 falhas são os BENCHMARKS de tempo do `spec/progress/load_dataset_spec.rb` (93k tarefas: seed 451s > teto 60s; runner desta sessão lento). Não é regressão: nada do relatório os toca; os 43 specs do report passam. Rodá-los isolados em runner normal confere o teto. |
-| Frontend `vitest run` | **324 / 0** (56 arquivos) |
+| Backend `bundle exec rspec` (como `robotrack_app`, `--seed 12345`) | **~1090+ / 2** (audit-log somou ~55 specs a `spec/audit`, todos verdes isolados) — as 2 falhas conhecidas são os BENCHMARKS de tempo do `spec/progress/load_dataset_spec.rb` (93k tarefas, runner lento), NÃO regressão. Total exato confirmado ao fim da suíte completa desta sessão. |
+| Frontend `vitest run` | **329 / 0** (57 arquivos) |
 | Frontend `tsc --noEmit` | limpo |
 | Frontend `pnpm build` | limpo |
 
@@ -61,7 +62,7 @@ destravaram e viraram verdes ao longo de `robot-tasks`.)
 > suíte completa (estado do Rack::Attack sensível à ordem aleatória do RSpec);
 > passa isolado. Não é regressão desta sessão. Rodar com `--seed` fixo estabiliza.
 
-## Changes concluídas (16 de 24)
+## Changes concluídas (17 de 24)
 
 `seal-template-baseline`, `workspace-tenancy`, `identity-and-auth`,
 `workspace-invitations` (anteriores) e:
@@ -225,29 +226,50 @@ destravaram e viraram verdes ao longo de `robot-tasks`.)
   global + pypdf — páginas, cabeçalho/rodapé em todas, nenhuma tarefa partida).
   **Divergências:** endpoint header-tenant; não-membro→403 (middleware de tenant);
   sweep de literais em vitest (não há config ESLint no repo). Decisões G1..G7 no EXECUCAO.
+- **`audit-log`** (G0..G8, COMPLETA, full-stack, Onda 8) — a trilha de auditoria
+  **append-only, imutável no BANCO para todos inclusive o dono** (§4.1 inv. 3, a única
+  invariante cujo adversário é o dono do dado). Desbloqueia o reset de fábrica D12 de
+  `workspace-settings`. `audit_logs` PARTICIONADA por `RANGE(ts)` (PK `(ts,id)`), FK
+  `workspaces ON DELETE RESTRICT`, SEM FK p/ hierarquia (sobrevive ao reset). Imutabilidade
+  em 3 camadas: REVOKE UPDATE/DELETE do app (migration + roles.sql, caveat `pg_dump -x`) +
+  trigger `BEFORE UPDATE/DELETE` (backstop do superuser) + RLS SEM policy de UPDATE/DELETE
+  (filtra o dono p/ 0 linhas). **RLS NÃO cascateia às partições** → `secure_audit_partition()`
+  por partição (fecha SELECT-direto-na-partição; reusada pelo job de retenção). Gatilho ÚNICO:
+  conclusão a 100% grava na MESMA transação do avanço (`RecordService.record!` no seam de
+  `CreateService`; log falho → rollback). `msg`/`ts_local` RENDERIZADOS e CONGELADOS no
+  INSERT (Decisão 4); format strings versionadas `audit.*.vN` com snapshot-guard (editar vN
+  publicada quebra o build). Leitura `GET /api/v1/audit_logs` (clamp 200, ts DESC, sem rota
+  de escrita — fail-closed 500). Modal frontend (`AuditLogModal`, verbatim, teto 200) — monta
+  na tela em `workspace-settings`. Retenção por DDL (`DETACH`+`DROP`, NUNCA `DELETE`):
+  manutenção de partição + arquivamento verificado (JSONL.gz+manifesto count+checksum) +
+  poda gated por verify E flag de 24m. **Divergências:** endpoint header-tenant; verbos de
+  escrita fail-closam 500 (não 404); a trigger é backstop do superuser (RLS cobre o dono).
+  **Dependências de entrega (delivery-and-observability):** bucket de storage frio, papel
+  BYPASSRLS read-only p/ arquivamento cross-tenant, agendamento Sidekiq, alerta de queda de
+  contagem. `paper_trail` recomendado p/ remoção (registrado em seal-template-baseline).
+  Decisões G1..G8 no EXECUCAO. Suíte de contorno (9.2) reúne todos os vetores de burla.
 
 Cada change tem seu `openspec/changes/<nome>/EXECUCAO.md` com o mapa de grupos, as
 decisões tomadas na execução, as armadilhas encontradas e a CONCLUSÃO com o relatório
 final. **Leia o EXECUCAO.md antes de tocar no código de uma change.**
 
-## Onde parou: `commissioning-report` COMPLETA (8/8); o Protocolo de Comissionamento
+## Onde parou: `audit-log` COMPLETA (8/8); a trilha de auditoria imutável
 
-Fechou (8/8 grupos) — ver `openspec/changes/commissioning-report/EXECUCAO.md`. A rota
-`/relatorio`, antes STUB, é o documento formal A4 que o cliente assina: payload
-congelado no servidor (≤5 queries), carimbo ponderado (D15), impressão CSS `@page`
-com teste printToPDF real (`cd frontend && npm run test:print`, vite :5173 no ar).
-Testado (frontend **324/0**, backend completo **1059/2** — as 2 falhas são os
-benchmarks de tempo do dataset de 93k do progress-rollup num runner lento, não
-regressão; os 43 specs do relatório passam).
+Fechou (8/8 grupos) — ver `openspec/changes/audit-log/EXECUCAO.md`. `audit_logs`
+append-only, imutável no BANCO para todos inclusive o dono (§4.1 inv. 3), particionada
+por mês, com 3 camadas (REVOKE + trigger + RLS sem policy de mutação). Grava sozinho na
+conclusão a 100% (mesma transação do avanço); leitura clamp 200; modal frontend pronto
+(monta na tela em `workspace-settings`); retenção por DDL (nunca DELETE). DESBLOQUEIA o
+reset de fábrica D12 de `workspace-settings`. Testado (frontend **329/0**, backend
+completo: `spec/audit` 51/0 isolado; a suíte inteira roda no fechamento e o total é confirmado no ajuste seguinte).
 
-**Antes:** `my-tasks-view` (COMPLETA, 7/7) — a lista pessoal do viewer
-(`/minhas-tarefas`; 409 identidade ausente nunca vira lista vazia). E antes,
-`robot-task-table` (7/7) — a tela operacional do robô (`/robo/:id`).
-E `hierarchy-screens` (7/7) — as três telas de navegação + busca, com
-as DUAS métricas lado a lado (D15). E `app-shell-navigation` (6/6) — a moldura
-permanente (AppShell,
-menus em portal) + as convenções D9 (factory `qk.*`, guard, barreira de vazamento na
-troca de workspace, contrato do indicador de gravação, sweep de convenção).
+**Antes:** `commissioning-report` (COMPLETA, 8/8) — o Protocolo A4 assinável
+(`/relatorio`; payload congelado, ≤5 queries, printToPDF real). E `my-tasks-view` (7/7)
+— a lista pessoal (`/minhas-tarefas`; 409 identidade nunca vira vazio). E
+`robot-task-table` (7/7) — a tela operacional do robô. E `hierarchy-screens` (7/7) —
+as três telas de navegação + busca (D15). E `app-shell-navigation` (6/6) — a moldura
+permanente + as convenções D9 (factory `qk.*`, guard, barreira de vazamento na troca de
+workspace, sweep de convenção).
 
 **Pendências conhecidas (documentadas, não atribuídas):**
 - **design-system:** `tokens-campfire.css` + aliases shadcn seguem no repo (só vars
@@ -266,11 +288,14 @@ troca de workspace, contrato do indicador de gravação, sweep de convenção).
 - `<ProgressRing>`/`<MetricStat>` existem (progress-rollup 6.2) mas a TELA que os
   monta (Visão Geral, hubs, cards) é de `hierarchy-screens`.
 
-**Próximo passo — `workspace-settings`** (ou `realtime-collaboration`). Todas as
-telas de STUB do shell estão preenchidas (navegação, robô, minhas tarefas,
-relatório). Ver abaixo.
+**Próximo passo — `workspace-settings`** (agora DESBLOQUEADA por `audit-log`). É a
+única operação destrutiva em massa do produto (reset de fábrica, D12): reusa o
+`AuditLog::RecordService.record!(event: :workspace_reset, …)` DENTRO da transação do
+reset (o log sobrevive e registra), e monta o `AuditLogModal` no painel Utilitários.
+A alternativa é `realtime-collaboration` (D6 — ativa os hooks `useXLive` já fiados).
+Ver abaixo.
 
-## Depois de `commissioning-report` — o que resta
+## Depois de `audit-log` — o que resta
 
 Próximas:
 `workspace-settings`, `realtime-collaboration`
@@ -344,15 +369,18 @@ O frontend usa **pnpm** (`pnpm-lock.yaml`); o `package-lock.json` está dessincr
 > Leia `CONTINUIDADE.md` na raiz do repositório: ele tem o estado atual, o que já foi
 > entregue, onde parei e o método de trabalho. `robot-tasks`, `task-catalog`,
 > `progress-advances`, `progress-rollup`, `design-system`, `app-shell-navigation`,
-> `hierarchy-screens`, `robot-task-table`, `my-tasks-view` e `commissioning-report` estão
-> COMPLETAS (leia os EXECUCAO.md delas). Todo o BACKEND do núcleo, a BASE VISUAL, a MOLDURA +
-> CONVENÇÕES, as TRÊS TELAS DE NAVEGAÇÃO (Visão Geral, Projeto, Célula) + busca, a TELA
-> OPERACIONAL DO ROBÔ (`/robo/:id`), a LISTA PESSOAL (`/minhas-tarefas`) e o PROTOCOLO DE
-> COMISSIONAMENTO (`/relatorio`, documento A4 assinável com teste printToPDF) estão fechados
-> de ponta a ponta. `/` já é a Visão Geral.
+> `hierarchy-screens`, `robot-task-table`, `my-tasks-view`, `commissioning-report` e
+> `audit-log` estão COMPLETAS (leia os EXECUCAO.md delas). Todo o BACKEND do núcleo, a BASE
+> VISUAL, a MOLDURA + CONVENÇÕES, as TRÊS TELAS DE NAVEGAÇÃO (Visão Geral, Projeto, Célula) +
+> busca, a TELA OPERACIONAL DO ROBÔ (`/robo/:id`), a LISTA PESSOAL (`/minhas-tarefas`), o
+> PROTOCOLO DE COMISSIONAMENTO (`/relatorio`, A4 assinável) e a TRILHA DE AUDITORIA imutável
+> (`audit_logs` + `AuditLogModal`, monta em Configurações) estão fechados de ponta a ponta.
+> `/` já é a Visão Geral.
 >
-> Trabalhe na branch `commissioning-report` (as branches são empilhadas; ela contém tudo;
-> full-stack). O próximo passo é **`workspace-settings`** (ou `realtime-collaboration` — D6,
+> Trabalhe na branch `audit-log` (as branches são empilhadas; ela contém tudo; full-stack). O
+> próximo passo é **`workspace-settings`** (DESBLOQUEADA por `audit-log` — o reset de fábrica
+> D12 reusa `AuditLog::RecordService.record!(event: :workspace_reset)` na transação do reset,
+> e monta o `AuditLogModal` em Utilitários). Alternativa: `realtime-collaboration` (D6,
 > invalida as keys `['ws', wsId, …]` que as telas já declaram). Depois
 > `offline-pwa`. Comece pelo `EXECUCAO.md` da change (commit G0) — antes de qualquer código —
 > e faça push por branch canônica (`git push origin HEAD:<change>`). Convenções vigentes:
@@ -360,6 +388,9 @@ O frontend usa **pnpm** (`pnpm-lock.yaml`); o `package-lock.json` está dessincr
 > `['ws', wsId, …]`), telas em `app/` NÃO importam `lib/api` (DTOs reexportados pela feature),
 > invalidar a chave específica (nunca o tenant inteiro), `createPortal` só em `components/menu/`.
 > Para RODAR/testar: provisione o banco (ver bloco no topo) e use `scratchpad/shot.mjs` p/ prints.
+> Migrations rodam como `robotrack_migrator` (dono); a suíte como `robotrack_app`. NUNCA rodar
+> duas suítes ao mesmo tempo (contenção de lock). DDL em teste (partições) NÃO é revertido pela
+> truncation — limpe em `ensure`.
 > Ao montar telas, migre as classes shadcn para os papéis e remova os aliases +
 > `tokens-campfire.css` (a parte adiada do G8 do design-system).
 >
