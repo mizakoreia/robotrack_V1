@@ -2,16 +2,16 @@
 
 ## 1. Fixtures e contrato das duas métricas
 
-- [ ] 1.1 Criar a factory/fixture `divergent_progress` em `backend/spec/factories/`:
+- [x] 1.1 Criar a factory/fixture `divergent_progress` em `backend/spec/factories/`:
   workspace com 1 projeto → 1 célula → 1 robô → 4 tarefas (peso 5 em `Concluído`/100%;
   três de peso 1 em `Pendente`/0%). (§2.1 + §3.2 — a fixture SHALL produzir ponderado 40 e
   contagem crua 25; se um seed uniforme fizer os dois valores coincidirem, ela não serve
   para o teste de D15 e a tarefa está incompleta)
-- [ ] 1.2 Definir as entities `Api::Entities::HierarchyCard` e `Api::Entities::AnalyticsHub`
+- [x] 1.2 Definir as entities `Api::Entities::HierarchyCard` e `Api::Entities::AnalyticsHub`
   expondo `weighted_progress` (inteiro) e `raw_completion` (`{completed, total, percent}`),
   sem nenhum campo `progress`. (§3.2 — um cliente que peça `progress` recebe `nil`, não o
   ponderado disfarçado)
-- [ ] 1.3 Escrever o spec de contrato que percorre a resposta dos 4 endpoints em busca da
+- [x] 1.3 Escrever o spec de contrato que percorre a resposta dos 4 endpoints em busca da
   chave `progress` em qualquer profundidade e falha se encontrar. (D15 — o teste falha se
   alguém adicionar um alias `progress` "por conveniência do front")
 

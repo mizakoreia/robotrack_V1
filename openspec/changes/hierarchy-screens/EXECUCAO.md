@@ -123,7 +123,7 @@ decidir, registrar aqui, seguir.
 ## Progresso
 
 - [x] G0 — este mapa (commit G0)
-- [ ] G1 — Fixture + contrato das métricas (1.1–1.3)
+- [x] G1 — Fixture + contrato das métricas (1.1–1.3)
 - [ ] G2 — Endpoints agregados (2.1–2.6)
 - [ ] G3 — Busca server-side (3.1–3.3)
 - [ ] G4 — Tela Visão Geral (4.1–4.6) — 1º print
