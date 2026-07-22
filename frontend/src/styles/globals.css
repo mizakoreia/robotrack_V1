@@ -110,8 +110,42 @@ body {
   * {
     @apply border-border;
   }
+  html {
+    /* design-system 3.1 — Inter, família única, com fallback que segue legível se
+       o Google Fonts cair. */
+    font-family: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
   body {
     @apply bg-background text-foreground;
+    font-size: 14px;
+  }
+}
+
+/* design-system 3.1 — a escala tipográfica fixa em rem + tabular-nums. Um número
+   indo de 8% a 88% a 100% mantém a mesma largura de caixa por contagem de
+   caracteres (`.tabular` em todo número: progresso, %, contadores). */
+@layer components {
+  .title {
+    font-size: 1.65rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  .modal-title {
+    font-size: 1.22rem;
+    font-weight: 600;
+  }
+  .panel-header {
+    font-size: 0.92rem;
+    font-weight: 600;
+  }
+  .label-sm {
+    font-size: 0.68rem;
+  }
+  .label-md {
+    font-size: 0.78rem;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
   }
 }
 
