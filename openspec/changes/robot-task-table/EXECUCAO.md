@@ -159,6 +159,31 @@ D-RTT-11 decomposição p/ paralelismo. D8 recorded_at; D11 identidade; D15 % ro
 - **5.5 backend já satisfeito**: `task_assignees_spec.rb` (view 403 no PUT; person/
   task de outro ws → 404) — 8/0. O novo é o teste de componente (`modais.test.tsx`).
 
+### Decisões tomadas na G6 (registro pós-execução)
+
+- **UM layout por vez via `useMediaQuery` (novo, `lib/useMediaQuery.ts`)**, não os
+  dois escondidos por CSS (`hidden md:block`). Motivo duplo: montar as duas árvores
+  dobra o trabalho de render (importa p/ a contagem de render de §7.1) e polui o DOM
+  para leitores de tela / testes (getBy* achava elementos em dobro). Fallback =
+  desktop quando `matchMedia` ausente (jsdom); o teste mobile injeta `matchMedia`.
+- **Cartão mobile reusa as MESMAS células** (StatusCell/AdvanceControls/…): as 6
+  informações viram linhas rotuladas (`<dl>`), cabeçalho de categoria como separador
+  de seção. Sem scroll lateral (o `<table>` não é espremido — nem existe no mobile).
+- **`successPulse` via classe `animate-success-pulse`** (JÁ existia no tailwind.config
+  + keyframe). O hook `useSuccessPulse` dispara na transição `<100 → 100` observada,
+  uma vez, e limpa no `onAnimationEnd`. O `prefers-reduced-motion` é respeitado pelo
+  bloco GLOBAL do globals.css (zera `animation-duration`) — a linha ainda vira
+  "Concluído", só não anima. Aplicado à linha da tabela E ao cartão.
+- **Alvos ≥40px** (`min-h-[40px] min-w-[40px]`) nos botões ± (AdvanceControls) e
+  editar/excluir (AcoesCell); slider ganhou `touch-pan-y` (arraste vertical rola a
+  página). Checkbox rows do modal já eram `min-h-[40px]` (G5).
+- **`role=progressbar`** na leitura de % do AdvanceControls (aria-valuenow/min/max).
+- **6.5 sem axe** (não há lib; `no-heavy-deps` proíbe): o teste computa o contraste
+  WCAG real das 4 variantes de status nos 2 temas a partir dos tokens (ink × pílula
+  15% sobre o painel), asserção ≥4.5 (menor real = dark accent 5.59). Trocar uma
+  variante por token de baixo contraste reprova. Estrutura do cartão + tamanho de
+  alvo + progressbar também testados. Axe real (browser) fica p/ o E2E da G7.
+
 ## Armadilhas previstas
 
 1. **N+1 na trilha** — manter `includes(:task_advances)`; contributors/last_advance em
@@ -186,7 +211,7 @@ completa fica para o G7. Provisionar o banco a cada sessão (ver CONTINUIDADE).
 - [x] G3 — Responsáveis + Trilha + avisos (3.1–3.5)
 - [x] G4 — Cabeçalho + Ações + sync + gating (4.1–4.5)
 - [x] G5 — Modais histórico + atribuição (5.1–5.5)
-- [ ] G6 — Mobile + a11y + pulso (6.1–6.5)
+- [x] G6 — Mobile + a11y + pulso (6.1–6.5)
 - [ ] G7 — Integração + E2E + carga (7.1–7.3)
 
 ## RETOMADA (para o próximo agente)

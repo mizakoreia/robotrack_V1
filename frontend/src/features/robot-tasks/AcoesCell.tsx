@@ -35,6 +35,7 @@ export function AcoesCell({ robotId, task }: { robotId: string; task: TaskDTO })
         type="button"
         size="sm"
         variant="ghost"
+        className="min-h-[40px] min-w-[40px]"
         aria-label={robotTaskText.editAria(task.desc)}
         onClick={() => {
           setDesc(task.desc)
@@ -47,6 +48,7 @@ export function AcoesCell({ robotId, task }: { robotId: string; task: TaskDTO })
         type="button"
         size="sm"
         variant="ghost"
+        className="min-h-[40px] min-w-[40px]"
         aria-label={robotTaskText.deleteAria(task.desc)}
         onClick={() => setConfirming(true)}
       >

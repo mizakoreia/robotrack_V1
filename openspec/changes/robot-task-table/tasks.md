@@ -144,23 +144,23 @@ componente de célula — quem chegar depois consome a interface já publicada e
 
 ## 6. Mobile, movimento e acessibilidade (paralelo)
 
-- [ ] 6.1 Implementar o refluxo em cartões abaixo do breakpoint `md`, preservando as
+- [x] 6.1 Implementar o refluxo em cartões abaixo do breakpoint `md`, preservando as
   seis informações e os cabeçalhos de categoria como separadores de seção (§3.5,
   D-RTT-8 — em 375px o documento não rola horizontalmente e Ações/Trilha continuam
   visíveis sem scroll lateral)
-- [ ] 6.2 Dimensionar alvos de toque (≥40px em `−`, `+`, editar, excluir e linhas de
+- [x] 6.2 Dimensionar alvos de toque (≥40px em `−`, `+`, editar, excluir e linhas de
   checkbox; ≥32px piso geral) e aplicar `touch-action: pan-y` ao slider (PRODUCT.md,
   DESIGN.md — arrastar o dedo verticalmente sobre o slider rola a página em vez de
   mudar o progresso)
-- [ ] 6.3 Implementar o `successPulse` na transição `<100 → 100` da linha, disparado
+- [x] 6.3 Implementar o `successPulse` na transição `<100 → 100` da linha, disparado
   uma única vez e suprimido por `prefers-reduced-motion` (§3.5, DESIGN.md §Motion —
   avanço de `90 → 100` pulsa uma vez; com movimento reduzido não anima mas atualiza
   para `Concluído`)
-- [ ] 6.4 Aplicar ARIA da tela: `role="progressbar"` nas leituras, `aria-label` nos
+- [x] 6.4 Aplicar ARIA da tela: `role="progressbar"` nas leituras, `aria-label` nos
   botões só-ícone, foco preso e `Esc` devolvendo foco ao gatilho nos dois modais
   (DESIGN.md §Accessibility — `Esc` no modal de histórico devolve o foco ao botão de
   contagem **da mesma linha**, não ao topo da tabela)
-- [ ] 6.5 **Verificação:** teste de a11y automatizado nos dois temas em 375px e
+- [x] 6.5 **Verificação:** teste de a11y automatizado nos dois temas em 375px e
   1280px, com asserção de tamanho de alvo e de contraste das 3 variantes de cor de
   status (§5.1 — trocar variante de cor de status quebra AA e o teste acusa)
 
