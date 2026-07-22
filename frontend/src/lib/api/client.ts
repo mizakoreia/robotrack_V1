@@ -55,7 +55,8 @@ class ApiClient {
       (config) => {
         const skip = (config as PublicRequestConfig).skipAuth === true
         if (!skip) {
-          // Fonte ÚNICA do token: o authStore, nunca `localStorage` direto (D4.9).
+          // Fonte ÚNICA do token: o authStore (D4.9 / app-shell-navigation 2.1).
+          // Nunca lido do armazenamento do navegador aqui — o store é o dono.
           const token = useAuthStore.getState().accessToken
           if (token) {
             config.headers.Authorization = `Bearer ${token}`
