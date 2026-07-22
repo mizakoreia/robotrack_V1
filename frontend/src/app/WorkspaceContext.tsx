@@ -5,6 +5,7 @@ import { PortalMenu } from '@/components/menu/PortalMenu'
 import { useMenu } from '@/components/menu/useMenu'
 import { useWorkspaceStore } from '@/store/workspaceStore'
 import { switchWorkspace } from '@/lib/workspace/switchWorkspace'
+import { useWorkspaceIndex } from '@/lib/workspace/useWorkspaceIndex'
 
 // app-shell-navigation 5.2/5.3 (§3.10, D-G) — o contexto do workspace. O seletor
 // SÓ aparece com mais de um workspace; com exatamente um, o nome é texto estático
@@ -24,6 +25,7 @@ function RoleBadge({ role }: { role: string | null }) {
 export function WorkspaceContext() {
   const navigate = useNavigate()
   const menu = useMenu()
+  const { isError, refetch } = useWorkspaceIndex()
   const workspaces = useWorkspaceStore((s) => s.workspaces)
   const currentId = useWorkspaceStore((s) => s.currentWorkspaceId)
   const role = useWorkspaceStore((s) => s.currentRoleLabel)
@@ -32,6 +34,22 @@ export function WorkspaceContext() {
   async function pick(id: string) {
     await switchWorkspace(id)
     navigate('/')
+  }
+
+  // 5.8 — degradação do índice: rede falhou e não há nenhum workspace em cache. A
+  // casca segue navegável; aqui só o texto estático e a ação de nova tentativa —
+  // sem seletor, sem badge (não há papel a exibir).
+  if (isError && workspaces.length === 0) {
+    return (
+      <div className="flex min-w-0 items-center gap-2">
+        <span className="panel-header truncate" tabIndex={-1}>
+          RoboTrack
+        </span>
+        <button className="label-sm text-accent-ink hover:underline" onClick={() => void refetch()}>
+          Recarregar
+        </button>
+      </div>
+    )
   }
 
   return (
@@ -59,7 +77,8 @@ export function WorkspaceContext() {
           {current?.name ?? workspaces[0]?.name ?? 'RoboTrack'}
         </span>
       )}
-      <RoleBadge role={role} />
+      {/* badge só quando há workspace: índice vazio não exibe papel (5.8) */}
+      {workspaces.length > 0 && <RoleBadge role={role} />}
     </div>
   )
 }

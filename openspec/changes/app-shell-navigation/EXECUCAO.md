@@ -84,6 +84,15 @@ O `proposal.md` descreve o estado do TEMPLATE; ondas anteriores já resolveram p
    são stubs/outlets (o conteúdo é de hierarchy-screens etc.).
 6. **Migração de leitura do template (6.3):** a "única página que usa React Query" — identifico
    qual e realinho; coordeno para não portar leituras de Leads/WhatsApp (mortas, seal-template).
+8. **Descarte por workspace ausente (5.7) reusa `handleAccessRevoked` (G5).** O carregador
+   `useWorkspaceIndex` popula o índice e, se o workspace corrente não está no índice recém-carregado,
+   dispara `handleAccessRevoked` (já existente em `accessRevoked.ts`): limpa cache do tenant, volta
+   ao próprio, avisa. O 403 de request de domínio (papel adulterado) já é tratado pelo interceptor →
+   mesmo caminho. Não dupliquei a rotina.
+9. **"Fechar overlays" (D-A) é satisfeito pela escolha de item (5.4).** `switchWorkspace` faz
+   cancelQueries → clear → reset → gravar wsId; a navegação e o fechar do menu ficam com o chamador
+   (`WorkspaceContext.pick`): escolher um item do PortalMenu JÁ é um dos 5 gatilhos de fechamento, então
+   o overlay fecha antes de `pick` navegar. Não adicionei fechamento imperativo redundante.
 7. **`/` passa a ser a Visão Geral autenticada (G4).** A casca envolve toda a área autenticada
    (`ProtectedRoute > AppShell`), e o índice `/` é o destino "Visão Geral". A landing de marketing
    do template (HomePage), que ocupava `/`, foi movida para `/apresentacao` — reachable até
@@ -117,7 +126,7 @@ registrar aqui, seguir.
 - [x] G2 — Dívida do token (2.1–2.4)
 - [x] G3 — Menu em portal (3.1–3.6)
 - [x] G4 — Casca/sidebar/topbar (4.1–4.6)
-- [ ] G5 — Contexto e troca de workspace (5.1–5.9)
+- [x] G5 — Contexto e troca de workspace (5.1–5.9)
 - [ ] G6 — Persistência e convenção (6.1–6.4)
 
 ## RETOMADA (para o próximo agente)
