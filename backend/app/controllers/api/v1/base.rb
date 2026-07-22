@@ -40,6 +40,9 @@ module Api
       # Protocolo de Comissionamento (commissioning-report 1.3)
       mount Api::V1::Reports
 
+      # Log de auditoria — leitura (audit-log 5.2)
+      mount Api::V1::AuditLogs
+
       # Recálculo manual do progresso (progress-rollup 4.5)
       mount Api::V1::ProgressEndpoint
 

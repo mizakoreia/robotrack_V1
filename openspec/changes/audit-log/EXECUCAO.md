@@ -126,6 +126,23 @@ sweep). Baseline a medir no G0.
   server?`): migração/console/rake/suite conectam como o DONO (UPDATE=true legítimo)
   e NÃO devem abortar; a prova determinística do papel de app é o spec de privilégio.
 
+### Decisões tomadas na G4 (registro pós-execução)
+
+- **Verbos de escrita fail-closam com 500, não 404** (5.3): o design pedia 404 em
+  POST/PUT/PATCH/DELETE, mas o gate do app inteiro (`authorize_route!` em
+  `Api::Root`) fail-closa QUALQUER rota sem policy declarada com 500 —
+  `undeclared_route` (rota policy-less) ou `internal_error` (método sem endpoint,
+  API_ENDPOINT nil). Confirmado em `authorization_gate_spec`. A garantia é a mesma
+  do 404 pretendido: escrita de auditoria NUNCA responde 2xx. Provo (a) só o GET é
+  rota montada, com policy `AuditLogPolicy/index` (via `Api::Root.routes`), e (b)
+  os 4 verbos fail-closam. O `route_sweep_spec` (D3) já cataloga o GET.
+- **`AuditLogPolicy` mantida como está** (index?/show?/create?): já existia e
+  `inv_3` depende de `create?` responder; o design 5.1 pede "só index? e nenhum
+  update?/destroy?" — satisfeito. O endpoint só usa `index`.
+- **Endpoint header-tenant `/api/v1/audit_logs`** + `MAX_LIMIT=200` clampeado;
+  leitura por `AuditLog.order(ts: :desc).limit` (RLS + default_scope isolam).
+  Entity sem payload/by_person_id. swagger allowlist +`/api/v1/audit_logs`.
+
 ## Protocolo por grupo
 
 Aplicar → backend `rspec` dirigido (0 falhas) e/ou frontend `vitest`+`tsc` (0) → marcar
@@ -140,7 +157,7 @@ rodar duas suítes ao mesmo tempo (contenção de lock no banco de teste).
 - [x] G1 — esquema + imutabilidade + papéis (1.1–1.3, 2.1–2.5)
 - [x] G2 — model + locale + service (3.1–3.6)
 - [x] G3 — gatilho de conclusão a 100% (4.1–4.3)
-- [ ] G4 — leitura + policy + endpoint (5.1–5.3)
+- [x] G4 — leitura + policy + endpoint (5.1–5.3)
 - [ ] G5 — modal frontend (6.1–6.3)
 - [ ] G6 — fronteira com o reset D12 (7.1–7.3)
 - [ ] G7 — retenção (8.1–8.6)

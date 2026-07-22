@@ -28,6 +28,7 @@ RSpec.describe 'Swagger e superfície da API', type: :request do
     /api/v1/search
     /api/v1/my_tasks
     /api/v1/commissioning_report
+    /api/v1/audit_logs
   ].freeze
 
   it 'serve /swagger_doc como JSON sem autenticação' do
