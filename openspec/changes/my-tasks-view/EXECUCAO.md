@@ -109,7 +109,7 @@ Provisionar o banco a cada sessão (ver CONTINUIDADE) + `PATH=/opt/rbenv/shims`.
 
 - [x] G0 — este mapa (commit G0)
 - [x] G1 — pré-condição de identidade (1.1–1.4)
-- [ ] G2 — consulta + índices (2.1–2.6)
+- [x] G2 — consulta + índices (2.1–2.6)
 - [ ] G3 — endpoint + authz + viewer (3.1–3.5)
 - [ ] G4 — provas de §3.6 + isolamento (4.1–4.6, 5.1–5.3)
 - [ ] G5 — tela (6.1–6.7)
