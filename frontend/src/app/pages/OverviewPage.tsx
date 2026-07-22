@@ -135,7 +135,7 @@ function ProjectCard({ project, onOpen }: { project: OverviewProjectCard; onOpen
       footer={
         <div className="flex w-full items-center justify-between">
           <span className="label-sm text-text-muted">{t.cardFooterMacro}</span>
-          <button className="label-md font-medium text-accent-ink hover:underline" onClick={onOpen}>
+          <button className="label-md inline-flex min-h-[2rem] items-center font-medium text-accent-ink hover:underline" onClick={onOpen}>
             {t.cardFooterOpen}
           </button>
         </div>

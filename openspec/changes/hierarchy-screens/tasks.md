@@ -113,15 +113,15 @@
 
 ## 7. Acessibilidade, responsivo e verificação final
 
-- [ ] 7.1 Refluxo mobile: grade em coluna única abaixo de 640px, alvos de toque ≥ 32px,
+- [x] 7.1 Refluxo mobile: grade em coluna única abaixo de 640px, alvos de toque ≥ 32px,
   campo de busca sem zoom no foco (fonte ≥ 16px). (PRODUCT.md/§5.1 — uso com luva; um botão
   de 24px na grade reprova)
-- [ ] 7.2 `aria-live="polite"` no contador de resultados e foco preservado no campo após a
+- [x] 7.2 `aria-live="polite"` no contador de resultados e foco preservado no campo após a
   busca. (§3.7 + §5.1 — leitor de tela anuncia "3 resultados" sem o foco pular para a lista)
-- [ ] 7.3 Auditoria de contraste AA das três telas nos dois temas, incluindo anel a 0% e
+- [x] 7.3 Auditoria de contraste AA das três telas nos dois temas, incluindo anel a 0% e
   badges de status. (§5.1 — a variante "tinta" usada como fundo sólido reprova o AA; medir,
   não assumir)
-- [ ] 7.4 Verificação final: rodar a suíte destas telas sobre a fixture `divergent_progress`
+- [x] 7.4 Verificação final: rodar a suíte destas telas sobre a fixture `divergent_progress`
   + o contador de queries + o E2E de navegação e busca, e registrar os números medidos.
   (D15 e design D-C — a prova é ponderado 40 ≠ crua 25 exibidos e rotulados na mesma tela, e
   ≤ 3 queries por endpoint com 20 projetos)
