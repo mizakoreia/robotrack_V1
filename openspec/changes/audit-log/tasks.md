@@ -88,15 +88,15 @@ avanço).
 
 ## 5. Leitura, policy e endpoint
 
-- [ ] 5.1 Criar `AuditLogPolicy` com `index?` liberado para `owner`, `edit` e `view`, e
+- [x] 5.1 Criar `AuditLogPolicy` com `index?` liberado para `owner`, `edit` e `view`, e
   nenhum outro método de ação. (§4.1 — membro `view` recebe `200 OK` no modal; não-membro
   recebe `403` sem corpo de registro)
-- [ ] 5.2 Criar `Api::Entities::AuditLog` (expondo `id`, `msg`, `ts`, `ts_local`,
+- [x] 5.2 Criar `Api::Entities::AuditLog` (expondo `id`, `msg`, `ts`, `ts_local`,
   `by_name`, `event_type`, **sem** `payload` nem `by_person_id`) e montar
   `GET /api/v1/workspaces/:workspace_id/audit_logs` em `api/v1/base.rb` com
   `ORDER BY ts DESC` e clamp de `limit` a 200 no service. (§2.8 — `?limit=1000` num
   workspace com 250 registros retorna 200, e o payload interno não vaza no JSON)
-- [ ] 5.3 **Verificação:** spec de request cobrindo `POST`, `PUT`, `PATCH` e `DELETE` no
+- [x] 5.3 **Verificação:** spec de request cobrindo `POST`, `PUT`, `PATCH` e `DELETE` no
   recurso, todos esperando `404`, mais o route-sweep confirmando exatamente 1 endpoint de
   auditoria com policy declarada. (§4.1 inv. 1 — o dono não pode ter rota de exclusão nem
   por acidente de `resources`)
