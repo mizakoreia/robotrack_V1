@@ -116,15 +116,15 @@ avanço).
 
 ## 7. Fronteira com o reset de fábrica (D12)
 
-- [ ] 7.1 Publicar o contrato de `AuditLog::RecordService.record!` para
+- [x] 7.1 Publicar o contrato de `AuditLog::RecordService.record!` para
   `workspace-settings`, com a chave `audit.workspace_reset.v1` e o `payload` esperado
   (`projects_count`). (D12 — o dono do reset precisa de um caminho de escrita pronto, não
   de um `AuditLog.create` ad hoc)
-- [ ] 7.2 **Verificação:** spec de integração que executa o reset num workspace com 12
+- [x] 7.2 **Verificação:** spec de integração que executa o reset num workspace com 12
   registros e 3 projetos e afirma 13 registros ao final, com o 13º de tipo
   `workspace_reset` e os 12 anteriores byte-idênticos. (D12 — a contradição herdada só é
   considerada resolvida com este spec verde)
-- [ ] 7.3 **Verificação:** spec negativo que emite
+- [x] 7.3 **Verificação:** spec negativo que emite
   `DELETE FROM audit_logs WHERE workspace_id = <id>` dentro da transação do reset e afirma
   rollback integral, com os 3 projetos ainda existentes. (spec `audit-log` — prova que a
   variante antiga do reset é impossível de executar, não apenas desaconselhada)
