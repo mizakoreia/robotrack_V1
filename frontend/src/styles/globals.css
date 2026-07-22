@@ -157,6 +157,93 @@ body {
   .tabular {
     font-variant-numeric: tabular-nums;
   }
+  /* design-system 7.4 — hover de card: sobe 3px, curva de saída suave. */
+  .card-hover {
+    transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .card-hover:hover {
+    transform: translateY(-3px);
+  }
+}
+
+/* design-system 7.1 (D-DS-6) — a fonte da luz em coordenadas de viewport,
+   registrada como <length> para poder transicionar. O JS (lib/ambient.ts) escreve
+   só aqui; as três camadas leem daqui. */
+@property --lx {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 50vw;
+}
+@property --ly {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 38vh;
+}
+
+/* design-system 7.2 (D-DS-6) — as TRÊS camadas. `.ambient`: o halo fixo (dois
+   radiais de accent) que segue a luz; `.glass-sheen::before`: o brilho SÓ em
+   sidebar/topbar/hub/painéis/menus; `.glass::after`: a borda de 1px de vidro em
+   TODAS as superfícies. `background-attachment: fixed` faz todas resolverem a
+   partir do MESMO ponto de viewport. `backdrop-filter` só em sidebar/topbar/menus
+   e no overlay do modal (custo alto). */
+.ambient {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-ambient);
+  pointer-events: none;
+  background:
+    radial-gradient(600px circle at var(--lx) var(--ly), hsl(var(--accent) / 0.1), transparent 60%),
+    radial-gradient(900px circle at var(--lx) var(--ly), hsl(var(--accent) / 0.05), transparent 72%);
+  background-attachment: fixed;
+  transition: background 400ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.glass-sheen {
+  position: relative;
+}
+.glass-sheen::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: radial-gradient(320px circle at var(--lx) var(--ly), hsl(0 0% 100% / 0.06), transparent 60%);
+  background-attachment: fixed;
+}
+.glass::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(hsl(0 0% 100% / 0.14), hsl(0 0% 100% / 0.02));
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+/* design-system 7.3 (D-DS-6) — as três degradações.
+   1) Toque (sem hover fino): o JS nem registra listener; a luz fica no repouso.
+   2) Movimento reduzido: a luz CONGELA (sem transição), mas SEGUE pintada —
+      remover as camadas mudaria a leitura das superfícies, não só o movimento.
+   3) data-glow="off": desliga TUDO, inclusive o halo. */
+@media (prefers-reduced-motion: reduce) {
+  .ambient {
+    transition: none;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+:root[data-glow='off'] .ambient,
+:root[data-glow='off'] .glass-sheen::before {
+  display: none;
 }
 
 /* design-system G1 (D-DS-1) — as opacidades canônicas de cada superfície num

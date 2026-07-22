@@ -148,10 +148,33 @@ export default {
           from: { height: 'var(--radix-accordion-content-height)' },
           to: { height: 0 },
         },
+        // design-system 7.4 — entrada de tela, menu, modal, pulso de sucesso.
+        // Curvas ease-out exponenciais (y em [0,1] — nada de bounce numa UI
+        // industrial); durações 150–320ms.
+        viewEnter: {
+          from: { opacity: '0', transform: 'translateY(8px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
+        },
+        menuIn: {
+          from: { opacity: '0', transform: 'translateY(-4px) scale(0.98)' },
+          to: { opacity: '1', transform: 'translateY(0) scale(1)' },
+        },
+        modalPop: {
+          from: { opacity: '0', transform: 'scale(0.96)' },
+          to: { opacity: '1', transform: 'scale(1)' },
+        },
+        successPulse: {
+          '0%': { boxShadow: '0 0 0 0 hsl(var(--success) / 0.5)' },
+          '100%': { boxShadow: '0 0 0 8px hsl(var(--success) / 0)' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
+        'view-enter': 'viewEnter 260ms cubic-bezier(0.16, 1, 0.3, 1)',
+        'menu-in': 'menuIn 150ms cubic-bezier(0.16, 1, 0.3, 1)',
+        'modal-pop': 'modalPop 200ms cubic-bezier(0.16, 1, 0.3, 1)',
+        'success-pulse': 'successPulse 320ms ease-out',
       },
     },
   },
