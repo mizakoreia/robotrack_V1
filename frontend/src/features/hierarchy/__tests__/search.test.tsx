@@ -83,6 +83,16 @@ describe('busca na Visão Geral (6.5)', () => {
     expect(screen.getByText('"xyz"')).toBeInTheDocument()
   })
 
+  it('7.2 — o foco permanece no campo após a busca', async () => {
+    renderPage()
+    await screen.findByText('1/4')
+    const box = screen.getByRole('searchbox')
+    fireEvent.change(box, { target: { value: 'sol' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Buscar' }))
+    await screen.findByText('Solda 01')
+    expect(document.activeElement).toBe(box) // não pulou para a lista
+  })
+
   it('Enter logo após digitar executa UMA busca, não duas', async () => {
     renderPage()
     await screen.findByText('1/4')

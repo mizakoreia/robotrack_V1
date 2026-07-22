@@ -90,7 +90,7 @@ export function ProjectPage() {
                         </>
                       )}
                       <button
-                        className="label-md font-medium text-accent-ink hover:underline"
+                        className="label-md inline-flex min-h-[2rem] items-center font-medium text-accent-ink hover:underline"
                         onClick={() => navigate(`/celula/${cell.id}`)}
                       >
                         {hierarchyText.overview.cardFooterOpen}

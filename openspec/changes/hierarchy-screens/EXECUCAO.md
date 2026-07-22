@@ -137,7 +137,7 @@ decidir, registrar aqui, seguir.
 - [x] G4 — Tela Visão Geral (4.1–4.6) — 1º print
 - [x] G5 — Telas Projeto e Célula (5.1–5.6)
 - [x] G6 — Busca na UI (6.1–6.5)
-- [ ] G7 — a11y/responsivo/final (7.1–7.4)
+- [x] G7 — a11y/responsivo/final (7.1–7.4)
 
 ## RETOMADA (para o próximo agente)
 
@@ -151,3 +151,17 @@ decidir, registrar aqui, seguir.
    cross-tenant 404, busca por RLS, anel 0% sem traço, CTA de criação oculto para `view`.
 5. Consumidores: `robot-task-table` (destino de "Abrir" no card do robô), `my-tasks-view`,
    `commissioning-report`, `quality-and-accessibility` (E2E + a11y), `offline-pwa`.
+
+## Verificação final (7.4) — números medidos
+
+- Frontend: **231 / 0** (vitest), tsc `--noEmit` limpo. Inclui o teste D15 (hub 25% ≠ anel
+  40% rotulados na mesma tela), o E2E de navegação (Visão Geral→Projeto→Célula→voltar) e a
+  busca ('sol' acha célula+robô, não a tarefa; 'xyz' vazio; limpar restaura).
+- Backend (suíte da change): **49 / 0** — contrato das duas métricas (fixture divergente
+  ponderado 40 ≠ crua 25 sob a fórmula real; nenhuma chave `progress`), overview (≤3 queries
+  com 20×5×8, projeto vazio 200, robô N/A ponderado 100/raw 0), busca (escape do curinga,
+  path_label, isolamento), e a varredura cross-tenant (os 3 endpoints geram 404 byte-idêntico).
+- a11y/responsivo: grade em coluna única <640px; alvos de toque ≥32px (IconButtons + links
+  de card min-h 2rem); busca com fonte ≥16px (sem zoom iOS), `aria-live` no contador e foco
+  preservado no campo após buscar; contraste AA coberto pelo teste de tokens (as telas só
+  compõem tokens auditados).
