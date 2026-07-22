@@ -17,9 +17,11 @@ export default {
     },
     extend: {
       colors: {
-        // design-system G1 — os PAPÉIS do RoboTrack (fonte única). A restrição de
-        // namespace por propriedade (cheia só em bg/border/stroke/ring, tinta só
-        // em text, sólida só em bg — D-DS-2) é do G2.
+        // design-system G1/G2 — PAPÉIS neutros (usados como bg E text por serem
+        // neutros): base e superfícies. As cores de STATUS NÃO ficam aqui (D-DS-2):
+        // um genérico geraria `text-success` e `bg-success-ink`, que reprovam AA.
+        // Elas moram em backgroundColor/textColor/borderColor/ringColor/stroke,
+        // cada namespace restrito à sua propriedade (abaixo).
         'bg-main': 'hsl(var(--bg-main))',
         'bg-panel': 'hsl(var(--bg-panel))',
         'bg-nav': 'hsl(var(--bg-nav))',
@@ -29,17 +31,6 @@ export default {
         'text-main': 'hsl(var(--text-main))',
         'text-muted': 'hsl(var(--text-muted))',
         track: 'hsl(var(--track))',
-        success: 'hsl(var(--success))',
-        'success-ink': 'hsl(var(--success-ink))',
-        warning: 'hsl(var(--warning))',
-        'warning-ink': 'hsl(var(--warning-ink))',
-        danger: 'hsl(var(--danger))',
-        'danger-ink': 'hsl(var(--danger-ink))',
-        'danger-solid': 'hsl(var(--danger-solid))',
-        na: 'hsl(var(--na))',
-        'na-ink': 'hsl(var(--na-ink))',
-        'accent-ink': 'hsl(var(--accent-ink))',
-        'accent-solid': 'hsl(var(--accent-solid))',
 
         // Aliases shadcn (o G8 os remove)
         border: 'hsl(var(--border))',
@@ -75,6 +66,48 @@ export default {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
+      },
+      // design-system G2 (D-DS-2) — as três variantes, cada uma restrita à sua
+      // propriedade. `text-success` (cheia como texto) e `bg-success-ink` (tinta
+      // como fundo) NÃO existem: o Tailwind não gera a classe, o erro fica visível
+      // na primeira execução em vez de reprovar AA seis meses depois.
+      backgroundColor: {
+        // cheia como fundo de pílula tingida
+        success: 'hsl(var(--success) / <alpha-value>)',
+        warning: 'hsl(var(--warning) / <alpha-value>)',
+        danger: 'hsl(var(--danger) / <alpha-value>)',
+        na: 'hsl(var(--na) / <alpha-value>)',
+        // sólida — fundo de texto branco (a única forma AA de branco sobre a cor)
+        'accent-solid': 'hsl(var(--accent-solid))',
+        'danger-solid': 'hsl(var(--danger-solid))',
+      },
+      textColor: {
+        // tinta — o ÚNICO uso de cor de status como texto
+        'success-ink': 'hsl(var(--success-ink))',
+        'warning-ink': 'hsl(var(--warning-ink))',
+        'danger-ink': 'hsl(var(--danger-ink))',
+        'accent-ink': 'hsl(var(--accent-ink))',
+        'na-ink': 'hsl(var(--na-ink))',
+      },
+      borderColor: {
+        success: 'hsl(var(--success))',
+        warning: 'hsl(var(--warning))',
+        danger: 'hsl(var(--danger))',
+        na: 'hsl(var(--na))',
+      },
+      ringColor: {
+        success: 'hsl(var(--success))',
+        warning: 'hsl(var(--warning))',
+        danger: 'hsl(var(--danger))',
+        accent: 'hsl(var(--accent))',
+        na: 'hsl(var(--na))',
+      },
+      stroke: {
+        success: 'hsl(var(--success))',
+        warning: 'hsl(var(--warning))',
+        danger: 'hsl(var(--danger))',
+        accent: 'hsl(var(--accent))',
+        na: 'hsl(var(--na))',
       },
       borderRadius: {
         xs: 'var(--r-xs)',
