@@ -143,6 +143,31 @@ sweep). Baseline a medir no G0.
   leitura por `AuditLog.order(ts: :desc).limit` (RLS + default_scope isolam).
   Entity sem payload/by_person_id. swagger allowlist +`/api/v1/audit_logs`.
 
+### Decisões tomadas na G7 (registro pós-execução)
+
+- **Retenção por DDL, mecânica completa + stub de storage** (decisão G0 nº 5):
+  `AuditLog::Retention` (helpers puros: nomes/faixas de partição, elegibilidade
+  >24m, `detach_and_drop_sql` DETACH+DROP nunca DELETE — 8.6, `bucket!`, checksum,
+  `partition_metrics`), `PartitionMaintenance` (cria futuras + secure_audit_partition
+  + alerta DEFAULT sem remover), `ArchiveService` (export JSONL.gz+manifesto
+  count+checksum → verify contra a partição → prune gated por verify E flag), e
+  `RetentionJob` orquestrando. Storage frio = diretório local (`AUDIT_ARCHIVE_BUCKET`).
+- **Conexão do job = papel DONO (migrator)** para o DDL (CREATE/DETACH/DROP de
+  partição). Testes usam `PG.connect` com `mig_dev_pw` (como schema_constraints_spec).
+  A leitura CROSS-TENANT do arquivamento (contar/checksum TODAS as linhas de uma
+  partição, além do tenant corrente) exige um papel **BYPASSRLS read-only** dedicado
+  — dependência de `delivery-and-observability` (documentada no service). Os testes
+  seed 1 workspace e setam o contexto, provando a mecânica de export/verify/checksum.
+- **DDL não é revertido pela truncation** do DatabaseCleaner → cada teste que cria
+  partição a DROPA em `ensure` (nomes fixos: audit_logs_2024_01, 2026_04/05/06).
+  Verificado: nenhuma partição de teste vaza; schema_guard 53/0.
+- **8.5 (métricas/alertas) é de delivery-and-observability**: entrego a FONTE
+  (`partition_metrics` count+size por partição) e o alerta DEFAULT; a comparação
+  entre coletas (queda de contagem fora de janela) + o agendamento Sidekiq + o
+  bucket real são deles. Registrado no service.
+- **`AuditLog` como class-namespace** dos service objects (Retention/
+  PartitionMaintenance/ArchiveService/RetentionJob) — `class AuditLog` reaberto.
+
 ## Protocolo por grupo
 
 Aplicar → backend `rspec` dirigido (0 falhas) e/ou frontend `vitest`+`tsc` (0) → marcar
@@ -160,7 +185,7 @@ rodar duas suítes ao mesmo tempo (contenção de lock no banco de teste).
 - [x] G4 — leitura + policy + endpoint (5.1–5.3)
 - [x] G5 — modal frontend (6.1–6.3)
 - [x] G6 — fronteira com o reset D12 (7.1–7.3)
-- [ ] G7 — retenção (8.1–8.6)
+- [x] G7 — retenção (8.1–8.6)
 - [ ] G8 — encerramento (9.1–9.2)
 
 ## RETOMADA (para o próximo agente)
