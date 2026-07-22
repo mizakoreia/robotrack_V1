@@ -13,21 +13,27 @@ main (48497fd)                       ← ondas 1–4, sem nada desta sessão
     └── commissioning-hierarchy (b75b072)  change COMPLETA
         └── task-catalog                   change COMPLETA — 6 de 6 (TC-G6 fechou)
             └── robot-tasks                 change COMPLETA — 6 de 6 grupos
-                └── progress-advances (branch atual)  change COMPLETA — 6 de 6 grupos
+                └── progress-advances        change COMPLETA — 6 de 6 grupos
+                    └── progress-rollup (branch atual)  change COMPLETA — 6 de 6 grupos
 ```
 
-**`progress-advances` contém todo o trabalho** (empilhada sobre `robot-tasks`). É
-nela que se continua. Push por branch canônica (`git push origin
-HEAD:progress-advances`). Os PRs para a `main` podem ser abertos depois, na ordem
-do empilhamento.
+**`progress-rollup` contém todo o trabalho** (empilhada sobre `progress-advances`).
+É nela que se continua. Push por branch canônica (`git push origin
+HEAD:progress-rollup`). Os PRs para a `main` podem ser abertos depois, na ordem do
+empilhamento.
 
-## Suítes (medidas na branch `progress-advances`)
+## Suítes (medidas na branch `progress-rollup`)
 
 | Suíte | Resultado |
 |---|---|
-| Backend `bundle exec rspec` (como `robotrack_app`, `--seed 12345`) | **877 / 0 falhas / 9 pending** |
-| Frontend `vitest run` | **95 / 0** |
+| Backend `bundle exec rspec` (como `robotrack_app`, `--seed 12345`) | **933 / 0 falhas / 9 pending** |
+| Frontend `vitest run` | **100 / 0** |
 | Frontend `tsc --noEmit` | limpo |
+
+> Lição desta change: constantes definidas dentro de `RSpec.describe do … end`
+> VAZAM para o topo (Object). Dois specs com `ALLOWLIST`/`ENVELOPES`/`APP` colidem
+> e a última carga vence, quebrando um ou outro conforme a seed. Prefixe (ex.:
+> `PME_`, `PWB_`). Foi o que mordeu no G6.
 
 Todos os 10 pending nomeiam a capacidade que os desbloqueia — nenhum é dívida
 anônima. (Dois pendings de cascade — `tasks→robots` e `task_assignees→tasks` —
@@ -37,7 +43,7 @@ destravaram e viraram verdes ao longo de `robot-tasks`.)
 > suíte completa (estado do Rack::Attack sensível à ordem aleatória do RSpec);
 > passa isolado. Não é regressão desta sessão. Rodar com `--seed` fixo estabiliza.
 
-## Changes concluídas (9 de 24)
+## Changes concluídas (10 de 24)
 
 `seal-template-baseline`, `workspace-tenancy`, `identity-and-auth`,
 `workspace-invitations` (anteriores) e:
@@ -82,37 +88,59 @@ destravaram e viraram verdes ao longo de `robot-tasks`.)
   sem perder o comentário, read-only para `view`). Três handoffs de contrato
   (`legacy-data-migration`, `robot-task-table`, `delivery-and-observability`) e e2e dos 5
   efeitos. Decisões de execução 1–10 no EXECUCAO.
+- **`progress-rollup`** (G0..G6, COMPLETA) — as DUAS métricas de progresso que coexistem de
+  propósito (D15): **ponderada** §2.1 (por peso no robô, média simples acima) e **contagem
+  crua** §3.2 (`concluídas ÷ total`, `N/A` no denominador). Ambas SÓ em SQL (4 views
+  `security_invoker`, sem gêmeo Ruby/TS). `progress_cache` convertido de jsonb→**smallint**
+  (EXECUCAO decisão 1 — a grande: alinhou a coluna provisória da hierarquia à spec desta
+  change, autorizado pelo cliente). Cache escrito em **cascata na transação** da mutação
+  (`Progress::CascadeRecompute`, 3 UPDATE ordem fixa), caminho em massa (`BulkRecompute` +
+  `without_cascade`), sweep do ponto de escrita único, job de **reconciliação** que corrige e
+  alerta sob RLS, endpoint de recálculo manual, Visão Geral leve (`GET /api/v1/projects/
+  overview`, 2 queries constantes) com envelopes rotulados `weighted_progress`/`raw_completion`,
+  dataset de carga 93k, e a rotulagem D15 (locales, `<ProgressRing>`/`<MetricStat>` com `metric`
+  obrigatória, sweeps). Handoffs para `delivery-and-observability`, `legacy-data-migration`,
+  `commissioning-report`, `robot-task-table`. Decisões 1–7 no EXECUCAO.
 
 Cada change tem seu `openspec/changes/<nome>/EXECUCAO.md` com o mapa de grupos, as
 decisões tomadas na execução, as armadilhas encontradas e a CONCLUSÃO com o relatório
 final. **Leia o EXECUCAO.md antes de tocar no código de uma change.**
 
-## Onde parou: `progress-advances` COMPLETA; a trilha de avanço fechada
+## Onde parou: `progress-rollup` COMPLETA; as duas métricas de progresso fechadas
 
-Fechou (6/6 grupos) — ver `openspec/changes/progress-advances/EXECUCAO.md`
-(decisões 1–10). O progresso agora tem UMA porta de escrita (a trilha imutável), a
-máquina de estados progresso↔status vive em service puro, o modal de avanço existe
-no frontend, e os contratos para `legacy-data-migration`/`robot-task-table`/
-`delivery-and-observability` estão escritos como `HANDOFF-progress-advances.md` no
-diretório de cada uma.
+Fechou (6/6 grupos) — ver `openspec/changes/progress-rollup/EXECUCAO.md` (decisões
+1–7). O progresso consolidado sobe robô→célula→projeto, com as duas métricas (§2.1
+ponderada, §3.2 contagem crua) definidas SÓ em SQL, o cache escrito em cascata na
+transação, o job de reconciliação como rede de segurança, e a rotulagem D15
+executável. Contratos escritos como `HANDOFF-progress-rollup.md` em
+`delivery-and-observability`, `legacy-data-migration` e `commissioning-report`.
 
-**Pendência conhecida (documentada, não atribuída):** a tensão D-H6×D-IMUT — hard
-delete de robô/projeto que arraste tarefas com avanços daria 500 no trigger de
-imutabilidade. A resolução completa é **soft-delete de hierarquia** (uma follow-up
-em `commissioning-hierarchy`); a suíte segue verde porque `tasks` já é soft-delete
-e a FK `task_advances→tasks` é RESTRICT. Ver EXECUCAO decisão 6.
+**Pendências conhecidas (documentadas, não atribuídas):**
+- Tensão D-H6×D-IMUT (de progress-advances): hard delete de robô/projeto com
+  tarefas que têm avanços daria 500 no trigger de imutabilidade. Fix = soft-delete
+  de hierarquia (follow-up em `commissioning-hierarchy`).
+- Os p95 de latência de `progress-rollup` (120ms/25ms/8s) são alvo de hardware; o
+  CI trava o NÚMERO de statements (determinístico) e mede latência com teto
+  tolerante (EXECUCAO decisão 7). O job de perf real é de `delivery-and-observability`.
+- `<ProgressRing>`/`<MetricStat>` existem (progress-rollup 6.2) mas a TELA que os
+  monta (Visão Geral, hubs, cards) é de `hierarchy-screens`.
 
-**Próximo passo — `progress-rollup`** (o `progress_cache` consolidado sobe a
-hierarquia a partir dos avanços). Ver a seção abaixo.
+**Próximo passo — as TELAS.** O backend do núcleo (hierarquia + tarefas + avanços +
+rollup) está fechado de ponta a ponta; falta a UI real. Ver abaixo.
 
-## Depois de `progress-advances`
+## Depois de `progress-rollup` — as telas
 
-`progress-rollup` (o `progress_cache` consolidado — soma ponderada dos avanços subindo
-robô→célula→projeto). Para ter telas de verdade: `design-system` + `app-shell-navigation` +
-`hierarchy-screens` + `robot-task-table` (esta última CONSOME `progress-advances`: monta a
-tabela do robô, o aviso "trilha faltando" com `advances_count`, e reusa
-`<AdvanceControls>` — ver o `HANDOFF-progress-advances.md` no diretório dela). Hoje a UI é a
-landing do template + autenticação + painel de equipe + os hooks/lógica sem tela final.
+O caminho para telas de verdade: `design-system` (tokens, componentes base) →
+`app-shell-navigation` (shell, rotas, indicador de gravação) → `hierarchy-screens`
+(árvore de projetos/células/robôs, Visão Geral com os anéis/hubs de `progress-rollup`)
+→ `robot-task-table` (a tabela do robô: CONSOME `progress-advances` — reusa
+`<AdvanceControls>`, aviso "trilha faltando" com `advances_count` — e `progress-rollup`
+— os envelopes rotulados). Hoje a UI é a landing do template + autenticação + painel
+de equipe + os hooks/componentes/lógica sem a tela final que os une.
+
+Comece pelo que desbloqueia o resto: **`design-system`** (ou, se preferir seguir o
+valor de negócio, `hierarchy-screens`/`robot-task-table` já têm todos os contratos
+de dados prontos via os HANDOFFs). Leia o `proposal.md`/`design.md` da change escolhida.
 
 ## Método (não abrir mão)
 
@@ -170,15 +198,17 @@ O frontend usa **pnpm** (`pnpm-lock.yaml`); o `package-lock.json` está dessincr
 > cada uma com proposta, design, deltas de spec e tarefas.
 >
 > Leia `CONTINUIDADE.md` na raiz do repositório: ele tem o estado atual, o que já foi
-> entregue, onde parei e o método de trabalho. `task-catalog`, `robot-tasks` e
-> `progress-advances` estão COMPLETAS (leia os EXECUCAO.md delas). O núcleo da Tarefa e a
-> trilha de avanço estão fechados de ponta a ponta.
+> entregue, onde parei e o método de trabalho. `robot-tasks`, `task-catalog`,
+> `progress-advances` e `progress-rollup` estão COMPLETAS (leia os EXECUCAO.md delas). Todo
+> o BACKEND do núcleo — hierarquia, tarefas, catálogo, avanços e progresso consolidado —
+> está fechado de ponta a ponta.
 >
-> Trabalhe na branch `progress-advances` (as branches são empilhadas; ela contém tudo). O
-> próximo passo é a change **`progress-rollup`** (o `progress_cache` consolidado — soma
-> ponderada dos avanços subindo robô→célula→projeto). Comece pelo `EXECUCAO.md` dela
-> (commit G0) — antes de qualquer código. Push por branch canônica
-> (`git push origin HEAD:progress-rollup`).
+> Trabalhe na branch `progress-rollup` (as branches são empilhadas; ela contém tudo). O
+> próximo passo são as **TELAS**: `design-system` → `app-shell-navigation` →
+> `hierarchy-screens` → `robot-task-table`. Escolha a próxima change, comece pelo
+> `EXECUCAO.md` dela (commit G0) — antes de qualquer código — e faça push por branch
+> canônica (`git push origin HEAD:<change>`). Os contratos de dados que as telas consomem
+> já estão escritos nos `HANDOFF-*.md` das changes consumidoras.
 >
 > Siga o método: um grupo por vez, e ao fim de cada grupo me apresente um resumo e peça
 > autorização antes de seguir para o próximo. Não regrida nenhuma das regras listadas na
