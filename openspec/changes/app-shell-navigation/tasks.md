@@ -97,39 +97,39 @@ um mock que segue o contrato acordado.
 
 ## 5. Contexto e troca de workspace
 
-- [ ] 5.1 Criar `store/workspaceStore.ts` com o `wsId` corrente e o índice de workspaces,
+- [x] 5.1 Criar `store/workspaceStore.ts` com o `wsId` corrente e o índice de workspaces,
   expondo o `wsId` por um seletor único consumido por todos os hooks de domínio.
   (§3.10 — nenhum módulo lê o `wsId` de outra origem; escrita só pelo handler do 5.4)
-- [ ] 5.2 Implementar o contexto na topbar: seletor renderizado apenas com
+- [x] 5.2 Implementar o contexto na topbar: seletor renderizado apenas com
   `workspaces.length > 1`, e nome como texto estático fora da ordem de tabulação quando há
   exatamente um. (§3.10 — com 1 workspace não existe elemento com `disabled` nem
   `aria-disabled`: o controle não é renderizado, não é desabilitado)
-- [ ] 5.3 Implementar o badge de papel com os rótulos "Dono" / "Editor" / "Somente
+- [x] 5.3 Implementar o badge de papel com os rótulos "Dono" / "Editor" / "Somente
   leitura", estático, sem chevron e fora da ordem de tabulação; papel ausente cai para
   "Somente leitura". (§DESIGN Components — lado a lado, só o seletor tem chevron e só ele
   recebe `Tab`; badge é rótulo, select é controle)
-- [ ] 5.4 Implementar `switchWorkspace()` na ordem: fechar overlays → `cancelQueries()` →
+- [x] 5.4 Implementar `switchWorkspace()` na ordem: fechar overlays → `cancelQueries()` →
   `queryClient.clear()` → resetar fatias de UI por workspace → gravar o novo `wsId` →
   navegar para `/`. (§3.10 — `getQueryCache().getAll()` retorna vazio imediatamente após a
   troca; `invalidateQueries` não é chamado no fluxo)
-- [ ] 5.5 Escrever o teste de vazamento entre tenants: cache quente com os projetos "Linha
+- [x] 5.5 Escrever o teste de vazamento entre tenants: cache quente com os projetos "Linha
   3" e "Linha 5" de `betim`, troca para `camacari`, e asserção de que esses textos nunca
   aparecem no documento em nenhum frame após a troca. (§3.10 — este teste é o que falha se
   alguém trocar `clear()` por `invalidateQueries()`, que renderiza o dado antigo enquanto
   refaz o fetch)
-- [ ] 5.6 Escrever o teste da resposta atrasada: query de `betim` em voo, troca para
+- [x] 5.6 Escrever o teste da resposta atrasada: query de `betim` em voo, troca para
   `camacari`, resposta chega 300ms depois e não escreve entrada com `wsId = 'betim'` no
   cache. (§3.10 — falha se o `cancelQueries()` for removido ou reordenado para depois do
   `clear()`)
-- [ ] 5.7 Implementar o tratamento de 403 e de workspace ausente do índice: recarregar o
+- [x] 5.7 Implementar o tratamento de 403 e de workspace ausente do índice: recarregar o
   índice, atualizar o badge e, se o workspace corrente sumiu, executar o descarte completo
   e voltar ao workspace próprio com aviso. (§3.10 revogação — papel local adulterado de
   `view` para `owner` não concede escrita: o 403 é apresentado como erro do servidor, não
   tratado como bug de UI)
-- [ ] 5.8 Implementar a degradação do índice: falha de rede e índice vazio mantêm a casca
+- [x] 5.8 Implementar a degradação do índice: falha de rede e índice vazio mantêm a casca
   navegável, sem seletor e sem badge, com ação de nova tentativa. (§3.10 — erro de rede no
   índice não impede a sidebar de renderizar)
-- [ ] 5.9 Escrever os testes restantes do contexto: seletor ausente com 1 workspace,
+- [x] 5.9 Escrever os testes restantes do contexto: seletor ausente com 1 workspace,
   presente com 2, badge para cada um dos 3 papéis, escolher o workspace já corrente sem
   efeito, e degradação com índice vazio e com erro de rede. (§3.10 — falha se alguém
   "melhorar" o caso de 1 workspace renderizando um seletor desabilitado)

@@ -1,7 +1,10 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import type { ReactNode } from 'react'
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, within, act } from '@testing-library/react'
 import { MemoryRouter, Routes, Route, Link } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AppShell } from '../AppShell'
+import { workspacesApi } from '@/lib/api/endpoints'
 import { useAuthStore } from '@/store/authStore'
 import { useWorkspaceStore } from '@/store/workspaceStore'
 
@@ -19,9 +22,19 @@ function seedStores() {
   })
 }
 
+// QueryClient próprio: a topbar monta o WorkspaceContext, que carrega o índice.
+function Providers({ children, initial }: { children: ReactNode; initial: string }) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })
+  return (
+    <QueryClientProvider client={client}>
+      <MemoryRouter initialEntries={[initial]}>{children}</MemoryRouter>
+    </QueryClientProvider>
+  )
+}
+
 function Shell({ initial = '/' }: { initial?: string }) {
   return (
-    <MemoryRouter initialEntries={[initial]}>
+    <Providers initial={initial}>
       <Routes>
         <Route element={<AppShell />}>
           <Route path="/" element={<div>conteúdo visão geral</div>} />
@@ -29,7 +42,7 @@ function Shell({ initial = '/' }: { initial?: string }) {
           <Route path="/relatorio" element={<div>conteúdo relatório</div>} />
         </Route>
       </Routes>
-    </MemoryRouter>
+    </Providers>
   )
 }
 
@@ -37,7 +50,12 @@ beforeEach(() => {
   document.getElementById('rt-overlays')?.remove()
   // jsdom não implementa Element.scrollTo — a casca chama em `.main` a cada nav.
   Element.prototype.scrollTo = vi.fn() as unknown as Element['scrollTo']
+  // o índice de workspaces é carregado pelo WorkspaceContext; devolve o corrente.
+  vi.spyOn(workspacesApi, 'list').mockResolvedValue([{ id: 'betim', name: 'Betim', role: 'owner' }])
   seedStores()
+})
+afterEach(() => {
+  vi.restoreAllMocks()
 })
 
 describe('AppShell (§3.10, D-F)', () => {
@@ -58,13 +76,13 @@ describe('AppShell (§3.10, D-F)', () => {
 
   it('"Visão Geral" fica ativo em toda a subárvore da hierarquia', () => {
     render(
-      <MemoryRouter initialEntries={['/projeto/8f2a/celula/1c9b']}>
+      <Providers initial="/projeto/8f2a/celula/1c9b">
         <Routes>
           <Route element={<AppShell />}>
             <Route path="/projeto/:pid/celula/:cid" element={<div>subárvore</div>} />
           </Route>
         </Routes>
-      </MemoryRouter>,
+      </Providers>,
     )
     const nav = screen.getByRole('navigation', { name: 'Navegação principal' })
     expect(within(nav).getByRole('link', { current: 'page' })).toHaveTextContent('Visão Geral')
@@ -91,14 +109,14 @@ describe('AppShell (§3.10, D-F)', () => {
     Element.prototype.scrollTo = scrollTo as unknown as Element['scrollTo']
 
     render(
-      <MemoryRouter initialEntries={['/']}>
+      <Providers initial="/">
         <Routes>
           <Route element={<AppShell />}>
             <Route path="/" element={<Link to="/relatorio">ir ao relatório</Link>} />
             <Route path="/relatorio" element={<div>conteúdo relatório</div>} />
           </Route>
         </Routes>
-      </MemoryRouter>,
+      </Providers>,
     )
     scrollTo.mockClear()
     act(() => {
