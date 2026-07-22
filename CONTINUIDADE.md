@@ -19,20 +19,21 @@ main (48497fd)                       ← ondas 1–4, sem nada desta sessão
                             └── app-shell-navigation       change COMPLETA — 6 de 6 grupos
                                 └── hierarchy-screens          change COMPLETA — 7 de 7 grupos
                                     └── robot-task-table       change COMPLETA — 7 de 7 grupos
-                                        └── my-tasks-view (atual)  change COMPLETA — 7 de 7 grupos
+                                        └── my-tasks-view          change COMPLETA — 7 de 7 grupos
+                                            └── commissioning-report (atual)  change COMPLETA — 8 de 8 grupos
 ```
 
-**A branch atual contém todo o trabalho** (`my-tasks-view` empilhada sobre
-`robot-task-table`; full-stack). É nela que se continua. Push por branch canônica
-(`git push origin HEAD:my-tasks-view`). Os PRs para a `main` podem ser abertos
-depois, na ordem do empilhamento.
+**A branch atual contém todo o trabalho** (`commissioning-report` empilhada sobre
+`my-tasks-view`; full-stack). É nela que se continua. Push por branch canônica
+(`git push origin HEAD:commissioning-report`). Os PRs para a `main` podem ser
+abertos depois, na ordem do empilhamento.
 
-## Suítes (medidas na branch `my-tasks-view`)
+## Suítes (medidas na branch `commissioning-report`)
 
 | Suíte | Resultado |
 |---|---|
-| Backend `bundle exec rspec` (como `robotrack_app`, `--seed 12345`) | **1008 / 0 / 9pending** (baseline + robot-task-table + my-tasks-view; swagger allowlist ganhou `/api/v1/my_tasks`) |
-| Frontend `vitest run` | **296 / 0** (53 arquivos) |
+| Backend `bundle exec rspec` (como `robotrack_app`, `--seed 1234`) | **1059 / 2 / 9pending** — as 2 falhas são os BENCHMARKS de tempo do `spec/progress/load_dataset_spec.rb` (93k tarefas: seed 451s > teto 60s; runner desta sessão lento). Não é regressão: nada do relatório os toca; os 43 specs do report passam. Rodá-los isolados em runner normal confere o teto. |
+| Frontend `vitest run` | **324 / 0** (56 arquivos) |
 | Frontend `tsc --noEmit` | limpo |
 | Frontend `pnpm build` | limpo |
 
@@ -60,7 +61,7 @@ destravaram e viraram verdes ao longo de `robot-tasks`.)
 > suíte completa (estado do Rack::Attack sensível à ordem aleatória do RSpec);
 > passa isolado. Não é regressão desta sessão. Rodar com `--seed` fixo estabiliza.
 
-## Changes concluídas (15 de 24)
+## Changes concluídas (16 de 24)
 
 `seal-template-baseline`, `workspace-tenancy`, `identity-and-auth`,
 `workspace-invitations` (anteriores) e:
@@ -203,23 +204,46 @@ destravaram e viraram verdes ao longo de `robot-tasks`.)
   (não `/workspaces/:id/my_tasks`); não-membro→403 (coleção, não 404); **`SET LOCAL enable_nestloop
   = off`** no service (a RLS `current_setting` faz o estimador dar `rows=1` e um nested loop de 28s no
   dataset de carga — hash join resolve). swagger allowlist +/api/v1/my_tasks. Decisões G1..G6 no EXECUCAO.
+- **`commissioning-report`** (G0..G7, COMPLETA, full-stack, Onda 8+) — o Protocolo de
+  Comissionamento (§3.8), o ÚNICO artefato formal (o cliente assina no aceite). Payload
+  CONGELADO 100% no servidor (D-R1 — o cliente não soma, não escolhe autor, não gera id):
+  `GET /api/v1/commissioning_report?scope=all|project` em **≤5 queries constantes**;
+  carimbo = média do PONDERADO dos projetos (D15, nunca contagem crua); id
+  `RT-AAAAMMDD-HHMM` no fuso (default America/Sao_Paulo), byte-idêntico em
+  metadados/rodapé; 4 glifos fechados `✓ ◐ ○ —` num mapa único; histórico por
+  `recorded_at` (created_at NÃO existe no payload); Conclusões com autoria = última
+  entrada a 100 (`CompletionAuthorship`, DISTINCT ON) + 2 fallbacks; assinaturas SEMPRE
+  vazias; TODOS os textos em `report.v1.*` resolvidos no servidor e entregues em
+  `labels` (D-R9). Impressão = CSS `@page` A4 (D-R2), thead/tfoot repetidos (D-R3),
+  tarefa+histórico indivisível como `<tbody .rpt-task>` (D-R4, limiar 18 → fatias com
+  faixa anunciada), tema escuro neutralizado, shell des-clampado via `body:has(.rpt-doc)`.
+  Volume `Reports::Budget` (2000 avisa / 5000 trunca a 10 por tarefa ANUNCIADO no
+  documento / 8000 → 422 antes do payload). Tela: seletor de escopo, estados
+  loading/erro/OFFLINE (listener — query pausada sem rede), imprimir. Testes: 43 specs
+  backend (incl. carga 2.325/3.100 na fronteira avisa≠trunca) + sweeps i18n/glifos dos
+  dois lados + **printToPDF real** (`frontend/scripts/print-report.mjs`, Playwright
+  global + pypdf — páginas, cabeçalho/rodapé em todas, nenhuma tarefa partida).
+  **Divergências:** endpoint header-tenant; não-membro→403 (middleware de tenant);
+  sweep de literais em vitest (não há config ESLint no repo). Decisões G1..G7 no EXECUCAO.
 
 Cada change tem seu `openspec/changes/<nome>/EXECUCAO.md` com o mapa de grupos, as
 decisões tomadas na execução, as armadilhas encontradas e a CONCLUSÃO com o relatório
 final. **Leia o EXECUCAO.md antes de tocar no código de uma change.**
 
-## Onde parou: `my-tasks-view` COMPLETA (7/7); a lista pessoal do viewer
+## Onde parou: `commissioning-report` COMPLETA (8/8); o Protocolo de Comissionamento
 
-Fechou (7/7 grupos) — ver `openspec/changes/my-tasks-view/EXECUCAO.md`. A rota
-`/minhas-tarefas`, antes STUB, é a lista das tarefas ABERTAS atribuídas à pessoa
-logada (leitura pura, deep-link para o robô). O invariável central: identidade
-ausente = 409 (nunca lista vazia enganosa). Backend numa consulta só (driver em
-`task_assignees`, sem N+1), isolamento por RLS provado, plano sem Seq Scan on tasks.
-Testado (frontend **296/0**, backend completo **1008/0**).
+Fechou (8/8 grupos) — ver `openspec/changes/commissioning-report/EXECUCAO.md`. A rota
+`/relatorio`, antes STUB, é o documento formal A4 que o cliente assina: payload
+congelado no servidor (≤5 queries), carimbo ponderado (D15), impressão CSS `@page`
+com teste printToPDF real (`cd frontend && npm run test:print`, vite :5173 no ar).
+Testado (frontend **324/0**, backend completo **1059/2** — as 2 falhas são os
+benchmarks de tempo do dataset de 93k do progress-rollup num runner lento, não
+regressão; os 43 specs do relatório passam).
 
-**Antes:** `robot-task-table` (COMPLETA, 7/7) — a tela operacional do robô
-(`/robo/:id`): 6 colunas, 2 avisos, 2 modais, gating de `view`, mobile, pulso aos
-100%. E antes, `hierarchy-screens` (7/7) — as três telas de navegação + busca, com
+**Antes:** `my-tasks-view` (COMPLETA, 7/7) — a lista pessoal do viewer
+(`/minhas-tarefas`; 409 identidade ausente nunca vira lista vazia). E antes,
+`robot-task-table` (7/7) — a tela operacional do robô (`/robo/:id`).
+E `hierarchy-screens` (7/7) — as três telas de navegação + busca, com
 as DUAS métricas lado a lado (D15). E `app-shell-navigation` (6/6) — a moldura
 permanente (AppShell,
 menus em portal) + as convenções D9 (factory `qk.*`, guard, barreira de vazamento na
@@ -242,14 +266,13 @@ troca de workspace, contrato do indicador de gravação, sweep de convenção).
 - `<ProgressRing>`/`<MetricStat>` existem (progress-rollup 6.2) mas a TELA que os
   monta (Visão Geral, hubs, cards) é de `hierarchy-screens`.
 
-**Próximo passo — `commissioning-report`.** As telas de navegação, do robô e a
-lista pessoal estão prontas; falta preencher o stub `ReportPage` (o relatório de
-comissionamento §3.8). Ver abaixo.
+**Próximo passo — `workspace-settings`** (ou `realtime-collaboration`). Todas as
+telas de STUB do shell estão preenchidas (navegação, robô, minhas tarefas,
+relatório). Ver abaixo.
 
-## Depois de `my-tasks-view` — as telas restantes
+## Depois de `commissioning-report` — o que resta
 
-Próxima: **`commissioning-report`** (preenche o stub `ReportPage` — o relatório §3.8).
-Depois:
+Próximas:
 `workspace-settings`, `realtime-collaboration`
 (D6 — invalida as keys `['ws',wsId,'overview'|'project'|'cell'|…]` que hierarchy-screens já
 declara), `offline-pwa`.
@@ -321,16 +344,16 @@ O frontend usa **pnpm** (`pnpm-lock.yaml`); o `package-lock.json` está dessincr
 > Leia `CONTINUIDADE.md` na raiz do repositório: ele tem o estado atual, o que já foi
 > entregue, onde parei e o método de trabalho. `robot-tasks`, `task-catalog`,
 > `progress-advances`, `progress-rollup`, `design-system`, `app-shell-navigation`,
-> `hierarchy-screens`, `robot-task-table` e `my-tasks-view` estão COMPLETAS (leia os EXECUCAO.md
-> delas). Todo o BACKEND do núcleo, a BASE VISUAL, a MOLDURA + CONVENÇÕES, as TRÊS TELAS DE
-> NAVEGAÇÃO (Visão Geral, Projeto, Célula) + busca, a TELA OPERACIONAL DO ROBÔ (`/robo/:id`) e a
-> LISTA PESSOAL (`/minhas-tarefas`) estão fechados de ponta a ponta. `/` já é a Visão Geral.
+> `hierarchy-screens`, `robot-task-table`, `my-tasks-view` e `commissioning-report` estão
+> COMPLETAS (leia os EXECUCAO.md delas). Todo o BACKEND do núcleo, a BASE VISUAL, a MOLDURA +
+> CONVENÇÕES, as TRÊS TELAS DE NAVEGAÇÃO (Visão Geral, Projeto, Célula) + busca, a TELA
+> OPERACIONAL DO ROBÔ (`/robo/:id`), a LISTA PESSOAL (`/minhas-tarefas`) e o PROTOCOLO DE
+> COMISSIONAMENTO (`/relatorio`, documento A4 assinável com teste printToPDF) estão fechados
+> de ponta a ponta. `/` já é a Visão Geral.
 >
-> Trabalhe na branch `my-tasks-view` (as branches são empilhadas; ela contém tudo;
-> full-stack). O próximo passo é **`commissioning-report`** — preenche o stub `ReportPage` (o
-> relatório de comissionamento §3.8); reusa os envelopes rotulados de `progress-rollup` e os
-> agregados da hierarquia. Depois
-> `workspace-settings`, `realtime-collaboration`,
+> Trabalhe na branch `commissioning-report` (as branches são empilhadas; ela contém tudo;
+> full-stack). O próximo passo é **`workspace-settings`** (ou `realtime-collaboration` — D6,
+> invalida as keys `['ws', wsId, …]` que as telas já declaram). Depois
 > `offline-pwa`. Comece pelo `EXECUCAO.md` da change (commit G0) — antes de qualquer código —
 > e faça push por branch canônica (`git push origin HEAD:<change>`). Convenções vigentes:
 > hooks em `features/<dominio>/` com a factory `qk.*` (o guard reprova key fora de

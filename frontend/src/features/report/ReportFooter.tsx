@@ -18,6 +18,11 @@ export function ReportFooter({ report }: { report: CommissioningReportDTO }) {
         </span>
       </p>
       <p>{f.traceability}</p>
+      {report.warnings.map((w) => (
+        <p key={w} className="italic">
+          {w}
+        </p>
+      ))}
     </div>
   )
 }

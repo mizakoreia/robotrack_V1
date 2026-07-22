@@ -43,8 +43,8 @@ export const reportFixture: CommissioningReportDTO = {
             {
               id: 'r1', name: 'R03 - Sealing', application: 'Sealing', weighted_progress: 62,
               tasks: [
-                { id: 't1', description: 'Fixação da base', status: 'Concluído', symbol: '✓', percent: 100, assignees: ['Ana Lima'], advances: [{ recorded_at: '2026-07-18T14:02:00-03:00', author: 'Ana Lima', from: 40, to: 100, comment: 'Torqueado 40Nm', transition: 'de 40% para 100%' }] },
-                { id: 't2', description: 'Alinhamento do 6º eixo', status: 'Em Andamento', symbol: '◐', percent: 45, assignees: [], advances: [] },
+                { id: 't1', description: 'Fixação da base', status: 'Concluído', symbol: '✓', percent: 100, assignees: ['Ana Lima'], advances: [{ recorded_at: '2026-07-18T14:02:00-03:00', author: 'Ana Lima', from: 40, to: 100, comment: 'Torqueado 40Nm', transition: 'de 40% para 100%' }], truncated_notice: null },
+                { id: 't2', description: 'Alinhamento do 6º eixo', status: 'Em Andamento', symbol: '◐', percent: 45, assignees: [], advances: [], truncated_notice: null },
               ],
             },
           ],
@@ -73,6 +73,8 @@ export const reportFixture: CommissioningReportDTO = {
     concluded_by: 'Concluído por', concluded_at: 'Em',
     signature_name: 'Nome', signature_field: 'Assinatura', signature_date: 'Data',
     history_continues: '— histórico continua na próxima página —',
+    meta_scope: 'Escopo', meta_document_id: 'Id do documento', meta_issued_at: 'Emitido em',
+    meta_generated_by: 'Gerado por', meta_structure: 'Estrutura',
   },
   warnings: [],
 }

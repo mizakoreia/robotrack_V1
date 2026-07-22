@@ -15,13 +15,38 @@
     "issued_at": "2026-07-20T14:32:00-03:00",
     "generated_by": "Marina Alves",
     "structure": "1 projeto(s) · 1 célula(s) · 1 robô(s) · 2 tarefa(s)",
-    "counts": { "projects": 1, "cells": 1, "robots": 1, "tasks": 2 }
+    "counts": {
+      "projects": 1,
+      "cells": 1,
+      "robots": 1,
+      "tasks": 2
+    }
   },
   "status_distribution": [
-    { "status": "Concluído", "glyph": "✓", "label": "Concluído", "count": 1 },
-    { "status": "Em Andamento", "glyph": "◐", "label": "Em andamento", "count": 1 },
-    { "status": "Pendente", "glyph": "○", "label": "Pendente", "count": 0 },
-    { "status": "N/A", "glyph": "—", "label": "N/A", "count": 0 }
+    {
+      "status": "Concluído",
+      "glyph": "✓",
+      "label": "Concluído",
+      "count": 1
+    },
+    {
+      "status": "Em Andamento",
+      "glyph": "◐",
+      "label": "Em andamento",
+      "count": 1
+    },
+    {
+      "status": "Pendente",
+      "glyph": "○",
+      "label": "Pendente",
+      "count": 0
+    },
+    {
+      "status": "N/A",
+      "glyph": "—",
+      "label": "N/A",
+      "count": 0
+    }
   ],
   "tree": [
     {
@@ -46,7 +71,9 @@
                   "status": "Concluído",
                   "symbol": "✓",
                   "percent": 100,
-                  "assignees": ["Ana Lima"],
+                  "assignees": [
+                    "Ana Lima"
+                  ],
                   "advances": [
                     {
                       "recorded_at": "2026-07-18T14:02:00-03:00",
@@ -56,7 +83,8 @@
                       "comment": "Torqueado 40Nm, conferido",
                       "transition": "de 40% para 100%"
                     }
-                  ]
+                  ],
+                  "truncated_notice": null
                 },
                 {
                   "id": "t-align",
@@ -65,7 +93,8 @@
                   "symbol": "◐",
                   "percent": 45,
                   "assignees": [],
-                  "advances": []
+                  "advances": [],
+                  "truncated_notice": null
                 }
               ]
             }
@@ -83,8 +112,14 @@
     }
   ],
   "signatures": [
-    { "key": "commissioner", "label": "Comissionador" },
-    { "key": "client", "label": "Cliente / Aceite" }
+    {
+      "key": "commissioner",
+      "label": "Comissionador"
+    },
+    {
+      "key": "client",
+      "label": "Cliente / Aceite"
+    }
   ],
   "footer": {
     "document_id": "RT-20260720-1432",
@@ -108,7 +143,12 @@
     "signature_name": "Nome",
     "signature_field": "Assinatura",
     "signature_date": "Data",
-    "history_continues": "— histórico continua na próxima página —"
+    "history_continues": "— histórico continua na próxima página —",
+    "meta_scope": "Escopo",
+    "meta_document_id": "Id do documento",
+    "meta_issued_at": "Emitido em",
+    "meta_generated_by": "Gerado por",
+    "meta_structure": "Estrutura"
   },
   "warnings": []
 }

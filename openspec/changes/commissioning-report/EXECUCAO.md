@@ -171,6 +171,35 @@ paralela a partir do contrato.
   rótulos de ReportMetadata ainda são literais pt-BR → o 8.2 os moverá para
   `labels`/payload).
 
+### Decisões tomadas na G7 (registro pós-execução)
+
+- **`Reports::Budget`** com os 4 nomes (WARN_TASKS 2000 / TRUNCATE_ADVANCES 5000 /
+  MAX_TASKS 8000 / KEEP_PER_TASK 10). O teto absoluto é checado com a Q4
+  (status_counts) MOVIDA para primeiro — 422 antes de montar payload, ainda ≤5
+  queries. Truncamento: entradas ASC → sobrevivem as `last(10)`; nota
+  `(+N …omitidas)` por tarefa (`truncated_notice` no payload) + warnings no topo
+  (ReportDocument) E no rodapé (ReportFooter). Specs com `stub_const` rebaixando
+  limiares; o dataset real (2.325/3.100) mora no load_perf (8.4, reusa
+  `seed_progress_load` scale + advances legacy via insert_all; teto tolerante 5s,
+  contagem de queries DENTRO de in_workspace — o set_config do túnel é SELECT e
+  contaria).
+- **Sweeps**: backend `i18n_glyph_sweep_spec` (chaves `t(:...)` lidas do FONTE ×
+  `I18n.exists?`; interpolação com raise; payload real + locale sem char ≥U+2500
+  fora de {✓ ◐ ○}). Frontend `literalSweep.test.ts` (fonte de features/report sem
+  literal acentuado fora de comentário e sem char alto fora dos 3 glifos) — no
+  lugar da "regra ESLint" (não há config ESLint no repo; registrado no G6).
+  Rótulos de metadados migraram para `labels.meta_*` (payload), matando os
+  últimos literais da feature.
+- **Tela (8.3)**: ReportPage completa — seletor de escopo (all | projeto via
+  `qk.projects`), `qk.report`, imprimir (window.print), e estados: report >
+  offline > loading > erro. OFFLINE é detectado por listener `online/offline`
+  (com networkMode 'online' a query fica PAUSADA sem rede — sem o listener seria
+  loading eterno); falha de rede axios (sem response) também vira offline.
+  Chrome da tela não imprime (`.rpt-no-print`). Textos da TELA em
+  `lib/i18n/report.ts` (fora da feature — não saem no papel).
+- **422 no matcher**: `have_http_status(422)` numérico (o símbolo
+  :unprocessable_entity está deprecado no Rack novo).
+
 ## Protocolo por grupo
 
 Aplicar → backend `rspec` dirigido (0 falhas) e/ou frontend `vitest`+`tsc` (0) → marcar
@@ -188,7 +217,7 @@ suítes ao mesmo tempo (contenção de lock no banco de teste — trava as duas)
 - [x] G4 — distribuição + glifos (4.1–4.3)
 - [x] G5 — corpo + histórico + conclusões (5.1–5.5, 6.1–6.4)
 - [x] G6 — assinaturas + rodapé + impressão A4 (7.1–7.5)
-- [ ] G7 — volume + i18n + tela + fechamento (8.1–8.4)
+- [x] G7 — volume + i18n + tela + fechamento (8.1–8.4)
 
 ## RETOMADA (para o próximo agente)
 
