@@ -27,7 +27,7 @@ export function PerformanceIndicators({ kpis, targets }: { kpis: { total_sales?:
               <td>{r.label}</td>
               <td className="text-right">{typeof r.value === 'number' ? r.value.toLocaleString('pt-BR') : r.value}</td>
               <td className="text-right">{typeof r.target === 'number' ? r.target.toLocaleString('pt-BR') : r.target}</td>
-              <td className={`text-right ${ok ? 'text-green-600' : 'text-red-600'}`}>{ok ? '✅ Dentro da meta' : '⚠️ Abaixo da meta'}</td>
+              <td className={`text-right ${ok ? 'text-green-600' : 'text-red-600'}`}>{ok ? 'Dentro da meta' : 'Abaixo da meta'}</td>
             </tr>
           )
         })}

@@ -10,6 +10,15 @@
          cabeçalho `Referer`. O par disto é o `history.replaceState` da
          InviteRoute, que tira o token da barra assim que ele é guardado. -->
     <meta name="referrer" content="no-referrer" />
+    <!-- design-system 3.1 — Inter 300–700 com font-display: swap. Se
+         fonts.googleapis.com for bloqueado (CSP/offline), o texto segue visível
+         na fallback stack, sem período invisível. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
     <title>Robotrack</title>
   </head>
   <body>

@@ -13,11 +13,14 @@ import { UsersPage } from '@/app/pages/UsersPage'
 import { ProfilePage } from '@/app/pages/ProfilePage'
 import { BuildPage } from '@/app/pages/BuildPage'
 import { TeamPanel } from '@/features/team/TeamPanel'
+import { IconSprite } from '@/components/icons/sprite'
 
 
 function App() {
   return (
     <ThemeProvider>
+      {/* design-system 3.2 — o sprite de ícones, renderizado UMA vez no topo. */}
+      <IconSprite />
       <div className="min-h-screen bg-background font-sans antialiased">
         <Routes>
           <Route path="/" element={<HomePage />} />

@@ -125,6 +125,9 @@ export default {
       gridTemplateColumns: {
         cards: 'repeat(auto-fill, minmax(260px, 1fr))',
       },
+      fontFamily: {
+        sans: ['Inter', 'system-ui', '-apple-system', '"Segoe UI"', 'sans-serif'],
+      },
       keyframes: {
         'accordion-down': {
           from: { height: 0 },
