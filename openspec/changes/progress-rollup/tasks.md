@@ -28,12 +28,12 @@
 
 ## 4. Reconciliação e observabilidade
 
-- [ ] 4.1 Implementar `Progress::ReconciliationJob` iterando workspace a workspace, setando `app.current_workspace_id` a cada iteração e comparando cache vs. views nos três níveis. (§D2 — divergência em `W-A` nunca escreve linha de `W-B`; teste com dois workspaces e divergência plantada só num)
-- [ ] 4.2 Fazer o job **corrigir** as linhas divergentes e emitir `progress_cache.divergence` com `cached`, `computed`, `level`, `scope_id` e `row_count`. (§D5 — cache forçado a 12 num robô de valor 67 volta a 67 **e** o evento carrega o 12; perder o valor antigo torna o alerta inacionável)
-- [ ] 4.3 Consumir `Observability::Alert.notify` e a métrica `progress_cache_divergence_total` de `delivery-and-observability`, com checagem de boot que levanta erro em produção se a constante não existir, e declarar lá a necessidade do agendamento diário no Sidekiq. (§D5 — sem canal, o job falha alto nomeando a capacidade dona, em vez de corrigir em silêncio)
-- [ ] 4.4 Garantir que a correção do job não gera notificação (§2.7) nem entrada de auditoria (§2.8). (§2.8 — 40 linhas corrigidas produzem 0 log de auditoria, porque não houve ação humana)
-- [ ] 4.5 Endpoint de recálculo manual do workspace, declarando policy que exige papel `edit`/dono. (§4.1 inv. 4 — membro `view` recebe 403 e nenhum `UPDATE` em `progress_cache` é emitido)
-- [ ] 4.6 Teste do job cobrindo os quatro cenários: divergência corrigida e alertada, execução limpa sem alerta, ausência de canal, isolamento entre workspaces. (§D5 — o teste de "execução limpa" falha se o job emitir alerta com `row_count: 0`)
+- [x] 4.1 Implementar `Progress::ReconciliationJob` iterando workspace a workspace, setando `app.current_workspace_id` a cada iteração e comparando cache vs. views nos três níveis. (§D2 — divergência em `W-A` nunca escreve linha de `W-B`; teste com dois workspaces e divergência plantada só num)
+- [x] 4.2 Fazer o job **corrigir** as linhas divergentes e emitir `progress_cache.divergence` com `cached`, `computed`, `level`, `scope_id` e `row_count`. (§D5 — cache forçado a 12 num robô de valor 67 volta a 67 **e** o evento carrega o 12; perder o valor antigo torna o alerta inacionável)
+- [x] 4.3 Consumir `Observability::Alert.notify` e a métrica `progress_cache_divergence_total` de `delivery-and-observability`, com checagem de boot que levanta erro em produção se a constante não existir, e declarar lá a necessidade do agendamento diário no Sidekiq. (§D5 — sem canal, o job falha alto nomeando a capacidade dona, em vez de corrigir em silêncio)
+- [x] 4.4 Garantir que a correção do job não gera notificação (§2.7) nem entrada de auditoria (§2.8). (§2.8 — 40 linhas corrigidas produzem 0 log de auditoria, porque não houve ação humana)
+- [x] 4.5 Endpoint de recálculo manual do workspace, declarando policy que exige papel `edit`/dono. (§4.1 inv. 4 — membro `view` recebe 403 e nenhum `UPDATE` em `progress_cache` é emitido)
+- [x] 4.6 Teste do job cobrindo os quatro cenários: divergência corrigida e alertada, execução limpa sem alerta, ausência de canal, isolamento entre workspaces. (§D5 — o teste de "execução limpa" falha se o job emitir alerta com `row_count: 0`)
 
 ## 5. Backfill de dado importado
 
