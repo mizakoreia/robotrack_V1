@@ -2,53 +2,99 @@
 @tailwind components;
 @tailwind utilities;
 
+/* design-system G1 (D-DS-1) — FONTE ÚNICA de cor. Triplas HSL SEM alpha (o alpha
+   é papel, aplicado no ponto de uso via `hsl(var(--x) / <a>)`). Escuro é o modo
+   PRIMÁRIO e mora em `:root`; o claro é a exceção, em `.light` (D-DS-3 — o tema
+   NÃO segue prefers-color-scheme). Os nomes shadcn (--background, --primary…)
+   ficam como ALIASES por `var(--role)` — os primitivos do template seguem
+   compilando; o G8 remove os aliases. Valores documentados no design.md + paleta
+   Tailwind para os derivados (validados pelo teste de contraste do G2). */
 :root {
-  --background: 0 0% 100%;
-  --foreground: 222.2 84% 4.9%;
-  --card: 0 0% 100%;
-  --card-foreground: 222.2 84% 4.9%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 222.2 84% 4.9%;
-  --primary: 262.1 83.3% 57.8%;
-  --primary-foreground: 210 40% 98%;
-  --secondary: 210 40% 96%;
-  --secondary-foreground: 222.2 84% 4.9%;
-  --muted: 210 40% 96%;
-  --muted-foreground: 215.4 16.3% 46.9%;
-  --accent: 210 40% 96%;
-  --accent-foreground: 222.2 84% 4.9%;
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 210 40% 98%;
-  --border: 214.3 31.8% 91.4%;
-  --input: 214.3 31.8% 91.4%;
-  --ring: 262.1 83.3% 57.8%;
-  --radius: 0.5rem;
+  /* Base */
+  --bg-main: 224 49% 8%;        /* #0a0f1d */
+  --bg-panel: 223 45% 13%;      /* #121a2f */
+  --bg-nav: 221 49% 10%;        /* #0d1526 */
+  --bg-menu: 221 45% 11%;       /* #0f1728 */
+  --bg-sunken: 222 50% 4%;      /* #05080f */
+  --bg-raised: 0 0% 100%;       /* #ffffff (overlay claro a baixo alpha) */
+  --text-main: 210 40% 98%;     /* #f8fafc */
+  --text-muted: 215 20% 65%;    /* #94a3b8 */
+  --border: 213 27% 84%;        /* #cbd5e1 (consumido a baixo alpha) */
+  --track: 217 33% 17%;         /* #1e293b */
+  /* Status — cheia (bg/border/stroke/ring) */
+  --accent: 217 91% 60%;        /* #3b82f6 */
+  --success: 160 84% 39%;       /* #10b981 */
+  --warning: 38 92% 50%;        /* #f59e0b */
+  --danger: 0 84% 60%;          /* #ef4444 */
+  --na: 240 4% 46%;             /* #71717a */
+  /* Status — tinta (texto sobre a pílula tingida) */
+  --accent-ink: 213 94% 68%;    /* #60a5fa */
+  --success-ink: 158 64% 52%;   /* #34d399 */
+  --warning-ink: 43 96% 56%;    /* #fbbf24 */
+  --danger-ink: 0 91% 71%;      /* #f87171 */
+  --na-ink: 240 5% 84%;         /* #d4d4d8 */
+  /* Status — sólida (fundo de texto branco) */
+  --accent-solid: 224 76% 48%;  /* #1d4ed8 */
+  --danger-solid: 0 74% 42%;    /* #b91c1c */
+
+  /* Raio, sombra */
+  --r-xs: 4px;
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 20px;
+  --r-pill: 999px;
+  --sh-1: 0 1px 2px hsl(0 0% 0% / 0.3);
+  --sh-2: 0 4px 12px hsl(0 0% 0% / 0.35);
+  --sh-3: 0 12px 32px hsl(0 0% 0% / 0.45);
+
+  /* Aliases shadcn (via var — o G8 os remove) */
+  --background: var(--bg-main);
+  --foreground: var(--text-main);
+  --card: var(--bg-panel);
+  --card-foreground: var(--text-main);
+  --popover: var(--bg-menu);
+  --popover-foreground: var(--text-main);
+  --primary: var(--accent);
+  --primary-foreground: 0 0% 100%;
+  --secondary: var(--bg-panel);
+  --secondary-foreground: var(--text-main);
+  --muted: var(--bg-sunken);
+  --muted-foreground: var(--text-muted);
+  --accent-foreground: var(--text-main);
+  --destructive: var(--danger);
+  --destructive-foreground: 0 0% 100%;
+  --input: var(--border);
+  --ring: var(--accent);
+  --radius: var(--r-md);
+
   --scrollbar: #00040d;
   --topbar-h: 94px;
   --header-card-w: 360px;
 }
 
-.dark {
-  --background: 222.2 84% 4.9%;
-  --foreground: 210 40% 98%;
-  --card: 222.2 84% 4.9%;
-  --card-foreground: 210 40% 98%;
-  --popover: 222.2 84% 4.9%;
-  --popover-foreground: 210 40% 98%;
-  --primary: 210 40% 98%;
-  --primary-foreground: 222.2 47.4% 11.2%;
-  --secondary: 217.2 32.6% 17.5%;
-  --secondary-foreground: 210 40% 98%;
-  --muted: 217.2 32.6% 17.5%;
-  --muted-foreground: 215 20.2% 65.1%;
-  --accent: 217.2 32.6% 17.5%;
-  --accent-foreground: 210 40% 98%;
-  --destructive: 0 62.8% 30.6%;
-  --destructive-foreground: 210 40% 98%;
-  --border: 217.2 32.6% 17.5%;
-  --input: 217.2 32.6% 17.5%;
-  --ring: 212.7 26.8% 83.9%;
-  --scrollbar: #00040d;
+/* Claro — só sobrescreve os PAPÉIS; os aliases seguem por var() */
+.light {
+  --bg-main: 210 40% 96%;       /* #f1f5f9 */
+  --bg-panel: 0 0% 100%;        /* #ffffff */
+  --bg-nav: 0 0% 100%;          /* #ffffff */
+  --bg-menu: 0 0% 100%;         /* #ffffff */
+  --bg-sunken: 214 32% 91%;     /* #e2e8f0 */
+  --bg-raised: 0 0% 0%;         /* #000000 (overlay escuro a baixo alpha) */
+  --text-main: 222 47% 11%;     /* #0f172a */
+  --text-muted: 215 19% 35%;    /* #475569 */
+  --border: 222 47% 11%;        /* #0f172a */
+  --track: 213 27% 84%;         /* #cbd5e1 */
+  --accent: 221 83% 53%;        /* #2563eb */
+  --accent-ink: 226 71% 40%;    /* #1e40af */
+  --success-ink: 163 88% 20%;   /* #065f46 */
+  --warning-ink: 23 83% 31%;    /* #92400e */
+  --danger-ink: 0 70% 35%;      /* #991b1b */
+  --na-ink: 240 5% 26%;         /* #3f3f46 */
+  --sh-1: 0 1px 2px hsl(215 25% 27% / 0.08);
+  --sh-2: 0 4px 12px hsl(215 25% 27% / 0.1);
+  --sh-3: 0 12px 32px hsl(215 25% 27% / 0.16);
+  --scrollbar: #94a3b8;
 }
 
 * {
@@ -66,6 +112,27 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* design-system G1 (D-DS-1) — as opacidades canônicas de cada superfície num
+   lugar só. O alpha NÃO aparece em nenhum callsite: a tela usa `.surface-panel`,
+   não `hsl(var(--bg-panel) / 0.7)` espalhado. */
+@layer components {
+  .surface-nav {
+    background-color: hsl(var(--bg-nav) / 0.82);
+  }
+  .surface-panel {
+    background-color: hsl(var(--bg-panel) / 0.7);
+  }
+  .surface-menu {
+    background-color: hsl(var(--bg-menu) / 0.97);
+  }
+  .surface-sunken {
+    background-color: hsl(var(--bg-sunken) / 0.28);
+  }
+  .surface-raised {
+    background-color: hsl(var(--bg-raised) / 0.04);
   }
 }
 
