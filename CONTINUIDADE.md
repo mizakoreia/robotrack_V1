@@ -1,4 +1,4 @@
-# Continuidade — estado em 21/07/2026
+# Continuidade — estado em 22/07/2026
 
 Ponto de retomada do porte. Para uma sessão nova de agente, o prompt de partida
 está em [PROMPT DE RETOMADA](#prompt-de-retomada), no fim.
@@ -17,20 +17,21 @@ main (48497fd)                       ← ondas 1–4, sem nada desta sessão
                     └── progress-rollup          change COMPLETA — 6 de 6 grupos
                         └── design-system                  change COMPLETA — 8 de 8 grupos
                             └── app-shell-navigation       change COMPLETA — 6 de 6 grupos
-                                └── hierarchy-screens (atual)  change COMPLETA — 7 de 7 grupos
+                                └── hierarchy-screens          change COMPLETA — 7 de 7 grupos
+                                    └── robot-task-table (atual)  change COMPLETA — 7 de 7 grupos
 ```
 
-**A branch atual contém todo o trabalho** (`hierarchy-screens` empilhada sobre
-`app-shell-navigation`; full-stack). É nela que se continua. Push por branch canônica
-(`git push origin HEAD:hierarchy-screens`). Os PRs para a `main` podem ser abertos
+**A branch atual contém todo o trabalho** (`robot-task-table` empilhada sobre
+`hierarchy-screens`; full-stack). É nela que se continua. Push por branch canônica
+(`git push origin HEAD:robot-task-table`). Os PRs para a `main` podem ser abertos
 depois, na ordem do empilhamento.
 
-## Suítes (medidas na branch `hierarchy-screens`)
+## Suítes (medidas na branch `robot-task-table`)
 
 | Suíte | Resultado |
 |---|---|
-| Backend `bundle exec rspec` (como `robotrack_app`, `--seed 12345`) | baseline **933/0/9pending** + specs novos de hierarchy-screens **49/0** (contrato+overview+busca+cross-tenant) |
-| Frontend `vitest run` | **231 / 0** |
+| Backend `bundle exec rspec` (como `robotrack_app`, `--seed 12345`) | **978 / 0 / 9pending** (baseline + hierarchy-screens + robot-task-table; swagger allowlist ganhou `/api/v1/search`) |
+| Frontend `vitest run` | **290 / 0** (52 arquivos) |
 | Frontend `tsc --noEmit` | limpo |
 | Frontend `pnpm build` | limpo |
 
@@ -58,7 +59,7 @@ destravaram e viraram verdes ao longo de `robot-tasks`.)
 > suíte completa (estado do Rack::Attack sensível à ordem aleatória do RSpec);
 > passa isolado. Não é regressão desta sessão. Rodar com `--seed` fixo estabiliza.
 
-## Changes concluídas (13 de 24)
+## Changes concluídas (14 de 24)
 
 `seal-template-baseline`, `workspace-tenancy`, `identity-and-auth`,
 `workspace-invitations` (anteriores) e:
@@ -165,22 +166,43 @@ destravaram e viraram verdes ao longo de `robot-tasks`.)
   `id`/`name`/`lock_version` (cabeçalho + renomear); peso da fixture 2:1 (o texto dizia 5, que dá
   63 na fórmula real — usei o que bate o alvo 40 que a tarefa 4.6 asserta). Robô (`/robo/:id`) é de
   `robot-task-table` — aqui só navego para lá.
+- **`robot-task-table`** (G0..G7, COMPLETA, full-stack, Onda 8) — a TELA OPERACIONAL do robô
+  (rota `/robo/:id`, `key={robotId}`). Backend: estendeu a entity `Task` (contributors +
+  last_advance por `recorded_at`, NÃO created_at — D8), `GET /robots/:id` (cabeçalho), tudo em
+  ≤3 queries constantes em N (teste de orçamento com 40 tarefas/200 avanços). Frontend, 6 colunas:
+  Status (StatusSelect→modal de avanço em MODO STATUS, envia `status` não progress — §2.2 no
+  servidor), Progresso (compõe `<AdvanceControls>`, slider passo 5, ± do persistido), Responsáveis
+  (chips 1º=assignees / 2º=contributors menos intersecção, D-RTT-4), Trilha (last_advance + contagem),
+  Ações (editar/excluir), + os dois avisos não-bloqueantes ("Atribuir…" progress>0 sem responsável;
+  "Registre o avanço…" 0<p<100 e advances_count=0, SEM a nota legada — D-RTT-6). Filtro efêmero
+  reset na navegação (D-RTT-1). Modais: histórico (timeline por `recorded_at`, legacy marcado,
+  "sem comentário" sem herdar do vizinho) e atribuição (checkboxes de people + cadastro com dedup
+  por nome, D10/D11). Cabeçalho com % ponderado rotulado + Sincronizar tarefas-base (§2.6, reseta
+  filtro) + Adicionar tarefa. Gating de `view`: controles FORA do DOM (não disabled), servidor
+  garante (403). Mobile: cartões <md via `useMediaQuery` (um layout por vez), alvos ≥40px, slider
+  `touch-pan-y`, `successPulse` na transição <100→100 (suprimido por reduced-motion). Render única
+  por mutação (structuralSharing + `memo`). Invalidação: robotTasks + qk.robot exato + qk.projects.
+  **Divergências:** Chip 1º/2º por `className` (o Chip não tem `variant`); Em Andamento→accent;
+  E2E = integração RTL (sem dep de Playwright); swagger allowlist ganhou `/api/v1/search` (lacuna de
+  hierarchy-screens que só apareceu na suíte cheia). Decisões G2..G7 no EXECUCAO.
 
 Cada change tem seu `openspec/changes/<nome>/EXECUCAO.md` com o mapa de grupos, as
 decisões tomadas na execução, as armadilhas encontradas e a CONCLUSÃO com o relatório
 final. **Leia o EXECUCAO.md antes de tocar no código de uma change.**
 
-## Onde parou: `hierarchy-screens` COMPLETA; as três telas de navegação + busca
+## Onde parou: `robot-task-table` COMPLETA (7/7); a tela operacional do robô
 
-Fechou (7/7 grupos) — ver `openspec/changes/hierarchy-screens/EXECUCAO.md`. As telas
-Visão Geral / Projeto / Célula existem e navegam ponta a ponta, com as DUAS métricas
-lado a lado (hub cru vs anel ponderado, D15) provadas por teste sobre a fixture
-divergente. Backend: 3 endpoints agregados (≤3 queries), busca server-side, isolamento
-404. Frontend: hub+grade+estados, CRUD de célula, assistente de robôs, busca. Testado
-(frontend 231/0, backend da change 49/0). Os stubs `OverviewPage` estão preenchidos; a
-rota do robô (`/robo/:id`) ainda é STUB — é `robot-task-table`.
+Fechou (7/7 grupos) — ver `openspec/changes/robot-task-table/EXECUCAO.md`. A rota
+`/robo/:id`, antes STUB, é agora a tabela operacional completa: 6 colunas (Status/
+Progresso interativos, Responsáveis/Trilha, Ações), 2 avisos, 2 modais (histórico +
+atribuição), cabeçalho com % ponderado + Sincronizar + Adicionar, gating de `view`,
+mobile em cartões, pulso aos 100%. Testado (frontend **290/0**, backend completo
+**978/0**). Toda a cadeia de navegação Visão Geral → Projeto → Célula → **Robô** está
+ligada ponta a ponta.
 
-**Antes:** `app-shell-navigation` (COMPLETA, 6/6) — a moldura permanente (AppShell,
+**Antes:** `hierarchy-screens` (COMPLETA, 7/7) — as três telas de navegação + busca,
+com as DUAS métricas lado a lado (hub cru vs anel ponderado, D15). E antes,
+`app-shell-navigation` (COMPLETA, 6/6) — a moldura permanente (AppShell,
 menus em portal) + as convenções D9 (factory `qk.*`, guard, barreira de vazamento na
 troca de workspace, contrato do indicador de gravação, sweep de convenção).
 
@@ -201,15 +223,13 @@ troca de workspace, contrato do indicador de gravação, sweep de convenção).
 - `<ProgressRing>`/`<MetricStat>` existem (progress-rollup 6.2) mas a TELA que os
   monta (Visão Geral, hubs, cards) é de `hierarchy-screens`.
 
-**Próximo passo — `robot-task-table`.** Toda a navegação até o robô existe; falta a
-TELA OPERACIONAL do robô (a tabela de tarefas). Ver abaixo.
+**Próximo passo — `my-tasks-view`.** A tela do robô está pronta; a próxima tela
+preenche o stub `MyTasksPage` (o corte por pessoa das tarefas). Ver abaixo.
 
-## Depois de `hierarchy-screens` — as telas restantes
+## Depois de `robot-task-table` — as telas restantes
 
-Próxima: **`robot-task-table`** (a tabela do robô, destino do "Abrir"/rota `/robo/:id`
-que hoje é STUB): CONSOME `progress-advances` (reusa `features/advances/` —
-`<AdvanceControls>`, aviso "trilha faltando" com `advances_count`) e `progress-rollup`
-(os envelopes rotulados). Depois: `my-tasks-view` (preenche o stub `MyTasksPage`),
+Próxima: **`my-tasks-view`** (preenche o stub `MyTasksPage` — as tarefas atribuídas à
+pessoa logada, cortadas por workspace). Depois:
 `workspace-settings`, `commissioning-report` (preenche `ReportPage`), `realtime-collaboration`
 (D6 — invalida as keys `['ws',wsId,'overview'|'project'|'cell'|…]` que hierarchy-screens já
 declara), `offline-pwa`.
@@ -280,15 +300,16 @@ O frontend usa **pnpm** (`pnpm-lock.yaml`); o `package-lock.json` está dessincr
 >
 > Leia `CONTINUIDADE.md` na raiz do repositório: ele tem o estado atual, o que já foi
 > entregue, onde parei e o método de trabalho. `robot-tasks`, `task-catalog`,
-> `progress-advances`, `progress-rollup`, `design-system`, `app-shell-navigation` e
-> `hierarchy-screens` estão COMPLETAS (leia os EXECUCAO.md delas). Todo o BACKEND do núcleo,
-> a BASE VISUAL, a MOLDURA + CONVENÇÕES e as TRÊS TELAS DE NAVEGAÇÃO (Visão Geral, Projeto,
-> Célula) + busca estão fechados de ponta a ponta. `/` já é a Visão Geral autenticada.
+> `progress-advances`, `progress-rollup`, `design-system`, `app-shell-navigation`,
+> `hierarchy-screens` e `robot-task-table` estão COMPLETAS (leia os EXECUCAO.md delas). Todo o
+> BACKEND do núcleo, a BASE VISUAL, a MOLDURA + CONVENÇÕES, as TRÊS TELAS DE NAVEGAÇÃO (Visão
+> Geral, Projeto, Célula) + busca e a TELA OPERACIONAL DO ROBÔ (`/robo/:id`) estão fechados de
+> ponta a ponta. `/` já é a Visão Geral autenticada.
 >
-> Trabalhe na branch `hierarchy-screens` (as branches são empilhadas; ela contém tudo;
-> full-stack). O próximo passo é **`robot-task-table`** — a tela operacional do robô (destino
-> da rota `/robo/:id`, hoje STUB): consome `progress-advances` (reusa `features/advances/`) e
-> `progress-rollup` (envelopes). Depois `my-tasks-view` (stub `MyTasksPage`),
+> Trabalhe na branch `robot-task-table` (as branches são empilhadas; ela contém tudo;
+> full-stack). O próximo passo é **`my-tasks-view`** — preenche o stub `MyTasksPage` (as
+> tarefas atribuídas à pessoa logada, cortadas por workspace); reusa `features/advances/` e os
+> envelopes rotulados de `progress-rollup`. Depois
 > `workspace-settings`, `commissioning-report` (stub `ReportPage`), `realtime-collaboration`,
 > `offline-pwa`. Comece pelo `EXECUCAO.md` da change (commit G0) — antes de qualquer código —
 > e faça push por branch canônica (`git push origin HEAD:<change>`). Convenções vigentes:

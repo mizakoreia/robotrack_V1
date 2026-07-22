@@ -166,15 +166,15 @@ componente de célula — quem chegar depois consome a interface já publicada e
 
 ## 7. Integração e prova de ponta a ponta
 
-- [ ] 7.1 Integrar as trilhas 2–6 na tela e resolver os conflitos de célula
+- [x] 7.1 Integrar as trilhas 2–6 na tela e resolver os conflitos de célula
   (Responsáveis compartilhada entre 3.1 e 5.3), garantindo render única por mutação
   (§3.5 — confirmar um avanço não remonta a tabela inteira; medido por contador de
   render nas linhas não afetadas)
-- [ ] 7.2 Escrever o E2E dos cenários operacionais: reset de filtro em A→B→A, aviso
+- [x] 7.2 Escrever o E2E dos cenários operacionais: reset de filtro em A→B→A, aviso
   "Atribuir…" em progresso 30 sem responsável, cancelamento de slider, contribuidor
   não-responsável como chip secundário, e membro `view` sem ações (§3.5, §4.1 — cada
   cenário nomeado é um teste; a suíte falha se o filtro persistir entre navegações)
-- [ ] 7.3 **Verificação:** rodar a tela contra o dataset de carga (robô com 40
+- [x] 7.3 **Verificação:** rodar a tela contra o dataset de carga (robô com 40
   tarefas em 9 categorias e 200 avanços) medindo tempo até interativo e número de
   requisições (§3.5, D-RTT-3 — uma requisição carrega a tabela inteira; qualquer
   requisição por linha reprova)

@@ -1,4 +1,4 @@
-import { useEffect, useState, Fragment } from 'react'
+import { useEffect, useState, memo, Fragment } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Icon } from '@/components/icons/Icon'
@@ -202,7 +202,11 @@ function TaskTable({ robotId, tasks, canEdit }: { robotId: string; tasks: TaskDT
 // Status e Progresso interativos (G2); Responsáveis e Trilha (G3); Ações (G4, só
 // owner/edit). O pulso aos 100% (§6.3) vive na linha, disparado uma vez e suprimido
 // por `prefers-reduced-motion` (o CSS global zera a animação).
-function TaskRow({ robotId, task, canEdit }: { robotId: string; task: TaskDTO; canEdit: boolean }) {
+//
+// §7.1 (render única por mutação) — `memo`: como o React Query faz `structuralSharing`
+// por padrão, uma tarefa NÃO alterada mantém a MESMA referência entre refetches;
+// então confirmar um avanço numa linha não re-renderiza as linhas vizinhas.
+const TaskRow = memo(function TaskRow({ robotId, task, canEdit }: { robotId: string; task: TaskDTO; canEdit: boolean }) {
   const { pulsing, clear } = useSuccessPulse(task.progress)
   return (
     <tr
@@ -230,11 +234,12 @@ function TaskRow({ robotId, task, canEdit }: { robotId: string; task: TaskDTO; c
       )}
     </tr>
   )
-}
+})
 
 // O cartão mobile (§6.1, D-RTT-8) — as SEIS informações preservadas em linhas
-// rotuladas, sem scroll lateral. Reusa as mesmas células da tabela.
-function MobileTaskCard({ robotId, task, canEdit }: { robotId: string; task: TaskDTO; canEdit: boolean }) {
+// rotuladas, sem scroll lateral. Reusa as mesmas células da tabela. `memo` pela
+// mesma razão da linha (§7.1 — render única por mutação).
+const MobileTaskCard = memo(function MobileTaskCard({ robotId, task, canEdit }: { robotId: string; task: TaskDTO; canEdit: boolean }) {
   const { pulsing, clear } = useSuccessPulse(task.progress)
   return (
     <article
@@ -261,7 +266,7 @@ function MobileTaskCard({ robotId, task, canEdit }: { robotId: string; task: Tas
       </dl>
     </article>
   )
-}
+})
 
 function CardRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (

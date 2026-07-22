@@ -184,6 +184,27 @@ D-RTT-11 decomposição p/ paralelismo. D8 recorded_at; D11 identidade; D15 % ro
   variante por token de baixo contraste reprova. Estrutura do cartão + tamanho de
   alvo + progressbar também testados. Axe real (browser) fica p/ o E2E da G7.
 
+### Decisões tomadas na G7 (registro pós-execução)
+
+- **Render única por mutação (§7.1)** = `structuralSharing` do React Query (default,
+  não desligado no `queryClient`) + `memo` em `TaskRow`/`MobileTaskCard`. Uma tarefa
+  não alterada mantém a MESMA referência entre refetches → a linha vizinha não
+  re-renderiza. Teste com StatusCell mockada como contador por `task.id`: avançar A
+  deixa `renders.B` intacto.
+- **E2E (§7.2) = integração no nível da página** (não Playwright — não há dep de
+  playwright no projeto; o padrão do repo é vitest+RTL). Os 5 cenários nomeados
+  dirigem a `RobotTaskTablePage` real com a API mockada.
+- **Carga (§7.3)**: teste com 40 tarefas em 9 categorias afirma `listForRobot`=1,
+  `getRobot`=1, e ZERO chamadas a `taskAdvancesApi.list`/`membershipsApi.list` (só
+  abrem com os modais) — prova de "uma requisição carrega a tabela". Backend já tinha
+  o teste de orçamento de query constante em N (40 tarefas/200 avanços) no
+  `robot_task_table_spec` (3/0).
+- **Correção do `swagger_spec` (fora do escopo estrito, mas gate do G7)**: a suíte
+  backend completa (adiada p/ o G7) acusou `/api/v1/search` fora da superfície
+  declarada — endpoint legítimo entregue em `hierarchy-screens` que faltou no
+  allowlist do swagger (aquele spec só roda na suíte cheia). Adicionado à
+  `SUPERFICIE_ESPERADA`. Suíte backend: **978/0** (9 pending pré-existentes).
+
 ## Armadilhas previstas
 
 1. **N+1 na trilha** — manter `includes(:task_advances)`; contributors/last_advance em
@@ -212,7 +233,7 @@ completa fica para o G7. Provisionar o banco a cada sessão (ver CONTINUIDADE).
 - [x] G4 — Cabeçalho + Ações + sync + gating (4.1–4.5)
 - [x] G5 — Modais histórico + atribuição (5.1–5.5)
 - [x] G6 — Mobile + a11y + pulso (6.1–6.5)
-- [ ] G7 — Integração + E2E + carga (7.1–7.3)
+- [x] G7 — Integração + E2E + carga (7.1–7.3)
 
 ## RETOMADA (para o próximo agente)
 
