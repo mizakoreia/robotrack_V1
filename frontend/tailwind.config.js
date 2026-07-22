@@ -17,6 +17,31 @@ export default {
     },
     extend: {
       colors: {
+        // design-system G1 — os PAPÉIS do RoboTrack (fonte única). A restrição de
+        // namespace por propriedade (cheia só em bg/border/stroke/ring, tinta só
+        // em text, sólida só em bg — D-DS-2) é do G2.
+        'bg-main': 'hsl(var(--bg-main))',
+        'bg-panel': 'hsl(var(--bg-panel))',
+        'bg-nav': 'hsl(var(--bg-nav))',
+        'bg-menu': 'hsl(var(--bg-menu))',
+        'bg-sunken': 'hsl(var(--bg-sunken))',
+        'bg-raised': 'hsl(var(--bg-raised))',
+        'text-main': 'hsl(var(--text-main))',
+        'text-muted': 'hsl(var(--text-muted))',
+        track: 'hsl(var(--track))',
+        success: 'hsl(var(--success))',
+        'success-ink': 'hsl(var(--success-ink))',
+        warning: 'hsl(var(--warning))',
+        'warning-ink': 'hsl(var(--warning-ink))',
+        danger: 'hsl(var(--danger))',
+        'danger-ink': 'hsl(var(--danger-ink))',
+        'danger-solid': 'hsl(var(--danger-solid))',
+        na: 'hsl(var(--na))',
+        'na-ink': 'hsl(var(--na-ink))',
+        'accent-ink': 'hsl(var(--accent-ink))',
+        'accent-solid': 'hsl(var(--accent-solid))',
+
+        // Aliases shadcn (o G8 os remove)
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
@@ -52,9 +77,20 @@ export default {
         },
       },
       borderRadius: {
+        xs: 'var(--r-xs)',
+        pill: 'var(--r-pill)',
+        xl: 'var(--r-xl)',
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
+      },
+      boxShadow: {
+        'sh-1': 'var(--sh-1)',
+        'sh-2': 'var(--sh-2)',
+        'sh-3': 'var(--sh-3)',
+      },
+      gridTemplateColumns: {
+        cards: 'repeat(auto-fill, minmax(260px, 1fr))',
       },
       keyframes: {
         'accordion-down': {
