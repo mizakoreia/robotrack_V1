@@ -12,16 +12,13 @@ module ProgressMetric
   RAW_COUNT = 'raw_count'
   METRICS   = [WEIGHTED, RAW_COUNT].freeze
 
-  LABELS = {
-    WEIGHTED  => 'Progresso ponderado',
-    RAW_COUNT => 'Progresso físico (tarefas concluídas)'
-  }.freeze
-
-  # Métrica fora do enum fechado levanta ANTES de serializar (labeling spec).
+  # Métrica fora do enum fechado levanta ANTES de serializar (labeling spec). O
+  # rótulo vem do locale pt-BR (D14) — `raise: true` faz uma chave ausente falhar
+  # em TESTE (completude de locale), não renderizar a chave crua ao usuário.
   def self.label(metric)
     raise ArgumentError, "métrica desconhecida: #{metric.inspect}" unless METRICS.include?(metric)
 
-    LABELS.fetch(metric)
+    I18n.t("progress.metrics.#{metric}.label", locale: :'pt-BR', raise: true)
   end
 
   # Envelope do ponderado §2.1: `{ value, metric: "weighted", label }`.
