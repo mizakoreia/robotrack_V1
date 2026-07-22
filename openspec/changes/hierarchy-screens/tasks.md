@@ -93,21 +93,21 @@
 
 ## 6. Busca na UI
 
-- [ ] 6.1 Componente `HierarchySearchField`: `<form role="search">` + `<input type="search"
+- [x] 6.1 Componente `HierarchySearchField`: `<form role="search">` + `<input type="search"
   enterKeyHint="search" inputMode="search">` + botão `type="submit"` + botão limpar.
   (§3.7 — a tecla "buscar" do teclado mobile dispara `submit`; um handler só de `keydown`
   de Enter não a captura em iOS/Android)
-- [ ] 6.2 Hook `useHierarchySearch` com debounce de 250 ms, key `['ws', wsId, 'search', q]`
+- [x] 6.2 Hook `useHierarchySearch` com debounce de 250 ms, key `['ws', wsId, 'search', q]`
   e `keepPreviousData`; `submit` faz flush do debounce. (§3.7 — Enter logo após digitar
   executa uma busca, não duas)
-- [ ] 6.3 Substituição da visão derivada de `debouncedQuery.trim().length > 0`, sem flag
+- [x] 6.3 Substituição da visão derivada de `debouncedQuery.trim().length > 0`, sem flag
   booleana separada. (§3.7 — digitar `sol` esconde hub e grade; limpar restaura os mesmos
   números do hub sem recarregar a página)
-- [ ] 6.4 Lista plana de resultados com ícone do tipo, nome, `path_label` e navegação ao
+- [x] 6.4 Lista plana de resultados com ícone do tipo, nome, `path_label` e navegação ao
   destino, mais o contador e o estado vazio nomeando o termo com botão limpar. (§3.7 —
   clicar no resultado da célula `c-7` abre a tela de `c-7`, não a do projeto pai; buscar
   `xyz` exibe literalmente `xyz` na mensagem, um "nenhum resultado" genérico não atende)
-- [ ] 6.5 Teste de integração da busca: `sol` acha "Solda 01" e "R02 - Solda" e não acha a
+- [x] 6.5 Teste de integração da busca: `sol` acha "Solda 01" e "R02 - Solda" e não acha a
   tarefa "Solda MIG"; `xyz` mostra o vazio com o termo; limpar restaura hub e grade.
   (§3.7 — os três casos no mesmo teste; se a busca varrer tarefas, o primeiro caso falha)
 

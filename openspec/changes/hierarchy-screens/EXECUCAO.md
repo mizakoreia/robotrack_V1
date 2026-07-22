@@ -136,7 +136,7 @@ decidir, registrar aqui, seguir.
 - [x] G3 — Busca server-side (3.1–3.3)
 - [x] G4 — Tela Visão Geral (4.1–4.6) — 1º print
 - [x] G5 — Telas Projeto e Célula (5.1–5.6)
-- [ ] G6 — Busca na UI (6.1–6.5)
+- [x] G6 — Busca na UI (6.1–6.5)
 - [ ] G7 — a11y/responsivo/final (7.1–7.4)
 
 ## RETOMADA (para o próximo agente)
