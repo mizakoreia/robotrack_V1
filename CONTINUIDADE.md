@@ -18,20 +18,21 @@ main (48497fd)                       ← ondas 1–4, sem nada desta sessão
                         └── design-system                  change COMPLETA — 8 de 8 grupos
                             └── app-shell-navigation       change COMPLETA — 6 de 6 grupos
                                 └── hierarchy-screens          change COMPLETA — 7 de 7 grupos
-                                    └── robot-task-table (atual)  change COMPLETA — 7 de 7 grupos
+                                    └── robot-task-table       change COMPLETA — 7 de 7 grupos
+                                        └── my-tasks-view (atual)  change COMPLETA — 7 de 7 grupos
 ```
 
-**A branch atual contém todo o trabalho** (`robot-task-table` empilhada sobre
-`hierarchy-screens`; full-stack). É nela que se continua. Push por branch canônica
-(`git push origin HEAD:robot-task-table`). Os PRs para a `main` podem ser abertos
+**A branch atual contém todo o trabalho** (`my-tasks-view` empilhada sobre
+`robot-task-table`; full-stack). É nela que se continua. Push por branch canônica
+(`git push origin HEAD:my-tasks-view`). Os PRs para a `main` podem ser abertos
 depois, na ordem do empilhamento.
 
-## Suítes (medidas na branch `robot-task-table`)
+## Suítes (medidas na branch `my-tasks-view`)
 
 | Suíte | Resultado |
 |---|---|
-| Backend `bundle exec rspec` (como `robotrack_app`, `--seed 12345`) | **978 / 0 / 9pending** (baseline + hierarchy-screens + robot-task-table; swagger allowlist ganhou `/api/v1/search`) |
-| Frontend `vitest run` | **290 / 0** (52 arquivos) |
+| Backend `bundle exec rspec` (como `robotrack_app`, `--seed 12345`) | **1008 / 0 / 9pending** (baseline + robot-task-table + my-tasks-view; swagger allowlist ganhou `/api/v1/my_tasks`) |
+| Frontend `vitest run` | **296 / 0** (53 arquivos) |
 | Frontend `tsc --noEmit` | limpo |
 | Frontend `pnpm build` | limpo |
 
@@ -59,7 +60,7 @@ destravaram e viraram verdes ao longo de `robot-tasks`.)
 > suíte completa (estado do Rack::Attack sensível à ordem aleatória do RSpec);
 > passa isolado. Não é regressão desta sessão. Rodar com `--seed` fixo estabiliza.
 
-## Changes concluídas (14 de 24)
+## Changes concluídas (15 de 24)
 
 `seal-template-baseline`, `workspace-tenancy`, `identity-and-auth`,
 `workspace-invitations` (anteriores) e:
@@ -185,24 +186,42 @@ destravaram e viraram verdes ao longo de `robot-tasks`.)
   **Divergências:** Chip 1º/2º por `className` (o Chip não tem `variant`); Em Andamento→accent;
   E2E = integração RTL (sem dep de Playwright); swagger allowlist ganhou `/api/v1/search` (lacuna de
   hierarchy-screens que só apareceu na suíte cheia). Decisões G2..G7 no EXECUCAO.
+- **`my-tasks-view`** (G0..G6, COMPLETA, full-stack, Onda 8+) — a lista pessoal do viewer (preenche
+  o stub `MyTasksPage`, rota `/minhas-tarefas`). O CORAÇÃO é NÃO FALHAR EM SILÊNCIO: `Person` do
+  viewer ausente = **409 person_missing**, NUNCA `200 []` (uma lista vazia enganosa; D-MTV-2). §1
+  PROVA a pré-condição de identidade com os services REAIS (bootstrap + aceite criam a `Person`),
+  proibido factory. Backend: `GET /api/v1/my_tasks` (tenant pelo header, viewer = `authorization_
+  context.person`, `?person_id=` IGNORADO — D-MTV-10), `MyTasks::ListService` UMA consulta com driver
+  em `task_assignees` + joins até o projeto + `COUNT(*) OVER()` (1 query), ordenação total
+  projeto→célula→robô→tarefa com desempate por id (D-MTV-6), filtro por STATUS pt-BR
+  (`Pendente`/`Em Andamento`) no servidor. Dois índices aditivos CONCURRENTLY (ws-person INCLUDE +
+  parcial de abertas). Provas §3.6: avanço 45→100 some da lista, N/A não aparece, multi-responsável
+  1x, Person sem user_id não vaza; isolamento cross-tenant + RLS-stub. Frontend: 6 colunas, Badge
+  estático (LEITURA PURA), linha `<a>` deep-link `/robo/:id?task=` (D-MTV-9), TRÊS estados distintos
+  (vazio/409/erro — o 409 nunca vira vazio), mobile em cartões, `useMyTasksLive` (WorkspaceChannel).
+  **Divergências:** status ENUM pt-BR (design usava placeholders `pending/...`); endpoint header-tenant
+  (não `/workspaces/:id/my_tasks`); não-membro→403 (coleção, não 404); **`SET LOCAL enable_nestloop
+  = off`** no service (a RLS `current_setting` faz o estimador dar `rows=1` e um nested loop de 28s no
+  dataset de carga — hash join resolve). swagger allowlist +/api/v1/my_tasks. Decisões G1..G6 no EXECUCAO.
 
 Cada change tem seu `openspec/changes/<nome>/EXECUCAO.md` com o mapa de grupos, as
 decisões tomadas na execução, as armadilhas encontradas e a CONCLUSÃO com o relatório
 final. **Leia o EXECUCAO.md antes de tocar no código de uma change.**
 
-## Onde parou: `robot-task-table` COMPLETA (7/7); a tela operacional do robô
+## Onde parou: `my-tasks-view` COMPLETA (7/7); a lista pessoal do viewer
 
-Fechou (7/7 grupos) — ver `openspec/changes/robot-task-table/EXECUCAO.md`. A rota
-`/robo/:id`, antes STUB, é agora a tabela operacional completa: 6 colunas (Status/
-Progresso interativos, Responsáveis/Trilha, Ações), 2 avisos, 2 modais (histórico +
-atribuição), cabeçalho com % ponderado + Sincronizar + Adicionar, gating de `view`,
-mobile em cartões, pulso aos 100%. Testado (frontend **290/0**, backend completo
-**978/0**). Toda a cadeia de navegação Visão Geral → Projeto → Célula → **Robô** está
-ligada ponta a ponta.
+Fechou (7/7 grupos) — ver `openspec/changes/my-tasks-view/EXECUCAO.md`. A rota
+`/minhas-tarefas`, antes STUB, é a lista das tarefas ABERTAS atribuídas à pessoa
+logada (leitura pura, deep-link para o robô). O invariável central: identidade
+ausente = 409 (nunca lista vazia enganosa). Backend numa consulta só (driver em
+`task_assignees`, sem N+1), isolamento por RLS provado, plano sem Seq Scan on tasks.
+Testado (frontend **296/0**, backend completo **1008/0**).
 
-**Antes:** `hierarchy-screens` (COMPLETA, 7/7) — as três telas de navegação + busca,
-com as DUAS métricas lado a lado (hub cru vs anel ponderado, D15). E antes,
-`app-shell-navigation` (COMPLETA, 6/6) — a moldura permanente (AppShell,
+**Antes:** `robot-task-table` (COMPLETA, 7/7) — a tela operacional do robô
+(`/robo/:id`): 6 colunas, 2 avisos, 2 modais, gating de `view`, mobile, pulso aos
+100%. E antes, `hierarchy-screens` (7/7) — as três telas de navegação + busca, com
+as DUAS métricas lado a lado (D15). E `app-shell-navigation` (6/6) — a moldura
+permanente (AppShell,
 menus em portal) + as convenções D9 (factory `qk.*`, guard, barreira de vazamento na
 troca de workspace, contrato do indicador de gravação, sweep de convenção).
 
@@ -223,14 +242,15 @@ troca de workspace, contrato do indicador de gravação, sweep de convenção).
 - `<ProgressRing>`/`<MetricStat>` existem (progress-rollup 6.2) mas a TELA que os
   monta (Visão Geral, hubs, cards) é de `hierarchy-screens`.
 
-**Próximo passo — `my-tasks-view`.** A tela do robô está pronta; a próxima tela
-preenche o stub `MyTasksPage` (o corte por pessoa das tarefas). Ver abaixo.
+**Próximo passo — `commissioning-report`.** As telas de navegação, do robô e a
+lista pessoal estão prontas; falta preencher o stub `ReportPage` (o relatório de
+comissionamento §3.8). Ver abaixo.
 
-## Depois de `robot-task-table` — as telas restantes
+## Depois de `my-tasks-view` — as telas restantes
 
-Próxima: **`my-tasks-view`** (preenche o stub `MyTasksPage` — as tarefas atribuídas à
-pessoa logada, cortadas por workspace). Depois:
-`workspace-settings`, `commissioning-report` (preenche `ReportPage`), `realtime-collaboration`
+Próxima: **`commissioning-report`** (preenche o stub `ReportPage` — o relatório §3.8).
+Depois:
+`workspace-settings`, `realtime-collaboration`
 (D6 — invalida as keys `['ws',wsId,'overview'|'project'|'cell'|…]` que hierarchy-screens já
 declara), `offline-pwa`.
 
@@ -301,16 +321,16 @@ O frontend usa **pnpm** (`pnpm-lock.yaml`); o `package-lock.json` está dessincr
 > Leia `CONTINUIDADE.md` na raiz do repositório: ele tem o estado atual, o que já foi
 > entregue, onde parei e o método de trabalho. `robot-tasks`, `task-catalog`,
 > `progress-advances`, `progress-rollup`, `design-system`, `app-shell-navigation`,
-> `hierarchy-screens` e `robot-task-table` estão COMPLETAS (leia os EXECUCAO.md delas). Todo o
-> BACKEND do núcleo, a BASE VISUAL, a MOLDURA + CONVENÇÕES, as TRÊS TELAS DE NAVEGAÇÃO (Visão
-> Geral, Projeto, Célula) + busca e a TELA OPERACIONAL DO ROBÔ (`/robo/:id`) estão fechados de
-> ponta a ponta. `/` já é a Visão Geral autenticada.
+> `hierarchy-screens`, `robot-task-table` e `my-tasks-view` estão COMPLETAS (leia os EXECUCAO.md
+> delas). Todo o BACKEND do núcleo, a BASE VISUAL, a MOLDURA + CONVENÇÕES, as TRÊS TELAS DE
+> NAVEGAÇÃO (Visão Geral, Projeto, Célula) + busca, a TELA OPERACIONAL DO ROBÔ (`/robo/:id`) e a
+> LISTA PESSOAL (`/minhas-tarefas`) estão fechados de ponta a ponta. `/` já é a Visão Geral.
 >
-> Trabalhe na branch `robot-task-table` (as branches são empilhadas; ela contém tudo;
-> full-stack). O próximo passo é **`my-tasks-view`** — preenche o stub `MyTasksPage` (as
-> tarefas atribuídas à pessoa logada, cortadas por workspace); reusa `features/advances/` e os
-> envelopes rotulados de `progress-rollup`. Depois
-> `workspace-settings`, `commissioning-report` (stub `ReportPage`), `realtime-collaboration`,
+> Trabalhe na branch `my-tasks-view` (as branches são empilhadas; ela contém tudo;
+> full-stack). O próximo passo é **`commissioning-report`** — preenche o stub `ReportPage` (o
+> relatório de comissionamento §3.8); reusa os envelopes rotulados de `progress-rollup` e os
+> agregados da hierarquia. Depois
+> `workspace-settings`, `realtime-collaboration`,
 > `offline-pwa`. Comece pelo `EXECUCAO.md` da change (commit G0) — antes de qualquer código —
 > e faça push por branch canônica (`git push origin HEAD:<change>`). Convenções vigentes:
 > hooks em `features/<dominio>/` com a factory `qk.*` (o guard reprova key fora de

@@ -116,6 +116,21 @@ qualquer papel, viewer só do token (nunca param).
 - **Badge estático** (Pendente→warning, Em Andamento→accent) — leitura pura, sem
   seletor de status (mudar status é na tela do robô).
 
+### Decisões tomadas na G6 (registro pós-execução)
+
+- **`SET LOCAL enable_nestloop = off` no service** (escopado a uma transação de
+  leitura). Descoberta do dataset de carga: a RLS injeta `workspace_id =
+  current_setting()` em TODA tabela do join, opaco ao estimador, que estima `rows=1`
+  em cascata e escolhe um nested loop patológico (join por FILTRO, não índice) — 28s
+  para 28.800 tarefas / 1.500 atribuições. O CTE `MATERIALIZED` sozinho NÃO resolveu
+  (o `rows=1` contamina o join acima). Forçar hash join dá o plano robusto (hash sobre
+  `mine`, varre `tasks` uma vez) → ms. `SET LOCAL` não vaza (transação própria).
+- **Seed manual sem BulkRecompute**: a tela não lê `progress_cache`; recomputar 28.800
+  linhas só gastaria o runner. `insert_all` em lote + `without_cascade` → ~15s.
+- **7.2**: o EXPLAIN (com o mesmo `enable_nestloop=off`) NÃO tem Seq Scan on tasks
+  (guarda determinística). A latência tem teto TOLERANTE no runner (política de
+  progress-rollup — CI ≠ hardware de produção); o alvo p95<120ms é de produção.
+
 ## Armadilhas previstas
 
 1. **Falha silenciosa** — `Person` ausente DEVE dar 409, nunca `200 []`. Spec 4.6 (e2e sem
@@ -146,7 +161,7 @@ Provisionar o banco a cada sessão (ver CONTINUIDADE) + `PATH=/opt/rbenv/shims`.
 - [x] G3 — endpoint + authz + viewer (3.1–3.5)
 - [x] G4 — provas de §3.6 + isolamento (4.1–4.6, 5.1–5.3)
 - [x] G5 — tela (6.1–6.7)
-- [ ] G6 — desempenho (7.1–7.2)
+- [x] G6 — desempenho (7.1–7.2)
 
 ## RETOMADA (para o próximo agente)
 

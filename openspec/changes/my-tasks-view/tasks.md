@@ -158,12 +158,12 @@ sendo criada por `workspace-tenancy` (bootstrap do dono) e `workspace-invitation
 
 ## 7. Desempenho
 
-- [ ] 7.1 Criar (ou reusar de `progress-rollup`) a factory do dataset de carga com os
+- [x] 7.1 Criar (ou reusar de `progress-rollup`) a factory do dataset de carga com os
   números de D-MTV-5: 10 × 8 × 12 × 30 ≈ 28.800 tarefas, viewer com 1.500 atribuições e
   ~600 abertas.
   (D-MTV-5 — números divergentes entre capacidades tornam os orçamentos incomparáveis e
   inúteis)
-- [ ] 7.2 **Verificação:** spec de desempenho afirmando p95 < 120 ms na primeira página e
+- [x] 7.2 **Verificação:** spec de desempenho afirmando p95 < 120 ms na primeira página e
   ausência de `Seq Scan on tasks` no `EXPLAIN (ANALYZE, BUFFERS)`, com o resultado do
   `EXPLAIN` anexado à saída em caso de falha.
   (D-MTV-5 — sem o assert de plano, a perda do índice só aparece em produção, quando a
