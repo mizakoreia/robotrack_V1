@@ -17,23 +17,23 @@
 
 ## 2. Endpoints agregados de leitura
 
-- [ ] 2.1 `Hierarchy::OverviewService` + `GET /api/v1/workspaces/:id/overview`: contagens
+- [x] 2.1 `Hierarchy::OverviewService` + `GET /api/v1/workspaces/:id/overview`: contagens
   globais, agregado de tarefas e lista de projetos com `progress_cache` e contagem de
   células. (§3.2 — workspace com 0 tarefas devolve `percent: 0`, não `NaN` nem divisão por
   zero)
-- [ ] 2.2 `Hierarchy::ProjectOverviewService` + `GET /api/v1/projects/:id/overview`: hub do
+- [x] 2.2 `Hierarchy::ProjectOverviewService` + `GET /api/v1/projects/:id/overview`: hub do
   projeto e cards de célula com `robots_count`. (§3.3 — projeto sem células devolve
   `cells: []` e hub zerado, não 404)
-- [ ] 2.3 `Hierarchy::CellOverviewService` + `GET /api/v1/cells/:id/overview`: hub da célula
+- [x] 2.3 `Hierarchy::CellOverviewService` + `GET /api/v1/cells/:id/overview`: hub da célula
   e cards de robô com `application` e `tasks_count`. (§3.4 — robô com 3 tarefas todas `N/A`
   devolve `weighted_progress: 100` e `raw_completion.completed: 0`)
-- [ ] 2.4 Declarar a policy de leitura de cada um dos 3 endpoints e montá-los em
+- [x] 2.4 Declarar a policy de leitura de cada um dos 3 endpoints e montá-los em
   `api/v1/base.rb`. (§4.1 inv. 1 — o route-sweep spec de `authorization-policies` falha se
   algum destes endpoints subir sem policy declarada)
-- [ ] 2.5 Spec de request de isolamento: pessoa de `W1` pedindo `overview` de projeto de
+- [x] 2.5 Spec de request de isolamento: pessoa de `W1` pedindo `overview` de projeto de
   `W2` recebe 404. (§4.1 — o corpo da resposta não pode conter o nome do projeto de `W2`
   nem em mensagem de erro)
-- [ ] 2.6 Spec contador de queries sobre dataset de 20 projetos × 5 células × 8 robôs,
+- [x] 2.6 Spec contador de queries sobre dataset de 20 projetos × 5 células × 8 robôs,
   falhando acima de 3 queries por request. (design D-C — 20 projetos SHALL custar o mesmo
   número de queries que 1 projeto; um `map` com `cells.count` dentro reintroduz N+1 sem
   mudar a resposta)

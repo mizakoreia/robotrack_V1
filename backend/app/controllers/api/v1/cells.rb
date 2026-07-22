@@ -32,6 +32,15 @@ module Api
                   with: Api::Entities::Cell
         end
 
+        # hierarchy-screens 2.3 (§3.4) — a Visão da CÉLULA. Antes de `patch ':id'`.
+        # 404 byte-idêntico para célula ausente E cross-tenant (RLS oculta).
+        route_setting :policy, policy: 'CellPolicy', action: :show
+        get ':id/overview' do
+          cell = ::Cell.find_by(id: params[:id])
+          error!({ error: 'not_found' }, 404) if cell.nil?
+          ::Hierarchy::CellOverviewService.call(cell: cell)
+        end
+
         route_setting :policy, policy: 'CellPolicy', action: :create
         params do
           optional :id, type: String

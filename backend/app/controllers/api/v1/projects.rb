@@ -37,7 +37,19 @@ module Api
         # /api/v1/projects` (hierarchy-screens). Ver EXECUCAO decisão de G3.
         route_setting :policy, policy: 'ProjectPolicy', action: :index
         get 'overview' do
-          ::Progress::OverviewQuery.call(workspace_id: env['api.current_workspace_id'])
+          # hierarchy-screens 2.1 — a Visão Geral RICA (cells_count + contagens do
+          # hub), estendendo a forma leve de progress-rollup. Antes de `:id`.
+          ::Hierarchy::OverviewService.call(workspace_id: env['api.current_workspace_id'])
+        end
+
+        # hierarchy-screens 2.2 (§3.3) — a Visão do PROJETO. Antes de `patch ':id'`.
+        # 404 byte-idêntico para projeto ausente E cross-tenant (RLS oculta → find_by
+        # nil): o corpo nunca revela o nome de um projeto de outro workspace.
+        route_setting :policy, policy: 'ProjectPolicy', action: :show
+        get ':id/overview' do
+          project = ::Project.find_by(id: params[:id])
+          error!({ error: 'not_found' }, 404) if project.nil?
+          ::Hierarchy::ProjectOverviewService.call(project: project)
         end
 
         route_setting :policy, policy: 'ProjectPolicy', action: :create
