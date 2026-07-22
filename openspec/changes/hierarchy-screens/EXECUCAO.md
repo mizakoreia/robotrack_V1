@@ -96,6 +96,14 @@ DIVERGIR (ponderado 40 ≠ crua 25). Custo de consulta constante em N (≤3 quer
 6. **Consumo dos componentes de design-system** (EntityCard/Hub/ProgressRing/Badge). Se algum
    faltar prop necessária (ex.: rodapé "Visão macro / Acessar"), estendo o componente base em
    design-system de forma retrocompatível e registro — não reimplemento na tela.
+7. **Overviews de nível ganharam `id`/`name` (e `lock_version` no card de célula) no G5.** As telas
+   de Projeto/Célula precisam do NOME no cabeçalho e do `project_id` para o "voltar"; renomear célula
+   exige o `lock_version`. Somei esses campos aos hashes dos services (adição retrocompatível, dentro
+   do teto de 3 queries — são colunas do mesmo pluck/find). O contrato "sem `progress`" segue válido
+   (o scanner não acha `progress`), e os specs de G2 seguiram verdes.
+8. **Tipos de view reexportados pela feature.** As telas (em `app/pages/`) importam os DTOs de
+   `features/hierarchy/useOverview` (que os reexpõe de `lib/api/endpoints`), NÃO de `lib/api` direto —
+   o sweep de convenção reprova componente que importe a camada de API.
 
 ## Armadilhas previstas
 
@@ -127,7 +135,7 @@ decidir, registrar aqui, seguir.
 - [x] G2 — Endpoints agregados (2.1–2.6)
 - [x] G3 — Busca server-side (3.1–3.3)
 - [x] G4 — Tela Visão Geral (4.1–4.6) — 1º print
-- [ ] G5 — Telas Projeto e Célula (5.1–5.6)
+- [x] G5 — Telas Projeto e Célula (5.1–5.6)
 - [ ] G6 — Busca na UI (6.1–6.5)
 - [ ] G7 — a11y/responsivo/final (7.1–7.4)
 

@@ -25,6 +25,32 @@ export const hierarchyText = {
       retry: 'Tentar novamente',
     },
   },
+  project: {
+    back: 'Voltar à Visão Geral',
+    newCell: 'Nova célula',
+    cellFooter: 'Status global',
+    hub: { configuredCells: 'Células configuradas', analyzedRobots: 'Robôs analisados', completedTasks: 'Tarefas concluídas' },
+    empty: {
+      title: 'Nenhuma célula ainda',
+      body: 'Crie a primeira célula deste projeto para começar a organizar os robôs.',
+      bodyView: 'Este projeto ainda não tem células.',
+      cta: 'Nova célula',
+    },
+    rename: { title: 'Renomear célula' },
+    remove: { title: 'Excluir célula', body: (name: string) => `Excluir a célula "${name}"? Esta ação não pode ser desfeita.` },
+  },
+  cell: {
+    back: 'Voltar ao projeto',
+    addRobots: 'Adicionar robôs',
+    robotOpen: 'Abrir',
+    hub: { configuredRobots: 'Robôs configurados', completedTasks: 'Tarefas concluídas' },
+    empty: {
+      title: 'Nenhum robô ainda',
+      body: 'Adicione robôs a esta célula para materializar as tarefas de comissionamento.',
+      bodyView: 'Esta célula ainda não tem robôs.',
+      cta: 'Adicionar robôs',
+    },
+  },
   // §3.3 / §3.4 — rótulo de progresso físico dos níveis internos.
   levelPhysicalCaption: (percent: number) => `${percent}% de progresso físico`,
   // badges de contagem, com plural pt-BR.

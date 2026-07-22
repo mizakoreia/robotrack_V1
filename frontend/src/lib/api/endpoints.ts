@@ -257,8 +257,11 @@ export interface OverviewCellCard {
   name: string
   weighted_progress: WeightedEnvelope
   robots_count: number
+  lock_version: number
 }
 export interface ProjectOverviewDTO {
+  id: string
+  name: string
   counts: { configured_cells: number; analyzed_robots: number }
   raw_completion: RawCompletionEnvelope
   cells: OverviewCellCard[]
@@ -271,6 +274,9 @@ export interface OverviewRobotCard {
   tasks_count: number
 }
 export interface CellOverviewDTO {
+  id: string
+  name: string
+  project_id: string
   counts: { configured_robots: number }
   raw_completion: RawCompletionEnvelope
   robots: OverviewRobotCard[]

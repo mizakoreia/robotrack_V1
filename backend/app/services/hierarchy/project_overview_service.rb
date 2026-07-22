@@ -15,6 +15,7 @@ module Hierarchy
       cells = cell_cards(project.id)
       analyzed_robots = cells.sum { |c| c[:robots_count] }
       {
+        id: project.id, name: project.name, # cabeçalho da tela de Projeto
         counts: { configured_cells: cells.length, analyzed_robots: analyzed_robots },
         raw_completion: ProgressMetric.raw_completion(**OverviewService.raw_for('project', project.id)),
         cells: cells
@@ -27,9 +28,14 @@ module Hierarchy
         .left_joins(:robots)
         .group('cells.id')
         .order('cells.position')
-        .pluck('cells.id', 'cells.name', 'cells.progress_cache', 'COUNT(robots.id)')
-        .map do |id, name, cache, robots_count|
-          { id: id, name: name, weighted_progress: ProgressMetric.weighted(cache), robots_count: robots_count }
+        .pluck('cells.id', 'cells.name', 'cells.progress_cache', 'COUNT(robots.id)', 'cells.lock_version')
+        .map do |id, name, cache, robots_count, lock_version|
+          # `lock_version` acompanha o card para a tela renomear a célula sem um
+          # segundo fetch (o PATCH exige a versão; hierarchy-screens 5.2).
+          {
+            id: id, name: name, weighted_progress: ProgressMetric.weighted(cache),
+            robots_count: robots_count, lock_version: lock_version
+          }
         end
     end
   end

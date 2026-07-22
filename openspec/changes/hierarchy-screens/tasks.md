@@ -73,22 +73,22 @@
 
 ## 5. Telas Projeto e Célula
 
-- [ ] 5.1 Página de Projeto: hub (Células configuradas · Robôs analisados · Tarefas
+- [x] 5.1 Página de Projeto: hub (Células configuradas · Robôs analisados · Tarefas
   concluídas) + grade de cards de Célula com badge `N robô(s)` e rodapé "Status global /
   Acessar". (§3.3 — célula com 4 robôs e 55% exibe badge "4 robôs" e anel 55%)
-- [ ] 5.2 Ligar as ações nova célula, renomear e excluir célula aos fluxos de
+- [x] 5.2 Ligar as ações nova célula, renomear e excluir célula aos fluxos de
   `commissioning-hierarchy`, invalidando `['ws', wsId, 'project', id, 'overview']`.
   (§3.3 — excluir 1 de 2 células atualiza grade e hub para "Células configuradas 1" sem
   recarregar a página)
-- [ ] 5.3 Página de Célula: hub (Robôs configurados · Tarefas concluídas) + grade de cards
+- [x] 5.3 Página de Célula: hub (Robôs configurados · Tarefas concluídas) + grade de cards
   de Robô com badge = Aplicação e rodapé `N tarefas`. (§3.4 — badge exibe a Aplicação e não
   a contagem de tarefas; badge não pode ter afordância de seletor, §5.2)
-- [ ] 5.4 Ligar "adicionar robô(s)" ao assistente de `robot-tasks` e "Abrir" à rota do robô.
+- [x] 5.4 Ligar "adicionar robô(s)" ao assistente de `robot-tasks` e "Abrir" à rota do robô.
   (§3.4 — "Abrir" no card do robô `r-9` navega para a tabela de tarefas de `r-9`)
-- [ ] 5.5 Estados vazios de nível: projeto sem célula e célula sem robô, com o CTA do nível
+- [x] 5.5 Estados vazios de nível: projeto sem célula e célula sem robô, com o CTA do nível
   e variante sem ação para `view`. (§3.3/§3.4 — o texto não pode ser o mesmo "nada aqui" da
   Visão Geral; cada estado nomeia a ação daquele nível)
-- [ ] 5.6 Teste E2E do caminho Visão Geral → Projeto → Célula → Robô e do botão voltar.
+- [x] 5.6 Teste E2E do caminho Visão Geral → Projeto → Célula → Robô e do botão voltar.
   (§3.2–§3.4 — voltar da célula retorna ao projeto de origem, não à Visão Geral)
 
 ## 6. Busca na UI

@@ -14,6 +14,7 @@ module Hierarchy
     def call(cell:)
       robots = robot_cards(cell.id)
       {
+        id: cell.id, name: cell.name, project_id: cell.project_id, # cabeçalho + voltar
         counts: { configured_robots: robots.length },
         raw_completion: ProgressMetric.raw_completion(**OverviewService.raw_for('cell', cell.id)),
         robots: robots
