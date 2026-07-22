@@ -21,6 +21,7 @@ RSpec.describe 'Envelope de métrica nas entidades (D15)', type: :model do
     Api::Entities::Task#progress
     Api::Entities::TaskAdvance#from_progress
     Api::Entities::TaskAdvance#to_progress
+    Api::Entities::MyTaskRow#progress
   ].freeze
 
   def self.entity_classes

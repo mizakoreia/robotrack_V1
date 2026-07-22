@@ -1,0 +1,54 @@
+# commissioning-report 8.2 (D-R9/D14) — TODO texto fixo do Protocolo de
+# Comissionamento, resolvido no SERVIDOR e entregue já pronto no payload (o frontend
+# não tem cópia dessas strings). Versionado `v1`: mudar o texto de um documento
+# assinado é mudança MATERIAL — a chave nova conviveria com a antiga, não a
+# sobrescreveria. Um sweep (8.2) falha o CI se faltar chave ou se aparecer literal
+# pt-BR dentro de features/report/.
+pt-BR:
+  report:
+    v1:
+      title: 'PROTOCOLO DE COMISSIONAMENTO'
+      # Carimbo
+      stamp_label_done: 'CONCLUÍDO'
+      stamp_label_in_progress: 'EM ANDAMENTO'
+      stamp_label_pending: 'PENDENTE'
+      # Escopo
+      scope_all: 'Workspace inteiro'
+      scope_project: 'Projeto'
+      # Metadados
+      meta_document_id: 'Id do documento'
+      meta_issued_at: 'Emitido em'
+      meta_generated_by: 'Gerado por'
+      meta_structure: 'Estrutura'
+      structure_format: '%{projects} projeto(s) · %{cells} célula(s) · %{robots} robô(s) · %{tasks} tarefa(s)'
+      # Seções
+      section_distribution: 'Distribuição de status'
+      section_body: 'Comissionamento por projeto'
+      section_conclusions: 'Conclusões'
+      # Status (rótulos por extenso da distribuição)
+      status_done: 'Concluído'
+      status_in_progress: 'Em andamento'
+      status_pending: 'Pendente'
+      status_na: 'N/A'
+      # Corpo
+      weighted_progress_label: 'progresso ponderado'
+      col_symbol: 'Símbolo'
+      col_description: 'Tarefa'
+      col_status: 'Status'
+      col_percent: '%'
+      col_assignees: 'Responsáveis'
+      no_assignees: '—'
+      history_transition: 'de %{from}% para %{to}%'
+      # Conclusões
+      concluded_by: 'Concluído por'
+      concluded_at: 'Em'
+      concluded_unknown: '—'
+      # Assinaturas / rodapé
+      signature_commissioner: 'Comissionador'
+      signature_client: 'Cliente / Aceite'
+      footer_generated_at: 'Documento gerado em'
+      footer_traceability: 'Documento de rastreabilidade — os horários refletem o momento do registro de cada avanço (recorded_at), não o de sincronização.'
+      # Avisos de volume (D-R8)
+      warning_large_scope: 'Escopo grande: considere emitir o relatório por projeto para um documento mais enxuto.'
+      warning_truncated: 'Histórico truncado às 10 entradas mais recentes por tarefa. O documento está incompleto por volume — emita por projeto para a trilha completa.'
+      truncated_omitted: '(+%{count} entradas anteriores omitidas)'
