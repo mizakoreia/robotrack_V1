@@ -126,7 +126,7 @@ decidir, registrar aqui, seguir.
 - [x] G1 — Fixture + contrato das métricas (1.1–1.3)
 - [x] G2 — Endpoints agregados (2.1–2.6)
 - [x] G3 — Busca server-side (3.1–3.3)
-- [ ] G4 — Tela Visão Geral (4.1–4.6) — 1º print
+- [x] G4 — Tela Visão Geral (4.1–4.6) — 1º print
 - [ ] G5 — Telas Projeto e Célula (5.1–5.6)
 - [ ] G6 — Busca na UI (6.1–6.5)
 - [ ] G7 — a11y/responsivo/final (7.1–7.4)

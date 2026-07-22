@@ -8,6 +8,10 @@ export const qk = {
   ws: (wsId: string) => ['ws', wsId] as const,
   projects: (wsId: string) => ['ws', wsId, 'projects'] as const,
   project: (wsId: string, id: string) => ['ws', wsId, 'project', id] as const,
+  // hierarchy-screens D-I — os overviews agregados de cada tela.
+  overview: (wsId: string) => ['ws', wsId, 'overview'] as const,
+  projectOverview: (wsId: string, id: string) => ['ws', wsId, 'project', id, 'overview'] as const,
+  cellOverview: (wsId: string, id: string) => ['ws', wsId, 'cell', id, 'overview'] as const,
   cells: (wsId: string, projectId: string) => ['ws', wsId, 'cells', projectId] as const,
   robot: (wsId: string, id: string) => ['ws', wsId, 'robot', id] as const,
   tasks: (wsId: string, robotId: string) => ['ws', wsId, 'robot', robotId, 'tasks'] as const,

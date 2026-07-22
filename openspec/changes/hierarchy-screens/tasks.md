@@ -54,20 +54,20 @@
 
 ## 4. Tela Visão Geral
 
-- [ ] 4.1 Hook `useWorkspaceOverview` com a key `['ws', wsId, 'overview']` e tipos TS sem
+- [x] 4.1 Hook `useWorkspaceOverview` com a key `['ws', wsId, 'overview']` e tipos TS sem
   campo genérico de progresso. (D9 — trocar `weightedProgress` por `rawCompletion` na
   chamada do anel SHALL virar erro de compilação, não bug silencioso)
-- [ ] 4.2 Compor o hub global com o `HubBar` de `design-system`, rotulado "de progresso
+- [x] 4.2 Compor o hub global com o `HubBar` de `design-system`, rotulado "de progresso
   físico global". (§3.2 — 10 de 40 tarefas exibe "10/40" e "25%", nunca o ponderado)
-- [ ] 4.3 Compor a grade de cards de Projeto (ícone, nome, badge em linha própria, anel
+- [x] 4.3 Compor a grade de cards de Projeto (ícone, nome, badge em linha própria, anel
   ponderado, rodapé "Visão macro / Acessar"). (§5.2 — projetos de nome curto e de 60 chars
   na mesma linha mantêm os anéis alinhados e altura de card igual)
-- [ ] 4.4 Estado vazio da Visão Geral com CTA "Novo Projeto", e variante sem CTA para papel
+- [x] 4.4 Estado vazio da Visão Geral com CTA "Novo Projeto", e variante sem CTA para papel
   `view`. (§3.2 + §4.1 — leitor abre workspace vazio e não vê nenhum botão de criação)
-- [ ] 4.5 Estados de carregamento (esqueleto no gabarito do hub+grade) e de erro com
+- [x] 4.5 Estados de carregamento (esqueleto no gabarito do hub+grade) e de erro com
   "Tentar novamente". (§3.2 — resposta 500 exibe erro, não o estado vazio "Novo Projeto";
   a chegada dos dados não desloca o layout)
-- [ ] 4.6 Teste de componente sobre a fixture divergente: hub mostra "1/4" e "25% de
+- [x] 4.6 Teste de componente sobre a fixture divergente: hub mostra "1/4" e "25% de
   progresso físico global" **e** o anel mostra 40% com `aria-label` "Progresso ponderado:
   40%". (D15 — se alguém unificar as métricas os dois viram o mesmo número e o teste quebra)
 
