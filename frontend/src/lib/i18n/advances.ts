@@ -20,6 +20,9 @@ export const advanceText = {
   from: 'De',
   to: 'Para',
   toFieldLabel: 'Progresso alvo (%)',
+  // Modo status (robot-task-table 2.1, §2.2) — o modal aberto pelo StatusSelect
+  // nomeia o status escolhido; o `para%` exibido é o derivado da tabela-verdade.
+  statusChange: (status: string) => `Novo status: ${status}`,
 
   // Rótulo condicional do comentário
   commentLabelRequired: 'Comentário (obrigatório abaixo de 100%)',

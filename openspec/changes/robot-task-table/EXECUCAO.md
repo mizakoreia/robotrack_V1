@@ -79,6 +79,28 @@ D-RTT-11 decomposição p/ paralelismo. D8 recorded_at; D11 identidade; D15 % ro
 6. **`view`**: controles REMOVIDOS do DOM (não `disabled`); os 403 já são garantidos pelas
    policies de robot-tasks/progress-advances — adiciono specs de request confirmando.
 
+### Decisões tomadas na G2 (registro pós-execução)
+
+- **Modo status do modal**: o StatusSelect NÃO manda `progress` derivado — manda
+  `status` no POST de avanço (o endpoint já aceitava `progress` XOR `status`), porque
+  `N/A → progress: 0` degradaria para `Pendente` na tabela-verdade do servidor. O
+  `para%` derivado (espelho client-side de §2.2 em `features/advances/statusTarget.ts`)
+  é SÓ prévia do modal; no 409 o "Recalcular" re-deriva (intenção de status é
+  absoluta, não delta). Campo numérico oculto no modo status.
+- **Cores do status** (§5.1, exemplo do spec do design-system): Concluído→success,
+  Pendente→warning, N/A→na; **Em Andamento→accent** (escolha minha — danger fica
+  reservado para destruição/erro).
+- **Invalidação além da letra de D-RTT-10**: além de `robotTasks` + `projects`,
+  invalido `qk.robot` EXATO (o % ponderado do cabeçalho da própria tela ficaria
+  stale). Os overviews da hierarquia (`qk.overview`/`projectOverview`/`cellOverview`)
+  NÃO são invalidados um a um: o staleTime global é 0, remontar a tela refaz o fetch;
+  push cross-tela é de `realtime-collaboration`.
+- **Gating de `view` na StatusCell antecipado do 4.4** (Badge estático, controle fora
+  do DOM): o `AdvanceControls` ao lado já se remove sozinho e uma linha meio-gated
+  seria incoerente. O 4.4 completa o resto (Ações, sync, specs de 403).
+- **`step={5}` no slider** entrou no `AdvanceControls` (progress-advances) — é a única
+  mudança visual lá; os botões continuam ±10.
+
 ## Armadilhas previstas
 
 1. **N+1 na trilha** — manter `includes(:task_advances)`; contributors/last_advance em
@@ -102,7 +124,7 @@ completa fica para o G7. Provisionar o banco a cada sessão (ver CONTINUIDADE).
 
 - [x] G0 — este mapa (commit G0)
 - [x] G1 — Esqueleto + contrato (1.1–1.6)
-- [ ] G2 — Status + Progresso (2.1–2.4)
+- [x] G2 — Status + Progresso (2.1–2.4)
 - [ ] G3 — Responsáveis + Trilha + avisos (3.1–3.5)
 - [ ] G4 — Cabeçalho + Ações + sync + gating (4.1–4.5)
 - [ ] G5 — Modais histórico + atribuição (5.1–5.5)

@@ -6,12 +6,17 @@ import { Badge } from '@/components/ui/Badge'
 import { BackLink } from '@/features/hierarchy/LevelChrome'
 import { useRobotTasks, useRobotHeader, type TaskDTO } from '@/features/robot-tasks/useRobotTasks'
 import { useRobotTaskFilter, applyFilter, type TaskFilter } from '@/features/robot-tasks/filterStore'
+import { StatusCell } from '@/features/robot-tasks/StatusCell'
+import { AdvanceControls } from '@/features/advances/AdvanceControls'
 import { metricLabel } from '@/lib/i18n/progress'
 
 // robot-task-table 1.4/1.5 (§3.5) — a casca da tela operacional do robô: cabeçalho,
 // filtro segmentado (reset na navegação, D-RTT-1), tabela agrupada por categoria e os
-// estados. As 6 colunas são LEITURA aqui; as interativas (Status/Progresso, chips,
-// ações) chegam nos grupos 2–4. A rota é montada com `key={robotId}` em App.tsx.
+// estados. Status e Progresso são interativos (G2, §2.2/§2.4): a célula de Status
+// compõe o StatusSelect→modal; a de Progresso COMPÕE `<AdvanceControls>` de
+// progress-advances (D-RTT-5 — `persisted` da query, `draft` local, ± do persistido).
+// Responsáveis/Trilha/Ações continuam leitura até os grupos 3–4. A rota é montada
+// com `key={robotId}` em App.tsx.
 const FILTERS: { key: TaskFilter; label: string }[] = [
   { key: 'all', label: 'Todos' },
   { key: 'pending', label: 'Pendentes' },
@@ -80,7 +85,7 @@ export function RobotTaskTablePage() {
       {tasks.length === 0 ? (
         <TableEmpty robotName={robotName} />
       ) : (
-        <TaskTable tasks={visible} />
+        <TaskTable robotId={robotId ?? '_'} tasks={visible} />
       )}
     </section>
   )
@@ -88,7 +93,7 @@ export function RobotTaskTablePage() {
 
 // A tabela agrupada por categoria (§3.5) — linha separadora na troca de categoria,
 // preservando a ordem persistida das tarefas dentro do grupo.
-function TaskTable({ tasks }: { tasks: TaskDTO[] }) {
+function TaskTable({ robotId, tasks }: { robotId: string; tasks: TaskDTO[] }) {
   let lastCat: string | null = null
   return (
     <div className="surface-panel overflow-hidden rounded-lg border">
@@ -116,7 +121,7 @@ function TaskTable({ tasks }: { tasks: TaskDTO[] }) {
                     </td>
                   </tr>
                 )}
-                <TaskRow task={t} />
+                <TaskRow robotId={robotId} task={t} />
               </Fragment>
             )
           })}
@@ -126,15 +131,19 @@ function TaskTable({ tasks }: { tasks: TaskDTO[] }) {
   )
 }
 
-// Linha de LEITURA (G1). As células interativas substituem estas nos grupos 2–4.
-function TaskRow({ task }: { task: TaskDTO }) {
+// Status e Progresso interativos (G2, 2.1–2.3); Responsáveis/Trilha/Ações são
+// leitura até os grupos 3–4.
+function TaskRow({ robotId, task }: { robotId: string; task: TaskDTO }) {
   return (
     <tr className="border-t align-middle">
       <td className="px-4 py-3">{task.desc}</td>
       <td className="px-4 py-3">
-        <Badge status="na">{task.status}</Badge>
+        <StatusCell robotId={robotId} task={task} />
       </td>
-      <td className="tabular px-4 py-3">{task.progress}%</td>
+      <td className="px-4 py-3">
+        {/* leitura % + − slider + vivem no AdvanceControls (D-RTT-5) */}
+        <AdvanceControls robotId={robotId} taskId={task.id} />
+      </td>
       <td className="px-4 py-3">
         {task.assignees.length === 0 ? (
           <span className="text-text-muted">—</span>

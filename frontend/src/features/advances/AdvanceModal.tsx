@@ -4,6 +4,7 @@ import { advanceText } from '../../lib/i18n/advances'
 import { newId } from '../../lib/ids'
 import { clampProgress } from './useAdvanceDraft'
 import { readAdvanceConflict, useRecordAdvance } from './useRecordAdvance'
+import { deriveStatusTarget, type TaskStatus } from './statusTarget'
 import type { AdvanceConflict } from '../../lib/api/endpoints'
 
 // progress-advances 5.3/5.5 (§2.4 itens 2–3, D14/D-409) — o modal de confirmação
@@ -26,6 +27,11 @@ export interface AdvanceModalProps {
   initialTo: number
   lockVersion: number
   onDone: () => void // fechar e resetar o rascunho no pai
+  // robot-task-table 2.1 (§2.2) — MODO STATUS: aberto pelo StatusSelect. O envio
+  // leva `status` (a tabela-verdade resolve no servidor — `N/A` NÃO vira
+  // `progress: 0`, que degradaria para `Pendente`); `initialTo` é só a prévia
+  // derivada, e o campo numérico some (quem quer % livre usa o slider/±).
+  toStatus?: TaskStatus
 }
 
 export function AdvanceModal({
@@ -35,6 +41,7 @@ export function AdvanceModal({
   initialTo,
   lockVersion,
   onDone,
+  toStatus,
 }: AdvanceModalProps) {
   const [to, setTo] = useState<number>(initialTo)
   const [comment, setComment] = useState('')
@@ -58,7 +65,8 @@ export function AdvanceModal({
       {
         taskId,
         id: advanceId,
-        toProgress: to,
+        // XOR — modo status manda `status` e NENHUM progress (§2.2 no servidor).
+        ...(toStatus ? { toStatus } : { toProgress: to }),
         comment: comment.trim() === '' ? undefined : comment,
         recordedAt: new Date().toISOString(),
         lockVersion: currentLock,
@@ -74,13 +82,19 @@ export function AdvanceModal({
   }
 
   // *Recalcular a partir de X%*: reaplica o MESMO delta (to − baseFrom) sobre o
-  // valor que o outro operador deixou, com um uuid NOVO — é outro avanço.
+  // valor que o outro operador deixou, com um uuid NOVO — é outro avanço. No modo
+  // status a intenção é ABSOLUTA ("marcar N/A"), não um delta: mantém o status e
+  // re-deriva a prévia pela tabela-verdade sobre o valor novo (§2.2).
   function recalculate() {
     if (!conflict) return
-    const delta = to - baseFrom
     const newFrom = conflict.task.progress
+    if (toStatus) {
+      setTo(deriveStatusTarget(toStatus, newFrom))
+    } else {
+      const delta = to - baseFrom
+      setTo(clampProgress(newFrom + delta))
+    }
     setBaseFrom(newFrom)
-    setTo(clampProgress(newFrom + delta))
     setCurrentLock(conflict.task.lock_version)
     setAdvanceId(newId()) // outro fato → outro uuid
     setConflict(null)
@@ -133,18 +147,24 @@ export function AdvanceModal({
             {advanceText.from} {baseFrom}% → {advanceText.to} {to}%
           </p>
 
-          <label className="mt-3 block text-sm" htmlFor="avanco-para">
-            {advanceText.toFieldLabel}
-          </label>
-          <input
-            id="avanco-para"
-            type="number"
-            min={0}
-            max={100}
-            value={to}
-            onChange={(e) => setTo(clampProgress(Number(e.target.value)))}
-            className="mt-1 w-24 rounded-md border bg-background px-3 py-2 text-sm"
-          />
+          {toStatus ? (
+            <p className="mt-1 text-sm font-medium">{advanceText.statusChange(toStatus)}</p>
+          ) : (
+            <>
+              <label className="mt-3 block text-sm" htmlFor="avanco-para">
+                {advanceText.toFieldLabel}
+              </label>
+              <input
+                id="avanco-para"
+                type="number"
+                min={0}
+                max={100}
+                value={to}
+                onChange={(e) => setTo(clampProgress(Number(e.target.value)))}
+                className="mt-1 w-24 rounded-md border bg-background px-3 py-2 text-sm"
+              />
+            </>
+          )}
 
           <label className="mt-3 block text-sm" htmlFor="avanco-comentario">
             {commentLabel}
