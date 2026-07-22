@@ -34,9 +34,19 @@ module MyTasks
       # UMA consulta (D-MTV-4/5.3): `COUNT(*) OVER()` traz o total ANTES do LIMIT na
       # mesma leitura — sem um segundo SELECT de contagem. Página fora do intervalo
       # devolve `[]` e total 0 (aceitável no volume real; a paginação é por offset).
-      rows = ActiveRecord::Base.connection.exec_query(
-        list_sql, 'my_tasks.list', [workspace_id, person_id, per, offset]
-      ).to_a
+      #
+      # `SET LOCAL enable_nestloop = off` (escopado a esta transação de leitura): a
+      # RLS injeta `workspace_id = current_setting()` em toda tabela, OPACO ao
+      # planner, que então estima `rows=1` e escolhe um nested loop patológico (join
+      # por FILTRO em vez de índice) — 28s no dataset de carga. Forçar hash join dá o
+      # plano robusto (constrói o hash sobre `mine`, dezenas/centenas de linhas, e
+      # varre `tasks` uma vez). `SET LOCAL` não vaza da transação. Ver spec de carga.
+      rows = ActiveRecord::Base.transaction do
+        ActiveRecord::Base.connection.execute('SET LOCAL enable_nestloop = off')
+        ActiveRecord::Base.connection.exec_query(
+          list_sql, 'my_tasks.list', [workspace_id, person_id, per, offset]
+        ).to_a
+      end
 
       total = rows.empty? ? 0 : rows.first['total_count'].to_i
       rows.each { |r| r.delete('total_count') }
@@ -53,8 +63,19 @@ module MyTasks
       [n, MAX_PER_PAGE].min
     end
 
+    # O CTE `MATERIALIZED` FIXA o driver em `task_assignees` (D-MTV-4): computa uma
+    # vez os `task_id` do viewer (índice ws-person, dezenas a centenas) e SÓ ENTÃO
+    # sobe por PK até o projeto. Sem ele, a RLS injeta `workspace_id =
+    # current_setting()` em toda tabela — opaco ao planner, que estima `rows=1` e
+    # escolhe um nested loop patológico (join por FILTRO em vez de índice). O
+    # `MATERIALIZED` barra essa inversão e é o que garante o index scan por `t.id`.
     def list_sql
       <<~SQL
+        WITH mine AS MATERIALIZED (
+          SELECT ta.task_id
+          FROM task_assignees ta
+          WHERE ta.workspace_id = $1 AND ta.person_id = $2
+        )
         SELECT t.id,
                t."desc"  AS description,
                t.status  AS status,
@@ -64,14 +85,11 @@ module MyTasks
                c.id AS cell_id,    c.name AS cell_name,
                p.id AS project_id, p.name AS project_name,
                COUNT(*) OVER() AS total_count
-        FROM task_assignees ta
-        JOIN tasks    t ON t.id = ta.task_id
+        FROM mine
+        JOIN tasks    t ON t.id = mine.task_id AND t.status IN ('Pendente', 'Em Andamento')
         JOIN robots   r ON r.id = t.robot_id
         JOIN cells    c ON c.id = r.cell_id
         JOIN projects p ON p.id = c.project_id
-        WHERE ta.workspace_id = $1
-          AND ta.person_id    = $2
-          AND t.status IN ('Pendente', 'Em Andamento')
         ORDER BY p.position, p.id, c.position, c.id, r.position, r.id, t.position, t.id
         LIMIT $3 OFFSET $4
       SQL
