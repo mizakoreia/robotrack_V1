@@ -23,9 +23,11 @@ module Hierarchy
     end
 
     def cell_cards(project_id)
+      # hierarchy-soft-delete D6 — robô arquivado filtrado no ON do LEFT JOIN, para
+      # a célula viva com só robôs arquivados ainda aparecer com `robots_count = 0`.
       ::Cell
         .where(project_id: project_id)
-        .left_joins(:robots)
+        .joins('LEFT OUTER JOIN robots ON robots.cell_id = cells.id AND robots.deleted_at IS NULL')
         .group('cells.id')
         .order('cells.position')
         .pluck('cells.id', 'cells.name', 'cells.progress_cache', 'COUNT(robots.id)', 'cells.lock_version')

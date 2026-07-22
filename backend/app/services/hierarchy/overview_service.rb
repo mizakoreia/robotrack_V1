@@ -26,8 +26,12 @@ module Hierarchy
     # Q1 — uma query com GROUP: cards do projeto com a contagem de células. O anel
     # é o ponderado lido de `progress_cache` (nunca aninha células/robôs/tarefas).
     def project_cards
+      # hierarchy-soft-delete D6 — o filtro de célula arquivada mora no ON do LEFT
+      # JOIN (não no WHERE): assim um projeto vivo com SÓ células arquivadas ainda
+      # aparece com `cells_count = 0`, em vez de sumir. Projeto é a relação primária
+      # (o `default_scope` já exclui projeto arquivado).
       ::Project
-        .left_joins(:cells)
+        .joins('LEFT OUTER JOIN cells ON cells.project_id = projects.id AND cells.deleted_at IS NULL')
         .group('projects.id')
         .order('projects.position')
         .pluck('projects.id', 'projects.name', 'projects.progress_cache', 'COUNT(cells.id)')

@@ -63,7 +63,7 @@ module Progress
             SELECT t.id AS scope_id, t.progress_cache AS cached, v.value AS computed
             FROM #{table} t
             JOIN #{view} v ON v.#{key} = t.id
-            WHERE t.progress_cache <> v.value
+            WHERE t.progress_cache <> v.value AND t.deleted_at IS NULL
           SQL
           rows.map do |r|
             { level: level, scope_id: r['scope_id'], cached: r['cached'].to_i, computed: r['computed'].to_i }

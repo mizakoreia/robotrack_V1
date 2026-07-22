@@ -19,7 +19,9 @@ module Progress
         Tenant.with(workspace_id: workspace_id, user_id: nil) do
           LEVELS.each do |level, table|
             ActiveRecord::Base.connection.select_all(
-              "SELECT id, workspace_id, progress_cache FROM #{table}"
+              # hierarchy-soft-delete D6 — não dumpa nós arquivados (cache stale,
+              # irrelevante; o `default_scope` não alcança este SQL cru).
+              "SELECT id, workspace_id, progress_cache FROM #{table} WHERE deleted_at IS NULL"
             ).each do |row|
               file.puts({ level: level, scope_id: row['id'], workspace_id: row['workspace_id'],
                           progress_cache: row['progress_cache'].to_i }.to_json)

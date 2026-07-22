@@ -49,20 +49,20 @@ quatro views e a cascata de cache).
 
 ## 3. Blindagem dos leitores em SQL cru
 
-- [ ] 3.1 `deleted_at IS NULL` nas referências à hierarquia dos leitores de exibição/contagem
+- [x] 3.1 `deleted_at IS NULL` nas referências à hierarquia dos leitores de exibição/contagem
   em SQL cru: `reports/commissioning_report_service` (árvore, tarefas, contagens de status),
   `my_tasks/list_service` (JOIN robots/cells/projects), `progress/cache_dump` e
   `progress/reconciliation_job` (varredura das três tabelas). NÃO filtrar em
   `progress/cascade_recompute` (navega para o pai a recalcular — precisa achar o nó
   arquivado; o valor já exclui via views). (D6 — relatório e minhas-tarefas não podem listar
   robô/tarefa arquivados)
-- [ ] 3.2 Filtro de lado juntado nos agregadores por JOIN de associação:
+- [x] 3.2 Filtro de lado juntado nos agregadores por JOIN de associação:
   `hierarchy/overview_service` (`Project.left_joins(:cells)` → `where(cells: { deleted_at:
   nil })`), `hierarchy/project_overview_service` (`Cell.left_joins(:robots)`),
   `hierarchy/search_service` (`joins(:project)`/`joins(cell: :project)`). Seguro para LEFT
   JOIN (`IS NULL` cobre a linha ausente). (D6 — projeto vivo com célula arquivada
   individualmente não pode contá-la; projeto sem células continua aparecendo)
-- [ ] 3.3 **Verificação:** spec que, para overview, project-overview, busca, relatório de
+- [x] 3.3 **Verificação:** spec que, para overview, project-overview, busca, relatório de
   comissionamento e minhas-tarefas, arquiva um nó (robô/célula) e prova sua ausência em cada
   leitura, e que um pai sem filhos vivos ainda aparece (contagem 0), não some. (cobre
   3.1–3.2)

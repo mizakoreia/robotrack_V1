@@ -86,10 +86,14 @@ module MyTasks
                p.id AS project_id, p.name AS project_name,
                COUNT(*) OVER() AS total_count
         FROM mine
+        -- hierarchy-soft-delete D6 — nó/tarefa arquivados fora (o soft-delete já
+        -- remove os task_assignees, então o driver `mine` normalmente nem os traz;
+        -- estes filtros são a defesa em profundidade da leitura crua).
         JOIN tasks    t ON t.id = mine.task_id AND t.status IN ('Pendente', 'Em Andamento')
-        JOIN robots   r ON r.id = t.robot_id
-        JOIN cells    c ON c.id = r.cell_id
-        JOIN projects p ON p.id = c.project_id
+                       AND t.deleted_at IS NULL
+        JOIN robots   r ON r.id = t.robot_id  AND r.deleted_at IS NULL
+        JOIN cells    c ON c.id = r.cell_id   AND c.deleted_at IS NULL
+        JOIN projects p ON p.id = c.project_id AND p.deleted_at IS NULL
         ORDER BY p.position, p.id, c.position, c.id, r.position, r.id, t.position, t.id
         LIMIT $3 OFFSET $4
       SQL

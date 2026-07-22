@@ -62,21 +62,23 @@ module Reports
     # ---- Queries (constantes em N) ----
 
     def fetch_tree(scope, project_id)
-      where, binds = scope_filter('p.id', scope, project_id)
+      where0, binds = scope_filter('p.id', scope, project_id)
+      where = with_live(where0, 'p') # hierarchy-soft-delete D6
       conn.exec_query(<<~SQL, 'reports.tree', binds).to_a
         SELECT p.id AS p_id, p.name AS p_name, p.position AS p_pos, p.progress_cache AS p_prog,
                c.id AS c_id, c.name AS c_name, c.position AS c_pos, c.progress_cache AS c_prog,
                r.id AS r_id, r.name AS r_name, r.application AS r_app, r.position AS r_pos, r.progress_cache AS r_prog
         FROM projects p
-        LEFT JOIN cells  c ON c.project_id = p.id
-        LEFT JOIN robots r ON r.cell_id = c.id
+        LEFT JOIN cells  c ON c.project_id = p.id AND c.deleted_at IS NULL
+        LEFT JOIN robots r ON r.cell_id = c.id AND r.deleted_at IS NULL
         #{where}
         ORDER BY p.position, p.id, c.position, c.id, r.position, r.id
       SQL
     end
 
     def fetch_tasks(scope, project_id)
-      where, binds = scope_filter('c.project_id', scope, project_id)
+      where0, binds = scope_filter('c.project_id', scope, project_id)
+      where = with_live(where0, 't', 'r', 'c') # hierarchy-soft-delete D6 (+ tarefa arquivada)
       conn.exec_query(<<~SQL, 'reports.tasks', binds).to_a
         SELECT t.id, t.robot_id, t.cat, t."desc" AS description, t.status, t.progress, t.position,
                COALESCE(
@@ -110,7 +112,8 @@ module Reports
     end
 
     def fetch_status_counts(scope, project_id)
-      where, binds = scope_filter('c.project_id', scope, project_id)
+      where0, binds = scope_filter('c.project_id', scope, project_id)
+      where = with_live(where0, 't', 'r', 'c') # hierarchy-soft-delete D6
       rows = conn.exec_query(<<~SQL, 'reports.status', binds).to_a
         SELECT t.status, COUNT(*) AS n
         FROM tasks t JOIN robots r ON r.id = t.robot_id JOIN cells c ON c.id = r.cell_id
@@ -126,6 +129,16 @@ module Reports
       return ['', []] if scope == 'all'
 
       ["WHERE #{column} = $1", [project_id]]
+    end
+
+    # hierarchy-soft-delete D6 — blinda a leitura crua: nós arquivados
+    # (`deleted_at`) somem do relatório. Combina com o filtro de escopo (RLS já
+    # escopa o tenant; isto tira o arquivado). Os `alias` são tabelas em INNER
+    # JOIN/base — os LEFT JOIN (cells/robots da árvore) filtram no próprio ON,
+    # para o pai sem filho vivo ainda aparecer.
+    def with_live(where_clause, *aliases)
+      live = aliases.map { |a| "#{a}.deleted_at IS NULL" }.join(' AND ')
+      where_clause.empty? ? "WHERE #{live}" : "#{where_clause} AND #{live}"
     end
 
     def conn = ActiveRecord::Base.connection

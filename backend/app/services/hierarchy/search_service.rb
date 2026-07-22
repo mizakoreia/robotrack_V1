@@ -38,7 +38,11 @@ module Hierarchy
     end
 
     def cell_hits(like)
-      ::Cell.joins(:project).where('cells.name ILIKE ?', like).order('cells.name')
+      # hierarchy-soft-delete D6 — o projeto juntado (INNER) pode estar arquivado; o
+      # `default_scope` não entra no JOIN, então filtra explícito. Célula é primária
+      # (arquivada já excluída pelo default_scope).
+      ::Cell.joins(:project).where('cells.name ILIKE ?', like).where('projects.deleted_at IS NULL')
+            .order('cells.name')
             .pluck('cells.id', 'cells.name', 'projects.name').map do |id, name, project_name|
         {
           type: 'cell', id: id, name: name,
@@ -49,7 +53,11 @@ module Hierarchy
     end
 
     def robot_hits(like)
-      ::Robot.joins(cell: :project).where('robots.name ILIKE ?', like).order('robots.name')
+      # hierarchy-soft-delete D6 — célula/projeto juntados (INNER) podem estar
+      # arquivados; filtra explícito (robô primário já excluído pelo default_scope).
+      ::Robot.joins(cell: :project).where('robots.name ILIKE ?', like)
+             .where('cells.deleted_at IS NULL AND projects.deleted_at IS NULL')
+             .order('robots.name')
              .pluck('robots.id', 'robots.name', 'cells.name', 'projects.name')
              .map do |id, name, cell_name, project_name|
         label =
