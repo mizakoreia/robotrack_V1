@@ -121,23 +121,23 @@ componente de célula — quem chegar depois consome a interface já publicada e
 
 ## 5. Modais de colaboração (paralelo)
 
-- [ ] 5.1 Implementar o modal de histórico: lista de contribuidores distinta +
+- [x] 5.1 Implementar o modal de histórico: lista de contribuidores distinta +
   timeline ordenada por `recorded_at DESC, created_at DESC`, exibindo autor,
   `de% → para%`, data/hora e comentário (§3.5, D8 — avanço com
   `recorded_at 14:05` / `created_at 18:40` exibe `14:05`; dois `recorded_at` iguais
   mantêm a mesma ordem entre recarregamentos)
-- [ ] 5.2 Marcar entradas `legacy` na timeline e tratar avanço de `→100` sem
+- [x] 5.2 Marcar entradas `legacy` na timeline e tratar avanço de `→100` sem
   comentário com marcador explícito de ausência (§3.5, §2.4 item 3 — entrada sem
   comentário não herda visualmente o comentário da entrada vizinha)
-- [ ] 5.3 Implementar o modal de atribuição: checkboxes de todas as `people` do
+- [x] 5.3 Implementar o modal de atribuição: checkboxes de todas as `people` do
   workspace com os atuais marcados, salvando via
   `PUT /api/v1/tasks/:id/assignees` com policy declarada (§3.5, D11 — desmarcar todos
   deixa `assignees` vazio e **não** cria pessoa `"Não Atribuído"`)
-- [ ] 5.4 Implementar o cadastro de pessoa nova no modal, delegando a criação de
+- [x] 5.4 Implementar o cadastro de pessoa nova no modal, delegando a criação de
   `Person` a `workspace-tenancy`, com a pessoa entrando já marcada (§3.5, D10 —
   digitar `  ana  ` com `Ana` já existente marca a existente e informa duplicidade,
   em vez de criar uma segunda; campo em branco é rejeitado)
-- [ ] 5.5 **Verificação:** testes de componente dos dois modais (ordem da timeline,
+- [x] 5.5 **Verificação:** testes de componente dos dois modais (ordem da timeline,
   marcador legado, dedup de nome, seleção vazia) + spec de request de `403` para
   `view` em `PUT /tasks/:id/assignees` e de que a lista não inclui pessoa de outro
   workspace (§4.1, D2 — usuário de W1 não vê `Eduardo` de W2)

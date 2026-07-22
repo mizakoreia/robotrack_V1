@@ -138,6 +138,27 @@ D-RTT-11 decomposição p/ paralelismo. D8 recorded_at; D11 identidade; D15 % ro
 - **Coluna Ações SAI do DOM para `view`** (não `disabled`); o `colSpan` do separador
   de categoria vira 5. Edição/exclusão em `Modal` do design-system (focus trap/Esc).
 
+### Decisões tomadas na G5 (registro pós-execução)
+
+- **Lógica de atribuição REUSADA de robot-tasks 4.4**: `useWorkspacePeople`
+  (lista via `membershipsApi`), `useAssigneeSelection` (toggle + createAndSelect) e
+  `useReplaceAssignees` (PUT + invalida robotTasks) já existiam — a G5 só construiu a
+  UI (checkboxes + cadastro). A lista é workspace-scoped pela RLS (D2 — pessoa de
+  outro ws não aparece; coberto pelos sweeps de tenant + `task_assignees_spec`).
+- **Dedup do cadastro (D10)** vive na `AssignmentModal` (não no hook): nome `btrim` +
+  colapsa espaços + `toLocaleLowerCase('pt-BR')`; se bate com pessoa existente, MARCA
+  a existente e avisa (`role=status`), sem chamar `peopleApi.create`. Em branco é
+  rejeitado. Pessoa nova entra marcada (via `createAndSelect`).
+- **HistoryModal usa `useTaskTrail`** (novo hook) na chave `advanceKeys.trail` (a
+  MESMA que o avanço invalida — abrir após registrar mostra a entrada nova). Ordem é
+  do SERVIDOR (recorded_at DESC…); NÃO reordeno. `→100` sem comentário mostra
+  "sem comentário" explícito, sem herdar do vizinho (§2.4 item 3).
+- **Ambos os modais migraram para o `Modal` do design-system** (focus trap + Esc que
+  devolve o foco ao gatilho) — as cascas mínimas da G3 foram substituídas. Isso já
+  entrega parte do 6.4 (foco preso/Esc nos dois modais).
+- **5.5 backend já satisfeito**: `task_assignees_spec.rb` (view 403 no PUT; person/
+  task de outro ws → 404) — 8/0. O novo é o teste de componente (`modais.test.tsx`).
+
 ## Armadilhas previstas
 
 1. **N+1 na trilha** — manter `includes(:task_advances)`; contributors/last_advance em
@@ -164,7 +185,7 @@ completa fica para o G7. Provisionar o banco a cada sessão (ver CONTINUIDADE).
 - [x] G2 — Status + Progresso (2.1–2.4)
 - [x] G3 — Responsáveis + Trilha + avisos (3.1–3.5)
 - [x] G4 — Cabeçalho + Ações + sync + gating (4.1–4.5)
-- [ ] G5 — Modais histórico + atribuição (5.1–5.5)
+- [x] G5 — Modais histórico + atribuição (5.1–5.5)
 - [ ] G6 — Mobile + a11y + pulso (6.1–6.5)
 - [ ] G7 — Integração + E2E + carga (7.1–7.3)
 
