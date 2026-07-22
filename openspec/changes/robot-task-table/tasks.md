@@ -25,31 +25,31 @@ componente de célula — quem chegar depois consome a interface já publicada e
 
 ## 1. Esqueleto e contrato de dados (bloqueante — faça primeiro, em ordem)
 
-- [ ] 1.1 Criar `Api::Entities::TaskRow` expondo `id, category, description, weight,
+- [x] 1.1 Criar `Api::Entities::TaskRow` expondo `id, category, description, weight,
   progress, status, lock_version, assignees[{person_id,name}],
   contributors[{person_id,name}], advances_count,
   last_advance{comment,recorded_at,author_name_snapshot,legacy}` (§3.5 — spec de
   contrato falha se `recorded_at` for trocado por `created_at` ou se `contributors`
   vier mesclado em `assignees`)
-- [ ] 1.2 Implementar `RobotTasksService.list` com os dois `LEFT JOIN LATERAL` sobre
+- [x] 1.2 Implementar `RobotTasksService.list` com os dois `LEFT JOIN LATERAL` sobre
   `task_advances` (contagem/contribuidores e último avanço por
   `recorded_at DESC, created_at DESC`), e montar `GET /api/v1/robots/:id/tasks` em
   `api/v1/base.rb` declarando a policy de leitura (D3) (§3.5 — robô com 40 tarefas e
   200 avanços resolve em ≤3 queries totais; teste conta queries e falha em N+1)
-- [ ] 1.3 Criar `frontend/src/features/robot-tasks/` com os tipos gerados do contrato,
+- [x] 1.3 Criar `frontend/src/features/robot-tasks/` com os tipos gerados do contrato,
   o hook `useRobotTasks` na query key `['ws', wsId, 'robot', robotId, 'tasks']` (D9) e
   a interface pública dos componentes de célula (§3.5, D-RTT-10 — nenhuma célula
   importa `apiClient` diretamente; o padrão `useEffect + apiClient` do template não se
   propaga)
-- [ ] 1.4 Montar a rota da tela do robô com `key={robotId}`, o layout de grupo por
+- [x] 1.4 Montar a rota da tela do robô com `key={robotId}`, o layout de grupo por
   categoria com linha separadora, e os estados de carregamento/vazio/erro (§3.5, §2.9
   — robô sem tarefas mostra estado vazio nomeando o robô, não uma tabela de 0 linhas;
   falha 500 mostra erro com nova tentativa, não estado vazio)
-- [ ] 1.5 Implementar o `robotTaskFilterStore` (Zustand, sem `persist`) e o controle
+- [x] 1.5 Implementar o `robotTaskFilterStore` (Zustand, sem `persist`) e o controle
   segmentado, com reset por `useEffect([robotId])` **e** pelo `key` da rota (§3.5,
   D-RTT-1 — sair do robô A para o B e voltar ao A mostra "Todos", não o filtro
   anterior; nada de filtro na URL)
-- [ ] 1.6 **Verificação:** teste de request do endpoint agregado (contagem de queries,
+- [x] 1.6 **Verificação:** teste de request do endpoint agregado (contagem de queries,
   contrato, 404 para robô de outro workspace via RLS) + teste de componente do reset
   de filtro nos três caminhos de navegação (§3.5, §4.1 inv. 1 — robô de W2 pedido por
   usuário de W1 devolve 404 sem vazar nome)

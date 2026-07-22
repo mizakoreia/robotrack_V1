@@ -30,6 +30,15 @@ module Api
                   with: Api::Entities::Robot
         end
 
+        # robot-task-table 1.4 — o cabeçalho da tela do robô (nome, Aplicação, %
+        # ponderado). Antes de `patch ':id'`. 404 byte-idêntico p/ ausente E cross-tenant.
+        route_setting :policy, policy: 'RobotPolicy', action: :show
+        get ':id' do
+          robot = ::Robot.find_by(id: params[:id])
+          error!({ error: 'not_found' }, 404) if robot.nil?
+          present robot, with: Api::Entities::Robot
+        end
+
         route_setting :policy, policy: 'RobotPolicy', action: :create
         params do
           optional :id, type: String

@@ -473,6 +473,29 @@ export interface TaskDTO {
   assignees: { id: string; name: string }[]
   advances_count: number
   last_comment: string | null
+  // robot-task-table 1.1 (D-RTT-4/D8) — contribuidores (quem já avançou) SEPARADOS
+  // dos responsáveis; `last_advance` traz a data de AÇÃO `recorded_at`.
+  contributors: { id: string; name: string }[]
+  last_advance: {
+    comment: string | null
+    recorded_at: string
+    author_name_snapshot: string
+    legacy: boolean
+  } | null
+}
+
+export interface RobotHeaderDTO {
+  id: string
+  cell_id: string
+  name: string
+  application: string
+  weighted_progress: WeightedEnvelope
+}
+
+export const robotTasksApi = {
+  listForRobot: (robotId: string) =>
+    apiClient.get<TaskDTO[]>(`/api/v1/robots/${encodeURIComponent(robotId)}/tasks`),
+  getRobot: (robotId: string) => apiClient.get<RobotHeaderDTO>(`/api/v1/robots/${encodeURIComponent(robotId)}`),
 }
 
 // progress-advances 4.3 — uma entrada da trilha de avanço (entity `TaskAdvance`).

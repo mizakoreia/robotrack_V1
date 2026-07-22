@@ -13,6 +13,7 @@ import { AppShell } from '@/app/AppShell'
 import { OverviewPage } from '@/app/pages/OverviewPage'
 import { ProjectPage } from '@/app/pages/ProjectPage'
 import { CellPage } from '@/app/pages/CellPage'
+import { RobotRouteKey } from '@/app/pages/RobotRouteKey'
 import { MyTasksPage } from '@/app/pages/MyTasksPage'
 import { ReportPage } from '@/app/pages/ReportPage'
 import { DashboardPage } from '@/app/pages/DashboardPage'
@@ -58,6 +59,7 @@ function App() {
             <Route path="/" element={<OverviewPage />} />
             <Route path="/projeto/:id" element={<ProjectPage />} />
             <Route path="/celula/:id" element={<CellPage />} />
+            <Route path="/robo/:id" element={<RobotRouteKey />} />
             <Route path="/minhas-tarefas" element={<MyTasksPage />} />
             <Route path="/relatorio" element={<ReportPage />} />
             <Route path="dashboard" element={<DashboardPage />} />

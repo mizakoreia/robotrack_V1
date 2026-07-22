@@ -101,7 +101,7 @@ completa fica para o G7. Provisionar o banco a cada sessão (ver CONTINUIDADE).
 ## Progresso
 
 - [x] G0 — este mapa (commit G0)
-- [ ] G1 — Esqueleto + contrato (1.1–1.6)
+- [x] G1 — Esqueleto + contrato (1.1–1.6)
 - [ ] G2 — Status + Progresso (2.1–2.4)
 - [ ] G3 — Responsáveis + Trilha + avisos (3.1–3.5)
 - [ ] G4 — Cabeçalho + Ações + sync + gating (4.1–4.5)

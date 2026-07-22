@@ -66,7 +66,9 @@ RSpec.describe 'Varredura negativa de vazamento entre tenants', :tenancy, type: 
     },
     # hierarchy-screens G2: os overviews de nível entram na varredura no grupo que os cria.
     'GET /api/v1/projects/:id/overview' => ->(ids) { ["/api/v1/projects/#{ids[:project]}/overview", {}] },
-    'GET /api/v1/cells/:id/overview' => ->(ids) { ["/api/v1/cells/#{ids[:cell]}/overview", {}] }
+    'GET /api/v1/cells/:id/overview' => ->(ids) { ["/api/v1/cells/#{ids[:cell]}/overview", {}] },
+    # robot-task-table G1: o cabeçalho do robô (GET /robots/:id) entra na varredura.
+    'GET /api/v1/robots/:id' => ->(ids) { ["/api/v1/robots/#{ids[:robot]}", {}] }
   }.freeze
 
   it 'toda rota com id tem gerador OU override — e nenhum órfão' do
