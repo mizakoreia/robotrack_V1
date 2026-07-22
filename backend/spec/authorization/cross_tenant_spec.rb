@@ -63,7 +63,10 @@ RSpec.describe 'Varredura negativa de vazamento entre tenants', :tenancy, type: 
     # task-catalog TC-G6: sincronização retroativa (robô de outro workspace → 404).
     'POST /api/v1/robots/:robot_id/sync_task_templates' => lambda { |ids|
       ["/api/v1/robots/#{ids[:robot]}/sync_task_templates", {}]
-    }
+    },
+    # hierarchy-screens G2: os overviews de nível entram na varredura no grupo que os cria.
+    'GET /api/v1/projects/:id/overview' => ->(ids) { ["/api/v1/projects/#{ids[:project]}/overview", {}] },
+    'GET /api/v1/cells/:id/overview' => ->(ids) { ["/api/v1/cells/#{ids[:cell]}/overview", {}] }
   }.freeze
 
   it 'toda rota com id tem gerador OU override — e nenhum órfão' do
