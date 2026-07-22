@@ -1,0 +1,9 @@
+# audit-log 3.5 (Decisão 5) — SNAPSHOT CONGELADO das format strings PUBLICADAS.
+# Cada `vN` aqui é um contrato: o spec de guarda (format_version_guard_spec) exige
+# que o locale (config/locales/pt-BR.audit.yml) tenha a MESMA string byte a byte.
+# Editar uma `vN` (aqui ou no locale) sem criar `vN+1` quebra o build — é assim que
+# se impede a reescrita retroativa do texto de um registro histórico.
+task_completed:
+  v1: 'Em [%{robot}], %{assignees} concluiu a tarefa "%{task}" com 100%%.'
+workspace_reset:
+  v1: '%{by_name} executou o reset de fábrica do workspace. Projetos removidos: %{projects_count}.'
