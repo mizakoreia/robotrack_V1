@@ -539,6 +539,7 @@ export interface ReportAdvanceDTO {
   from: number
   to: number
   comment: string | null
+  transition: string
 }
 export interface ReportTaskDTO {
   id: string
@@ -584,6 +585,20 @@ export interface CommissioningReportDTO {
   status_distribution: { status: string; glyph: string; label: string; count: number }[]
   tree: ReportProjectDTO[]
   conclusions: { task_id: string; description: string; concluded_by: string; concluded_at: string | null }[]
+  labels: {
+    section_distribution: string
+    section_body: string
+    section_conclusions: string
+    weighted_progress: string
+    col_symbol: string
+    col_description: string
+    col_status: string
+    col_percent: string
+    col_assignees: string
+    no_assignees: string
+    concluded_by: string
+    concluded_at: string
+  }
   warnings: string[]
 }
 

@@ -122,6 +122,22 @@ paralela a partir do contrato.
   — não é métrica de rollup). Era a única falha da suíte cheia da my-tasks (1009/1→0).
 - **swagger allowlist** ganhou `/api/v1/commissioning_report`.
 
+### Decisões tomadas na G2–G5 (registro pós-execução)
+
+- **Carimbo/metadados/distribuição/árvore/histórico/conclusões já vinham do service
+  do G1** — G2–G5 foram VERIFICAÇÃO (os specs que provam a regra) + os componentes
+  React. Cada grupo consumiu SÓ campos derivados do payload (D-R1); nenhum recalcula.
+- **`recorded_at` é NOT NULL** no banco → o cenário "recorded_at nulo" do 5.5 é
+  inatingível; testei as outras 4 condições reais (projeto/célula vazios, tarefa sem
+  responsável, sem histórico). O `concluded_at` SIM pode ser nulo (fallback sem
+  entrada de 100) — tratado no render.
+- **Seção `labels` no payload (D-R9)** + `transition` pronto por avanço: os textos
+  FIXOS do documento (títulos de seção, cabeçalhos de coluna, rótulo da barra, "de X%
+  para Y%") são resolvidos no SERVIDOR; o front não tem cópia. Assinaturas/rodapé
+  ficam para o G6. A fixture congelada e o DTO acompanharam a nova chave.
+- **`format.ts`** formata SÓ datas de exibição (`recorded_at`/`issued_at`) — é
+  apresentação, não derivação (D-R1); nada de reduce/Math.round.
+
 ## Protocolo por grupo
 
 Aplicar → backend `rspec` dirigido (0 falhas) e/ou frontend `vitest`+`tsc` (0) → marcar
@@ -137,7 +153,7 @@ suítes ao mesmo tempo (contenção de lock no banco de teste — trava as duas)
 - [x] G2 — cabeçalho + carimbo (2.1–2.4)
 - [x] G3 — metadados + id (3.1–3.3)
 - [x] G4 — distribuição + glifos (4.1–4.3)
-- [ ] G5 — corpo + histórico + conclusões (5.1–5.5, 6.1–6.4)
+- [x] G5 — corpo + histórico + conclusões (5.1–5.5, 6.1–6.4)
 - [ ] G6 — assinaturas + rodapé + impressão A4 (7.1–7.5)
 - [ ] G7 — volume + i18n + tela + fechamento (8.1–8.4)
 
