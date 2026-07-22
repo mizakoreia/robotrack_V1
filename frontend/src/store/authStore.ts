@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { safeStorage, type StorageKind } from '../lib/safeStorage'
+import { queryClient } from '../lib/queryClient'
 
 // Fonte ÚNICA do token no cliente (identity-and-auth 6.1 / D4.9). O template
 // mantinha `localStorage['token']` E `localStorage['auth-storage']` (zustand
@@ -84,6 +85,25 @@ function hydrate(): Pick<AuthState, 'isAuthenticated' | 'accessToken' | 'user' |
   return { isAuthenticated: false, accessToken: null, user: null, storageKind: 'session', memoryOnly: false }
 }
 
+// app-shell-navigation 2.2 (D-E) — migração de boot das chaves LEGADAS do
+// template (`access_token`/`token` cruas em localStorage). Só migra se ainda não
+// há sessão nova; escreve a sessão nova ANTES de remover as chaves legadas, para
+// nunca perder a única cópia do token. Segundo boot não altera nada.
+function migrateLegacyToken(): void {
+  try {
+    if (safeStorage.get('local', SESSION_KEY) || safeStorage.get('session', SESSION_KEY)) return
+    const legacy = window.localStorage.getItem('access_token') || window.localStorage.getItem('token')
+    if (!legacy) return
+    persistSession('local', legacy, null) // escreve a nova sessão primeiro
+    window.localStorage.removeItem('access_token')
+    window.localStorage.removeItem('token')
+  } catch {
+    /* armazenamento bloqueado: nada a migrar */
+  }
+}
+
+migrateLegacyToken()
+
 export const useAuthStore = create<AuthState>((set, get) => ({
   ...hydrate(),
 
@@ -110,7 +130,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isAuthenticated: false, accessToken: null, user: null, memoryOnly: false })
   },
 
-  // Compat com componentes existentes.
-  logout: () => get().clearSession(),
+  // app-shell-navigation 2.3 (D-E) — sair DESCARTA o cache do React Query junto,
+  // como a troca de workspace (5.4): o próximo usuário na mesma aba nunca vê o
+  // dado do anterior. A requisição seguinte sai sem `Authorization`.
+  logout: () => {
+    get().clearSession()
+    queryClient.clear()
+  },
   setAuth: (tokens, user) => get().setSession(tokens.accessToken, user, { remember: true }),
 }))

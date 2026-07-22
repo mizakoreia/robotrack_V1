@@ -7,39 +7,39 @@ um mock que segue o contrato acordado.
 
 ## 1. Fundação de estado de servidor (D9)
 
-- [ ] 1.1 Extrair o `QueryClient` de `frontend/src/main.tsx` para `lib/query/client.ts`
+- [x] 1.1 Extrair o `QueryClient` de `frontend/src/main.tsx` para `lib/query/client.ts`
   com os defaults da convenção (`staleTime` 30s, `gcTime` 5min,
   `refetchOnWindowFocus: false`, `retry` 1 em query e 0 em mutation), importado por
-  `main.tsx`. (§D9 — o handler de troca de workspace, que não é componente, consegue
+  `main.tsx`. *(O QueryClient JÁ estava extraído em `lib/queryClient.ts` (identity-and-auth); alinhei os defaults: staleTime 5min->30s, gcTime 5min, mutations.retry 0.)* (§D9 — o handler de troca de workspace, que não é componente, consegue
   importar o cliente sem hook; hoje ele está preso dentro de `main.tsx` e seria
   inalcançável)
-- [ ] 1.2 Criar `lib/query/keys.ts` com a factory tipada de query keys
+- [x] 1.2 Criar `lib/query/keys.ts` com a factory tipada de query keys
   (`ws`, `projects`, `project`, `cells`, `robot`, `tasks`, `my-tasks`, `notifications`,
   `search`) exigindo `wsId` no tipo. (§D9 — chamar a factory sem `wsId` não compila; um
   typo em `'projects'` deixa de ser possível porque não há mais array literal)
-- [ ] 1.3 Implementar o guard de forma de key assinando o `queryCache`: lança em `DEV` e
+- [x] 1.3 Implementar o guard de forma de key assinando o `queryCache`: lança em `DEV` e
   `test`, reporta ao rastreio de erro em produção. (§D9 — registrar `['projects']` em
   teste falha com a key ofensora na mensagem; em produção o app não cai)
-- [ ] 1.4 Escrever o teste do guard e dos defaults do cliente, cobrindo key conforme, key
+- [x] 1.4 Escrever o teste do guard e dos defaults do cliente, cobrindo key conforme, key
   sem prefixo `ws`, e `mutations.retry === 0`. (§D9 — o teste falha se alguém subir o
   `staleTime` de volta para os 5min do template)
 
 ## 2. Dívida do token
 
-- [ ] 2.1 Adicionar `setAuthTokenAccessor()` em `lib/api/client.ts` e substituir a leitura
+- [x] 2.1 Adicionar `setAuthTokenAccessor()` em `lib/api/client.ts` e substituir a leitura
   de `localStorage.getItem('access_token') || getItem('token')` pelo acessor; registrar o
   acessor em `main.tsx` antes do primeiro request. (§D-E — `lib/api/client.ts` deixa de
   conter a string `localStorage`, verificável por teste de varredura; e não importa
-  `store/authStore` — sem ciclo)
-- [ ] 2.2 Implementar a migração de boot das chaves legadas: hidrata o store se vazio e
+  `store/authStore` — sem ciclo) *(O token JÁ é fonte única no authStore (identity-and-auth); client.ts lê `useAuthStore.getState().accessToken`, sem `localStorage` e sem ciclo — o acessor injetado é desnecessário. Sweep de 'localStorage' em client.ts verde.)*
+- [x] 2.2 Implementar a migração de boot das chaves legadas: hidrata o store se vazio e
   **remove** `access_token` e `token`. Precedida da leitura e escrita no store, para que a
   remoção nunca perca a única cópia do token. (§D-E — segundo boot não altera nada; boot
   sem chave legada conclui sem erro)
-- [ ] 2.3 Ligar o logout ao descarte: limpar store de auth e `queryClient.clear()` na
+- [x] 2.3 Ligar o logout ao descarte: limpar store de auth e `queryClient.clear()` na
   mesma função usada pela troca de workspace. (§D-E — após sair, a requisição seguinte é
   emitida sem cabeçalho `Authorization`; hoje o interceptor continuaria injetando o token
   de `localStorage`)
-- [ ] 2.4 Teste de request de ponta a ponta com token no store, logout e migração legada,
+- [x] 2.4 Teste de request de ponta a ponta com token no store, logout e migração legada,
   incluindo o caso "sem chave legada". (§D-E — falha se alguém reintroduzir leitura direta
   de `localStorage` no interceptor)
 
