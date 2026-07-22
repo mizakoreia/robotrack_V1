@@ -21,13 +21,22 @@ main (48497fd)                       ← ondas 1–4, sem nada desta sessão
                                     └── robot-task-table       change COMPLETA — 7 de 7 grupos
                                         └── my-tasks-view          change COMPLETA — 7 de 7 grupos
                                             └── commissioning-report   change COMPLETA — 8 de 8 grupos
-                                                └── audit-log (atual)  change COMPLETA — 8 de 8 grupos
+                                                └── audit-log          change COMPLETA — 8 de 8 grupos
+                                                    └── workspace-settings   PARCIAL — G0..G4 verdes, G5/G6 PAUSADOS
+                                                        └── hierarchy-soft-delete (atual)  pré-requisito do reset
 ```
 
-**A branch atual contém todo o trabalho** (`audit-log` empilhada sobre
-`commissioning-report`; full-stack). É nela que se continua. Push por branch canônica
-(`git push origin HEAD:audit-log`). Os PRs para a `main` podem ser
-abertos depois, na ordem do empilhamento.
+**A branch atual contém todo o trabalho** (empilhamento full-stack). É nela que se
+continua. Push por branch canônica (`git push origin HEAD:<change>`). Os PRs para a
+`main` podem ser abertos depois, na ordem do empilhamento.
+
+> **Ordem invertida por dependência:** `workspace-settings` começou (G0..G4: Equipe,
+> catálogo, backup — todos verdes), mas o G5 (reset de fábrica) esbarrou num bloqueio
+> estrutural: `task_advances` é IMUTÁVEL (REVOKE DELETE + trigger) e trava as tarefas
+> com FK `ON DELETE RESTRICT`, então `DELETE FROM projects` é impossível quando há
+> avanços (o caso normal). O reset precisa ARQUIVAR, não apagar. Isso exige primeiro o
+> **soft-delete de hierarquia** — a change `hierarchy-soft-delete` (atual), que também
+> quita a pendência D-H6×D-IMUT. Depois volta-se ao G5/G6 de `workspace-settings`.
 
 ## Suítes (medidas na branch `audit-log`)
 
@@ -253,15 +262,28 @@ Cada change tem seu `openspec/changes/<nome>/EXECUCAO.md` com o mapa de grupos, 
 decisões tomadas na execução, as armadilhas encontradas e a CONCLUSÃO com o relatório
 final. **Leia o EXECUCAO.md antes de tocar no código de uma change.**
 
-## Onde parou: `audit-log` COMPLETA (8/8); a trilha de auditoria imutável
+## Onde parou: `workspace-settings` PARCIAL (G0..G4) → desvio para `hierarchy-soft-delete`
 
-Fechou (8/8 grupos) — ver `openspec/changes/audit-log/EXECUCAO.md`. `audit_logs`
-append-only, imutável no BANCO para todos inclusive o dono (§4.1 inv. 3), particionada
-por mês, com 3 camadas (REVOKE + trigger + RLS sem policy de mutação). Grava sozinho na
-conclusão a 100% (mesma transação do avanço); leitura clamp 200; modal frontend pronto
-(monta na tela em `workspace-settings`); retenção por DDL (nunca DELETE). DESBLOQUEIA o
-reset de fábrica D12 de `workspace-settings`. Testado (frontend **329/0**, backend
-completo: `spec/audit` 51/0 isolado; a suíte inteira roda no fechamento e o total é confirmado no ajuste seguinte).
+`workspace-settings` entregou G0..G4 (todos verdes): painel de **Equipe** (pessoas do
+workspace como chips, arquivamento com guarda de membro ativo), tela do **catálogo** de
+tarefas-base, e **exportar backup** (`RoboTrack_Database.json`, envelope `_rt`
+schemaVersion 2 + checksum, síncrono/202). Esquema: `people.archived_at` (índice único
+parcial), `workspace_backups` (RLS sem DELETE), 3 policies. Ver
+`openspec/changes/workspace-settings/EXECUCAO.md`.
+
+**G5/G6 PAUSADOS.** Ao mapear o reset de fábrica ANTES de codar, descobri que ele é
+impossível como projetado: `task_advances` é imutável (progress-advances D-IMUT: REVOKE
+DELETE + trigger para todos os papéis) e trava as tarefas com FK `ON DELETE RESTRICT`,
+então `DELETE FROM projects` falha sempre que há avanços — a mesma classe de contradição
+que a D12 resolveu para `audit_logs`. O reset tem de ARQUIVAR a hierarquia e preservar a
+trilha imutável, o que exige o **soft-delete de hierarquia** primeiro. Decisão do cliente:
+fazer `hierarchy-soft-delete` como change dedicada, depois voltar ao G5/G6.
+
+**`audit-log` fechou antes** (8/8) — `audit_logs` append-only, imutável no BANCO para
+todos inclusive o dono (§4.1 inv. 3), particionada por mês, 3 camadas (REVOKE + trigger +
+RLS sem policy de mutação). Grava sozinho na conclusão a 100%; leitura clamp 200; modal
+frontend pronto (monta em `workspace-settings`); retenção por DDL (nunca DELETE). Testado
+(frontend **329/0**; backend `spec/audit` 51/0 isolado).
 
 **Antes:** `commissioning-report` (COMPLETA, 8/8) — o Protocolo A4 assinável
 (`/relatorio`; payload congelado, ≤5 queries, printToPDF real). E `my-tasks-view` (7/7)
@@ -280,25 +302,27 @@ workspace, sweep de convenção).
 - **design-system:** p50 de frame da luz ambiente é medição de hardware (o CI trava
   só o determinístico) — job de perf de `delivery-and-observability` (HANDOFF lá).
 - Tensão D-H6×D-IMUT (de progress-advances): hard delete de robô/projeto com
-  tarefas que têm avanços daria 500 no trigger de imutabilidade. Fix = soft-delete
-  de hierarquia (follow-up em `commissioning-hierarchy`).
+  tarefas que têm avanços daria 500 no trigger de imutabilidade. **EM CURSO:** a
+  change `hierarchy-soft-delete` (atual) converte o delete físico da hierarquia em
+  soft-delete, quitando esta pendência E destravando o reset de `workspace-settings`.
 - Os p95 de latência de `progress-rollup` (120ms/25ms/8s) são alvo de hardware; o
   CI trava o NÚMERO de statements (determinístico) e mede latência com teto
   tolerante (EXECUCAO decisão 7). O job de perf real é de `delivery-and-observability`.
 - `<ProgressRing>`/`<MetricStat>` existem (progress-rollup 6.2) mas a TELA que os
   monta (Visão Geral, hubs, cards) é de `hierarchy-screens`.
 
-**Próximo passo — `workspace-settings`** (agora DESBLOQUEADA por `audit-log`). É a
-única operação destrutiva em massa do produto (reset de fábrica, D12): reusa o
-`AuditLog::RecordService.record!(event: :workspace_reset, …)` DENTRO da transação do
-reset (o log sobrevive e registra), e monta o `AuditLogModal` no painel Utilitários.
-A alternativa é `realtime-collaboration` (D6 — ativa os hooks `useXLive` já fiados).
-Ver abaixo.
+**Próximo passo — `hierarchy-soft-delete`** (pré-requisito destravado acima). Adiciona
+`deleted_at` a `projects`/`cells`/`robots` com `default_scope` (espelhando `tasks`),
+converte o delete físico da hierarquia (`Hierarchy::CrudService`) em soft-delete em
+cascata, e blinda os leitores em SQL cru com `deleted_at IS NULL`. Depois volta-se ao
+**`workspace-settings` G5/G6**: o reset passa a ARQUIVAR (não apagar), reusando
+`AuditLog::RecordService.record!(event: :workspace_reset, …)` na transação e montando o
+`AuditLogModal` em Utilitários. Alternativa geral: `realtime-collaboration` (D6).
 
-## Depois de `audit-log` — o que resta
+## Depois de `workspace-settings` — o que resta
 
 Próximas:
-`workspace-settings`, `realtime-collaboration`
+`realtime-collaboration`
 (D6 — invalida as keys `['ws',wsId,'overview'|'project'|'cell'|…]` que hierarchy-screens já
 declara), `offline-pwa`.
 

@@ -102,6 +102,21 @@ templates), `workspace-invitations` (revogação de convite, memberships),
 7. **`Misto / Geral`** — o editor envia `app_filters: []`, NUNCA `["Misto / Geral"]`
    (o CHECK mora em task-catalog); o vitest falha se a requisição contiver a string.
 
+### BLOQUEIO descoberto no G5 (reset) — PAUSA de G5/G6
+
+Ao revisar os destinos do reset ANTES de codar, descobri um conflito cross-change:
+o reset apaga a hierarquia, MAS `task_advances` é IMUTÁVEL (progress-advances D-IMUT:
+REVOKE DELETE + trigger p/ todos os papéis) E trava as tarefas com FK `ON DELETE
+RESTRICT`. Logo **`DELETE FROM projects` é impossível sempre que há avanços** (o caso
+normal) — a MESMA classe de contradição que a D12 resolveu p/ audit_logs, agora p/
+os avanços. Já estava anotado na CONTINUIDADE como pendência ("hard delete de robô/
+projeto com tarefas que têm avanços daria 500; fix = soft-delete de hierarquia").
+
+**Decisão do cliente:** fazer o SOFT-DELETE de hierarquia PRIMEIRO (change dedicada
+`hierarchy-soft-delete`), depois voltar ao reset (que passa a ARQUIVAR a hierarquia
+e PRESERVAR a trilha imutável). G5 e G6 do workspace-settings ficam PAUSADOS até o
+pré-requisito existir. G0–G4 (Equipe, catálogo, backup) já entregues e verdes.
+
 ## Protocolo por grupo
 
 Aplicar → backend `rspec` dirigido (0 falhas) e/ou frontend `vitest`+`tsc` (0) →
