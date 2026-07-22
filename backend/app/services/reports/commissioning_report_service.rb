@@ -149,7 +149,24 @@ module Reports
         status_distribution: build_distribution(status_counts),
         tree: projects,
         conclusions: build_conclusions(task_rows, authorship),
+        labels: build_labels,
         warnings: [] # volume (G7)
+      }
+    end
+
+    # D-R9 — os textos FIXOS do documento (títulos de seção, cabeçalhos de coluna,
+    # rótulo da barra, rótulos das Conclusões) resolvidos no servidor. O frontend
+    # não tem cópia; só renderiza. (Assinaturas/rodapé entram no G6.)
+    def build_labels
+      {
+        section_distribution: t(:section_distribution),
+        section_body: t(:section_body),
+        section_conclusions: t(:section_conclusions),
+        weighted_progress: t(:weighted_progress_label),
+        col_symbol: t(:col_symbol), col_description: t(:col_description),
+        col_status: t(:col_status), col_percent: t(:col_percent), col_assignees: t(:col_assignees),
+        no_assignees: t(:no_assignees),
+        concluded_by: t(:concluded_by), concluded_at: t(:concluded_at)
       }
     end
 
@@ -221,8 +238,11 @@ module Reports
         symbol: StatusGlyph.for(tk['status']), percent: tk['progress'].to_i,
         assignees: pg_array(tk['assignees']),
         advances: (advances[tk['id']] || []).map do |a|
+          from = a['from_progress'].to_i
+          to = a['to_progress'].to_i
           { recorded_at: a['recorded_at'], author: a['author_name_snapshot'],
-            from: a['from_progress'].to_i, to: a['to_progress'].to_i, comment: a['comment'] }
+            from: from, to: to, comment: a['comment'],
+            transition: t(:history_transition, from: from, to: to) } # D-R9 — string pronta
         end
       }
     end

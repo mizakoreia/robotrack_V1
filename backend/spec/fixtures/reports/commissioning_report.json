@@ -53,7 +53,8 @@
                       "author": "Ana Lima",
                       "from": 40,
                       "to": 100,
-                      "comment": "Torqueado 40Nm, conferido"
+                      "comment": "Torqueado 40Nm, conferido",
+                      "transition": "de 40% para 100%"
                     }
                   ]
                 },
@@ -81,5 +82,19 @@
       "concluded_at": "2026-07-18T14:02:00-03:00"
     }
   ],
+  "labels": {
+    "section_distribution": "Distribuição de status",
+    "section_body": "Comissionamento por projeto",
+    "section_conclusions": "Conclusões",
+    "weighted_progress": "progresso ponderado",
+    "col_symbol": "Símbolo",
+    "col_description": "Tarefa",
+    "col_status": "Status",
+    "col_percent": "%",
+    "col_assignees": "Responsáveis",
+    "no_assignees": "—",
+    "concluded_by": "Concluído por",
+    "concluded_at": "Em"
+  },
   "warnings": []
 }

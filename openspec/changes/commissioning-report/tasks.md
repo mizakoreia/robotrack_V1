@@ -36,18 +36,18 @@
 
 ## 5. Corpo hierárquico e histórico por tarefa
 
-- [ ] 5.1 Montar a árvore projeto → célula → robô no payload com progresso ponderado por nível, Aplicação do robô e ordenação manual (§2.9), tolerante a níveis vazios. (§2.9/§1.4 — projeto sem células renderiza com barra `0%`, não estoura `NoMethodError`)
-- [ ] 5.2 Montar a tabela de tarefas (símbolo, descrição, status, %, responsáveis) com responsáveis vindos de `task_assignees` por id. (D11 — tarefa sem responsável exibe `—`; a string `Não Atribuído` não pode aparecer no documento)
-- [ ] 5.3 Anexar o histórico por tarefa ordenado por `recorded_at` crescente (desempate `created_at`), expondo `recorded_at` como campo de data e tratando nulo como `—`, sem fallback para `created_at`. (D8 — avanço com `recorded_at 14:02` e `created_at 17:41` aparece como 14:02, e `17:41` não existe no payload)
-- [ ] 5.4 Renderizar o corpo em React, sem bloco de histórico para tarefas sem entradas. (§3.8 — tarefa `Pendente` sem avanço não pode imprimir cabeçalho de histórico vazio ocupando folha)
-- [ ] 5.5 **Verificação:** spec de payload sobre um dataset com projeto vazio, célula vazia, tarefa sem responsável, tarefa sem histórico e entrada com `recorded_at` nulo — todos no mesmo documento. (§1.4/§3.8 — qualquer um deles isoladamente quebra o render; o teste precisa dos cinco juntos)
+- [x] 5.1 Montar a árvore projeto → célula → robô no payload com progresso ponderado por nível, Aplicação do robô e ordenação manual (§2.9), tolerante a níveis vazios. (§2.9/§1.4 — projeto sem células renderiza com barra `0%`, não estoura `NoMethodError`)
+- [x] 5.2 Montar a tabela de tarefas (símbolo, descrição, status, %, responsáveis) com responsáveis vindos de `task_assignees` por id. (D11 — tarefa sem responsável exibe `—`; a string `Não Atribuído` não pode aparecer no documento)
+- [x] 5.3 Anexar o histórico por tarefa ordenado por `recorded_at` crescente (desempate `created_at`), expondo `recorded_at` como campo de data e tratando nulo como `—`, sem fallback para `created_at`. (D8 — avanço com `recorded_at 14:02` e `created_at 17:41` aparece como 14:02, e `17:41` não existe no payload)
+- [x] 5.4 Renderizar o corpo em React, sem bloco de histórico para tarefas sem entradas. (§3.8 — tarefa `Pendente` sem avanço não pode imprimir cabeçalho de histórico vazio ocupando folha)
+- [x] 5.5 **Verificação:** spec de payload sobre um dataset com projeto vazio, célula vazia, tarefa sem responsável, tarefa sem histórico e entrada com `recorded_at` nulo — todos no mesmo documento. (§1.4/§3.8 — qualquer um deles isoladamente quebra o render; o teste precisa dos cinco juntos)
 
 ## 6. Seção Conclusões (depende de 5)
 
-- [ ] 6.1 Implementar `Reports::CompletionAuthorship` com `DISTINCT ON (task_id)` sobre `to_progress = 100`, ordenado por `recorded_at DESC, created_at DESC`. (D-R7 — tarefa que foi a 100, caiu a 60 e voltou a 100 atribui à última entrada, não à primeira)
-- [ ] 6.2 Implementar os dois fallbacks: responsáveis atuais quando não há entrada de 100; `—` quando também não há responsáveis. (§3.8 — tarefa em `Concluído` marcada direto pela máquina de estados §2.2 não pode sumir das Conclusões)
-- [ ] 6.3 Renderizar a seção Conclusões com quem concluiu e quando, incluindo apenas tarefas com progresso 100. (§3.8 — tarefa a 95% ou em `N/A` não pode aparecer na lista)
-- [ ] 6.4 **Verificação:** spec dos três ramos de autoria no mesmo documento, incluindo o caso em que o autor da entrada de 100% difere do responsável atual. (D-R7 — atribuir ao responsável atual é o erro que passa em qualquer teste que não troque o responsável depois da conclusão)
+- [x] 6.1 Implementar `Reports::CompletionAuthorship` com `DISTINCT ON (task_id)` sobre `to_progress = 100`, ordenado por `recorded_at DESC, created_at DESC`. (D-R7 — tarefa que foi a 100, caiu a 60 e voltou a 100 atribui à última entrada, não à primeira)
+- [x] 6.2 Implementar os dois fallbacks: responsáveis atuais quando não há entrada de 100; `—` quando também não há responsáveis. (§3.8 — tarefa em `Concluído` marcada direto pela máquina de estados §2.2 não pode sumir das Conclusões)
+- [x] 6.3 Renderizar a seção Conclusões com quem concluiu e quando, incluindo apenas tarefas com progresso 100. (§3.8 — tarefa a 95% ou em `N/A` não pode aparecer na lista)
+- [x] 6.4 **Verificação:** spec dos três ramos de autoria no mesmo documento, incluindo o caso em que o autor da entrada de 100% difere do responsável atual. (D-R7 — atribuir ao responsável atual é o erro que passa em qualquer teste que não troque o responsável depois da conclusão)
 
 ## 7. Assinaturas, rodapé e layout de impressão A4
 
