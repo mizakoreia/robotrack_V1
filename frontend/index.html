@@ -10,6 +10,26 @@
          cabeçalho `Referer`. O par disto é o `history.replaceState` da
          InviteRoute, que tira o token da barra assim que ele é guardado. -->
     <meta name="referrer" content="no-referrer" />
+    <!-- design-system 4.2 — cor da barra do navegador (escuro por padrão). -->
+    <meta name="theme-color" content="#0a0f1d" />
+    <!-- design-system 4.2 — script SÍNCRONO anti-FOUC: aplica `.light` ANTES da
+         hidratação, para nenhum frame pintar o fundo escuro quando o tema salvo é
+         claro. Lê localStorage['rt-theme'] (formato do zustand/persist). NÃO
+         consulta o esquema do sistema (D-DS-3). -->
+    <script>
+      (function () {
+        try {
+          var raw = localStorage.getItem('rt-theme')
+          var theme = 'dark'
+          if (raw) {
+            var parsed = JSON.parse(raw)
+            theme = (parsed && parsed.state && parsed.state.theme) || 'dark'
+          }
+          if (theme === 'light') document.documentElement.classList.add('light')
+          document.documentElement.setAttribute('data-theme', theme)
+        } catch (e) {}
+      })()
+    </script>
     <!-- design-system 3.1 — Inter 300–700 com font-display: swap. Se
          fonts.googleapis.com for bloqueado (CSP/offline), o texto segue visível
          na fallback stack, sem período invisível. -->
