@@ -21,6 +21,7 @@ import { UsersPage } from '@/app/pages/UsersPage'
 import { ProfilePage } from '@/app/pages/ProfilePage'
 import { BuildPage } from '@/app/pages/BuildPage'
 import { TeamPanel } from '@/features/team/TeamPanel'
+import { SettingsPage } from '@/app/pages/SettingsPage'
 import { IconSprite } from '@/components/icons/sprite'
 
 
@@ -69,6 +70,8 @@ function App() {
                 (§3.9) vai montá-lo dentro da tela de Configurações; até lá ele é
                 alcançável por rota própria. */}
             <Route path="configuracoes/equipe" element={<TeamPanel />} />
+            {/* workspace-settings 6.x — a tela de Configurações (§3.9/§3.11). */}
+            <Route path="configuracoes" element={<SettingsPage />} />
           </Route>
         </Routes>
         <Toaster />

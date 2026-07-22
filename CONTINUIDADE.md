@@ -22,9 +22,8 @@ main (48497fd)                       ← ondas 1–4, sem nada desta sessão
                                         └── my-tasks-view          change COMPLETA — 7 de 7 grupos
                                             └── commissioning-report   change COMPLETA — 8 de 8 grupos
                                                 └── audit-log          change COMPLETA — 8 de 8 grupos
-                                                    └── workspace-settings   PARCIAL — G0..G4 verdes, G5/G6 PAUSADOS
+                                                    └── workspace-settings   change COMPLETA — G0..G6 (5.9/5.10 = handoffs nomeados)
                                                         └── hierarchy-soft-delete   change COMPLETA — 4 de 4 grupos
-                                                            └── (retomar workspace-settings G5/G6, agora DESBLOQUEADO)
 ```
 
 **A branch atual contém todo o trabalho** (empilhamento full-stack). É nela que se
@@ -73,7 +72,7 @@ destravaram e viraram verdes ao longo de `robot-tasks`.)
 > suíte completa (estado do Rack::Attack sensível à ordem aleatória do RSpec);
 > passa isolado. Não é regressão desta sessão. Rodar com `--seed` fixo estabiliza.
 
-## Changes concluídas (18 de 24)
+## Changes concluídas (19 de 24)
 
 `seal-template-baseline`, `workspace-tenancy`, `identity-and-auth`,
 `workspace-invitations` (anteriores) e:
@@ -282,7 +281,22 @@ Cada change tem seu `openspec/changes/<nome>/EXECUCAO.md` com o mapa de grupos, 
 decisões tomadas na execução, as armadilhas encontradas e a CONCLUSÃO com o relatório
 final. **Leia o EXECUCAO.md antes de tocar no código de uma change.**
 
-## Onde parou: `hierarchy-soft-delete` COMPLETA (4/4) → retomar `workspace-settings` G5/G6
+## Onde parou: `workspace-settings` COMPLETA (G0..G6) — o reset de fábrica existe
+
+`workspace-settings` fechou: G5 (reset de fábrica RECONCILIADO — ARQUIVA via
+`Hierarchy::SoftDeleteService`, gates frase/backup≤15min/consumo CAS em
+`consumed_at`, auditoria `workspace_reset.v1` NA transação, savepoint em vez de
+SERIALIZABLE — impossível: todo contexto de tenant já abre a transação externa do
+SET LOCAL; endpoint owner-only atrás de `FEATURE_FACTORY_RESET` default off → 404;
+`FactoryResetModal` com export SEMPRE antes + cancel/clear pós-sucesso) e G6 (tela
+`/configuracoes` montando PeoplePanel/CatalogPanel/AppearancePanel/Utilitários +
+`AuditLogModal`; menu do rodapé sem destinos-fantasma; themeStore com storage
+try/catch — modo privado não lança mais no toggle; E2E de fechamento nos dois
+temas). Pendings NOMEADOS: 5.9 broadcast (realtime-collaboration), 5.10 alerta
+(delivery-and-observability), 5.1 round-trip (legacy-data-migration).
+Suítes: backend dirigido 131/0 (incl. sweeps), frontend **355/0**, tsc limpo.
+
+**Antes: `hierarchy-soft-delete` COMPLETA (4/4)**
 
 `hierarchy-soft-delete` (backend-only) fechou os 4 grupos: soft-delete de
 `projects`/`cells`/`robots` (`deleted_at` + `default_scope`, `position` nullable zerada no

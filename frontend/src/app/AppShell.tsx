@@ -144,9 +144,10 @@ function Sidebar({
             onClose={menu.close}
             label="Edição e visualização"
             items={[
-              { label: 'Tarefas, equipe e filtros', onSelect: () => navigate('/configuracoes/equipe') },
-              { label: 'Logs e histórico', onSelect: () => navigate('/configuracoes/logs') },
-              { label: 'Backup', onSelect: () => navigate('/configuracoes/backup') },
+              // workspace-settings 6.x — a tela existe; os destinos fantasma
+              // (/logs, /backup) viraram a própria tela de Configurações.
+              { label: 'Configurações do workspace', onSelect: () => navigate('/configuracoes') },
+              { label: 'Equipe e convites', onSelect: () => navigate('/configuracoes/equipe') },
             ]}
           />
         </div>

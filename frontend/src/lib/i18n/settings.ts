@@ -38,6 +38,14 @@ export const settingsText = {
   resetDone: 'Reset concluído. O backup foi baixado antes da operação.',
   resetErrorBackup: 'O backup falhou — o reset NÃO foi executado.',
   resetErrorReset: 'O reset foi recusado pelo servidor. O backup já foi baixado.',
+  // Painel Aparência (§5.1 — escuro é o padrão; NUNCA segue o sistema operacional)
+  appearanceTitle: 'Aparência',
+  appearanceSubtitle: 'Escuro é o padrão. A escolha vale só para este dispositivo.',
+  themeDark: 'Escuro',
+  themeLight: 'Claro',
+  storageBlocked: 'Armazenamento bloqueado (modo privado?): o tema vale só nesta sessão.',
+  // Auditoria (§2.8 — o modal é de features/audit; aqui só o gatilho)
+  auditOpenButton: 'Ver log de auditoria',
   // Painel de Tarefas-base / catálogo (§3.9)
   catalogTitle: 'Tarefas-base',
   catalogSubtitle: 'O catálogo aplicado aos robôs. "Misto / Geral" vale para todas as aplicações.',

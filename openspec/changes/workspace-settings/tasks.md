@@ -125,17 +125,19 @@ imediatamente antes. Todo grupo termina em tarefa de verificação.
 
 ## 6. Tema, auditoria e fechamento
 
-- [ ] 6.1 Painel Aparência sobre o `themeStore` existente: escuro padrão, sem leitura de
+- [x] 6.1 Painel Aparência sobre o `themeStore` existente: escuro padrão, sem leitura de
   `prefers-color-scheme`, classe `dark` no `<html>`, e degradação quando o armazenamento
   está bloqueado (§5.1/§4.2 — SO em claro sem preferência gravada abre escuro; modo
   privado troca o tema na sessão, avisa uma vez e não gera exceção no console)
-- [ ] 6.2 Modal de auditoria consumindo `GET /api/v1/workspace/audit_logs?limit=200`, em
+- [x] 6.2 Modal de auditoria consumindo `GET /api/v1/workspace/audit_logs?limit=200`, em
   ordem decrescente, sem controles de escrita, aberto a `view` (§2.8 — com 250 registros
   exibe 200 começando pelo `recorded_at` mais recente)
-- [ ] 6.3 Strings da capacidade em `config/locales/pt-BR.settings.yml` e no módulo único
+  **NOTA (execução):** o endpoint REAL é `GET /api/v1/audit_logs` (tenant pelo header — a divergência padrão de todo o app); o `AuditLogModal` de `features/audit` (entregue no audit-log) foi MONTADO na tela, aberto a `view`.
+- [x] 6.3 Strings da capacidade em `config/locales/pt-BR.settings.yml` e no módulo único
   do frontend, incluindo a format string do registro de reset (D14 — nenhuma literal
   pt-BR resta nos componentes de `features/workspace-settings/`)
-- [ ] 6.4 E2E de fechamento: adicionar chip → editar filtro para `Misto / Geral` →
+- [x] 6.4 E2E de fechamento: adicionar chip → editar filtro para `Misto / Geral` →
   exportar → resetar com a frase correta → conferir auditoria preservada com o novo
   registro, nos dois temas (§3.9/§3.11/D12 — o E2E falha se o reset apagar auditoria ou
   se o export não gerar `RoboTrack_Database.json`)
+  **NOTA (execução):** E2E como integração RTL (o padrão do repo desde robot-task-table); a format string do reset mora em `pt-BR.audit.yml` (backend, CONGELADA pelo audit-log) — não há `pt-BR.settings.yml` a criar (a API de settings fala por códigos de erro); frontend no módulo único `lib/i18n/settings.ts`. BÔNUS 6.1: o persist do themeStore ganhou storage com try/catch — sem ele, modo privado LANÇAVA no toggle (o E2E pegou). Os destinos-fantasma do menu (/configuracoes/logs, /backup) apontam agora para a tela real.
