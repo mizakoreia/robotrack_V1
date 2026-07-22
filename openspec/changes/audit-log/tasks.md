@@ -103,14 +103,14 @@ avanço).
 
 ## 6. Modal de auditoria no frontend
 
-- [ ] 6.1 Adicionar `auditLogs.list(workspaceId)` em `lib/api/endpoints.ts` e o hook
+- [x] 6.1 Adicionar `auditLogs.list(workspaceId)` em `lib/api/endpoints.ts` e o hook
   React Query com a chave `['ws', wsId, 'auditLogs']`. (D9 — nada de `useEffect` +
   `apiClient`; a chave precisa ser invalidável por `realtime-collaboration` depois)
-- [ ] 6.2 Implementar o modal de auditoria consumindo `msg` e `ts_local` verbatim, ordem já
+- [x] 6.2 Implementar o modal de auditoria consumindo `msg` e `ts_local` verbatim, ordem já
   vinda do servidor, sem re-formatar data no cliente, com estados vazio e de erro. (Decisão
   4 — abrir o modal em um navegador em `UTC` e em outro em `America/Sao_Paulo` tem que
   mostrar o mesmo texto; workspace novo mostra estado vazio em vez de lista quebrada)
-- [ ] 6.3 **Verificação:** teste de componente com fixture de 250 registros afirmando que
+- [x] 6.3 **Verificação:** teste de componente com fixture de 250 registros afirmando que
   200 itens são renderizados, o primeiro é o mais recente e os 50 mais antigos não
   aparecem. (§2.8 — limite de exibição)
 

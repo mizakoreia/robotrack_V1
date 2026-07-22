@@ -158,7 +158,7 @@ rodar duas suítes ao mesmo tempo (contenção de lock no banco de teste).
 - [x] G2 — model + locale + service (3.1–3.6)
 - [x] G3 — gatilho de conclusão a 100% (4.1–4.3)
 - [x] G4 — leitura + policy + endpoint (5.1–5.3)
-- [ ] G5 — modal frontend (6.1–6.3)
+- [x] G5 — modal frontend (6.1–6.3)
 - [ ] G6 — fronteira com o reset D12 (7.1–7.3)
 - [ ] G7 — retenção (8.1–8.6)
 - [ ] G8 — encerramento (9.1–9.2)

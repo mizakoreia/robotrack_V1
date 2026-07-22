@@ -624,6 +624,26 @@ export interface CommissioningReportDTO {
   warnings: string[]
 }
 
+// audit-log 6.1 (§2.8, Decisão 4/9) — a linha de auditoria como o modal a lê. O
+// servidor entrega `msg`/`ts_local` já RENDERIZADOS e CONGELADOS (o cliente não
+// reformata data — o fuso do navegador de quem lê mentiria) e a ordem já vem `ts
+// DESC`. Sem `payload` nem `by_person_id` (identidade); a autoria pública é
+// `by_name`. `event_type` é o discriminador de máquina (`task_completed`/
+// `workspace_reset`).
+export interface AuditLogDTO {
+  id: string
+  msg: string
+  ts: string
+  ts_local: string
+  by_name: string
+  event_type: 'task_completed' | 'workspace_reset'
+}
+
+export const auditLogsApi = {
+  // Teto de 200 é do servidor (Decisão 9); o cliente não pagina.
+  list: () => apiClient.get<AuditLogDTO[]>('/api/v1/audit_logs'),
+}
+
 export const reportApi = {
   get: (scope: 'all' | 'project', projectId?: string) => {
     const q = new URLSearchParams({ scope })
