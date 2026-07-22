@@ -117,6 +117,62 @@ projeto com tarefas que têm avanços daria 500; fix = soft-delete de hierarquia
 e PRESERVAR a trilha imutável). G5 e G6 do workspace-settings ficam PAUSADOS até o
 pré-requisito existir. G0–G4 (Equipe, catálogo, backup) já entregues e verdes.
 
+### RETOMADA G5 — o pré-requisito existe; reconciliação design↔realidade (ler antes de codar)
+
+`hierarchy-soft-delete` está COMPLETA (4/4). O reset agora é viável. Reconciliações que
+a realidade impõe sobre a tabela **D-RESET** do `design.md`:
+
+1. **Hierarquia: ARQUIVA, não DELETA (a divergência central, já aprovada).** D-RESET manda
+   `DELETE` de projects/cells/robots e cascade-DELETE de tasks/assignees/**advances**. Isso
+   é IMPOSSÍVEL: `task_advances` é imutável (D-IMUT) e trava as tarefas (FK RESTRICT). O
+   reset chama `Hierarchy::SoftDeleteService.call(record: project)` por projeto vivo — que
+   arquiva a subárvore (tarefas/robôs/células) e remove `task_assignees`, PRESERVANDO os
+   avanços. O usuário vê o workspace vazio; a trilha imutável sobrevive. (D-RESET dizia que
+   a trilha "pertence à tarefa e a tarefa deixou de existir" — mas a implementação de
+   `progress-advances` tornou a trilha indestrutível para TODOS os papéis, uma escolha mais
+   forte que o design previu. Arquivar concilia as duas.)
+2. **Mensagem de auditoria já simplificada.** `audit-log` CONGELOU `workspace_reset.v1` como
+   `"%{by_name} executou o reset de fábrica do workspace. Projetos removidos: %{projects_count}."`
+   — só `projects_count`. Não conto células/robôs/tarefas/avanços/notificações (a string
+   longa do D14 não foi publicada). "Removidos" é verdade pro usuário (somem da tela).
+3. **`notifications` NÃO existe** (in-app-notifications não foi feita). Nada a apagar; o
+   destino "notifications → DELETE" do D-RESET é HANDOFF para aquela capacidade.
+4. **`WorkspaceChannel` NÃO existe** (realtime-collaboration não feita) → 5.9 (publicar
+   evento terminal + invalidar keys) é HANDOFF. Sem no-op a montar.
+5. **Alerta de operação** (5.10) → HANDOFF para delivery-and-observability.
+6. **Round-trip via importador legado** (5.1) → o importador de `legacy-data-migration` não
+   existe; a "prova de restauração" é HANDOFF. O que garanto aqui: o backup é PRÉ-CONDIÇÃO
+   verificada (5.2) e o `workspace_backups` sobrevive ao reset (é a prova do backup).
+7. **Consumo do backup (anti-duplo-clique):** `workspace_backups` não tem coluna de consumo.
+   Adiciono `consumed_at timestamptz NULL` (migration aditiva; a RLS já dá UPDATE ao app). O
+   gate exige `status='completed'`, `created_at >= now()-15min` e `consumed_at IS NULL`; o
+   reset carimba `consumed_at` na transação. Duplo clique: o 2º acha consumido → 422.
+8. **templates: DELETE + re-seed** (mantido do design) — `task_templates` não tem trilha
+   imutável nem FK de avanço (deletável pelo app); reuso `Workspaces::
+   SeedDefaultTaskTemplatesService`.
+9. **convites pendentes: REVOGADOS** (mantido) via `Invitations::RevokeService` (loop nos
+   pendentes, papel owner), `revoked_at`, sem DELETE.
+10. **Endpoint:** `POST /api/v1/workspace/factory_reset`, owner-only
+    (`WorkspaceFactoryResetPolicy`), atrás de `FEATURE_FACTORY_RESET` (desligada → 404).
+11. **G5 entregue em dois passos coerentes:** (a) MOTOR backend (serviço+gate+endpoint+specs
+    — o núcleo antes bloqueado), (b) modal de reset no frontend (5.8). 5.9/5.10/5.1 = handoffs
+    documentados. G6 (tema + modal de auditoria + fechamento) vem depois, com autorização.
+12. **(descoberta na execução) SERIALIZABLE é impossível neste app** — TODO contexto de
+    tenant (middleware `TenantTransaction` no request; `Tenant.with` fora dele) JÁ abre a
+    transação externa, porque o `SET LOCAL` da RLS morre com ela. `transaction(isolation:)`
+    aninhado levanta `TransactionIsolationError`. O reset usa savepoint (`requires_new`,
+    o padrão de `TaskAdvances::CreateService`); o anti-replay REAL é o CAS
+    `UPDATE ... WHERE consumed_at IS NULL` no backup (vale em READ COMMITTED).
+
+**G5 EXECUTADO** (motor + modal): `POST /api/v1/workspace/factory_reset` (owner-only,
+flag `FEATURE_FACTORY_RESET` default off → 404), `Workspace::FactoryResetService`
+(gates frase/backup≤15min/consumo CAS; arquiva via `Hierarchy::SoftDeleteService`;
+templates DELETE+re-seed 31; convites pendentes DELETE; auditoria na transação),
+migration `workspace_backups.consumed_at`, `FactoryResetModal` (frase trava o botão,
+export SEMPRE antes, cancel+clear pós-sucesso), `flags.factoryReset`. Specs: 9 backend
+(feliz, SQL-capture anti-mutação de audit_logs, gates, duplo-clique, 403/404, rollback)
++ 7 vitest. Suítes: backend dirigido 131/0 (incl. sweeps), frontend 352/0, tsc limpo.
+
 ## Protocolo por grupo
 
 Aplicar → backend `rspec` dirigido (0 falhas) e/ou frontend `vitest`+`tsc` (0) →

@@ -670,6 +670,18 @@ export const backupApi = {
   },
 }
 
+// workspace-settings 5.8 (§3.11, D12, D-RESET-GATE) — o reset de fábrica. A frase e
+// o backup são re-verificados no SERVIDOR (a validação do cliente é conveniência);
+// 422 = frase/backup recusados, 404 = feature desligada. O servidor ARQUIVA a
+// hierarquia (não apaga) e preserva a auditoria.
+export const factoryResetApi = {
+  create: (confirmationPhrase: string, backupId: string) =>
+    apiClient.post<{ projects_count: number }>('/api/v1/workspace/factory_reset', {
+      confirmation_phrase: confirmationPhrase,
+      backup_id: backupId,
+    }),
+}
+
 export const reportApi = {
   get: (scope: 'all' | 'project', projectId?: string) => {
     const q = new URLSearchParams({ scope })

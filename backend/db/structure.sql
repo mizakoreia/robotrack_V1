@@ -893,6 +893,7 @@ CREATE TABLE public.workspace_backups (
     counts jsonb DEFAULT '{}'::jsonb NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    consumed_at timestamp with time zone,
     CONSTRAINT chk_wb_status CHECK ((status = ANY (ARRAY['pending'::text, 'completed'::text, 'failed'::text])))
 );
 
@@ -2346,6 +2347,7 @@ ALTER TABLE public.workspaces ENABLE ROW LEVEL SECURITY;
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260723150001'),
 ('20260723140002'),
 ('20260723140001'),
 ('20260723130002'),

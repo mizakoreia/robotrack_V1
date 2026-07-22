@@ -23,6 +23,21 @@ export const settingsText = {
   exportDone: 'Backup gerado e baixado.',
   exportAsync: 'Backup grande: geração em andamento; o download ficará disponível em instantes.',
   exportError: 'Não foi possível gerar o backup.',
+  // Reset de fábrica (§3.11, D12)
+  resetTitle: 'Reset de fábrica',
+  resetSubtitle:
+    'Arquiva todos os projetos, células, robôs e tarefas e restaura o catálogo padrão. O histórico e a auditoria são preservados.',
+  resetButton: 'Resetar workspace…',
+  resetModalTitle: 'Confirmar reset de fábrica',
+  resetPhraseLabel: (name: string) => `Para confirmar, digite o nome do workspace: ${name}`,
+  resetPhrasePlaceholder: 'Nome exato do workspace',
+  resetConfirm: 'Fazer backup e resetar',
+  resetCancel: 'Cancelar',
+  resetExporting: 'Gerando o backup…',
+  resetResetting: 'Resetando o workspace…',
+  resetDone: 'Reset concluído. O backup foi baixado antes da operação.',
+  resetErrorBackup: 'O backup falhou — o reset NÃO foi executado.',
+  resetErrorReset: 'O reset foi recusado pelo servidor. O backup já foi baixado.',
   // Painel de Tarefas-base / catálogo (§3.9)
   catalogTitle: 'Tarefas-base',
   catalogSubtitle: 'O catálogo aplicado aos robôs. "Misto / Geral" vale para todas as aplicações.',

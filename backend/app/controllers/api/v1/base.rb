@@ -49,6 +49,9 @@ module Api
       # Backup do workspace (workspace-settings 4.3)
       mount Api::V1::WorkspaceBackups
 
+      # Reset de fábrica do workspace (workspace-settings 5, D12)
+      mount Api::V1::WorkspaceFactoryReset
+
       # Recálculo manual do progresso (progress-rollup 4.5)
       mount Api::V1::ProgressEndpoint
 

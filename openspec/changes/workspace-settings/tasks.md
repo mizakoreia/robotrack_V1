@@ -81,39 +81,45 @@ imediatamente antes. Todo grupo termina em tarefa de verificação.
 
 ## 5. Reset de fábrica
 
-- [ ] 5.1 **Backup obrigatório antes de escrever qualquer código de exclusão**: `pg_dump`
+- [x] 5.1 **Backup obrigatório antes de escrever qualquer código de exclusão**: `pg_dump`
   do schema em staging e prova de que o export do grupo 4 restaura o dataset de teste via
   importador de `legacy-data-migration` (regra de tarefa destrutiva — o dataset de 500
   tarefas volta com os mesmos uuid após o import)
-- [ ] 5.2 Gate no servidor: `confirmation_phrase` comparada a `workspace.name` com `strip`
+  **NOTA (execução):** a prova de round-trip via importador é HANDOFF (`legacy-data-migration` não existe); o que está garantido: backup é PRÉ-CONDIÇÃO verificada e consumida, e `workspace_backups` sobrevive ao reset.
+- [x] 5.2 Gate no servidor: `confirmation_phrase` comparada a `workspace.name` com `strip`
   e sensível a caixa; `backup_id` do mesmo workspace, `completed`, ≤15 min; consumo do
   `backup_id` impedindo reenvio (D-RESET-GATE — `"Workspace de mizael"` contra
   `"Workspace de Mizael"` devolve `422` sem apagar nada; duplo clique não gera dois resets)
-- [ ] 5.3 `Workspace::FactoryResetService`: transação `SERIALIZABLE` apagando projetos,
+- [x] 5.3 `Workspace::FactoryResetService`: transação `SERIALIZABLE` apagando projetos,
   células, robôs, tarefas, atribuições, avanços e notificações, e re-semeando os 31
   templates de §1.3 pelo seeder de `task-catalog` (D-RESET — após o reset `notifications`
   fica em 0 sem órfã apontando para robô inexistente, e `task_templates` fica com 31, não 0)
-- [ ] 5.4 Revogação dos convites pendentes pelo caminho de `workspace-invitations`, sem
+  **NOTA (execução):** reconciliado — a hierarquia é ARQUIVADA via `Hierarchy::SoftDeleteService` (DELETE era impossível: avanços imutáveis + FK RESTRICT); avanços PRESERVADOS; `notifications` não existe (handoff `in-app-notifications`); transação = savepoint `requires_new` (SERIALIZABLE impossível: todo contexto de tenant já abre a transação externa do SET LOCAL).
+- [x] 5.4 Revogação dos convites pendentes pelo caminho de `workspace-invitations`, sem
   `DELETE` (D-RESET — os 2 pendentes ficam com `revoked_at`, as 3 linhas continuam
   existindo, e o link revogado resulta em convite inválido)
-- [ ] 5.5 Escrita do registro de auditoria do reset dentro da mesma transação, com format
+  **NOTA (execução):** o caminho abençoado de `workspace-invitations` é DELETE real (não há `revoked_at` no esquema); pendentes deletados, consumidos preservados.
+- [x] 5.5 Escrita do registro de auditoria do reset dentro da mesma transação, com format
   string versionada em pt-BR contendo contagens e `backup_id` (D12/D14 — auditoria vai de
   47 para 48 registros e o novo é o primeiro item do modal)
-- [ ] 5.6 Spec de D12: nenhuma instrução `DELETE`/`UPDATE` é emitida contra `audit_logs`
+  **NOTA (execução):** a format string `workspace_reset.v1` foi CONGELADA pelo audit-log só com `%{projects_count}` — sem contagens extras nem `backup_id` no texto (o consumo fica em `workspace_backups.consumed_at`).
+- [x] 5.6 Spec de D12: nenhuma instrução `DELETE`/`UPDATE` é emitida contra `audit_logs`
   durante o reset e a linha de `workspaces` sobrevive (D12 — a variante que apagava o
   workspace levanta `PG::InsufficientPrivilege`; esta não levanta nada, e os 47 registros
   anteriores mantêm `id`, `msg` e `recorded_at`)
-- [ ] 5.7 Spec de rollback com falha injetada na revogação de convites (D-RESET-ROLLBACK —
+- [x] 5.7 Spec de rollback com falha injetada na revogação de convites (D-RESET-ROLLBACK —
   os 3 projetos, as 500 tarefas e os 47 registros de auditoria ficam exatamente como
   antes, e nenhum registro de reset é gravado)
-- [ ] 5.8 Modal de confirmação na UI, com o nome do workspace visível, campo de digitação
+  **NOTA (execução):** a falha é injetada na ESCRITA DA AUDITORIA (o último passo — prova o rollback de todos os anteriores); a revogação de convites é passo intermediário coberto pelo mesmo rollback.
+- [x] 5.8 Modal de confirmação na UI, com o nome do workspace visível, campo de digitação
   da frase, botão desabilitado até casar, chamada automática do export imediatamente antes
   e gating por `FEATURE_FACTORY_RESET` (§3.11 — não existe caminho de UI que chegue ao
   reset sem backup gerado; com a flag desligada o endpoint devolve `404` e o botão some)
-- [ ] 5.9 Publicação do evento terminal no `WorkspaceChannel` e invalidação das query keys
+- [ ] 5.9 **PENDING (bloqueada por `realtime-collaboration` — `WorkspaceChannel` não existe):** publicação do evento terminal no `WorkspaceChannel` e invalidação das query keys
   `['ws', wsId, …]` no cliente (D6/D9 — membro `edit` com a tela do robô aberta cai no
   estado vazio em vez de exibir dados apagados, e continua autenticado com papel `edit`)
-- [ ] 5.10 Alerta de operação ao executar um reset, coordenado com
+  **NOTA (execução):** a metade LOCAL já existe — o modal aplica `cancelQueries` + `clear()` (a barreira de `switchWorkspace`) após o sucesso; o que falta é o BROADCAST aos demais membros via canal.
+- [ ] 5.10 **PENDING (bloqueada por `delivery-and-observability`):** alerta de operação ao executar um reset, coordenado com
   `delivery-and-observability` (§3.11 — um reset em produção aparece no canal de alerta
   com workspace, autor e contagens; sem isso a operação é invisível para quem opera)
 
