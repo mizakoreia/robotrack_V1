@@ -37,21 +37,21 @@ imediatamente antes. Todo grupo termina em tarefa de verificação.
 
 ## 3. Tela do catálogo de tarefas-base
 
-- [ ] 3.1 Endpoints de escrita de `task_templates` (`POST`, `PATCH`, `DELETE`) sobre o
+- [x] 3.1 Endpoints de escrita de `task_templates` (`POST`, `PATCH`, `DELETE`) sobre o
   modelo de `task-catalog`, com policy `edit`/`owner` (§3.9 — `view` recebe `403` no
   `POST` mesmo com corpo válido)
-- [ ] 3.2 Tabela agrupada por categoria em ordem lexicográfica pela string, com as quatro
+- [x] 3.2 Tabela agrupada por categoria em ordem lexicográfica pela string, com as quatro
   colunas de §3.9 e modo somente leitura para `view` (§1.3 — com `A.`, `C.` e `B.`
   presentes a ordem renderizada é `A.`, `B.`, `C.`; `view` não recebe coluna "excluir")
-- [ ] 3.3 Formulário de adição de template com `weight = 1` implícito, embutindo o editor
+- [x] 3.3 Formulário de adição de template com `weight = 1` implícito, embutindo o editor
   multi-seleção de filtro de aplicação (§3.9 — descrição vazia devolve `422` sem criar linha)
-- [ ] 3.4 Regra de `Misto / Geral` no editor de filtro: marcar limpa as demais e envia
+- [x] 3.4 Regra de `Misto / Geral` no editor de filtro: marcar limpa as demais e envia
   lista vazia; marcar uma aplicação específica desmarca `Misto / Geral`
   (§3.9 — sobre `["Handling","Solda Ponto"]` a requisição vira `app_filters: []`, nunca
   `["Misto / Geral"]`)
-- [ ] 3.5 Exclusão de template com confirmação, sem tocar em tarefas derivadas
+- [x] 3.5 Exclusão de template com confirmação, sem tocar em tarefas derivadas
   (§3.9 — excluir `TCP Check` com 12 tarefas criadas deixa as 12 com progresso intacto)
-- [ ] 3.6 Vitest dos três caminhos do editor de filtro e do modo somente leitura de `view`
+- [x] 3.6 Vitest dos três caminhos do editor de filtro e do modo somente leitura de `view`
   (§3.9 — o teste falha se qualquer requisição contiver a string `Misto / Geral`)
 
 ## 4. Exportar backup
