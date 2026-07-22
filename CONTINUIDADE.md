@@ -14,21 +14,23 @@ main (48497fd)                       ← ondas 1–4, sem nada desta sessão
         └── task-catalog                   change COMPLETA — 6 de 6 (TC-G6 fechou)
             └── robot-tasks                 change COMPLETA — 6 de 6 grupos
                 └── progress-advances        change COMPLETA — 6 de 6 grupos
-                    └── progress-rollup (branch atual)  change COMPLETA — 6 de 6 grupos
+                    └── progress-rollup          change COMPLETA — 6 de 6 grupos
+                        └── design-system (branch atual)  change COMPLETA — 8 de 8 grupos
 ```
 
-**`progress-rollup` contém todo o trabalho** (empilhada sobre `progress-advances`).
-É nela que se continua. Push por branch canônica (`git push origin
-HEAD:progress-rollup`). Os PRs para a `main` podem ser abertos depois, na ordem do
+**`design-system` contém todo o trabalho** (empilhada sobre `progress-rollup`; é
+frontend-only). É nela que se continua. Push por branch canônica (`git push origin
+HEAD:design-system`). Os PRs para a `main` podem ser abertos depois, na ordem do
 empilhamento.
 
-## Suítes (medidas na branch `progress-rollup`)
+## Suítes (medidas na branch `design-system`)
 
 | Suíte | Resultado |
 |---|---|
 | Backend `bundle exec rspec` (como `robotrack_app`, `--seed 12345`) | **933 / 0 falhas / 9 pending** |
-| Frontend `vitest run` | **100 / 0** |
+| Frontend `vitest run` | **160 / 0** |
 | Frontend `tsc --noEmit` | limpo |
+| Frontend `pnpm build` | limpo — bundle principal caiu 591kB→383kB (Recharts/TipTap/Slate fora) |
 
 > Lição desta change: constantes definidas dentro de `RSpec.describe do … end`
 > VAZAM para o topo (Object). Dois specs com `ALLOWLIST`/`ENVELOPES`/`APP` colidem
@@ -43,7 +45,7 @@ destravaram e viraram verdes ao longo de `robot-tasks`.)
 > suíte completa (estado do Rack::Attack sensível à ordem aleatória do RSpec);
 > passa isolado. Não é regressão desta sessão. Rodar com `--seed` fixo estabiliza.
 
-## Changes concluídas (10 de 24)
+## Changes concluídas (11 de 24)
 
 `seal-template-baseline`, `workspace-tenancy`, `identity-and-auth`,
 `workspace-invitations` (anteriores) e:
@@ -102,20 +104,45 @@ destravaram e viraram verdes ao longo de `robot-tasks`.)
   obrigatória, sweeps). Handoffs para `delivery-and-observability`, `legacy-data-migration`,
   `commissioning-report`, `robot-task-table`. Decisões 1–7 no EXECUCAO.
 
+- **`design-system`** (G0..G8, COMPLETA, frontend-only, Onda 0) — a base visual que TODAS as
+  telas consomem. Token set único (dois temas, escuro primário) com triplas HSL sem alpha
+  (D-DS-1); as 3 variantes de status com **contraste medido no CI** (`tests/contrast.test.ts`,
+  16 pares, reprova < 4.5:1 corpo / 3:1 não-texto — a "armadilha nº 1" travada); namespaces de
+  cor restritos por propriedade (`text-success` não compila — D-DS-2); Inter + escala rem +
+  tabular-nums; sprite de ícones (`currentColor`, lint de emoji); z-index semântico + lint;
+  tema não segue o SO (guarda de CI) com dark default/.light/anti-FOUC; 9+ primitivos em
+  `components/ui/` (EntityCard, ProgressRing base que OMITE o path a 0%, Hub, Badge,
+  StatusSelect, Chip, Modal com focus-trap/Esc, SaveIndicator, FilterBar, IconButton com
+  a11y na assinatura de tipo — D-DS-9); luz ambiente (`lib/ambient.ts`, throttle 32ms, 3
+  degradações); Recharts/TipTap/Slate DESINSTALADOS (bundle -208kB) com guarda de retorno.
+  **Divergência:** `tokens-campfire.css` + aliases shadcn mantidos (só vars da landing,
+  ortogonais aos papéis; remoção real quando as telas substituírem as páginas do template —
+  EXECUCAO decisão 3/4). HANDOFF de CSP para `delivery-and-observability`. Backup em
+  `git tag pre-design-system-cleanup` (local — o proxy rejeita push de tag).
+
 Cada change tem seu `openspec/changes/<nome>/EXECUCAO.md` com o mapa de grupos, as
 decisões tomadas na execução, as armadilhas encontradas e a CONCLUSÃO com o relatório
 final. **Leia o EXECUCAO.md antes de tocar no código de uma change.**
 
-## Onde parou: `progress-rollup` COMPLETA; as duas métricas de progresso fechadas
+## Onde parou: `design-system` COMPLETA; a base visual fechada
 
-Fechou (6/6 grupos) — ver `openspec/changes/progress-rollup/EXECUCAO.md` (decisões
-1–7). O progresso consolidado sobe robô→célula→projeto, com as duas métricas (§2.1
-ponderada, §3.2 contagem crua) definidas SÓ em SQL, o cache escrito em cascata na
-transação, o job de reconciliação como rede de segurança, e a rotulagem D15
-executável. Contratos escritos como `HANDOFF-progress-rollup.md` em
-`delivery-and-observability`, `legacy-data-migration` e `commissioning-report`.
+Fechou (8/8 grupos) — ver `openspec/changes/design-system/EXECUCAO.md`. A fundação
+visual existe: token set único (dois temas), contraste medido no CI, tipografia,
+ícones, empilhamento, tema (dark default, não segue o SO), 9+ primitivos em
+`components/ui/`, luz ambiente, e a dívida do template (Recharts/TipTap/Slate)
+removida. Tudo que as telas consomem está pronto e testado (160 testes frontend).
+
+**Antes:** `progress-rollup` (COMPLETA) — as duas métricas de progresso SÓ em SQL,
+cache em cascata, job de reconciliação, rotulagem D15. Ver o EXECUCAO dela.
 
 **Pendências conhecidas (documentadas, não atribuídas):**
+- **design-system:** `tokens-campfire.css` + aliases shadcn seguem no repo (só vars
+  da landing, ortogonais aos papéis). A remoção real (e a migração das classes
+  shadcn → papéis) acontece quando `app-shell-navigation`/`hierarchy-screens`
+  substituírem as páginas do template. `git tag pre-design-system-cleanup` (local)
+  é o ponto de rollback do G8.
+- **design-system:** p50 de frame da luz ambiente é medição de hardware (o CI trava
+  só o determinístico) — job de perf de `delivery-and-observability` (HANDOFF lá).
 - Tensão D-H6×D-IMUT (de progress-advances): hard delete de robô/projeto com
   tarefas que têm avanços daria 500 no trigger de imutabilidade. Fix = soft-delete
   de hierarquia (follow-up em `commissioning-hierarchy`).
@@ -125,22 +152,27 @@ executável. Contratos escritos como `HANDOFF-progress-rollup.md` em
 - `<ProgressRing>`/`<MetricStat>` existem (progress-rollup 6.2) mas a TELA que os
   monta (Visão Geral, hubs, cards) é de `hierarchy-screens`.
 
-**Próximo passo — as TELAS.** O backend do núcleo (hierarquia + tarefas + avanços +
-rollup) está fechado de ponta a ponta; falta a UI real. Ver abaixo.
+**Próximo passo — montar as telas sobre a base.** O backend do núcleo (hierarquia +
+tarefas + avanços + rollup) e a base visual (`design-system`) estão fechados. Falta
+compor as telas. Ver abaixo.
 
-## Depois de `progress-rollup` — as telas
+## Depois de `design-system` — as telas
 
-O caminho para telas de verdade: `design-system` (tokens, componentes base) →
-`app-shell-navigation` (shell, rotas, indicador de gravação) → `hierarchy-screens`
-(árvore de projetos/células/robôs, Visão Geral com os anéis/hubs de `progress-rollup`)
-→ `robot-task-table` (a tabela do robô: CONSOME `progress-advances` — reusa
-`<AdvanceControls>`, aviso "trilha faltando" com `advances_count` — e `progress-rollup`
-— os envelopes rotulados). Hoje a UI é a landing do template + autenticação + painel
-de equipe + os hooks/componentes/lógica sem a tela final que os une.
+Com a base pronta, o caminho: **`app-shell-navigation`** (Onda 2, depende de
+`design-system` — shell, sidebar/topbar, rotas, seletor de workspace, indicador de
+gravação) → **`hierarchy-screens`** (árvore de projetos/células/robôs, Visão Geral
+com os anéis/hubs de `progress-rollup` — consome os envelopes rotulados e os
+primitivos `EntityCard`/`Hub`/`ProgressRing`) → **`robot-task-table`** (a tabela do
+robô: CONSOME `progress-advances` — reusa `<AdvanceControls>`, aviso "trilha faltando"
+com `advances_count` — e `progress-rollup` — os envelopes). Também `my-tasks-view`,
+`workspace-settings`, `commissioning-report`.
 
-Comece pelo que desbloqueia o resto: **`design-system`** (ou, se preferir seguir o
-valor de negócio, `hierarchy-screens`/`robot-task-table` já têm todos os contratos
-de dados prontos via os HANDOFFs). Leia o `proposal.md`/`design.md` da change escolhida.
+Comece por **`app-shell-navigation`** (desbloqueia as telas seguintes), ou, por valor
+de negócio, `hierarchy-screens`/`robot-task-table` (têm todos os contratos de dados
+prontos via os HANDOFFs). Leia o `proposal.md`/`design.md` e escreva o `EXECUCAO.md`
+(G0) antes de qualquer código. **Nota:** ao montar telas, MIGRE as classes shadcn
+(`bg-primary`, `text-muted-foreground`…) para os papéis (`bg-accent`, `text-text-muted`)
+e então remova os aliases + `tokens-campfire.css` (a parte adiada do G8 do design-system).
 
 ## Método (não abrir mão)
 
@@ -199,16 +231,20 @@ O frontend usa **pnpm** (`pnpm-lock.yaml`); o `package-lock.json` está dessincr
 >
 > Leia `CONTINUIDADE.md` na raiz do repositório: ele tem o estado atual, o que já foi
 > entregue, onde parei e o método de trabalho. `robot-tasks`, `task-catalog`,
-> `progress-advances` e `progress-rollup` estão COMPLETAS (leia os EXECUCAO.md delas). Todo
-> o BACKEND do núcleo — hierarquia, tarefas, catálogo, avanços e progresso consolidado —
-> está fechado de ponta a ponta.
+> `progress-advances`, `progress-rollup` e `design-system` estão COMPLETAS (leia os
+> EXECUCAO.md delas). Todo o BACKEND do núcleo (hierarquia, tarefas, catálogo, avanços,
+> progresso consolidado) E a BASE VISUAL (design-system: tokens, contraste medido,
+> primitivos, luz ambiente) estão fechados de ponta a ponta.
 >
-> Trabalhe na branch `progress-rollup` (as branches são empilhadas; ela contém tudo). O
-> próximo passo são as **TELAS**: `design-system` → `app-shell-navigation` →
-> `hierarchy-screens` → `robot-task-table`. Escolha a próxima change, comece pelo
-> `EXECUCAO.md` dela (commit G0) — antes de qualquer código — e faça push por branch
-> canônica (`git push origin HEAD:<change>`). Os contratos de dados que as telas consomem
-> já estão escritos nos `HANDOFF-*.md` das changes consumidoras.
+> Trabalhe na branch `design-system` (as branches são empilhadas; ela contém tudo; é
+> frontend-only). O próximo passo é COMPOR AS TELAS sobre a base: `app-shell-navigation`
+> → `hierarchy-screens` → `robot-task-table` (+ `my-tasks-view`, `workspace-settings`,
+> `commissioning-report`). Escolha a próxima change, comece pelo `EXECUCAO.md` dela
+> (commit G0) — antes de qualquer código — e faça push por branch canônica
+> (`git push origin HEAD:<change>`). Os contratos de dados que as telas consomem já estão
+> escritos nos `HANDOFF-*.md` das changes consumidoras; os primitivos de UI estão em
+> `frontend/src/components/ui/`. Ao montar telas, migre as classes shadcn para os papéis
+> e remova os aliases + `tokens-campfire.css` (a parte adiada do G8 do design-system).
 >
 > Siga o método: um grupo por vez, e ao fim de cada grupo me apresente um resumo e peça
 > autorização antes de seguir para o próximo. Não regrida nenhuma das regras listadas na
