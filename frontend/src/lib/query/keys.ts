@@ -21,11 +21,19 @@ export const qk = {
 const NON_DOMAIN_PREFIXES = new Set(['meta', 'workspaces', 'auth'])
 
 // Uma key é válida se for de um prefixo não-domínio conhecido, OU se começar com
-// `['ws', <wsId string não-vazio>, …]`.
+// `['ws', <tenant>, …]`. O guard checa a FORMA, não a segurança (a barreira de
+// vazamento é o `clear()` na troca + o RLS do servidor). Por isso o tenant pode
+// ser `null`/`undefined`: é a query DESABILITADA (`enabled: Boolean(wsId)`) antes
+// de um workspace ser escolhido — forma correta, tenant ainda pendente, nunca
+// busca dado. O que é rejeitado é a key SEM o prefixo `ws` (`['projects']` — o
+// erro que o guard existe para pegar) e o tenant string VAZIO (`''` é bug real).
 export function isValidQueryKey(key: unknown): boolean {
   if (!Array.isArray(key) || key.length === 0) return false
   if (typeof key[0] === 'string' && NON_DOMAIN_PREFIXES.has(key[0])) return true
-  return key[0] === 'ws' && typeof key[1] === 'string' && key[1].length > 0
+  if (key[0] !== 'ws') return false
+  const tenant = key[1]
+  if (tenant === null || tenant === undefined) return true // query pendente (desabilitada)
+  return typeof tenant === 'string' && tenant.length > 0
 }
 
 export function assertValidQueryKey(key: unknown): void {
