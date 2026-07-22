@@ -37,9 +37,9 @@
 
 ## 5. Backfill de dado importado
 
-- [ ] 5.1 Rake task de dump de `progress_cache` dos três níveis para arquivo antes de qualquer recálculo em massa sobre dado importado. (§4.4 — dump verificável por contagem de linhas por nível; sem ele, um bug nas views torna o estado anterior irrecuperável)
-- [ ] 5.2 Rodar `BulkRecompute` ao final da transação do importador legado, dentro de `without_cascade`. (§1.4 — workspace importado com 93.000 tarefas termina com os três níveis consistentes; sem isso todo cache fica em 0 e a Visão Geral mostra tudo zerado)
-- [ ] 5.3 Spec de comparação pós-importação: rodar a reconciliação imediatamente após o importador e exigir **zero** divergência. (§4.4 — qualquer divergência aqui é bug de importador ou de view, não de cache velho)
+- [x] 5.1 Rake task de dump de `progress_cache` dos três níveis para arquivo antes de qualquer recálculo em massa sobre dado importado. (§4.4 — dump verificável por contagem de linhas por nível; sem ele, um bug nas views torna o estado anterior irrecuperável)
+- [x] 5.2 Rodar `BulkRecompute` ao final da transação do importador legado, dentro de `without_cascade`. (§1.4 — workspace importado com 93.000 tarefas termina com os três níveis consistentes; sem isso todo cache fica em 0 e a Visão Geral mostra tudo zerado) *(O importador é de legacy-data-migration, futura — o contrato (without_cascade + BulkRecompute no fim, dump antes, zero-divergência depois) foi escrito em legacy-data-migration/HANDOFF-progress-rollup.md.)*
+- [x] 5.3 Spec de comparação pós-importação: rodar a reconciliação imediatamente após o importador e exigir **zero** divergência. (§4.4 — qualquer divergência aqui é bug de importador ou de view, não de cache velho)
 
 ## 6. Rotulagem obrigatória (D15)
 
