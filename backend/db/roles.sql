@@ -160,3 +160,18 @@ BEGIN
   END IF;
 END
 $$;
+
+-- Log de auditoria append-only (audit-log §4.1 inv. 3, Decisão 1). Mesmo
+-- argumento: `pg_dump -x` omite REVOKE, então sem isto um rebuild por
+-- `db:schema:load` nasceria com o runtime podendo mutar/apagar o log imutável —
+-- exatamente a invariante cujo adversário é o próprio dono. A trigger
+-- `trg_audit_logs_immutable` (migration) é a rede para o papel DONO; a negação de
+-- privilégio é a primeira camada, para o papel de app. Guardado por existência; o
+-- REVOKE no PARENT particionado vale para as partições.
+DO $$
+BEGIN
+  IF to_regclass('public.audit_logs') IS NOT NULL THEN
+    REVOKE UPDATE, DELETE ON audit_logs FROM robotrack_app;
+  END IF;
+END
+$$;

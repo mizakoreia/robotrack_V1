@@ -7,41 +7,41 @@ avanço).
 
 ## 1. Papéis Postgres e credenciais
 
-- [ ] 1.1 Criar migration idempotente que cria os papéis `robotrack_migrator` (dono das
+- [x] 1.1 Criar migration idempotente que cria os papéis `robotrack_migrator` (dono das
   tabelas) e `robotrack_app` (runtime), com `GRANT` padrão de DML no esquema de domínio
   para `robotrack_app`, e documentar em `delivery-and-observability` as duas credenciais
   resultantes (`DATABASE_URL` = `robotrack_app`, `MIGRATION_DATABASE_URL` =
   `robotrack_migrator`). (§4.1 inv. 3 — rodar a migration duas vezes seguidas não pode
   falhar com "role already exists"; deploy com uma credencial só deixa a camada de
   privilégio inerte)
-- [ ] 1.2 Adicionar verificação de boot que aborta o processo se
+- [x] 1.2 Adicionar verificação de boot que aborta o processo se
   `has_table_privilege(current_user, 'audit_logs', 'UPDATE')` for verdadeiro, com mensagem
   nomeando a tabela e o privilégio. (spec `audit-log` — subir com `DATABASE_URL` do papel
   dono precisa quebrar o boot, não passar silenciosamente)
-- [ ] 1.3 **Verificação:** spec que conecta como `robotrack_app` e afirma que
+- [x] 1.3 **Verificação:** spec que conecta como `robotrack_app` e afirma que
   `pg_catalog` não lista `UPDATE` nem `DELETE` sobre `audit_logs` para esse papel. (spec
   `audit-log-retention` — zero papéis de rotina com `DELETE`)
 
 ## 2. Esquema de `audit_logs`
 
-- [ ] 2.1 Migration criando `audit_logs` particionada por faixa sobre `ts`, PK `(ts, id)`,
+- [x] 2.1 Migration criando `audit_logs` particionada por faixa sobre `ts`, PK `(ts, id)`,
   colunas `workspace_id`, `msg`, `ts`, `ts_local`, `by_person_id`, `by_name`, `event_type`,
   `format_version`, `payload`, FK `workspaces ON DELETE RESTRICT`, sem FK para hierarquia,
   incluindo `REVOKE UPDATE, DELETE ... FROM robotrack_app` e um `def down` que levanta
   `IrreversibleMigration` quando a tabela tem linhas. (§1.1 — `INSERT` sem `workspace_id`
   precisa violar `NOT NULL`; excluir um robô não pode levar registro junto; rollback depois
   do primeiro registro em produção não pode ser um `DROP TABLE` silencioso)
-- [ ] 2.2 Criar as partições dos 3 meses seguintes mais a partição `DEFAULT` e o índice
+- [x] 2.2 Criar as partições dos 3 meses seguintes mais a partição `DEFAULT` e o índice
   `(workspace_id, ts DESC)` em cada uma. (spec `audit-log-retention` — registro
   `2026-03-14` tem que residir em `audit_logs_2026_03`)
-- [ ] 2.3 Habilitar RLS com políticas de `SELECT` e `INSERT` por
+- [x] 2.3 Habilitar RLS com políticas de `SELECT` e `INSERT` por
   `app.current_workspace_id`, sem declarar política de `UPDATE`/`DELETE`. (§4.1 inv. 3 —
   sessão do workspace A contando linhas com 3 de A e 5 de B tem que ver 3, e `INSERT` com
   `workspace_id` de B tem que falhar no `WITH CHECK`)
-- [ ] 2.4 Criar a função `audit_logs_immutable()` e a trigger `BEFORE UPDATE OR DELETE ...
+- [x] 2.4 Criar a função `audit_logs_immutable()` e a trigger `BEFORE UPDATE OR DELETE ...
   FOR EACH ROW`, que levanta exceção sem inspecionar papel ou linha. (§2.8 — `UPDATE` pelo
   papel dono da tabela, para quem o `REVOKE` não vale, tem que abortar)
-- [ ] 2.5 **Verificação:** spec que, como `robotrack_migrator`, tenta `UPDATE` e depois
+- [x] 2.5 **Verificação:** spec que, como `robotrack_migrator`, tenta `UPDATE` e depois
   `DELETE` numa linha existente e espera exceção da trigger em ambos; e outro spec que
   confirma que `INSERT` continua passando. (spec `audit-log` — a trigger não pode barrar
   escrita legítima)
