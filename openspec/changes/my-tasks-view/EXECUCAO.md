@@ -83,6 +83,21 @@ qualquer papel, viewer só do token (nunca param).
 5. **G1 antes do endpoint**: os specs de identidade testam bootstrap/aceite, independem do
    meu código. Rodo com o bootstrap real; 1.4 prova que falham com `Person` stubbada.
 
+### Decisões tomadas na G3 (registro pós-execução)
+
+- **Viewer = `authorization_context.person`** — o `Authorization::Context` JÁ resolve
+  `Person.find_by(workspace_id:, user_id:)` (usado pelo create_service). Reuso; nil = 409
+  `person_missing` no endpoint (D-MTV-2), nunca `200 []`.
+- **Não-membro → 403 (não 404)**: o gate NEGA a policy `read_workspace` p/ papel nil e
+  responde 403. O 404 de D3.6 é para recurso RLS-invisível resolvido por `find_by(:id)`;
+  `my_tasks` é COLEÇÃO sem `:id`, então é 403 (o 3.5 pedia 403 — estava certo; minha
+  suposição inicial de 404 no G0 estava errada).
+- **`person_id` ignorado** sem código extra: não é `params` declarado e não é lido em
+  lugar nenhum (viewer só do token). Spec envia `?person_id=` e recebe só as do viewer.
+- **Entity lê chaves-string** do hash do service (`o['id']`), sem symbolizar (mantém o
+  spec de G2 que assere `row['id']`).
+- **swagger allowlist** ganhou `/api/v1/my_tasks` (mesma lacuna do `/api/v1/search`).
+
 ## Armadilhas previstas
 
 1. **Falha silenciosa** — `Person` ausente DEVE dar 409, nunca `200 []`. Spec 4.6 (e2e sem
@@ -110,7 +125,7 @@ Provisionar o banco a cada sessão (ver CONTINUIDADE) + `PATH=/opt/rbenv/shims`.
 - [x] G0 — este mapa (commit G0)
 - [x] G1 — pré-condição de identidade (1.1–1.4)
 - [x] G2 — consulta + índices (2.1–2.6)
-- [ ] G3 — endpoint + authz + viewer (3.1–3.5)
+- [x] G3 — endpoint + authz + viewer (3.1–3.5)
 - [ ] G4 — provas de §3.6 + isolamento (4.1–4.6, 5.1–5.3)
 - [ ] G5 — tela (6.1–6.7)
 - [ ] G6 — desempenho (7.1–7.2)
