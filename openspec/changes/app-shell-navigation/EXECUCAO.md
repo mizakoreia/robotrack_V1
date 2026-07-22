@@ -99,6 +99,18 @@ O `proposal.md` descreve o estado do TEMPLATE; ondas anteriores já resolveram p
    `seal-template-baseline` decidir seu destino. Anônimo em `/` cai em `/entrar` pelo ProtectedRoute.
    As três telas de destino (`OverviewPage`/`MyTasksPage`/`ReportPage`) são STUBS: o conteúdo real
    vem de `hierarchy-screens`/`my-tasks-view`/`commissioning-report`.
+10. **6.3 — não há página do template usando React Query para migrar (G6).** O único consumo de
+    React Query no repo hoje é das FEATURES de domínio (`catalog`/`hierarchy`/`team`/`tasks`), já em
+    chaves `['ws', wsId, …]` compatíveis com a factory. As páginas do template (Profile/Users) usam
+    `apiClient` direto (não React Query) e são dívida do `seal-template-baseline`. Então 6.3 vira:
+    VERIFICAR (nenhuma leitura a migrar) + LIGAR o guard em `main.tsx` (feito). As páginas legadas
+    entram na allowlist do sweep 6.4.
+11. **Guard tolera tenant `null` (query desabilitada) — não `''` (G6).** Todas as factories de chave
+    aceitam `wsId: string | null` e montam `['ws', null, …]` enquanto `enabled: Boolean(wsId)` está
+    falso (antes de um workspace ser escolhido). Como o guard checa FORMA (não é a barreira de
+    vazamento — essa é o `clear()` + RLS), `isValidQueryKey` passou a aceitar tenant `null/undefined`
+    (query pendente), mantendo `['projects']` (sem prefixo `ws`) e `['ws', '', …]` (string vazia = bug)
+    como inválidos. Sem isto, o guard ligado em DEV derrubaria a app na janela de carga inicial.
 
 ## Armadilhas previstas
 
@@ -127,7 +139,7 @@ registrar aqui, seguir.
 - [x] G3 — Menu em portal (3.1–3.6)
 - [x] G4 — Casca/sidebar/topbar (4.1–4.6)
 - [x] G5 — Contexto e troca de workspace (5.1–5.9)
-- [ ] G6 — Persistência e convenção (6.1–6.4)
+- [x] G6 — Persistência e convenção (6.1–6.4)
 
 ## RETOMADA (para o próximo agente)
 

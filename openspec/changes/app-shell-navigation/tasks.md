@@ -136,19 +136,19 @@ um mock que segue o contrato acordado.
 
 ## 6. Persistência, migração de leituras e trava da convenção
 
-- [ ] 6.1 Criar `store/persistenceStore.ts` (não persistido) com `inFlight`, `queued`,
+- [x] 6.1 Criar `store/persistenceStore.ts` (não persistido) com `inFlight`, `queued`,
   `failed`, `lastSavedAt` e as três escritas `beginMutation` / `settleMutation` /
   `setQueueDepth`. (§D-D — `settleMutation` duplicado do mesmo id não leva `inFlight` a
   negativo; é o contrato contra o qual `offline-pwa` vai programar)
-- [ ] 6.2 Implementar o indicador de gravação como projeção pura do store, na precedência
+- [x] 6.2 Implementar o indicador de gravação como projeção pura do store, na precedência
   `erro > salvando > salvo`, sem expiração por tempo. (§D-D — `queued = 3` com
   `inFlight = 0` exibe `salvando`, nunca `salvo`; `erro` continua após 60s sem atividade)
-- [ ] 6.3 Migrar a única página do template que já usa React Query para a factory de keys e
+- [x] 6.3 Migrar a única página do template que já usa React Query para a factory de keys e
   para `features/<dominio>/api/`, e ligar o guard do 1.3 somente depois. (§D9 — o guard
   ligado antes da migração falharia o próprio desenvolvimento; coordenar com
   `seal-template-baseline` para não portar leituras de Leads/WhatsApp/cobrança que serão
   deletadas)
-- [ ] 6.4 Escrever a verificação automatizada de convenção que roda no CI: componentes não
+- [x] 6.4 Escrever a verificação automatizada de convenção que roda no CI: componentes não
   importam `lib/api/client`/`endpoints`; hooks de domínio moram em `features/*/api/`;
   nenhum store de Zustand guarda entidade de domínio; nenhuma mutation invalida
   `['ws', wsId]` inteiro; `createPortal` só aparece em `components/menu/`. (§D9 — falha
