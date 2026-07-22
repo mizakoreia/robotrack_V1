@@ -6,24 +6,24 @@ sendo criada por `workspace-tenancy` (bootstrap do dono) e `workspace-invitation
 
 ## 1. Provar a pré-condição de identidade (D10)
 
-- [ ] 1.1 Escrever spec de contrato cruzado que executa o **bootstrap real** de workspace
+- [x] 1.1 Escrever spec de contrato cruzado que executa o **bootstrap real** de workspace
   de `workspace-tenancy` para um `User` novo e afirma que
   `Person.find_by(workspace_id:, user_id:)` existe e tem `user_id` preenchido.
   Proibido criar `Person` por factory neste spec.
   (§3.6 / D10 — se o bootstrap parar de criar a `Person`, este spec falha antes de
   Minhas Tarefas retornar vazio para o dono e ninguém perceber)
-- [ ] 1.2 Escrever spec de contrato cruzado equivalente para o **aceite real de convite**
+- [x] 1.2 Escrever spec de contrato cruzado equivalente para o **aceite real de convite**
   de `workspace-invitations`, cobrindo os dois ramos: e-mail casa com `Person` existente
   (reusa) e e-mail não casa (cria nova).
   (§3.10 / D10 — o ramo "casa por e-mail" que reusa a `Person` errada faria o convidado
   ver as tarefas de outra pessoa; o ramo "não casa" que não cria nada o deixaria com lista
   vazia permanente)
-- [ ] 1.3 Escrever spec de esquema afirmando `memberships.person_id NOT NULL` + FK para
+- [x] 1.3 Escrever spec de esquema afirmando `memberships.person_id NOT NULL` + FK para
   `people(id)`, e que nenhuma coluna de texto `*responsible*`/`*assignee_name*` existe em
   `tasks` ou `task_assignees`.
   (D11 — uma coluna de texto sobrevivente reabre o filtro por nome e faz homônimos verem
   as tarefas um do outro)
-- [ ] 1.4 **Verificação:** rodar 1.1–1.3 e confirmar que os três **falham** com o
+- [x] 1.4 **Verificação:** rodar 1.1–1.3 e confirmar que os três **falham** com o
   bootstrap de `Person` desabilitado por stub, e passam com ele ativo.
   (prova de que o spec detecta a regressão, e não apenas passa por acaso)
 
