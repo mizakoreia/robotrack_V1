@@ -260,16 +260,102 @@ CREATE TABLE public.cells (
     project_id uuid NOT NULL,
     name text NOT NULL,
     "position" integer NOT NULL,
-    progress_cache jsonb DEFAULT '{}'::jsonb NOT NULL,
+    progress_cache smallint DEFAULT 0 NOT NULL,
     progress_cached_at timestamp with time zone,
     lock_version integer DEFAULT 0 NOT NULL,
     updated_by_person_id uuid,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT chk_cells_name CHECK (((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 120)))
+    CONSTRAINT chk_cells_name CHECK (((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 120))),
+    CONSTRAINT chk_cells_progress_cache CHECK (((progress_cache >= 0) AND (progress_cache <= 100)))
 );
 
 ALTER TABLE ONLY public.cells FORCE ROW LEVEL SECURITY;
+
+
+--
+-- Name: robots; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.robots (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    workspace_id uuid NOT NULL,
+    cell_id uuid NOT NULL,
+    name text NOT NULL,
+    application text DEFAULT 'Misto / Geral'::text NOT NULL,
+    "position" integer NOT NULL,
+    progress_cache smallint DEFAULT 0 NOT NULL,
+    progress_cached_at timestamp with time zone,
+    lock_version integer DEFAULT 0 NOT NULL,
+    updated_by_person_id uuid,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT chk_robots_application CHECK ((application = ANY (ARRAY['Misto / Geral'::text, 'Solda Ponto'::text, 'Solda MIG'::text, 'Handling'::text, 'Sealing'::text, 'Outros'::text]))),
+    CONSTRAINT chk_robots_name CHECK (((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 120))),
+    CONSTRAINT chk_robots_progress_cache CHECK (((progress_cache >= 0) AND (progress_cache <= 100)))
+);
+
+ALTER TABLE ONLY public.robots FORCE ROW LEVEL SECURITY;
+
+
+--
+-- Name: tasks; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.tasks (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    workspace_id uuid NOT NULL,
+    robot_id uuid NOT NULL,
+    cat text NOT NULL,
+    "desc" text NOT NULL,
+    weight numeric DEFAULT 1 NOT NULL,
+    progress smallint DEFAULT 0 NOT NULL,
+    status public.task_status DEFAULT 'Pendente'::public.task_status NOT NULL,
+    "position" integer NOT NULL,
+    lock_version integer DEFAULT 0 NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    deleted_at timestamp with time zone,
+    CONSTRAINT chk_tasks_cat CHECK (((length(btrim(cat)) >= 1) AND (length(btrim(cat)) <= 120))),
+    CONSTRAINT chk_tasks_desc CHECK (((length(btrim("desc")) >= 1) AND (length(btrim("desc")) <= 200))),
+    CONSTRAINT chk_tasks_progress CHECK (((progress >= 0) AND (progress <= 100))),
+    CONSTRAINT chk_tasks_weight CHECK ((weight > (0)::numeric)),
+    CONSTRAINT tasks_done_implies_full CHECK (((status <> 'Concluído'::public.task_status) OR (progress = 100)))
+);
+
+ALTER TABLE ONLY public.tasks FORCE ROW LEVEL SECURITY;
+
+
+--
+-- Name: robot_weighted_progress; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW public.robot_weighted_progress WITH (security_invoker='true') AS
+ SELECT r.id AS robot_id,
+    r.workspace_id,
+        CASE
+            WHEN (count(t.id) = 0) THEN 0
+            WHEN (count(t.id) FILTER (WHERE (t.status <> 'N/A'::public.task_status)) = 0) THEN 100
+            WHEN (COALESCE(sum((t.weight * (100)::numeric)) FILTER (WHERE (t.status <> 'N/A'::public.task_status)), (0)::numeric) = (0)::numeric) THEN 100
+            ELSE (round(((sum((t.weight * (t.progress)::numeric)) FILTER (WHERE (t.status <> 'N/A'::public.task_status)) / sum((t.weight * (100)::numeric)) FILTER (WHERE (t.status <> 'N/A'::public.task_status))) * (100)::numeric)))::integer
+        END AS value
+   FROM (public.robots r
+     LEFT JOIN public.tasks t ON (((t.robot_id = r.id) AND (t.workspace_id = r.workspace_id) AND (t.deleted_at IS NULL))))
+  GROUP BY r.id, r.workspace_id;
+
+
+--
+-- Name: cell_weighted_progress; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW public.cell_weighted_progress WITH (security_invoker='true') AS
+ SELECT c.id AS cell_id,
+    c.workspace_id,
+    (COALESCE(round(avg(rwp.value)), (0)::numeric))::integer AS value
+   FROM ((public.cells c
+     LEFT JOIN public.robots r ON (((r.cell_id = c.id) AND (r.workspace_id = c.workspace_id))))
+     LEFT JOIN public.robot_weighted_progress rwp ON (((rwp.robot_id = r.id) AND (rwp.workspace_id = c.workspace_id))))
+  GROUP BY c.id, c.workspace_id;
 
 
 --
@@ -367,40 +453,31 @@ CREATE TABLE public.projects (
     workspace_id uuid NOT NULL,
     name text NOT NULL,
     "position" integer NOT NULL,
-    progress_cache jsonb DEFAULT '{}'::jsonb NOT NULL,
+    progress_cache smallint DEFAULT 0 NOT NULL,
     progress_cached_at timestamp with time zone,
     lock_version integer DEFAULT 0 NOT NULL,
     updated_by_person_id uuid,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT chk_projects_name CHECK (((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 120)))
+    CONSTRAINT chk_projects_name CHECK (((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 120))),
+    CONSTRAINT chk_projects_progress_cache CHECK (((progress_cache >= 0) AND (progress_cache <= 100)))
 );
 
 ALTER TABLE ONLY public.projects FORCE ROW LEVEL SECURITY;
 
 
 --
--- Name: robots; Type: TABLE; Schema: public; Owner: -
+-- Name: project_weighted_progress; Type: VIEW; Schema: public; Owner: -
 --
 
-CREATE TABLE public.robots (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    workspace_id uuid NOT NULL,
-    cell_id uuid NOT NULL,
-    name text NOT NULL,
-    application text DEFAULT 'Misto / Geral'::text NOT NULL,
-    "position" integer NOT NULL,
-    progress_cache jsonb DEFAULT '{}'::jsonb NOT NULL,
-    progress_cached_at timestamp with time zone,
-    lock_version integer DEFAULT 0 NOT NULL,
-    updated_by_person_id uuid,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT chk_robots_application CHECK ((application = ANY (ARRAY['Misto / Geral'::text, 'Solda Ponto'::text, 'Solda MIG'::text, 'Handling'::text, 'Sealing'::text, 'Outros'::text]))),
-    CONSTRAINT chk_robots_name CHECK (((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 120)))
-);
-
-ALTER TABLE ONLY public.robots FORCE ROW LEVEL SECURITY;
+CREATE VIEW public.project_weighted_progress WITH (security_invoker='true') AS
+ SELECT p.id AS project_id,
+    p.workspace_id,
+    (COALESCE(round(avg(cwp.value)), (0)::numeric))::integer AS value
+   FROM ((public.projects p
+     LEFT JOIN public.cells c ON (((c.project_id = p.id) AND (c.workspace_id = p.workspace_id))))
+     LEFT JOIN public.cell_weighted_progress cwp ON (((cwp.cell_id = c.id) AND (cwp.workspace_id = p.workspace_id))))
+  GROUP BY p.id, p.workspace_id;
 
 
 --
@@ -410,6 +487,67 @@ ALTER TABLE ONLY public.robots FORCE ROW LEVEL SECURITY;
 CREATE TABLE public.schema_migrations (
     version character varying NOT NULL
 );
+
+
+--
+-- Name: subtree_raw_completion; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW public.subtree_raw_completion WITH (security_invoker='true') AS
+ SELECT 'robot'::text AS scope_type,
+    r.id AS scope_id,
+    r.workspace_id,
+    (count(t.id) FILTER (WHERE (t.status = 'Concluído'::public.task_status)))::integer AS completed,
+    (count(t.id))::integer AS total,
+        CASE
+            WHEN (count(t.id) = 0) THEN 0
+            ELSE (round((((count(t.id) FILTER (WHERE (t.status = 'Concluído'::public.task_status)))::numeric / (count(t.id))::numeric) * (100)::numeric)))::integer
+        END AS percent
+   FROM (public.robots r
+     LEFT JOIN public.tasks t ON (((t.robot_id = r.id) AND (t.workspace_id = r.workspace_id) AND (t.deleted_at IS NULL))))
+  GROUP BY r.id, r.workspace_id
+UNION ALL
+ SELECT 'cell'::text AS scope_type,
+    c.id AS scope_id,
+    c.workspace_id,
+    (count(t.id) FILTER (WHERE (t.status = 'Concluído'::public.task_status)))::integer AS completed,
+    (count(t.id))::integer AS total,
+        CASE
+            WHEN (count(t.id) = 0) THEN 0
+            ELSE (round((((count(t.id) FILTER (WHERE (t.status = 'Concluído'::public.task_status)))::numeric / (count(t.id))::numeric) * (100)::numeric)))::integer
+        END AS percent
+   FROM ((public.cells c
+     LEFT JOIN public.robots r ON (((r.cell_id = c.id) AND (r.workspace_id = c.workspace_id))))
+     LEFT JOIN public.tasks t ON (((t.robot_id = r.id) AND (t.workspace_id = c.workspace_id) AND (t.deleted_at IS NULL))))
+  GROUP BY c.id, c.workspace_id
+UNION ALL
+ SELECT 'project'::text AS scope_type,
+    p.id AS scope_id,
+    p.workspace_id,
+    (count(t.id) FILTER (WHERE (t.status = 'Concluído'::public.task_status)))::integer AS completed,
+    (count(t.id))::integer AS total,
+        CASE
+            WHEN (count(t.id) = 0) THEN 0
+            ELSE (round((((count(t.id) FILTER (WHERE (t.status = 'Concluído'::public.task_status)))::numeric / (count(t.id))::numeric) * (100)::numeric)))::integer
+        END AS percent
+   FROM (((public.projects p
+     LEFT JOIN public.cells c ON (((c.project_id = p.id) AND (c.workspace_id = p.workspace_id))))
+     LEFT JOIN public.robots r ON (((r.cell_id = c.id) AND (r.workspace_id = p.workspace_id))))
+     LEFT JOIN public.tasks t ON (((t.robot_id = r.id) AND (t.workspace_id = p.workspace_id) AND (t.deleted_at IS NULL))))
+  GROUP BY p.id, p.workspace_id
+UNION ALL
+ SELECT 'workspace'::text AS scope_type,
+    t.workspace_id AS scope_id,
+    t.workspace_id,
+    (count(*) FILTER (WHERE (t.status = 'Concluído'::public.task_status)))::integer AS completed,
+    (count(*))::integer AS total,
+        CASE
+            WHEN (count(*) = 0) THEN 0
+            ELSE (round((((count(*) FILTER (WHERE (t.status = 'Concluído'::public.task_status)))::numeric / (count(*))::numeric) * (100)::numeric)))::integer
+        END AS percent
+   FROM public.tasks t
+  WHERE (t.deleted_at IS NULL)
+  GROUP BY t.workspace_id;
 
 
 --
@@ -476,34 +614,6 @@ CREATE TABLE public.task_templates (
 );
 
 ALTER TABLE ONLY public.task_templates FORCE ROW LEVEL SECURITY;
-
-
---
--- Name: tasks; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.tasks (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    workspace_id uuid NOT NULL,
-    robot_id uuid NOT NULL,
-    cat text NOT NULL,
-    "desc" text NOT NULL,
-    weight numeric DEFAULT 1 NOT NULL,
-    progress smallint DEFAULT 0 NOT NULL,
-    status public.task_status DEFAULT 'Pendente'::public.task_status NOT NULL,
-    "position" integer NOT NULL,
-    lock_version integer DEFAULT 0 NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    deleted_at timestamp with time zone,
-    CONSTRAINT chk_tasks_cat CHECK (((length(btrim(cat)) >= 1) AND (length(btrim(cat)) <= 120))),
-    CONSTRAINT chk_tasks_desc CHECK (((length(btrim("desc")) >= 1) AND (length(btrim("desc")) <= 200))),
-    CONSTRAINT chk_tasks_progress CHECK (((progress >= 0) AND (progress <= 100))),
-    CONSTRAINT chk_tasks_weight CHECK ((weight > (0)::numeric)),
-    CONSTRAINT tasks_done_implies_full CHECK (((status <> 'Concluído'::public.task_status) OR (progress = 100)))
-);
-
-ALTER TABLE ONLY public.tasks FORCE ROW LEVEL SECURITY;
 
 
 --
@@ -833,6 +943,13 @@ ALTER TABLE ONLY public.workspaces
 --
 
 CREATE UNIQUE INDEX idx_memberships_one_per_invitation ON public.memberships USING btree (invitation_id) WHERE (invitation_id IS NOT NULL);
+
+
+--
+-- Name: idx_tasks_ws_robot_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_tasks_ws_robot_status ON public.tasks USING btree (workspace_id, robot_id, status) WHERE (deleted_at IS NULL);
 
 
 --
@@ -1576,6 +1693,8 @@ ALTER TABLE public.workspaces ENABLE ROW LEVEL SECURITY;
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260722120002'),
+('20260722120001'),
 ('20260721160005'),
 ('20260721160004'),
 ('20260721160003'),

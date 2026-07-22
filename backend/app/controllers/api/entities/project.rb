@@ -3,8 +3,8 @@
 module Api
   module Entities
     # commissioning-hierarchy 4.4 (§1.4, D-H11) — leitura tolerante é do
-    # SERVIDOR: `cells` é sempre array (nunca null) e o cache vazio vira
-    # `{weighted: 0, done: 0, total: 0}` — a tela nunca sabe que existe cache.
+    # SERVIDOR: `cells` é sempre array (nunca null). O progresso ponderado sai no
+    # envelope rotulado de progress-rollup (D15), lendo `progress_cache` smallint.
     class Project < Grape::Entity
       expose :id
       expose :name
@@ -13,8 +13,8 @@ module Api
       expose :updated_at
       expose :updated_by_person_id
 
-      expose :progress do |project, _|
-        { 'weighted' => 0, 'done' => 0, 'total' => 0 }.merge(project.progress_cache || {})
+      expose :weighted_progress do |project, _|
+        ProgressMetric.weighted(project.progress_cache)
       end
 
       expose :cells, using: Api::Entities::Cell do |project, _|

@@ -35,7 +35,10 @@ RSpec.describe 'CRUD da hierarquia', :tenancy, type: :request do
       body = JSON.parse(response.body)
       vazio = body.find { |p| p['name'] == 'Vazio' }
       expect(vazio['cells']).to eq([])
-      expect(vazio['progress']).to eq('weighted' => 0, 'done' => 0, 'total' => 0)
+      # progress-rollup (EXECUCAO decisão 1): `progress_cache` virou smallint (só o
+      # ponderado) e a entity expõe o envelope rotulado D15, não mais o jsonb.
+      expect(vazio['weighted_progress']).to eq('value' => 0, 'metric' => 'weighted', 'label' => 'Progresso ponderado')
+      expect(vazio).not_to have_key('progress')
 
       cheio = body.find { |p| p['name'] == 'Linha 1' }
       expect(cheio['cells'].first['robots'].first['tasks']).to eq([])

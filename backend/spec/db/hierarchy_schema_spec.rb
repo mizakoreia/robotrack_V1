@@ -59,11 +59,14 @@ RSpec.describe 'Esquema da hierarquia de comissionamento' do
         expect(policies).to eq(1)
       end
 
-      it 'tem progress_cache jsonb NOT NULL default {} e progress_cached_at (D5/D-H7)' do
+      it 'tem progress_cache smallint NOT NULL default 0 e progress_cached_at (D5)' do
+        # progress-rollup (EXECUCAO decisão 1) converteu o jsonb '{}' provisório
+        # para smallint (só o ponderado; a crua não é cacheada, D5.e). A forma
+        # completa é verificada em progress_cache_schema_spec.
         cache = self.class.coluna(conn, tabela, 'progress_cache')
-        expect(cache['data_type']).to eq('jsonb')
+        expect(cache['data_type']).to eq('smallint')
         expect(cache['is_nullable']).to eq('NO')
-        expect(cache['column_default']).to include("'{}'")
+        expect(cache['column_default']).to eq('0')
         expect(self.class.coluna(conn, tabela, 'progress_cached_at')).not_to be_nil
       end
 
