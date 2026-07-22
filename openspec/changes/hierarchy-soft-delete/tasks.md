@@ -31,17 +31,17 @@ quatro views e a cascata de cache).
 
 ## 2. Cascade de soft-delete e conversão do `CrudService`
 
-- [ ] 2.1 `Hierarchy::SoftDeleteService.call(record:)` que, numa transação, arquiva a
+- [x] 2.1 `Hierarchy::SoftDeleteService.call(record:)` que, numa transação, arquiva a
   subárvore de baixo para cima (`tasks` → `robots` → `cells` → o nó) via `update_all(deleted_at:
   now, position: nil)` filtrando `where(deleted_at: nil)` em cada nível (não reescreve o
   carimbo de quem já estava arquivado), respeitando o escopo de workspace/RLS. Aceita
   `Project`, `Cell` ou `Robot`. (D3 — arquivar projeto marca célula/robô/tarefa; nenhum
   `task_advances` some)
-- [ ] 2.2 Converter `Hierarchy::CrudService#destroy` para chamar `SoftDeleteService.call`
+- [x] 2.2 Converter `Hierarchy::CrudService#destroy` para chamar `SoftDeleteService.call`
   em vez de `record.destroy!`, mantendo `audit_destroy!` e `cascade_after_destroy` (recompute
   do pai) na MESMA transação e o retorno `204`. (D4 — o robô com avanços que hoje dá 500
   passa a responder 204; o progresso do pai é recalculado excluindo a subárvore)
-- [ ] 2.3 **Verificação:** spec de serviço/request que exclui um robô COM avanços e prova
+- [x] 2.3 **Verificação:** spec de serviço/request que exclui um robô COM avanços e prova
   `204` + robô com `deleted_at` + `task_advances` intactos + robô ausente do overview da
   célula + progresso da célula recalculado; e um caso de exclusão de projeto que arquiva a
   subárvore inteira. Incluir cenário cross-tenant → `404` sem arquivar a linha alheia.

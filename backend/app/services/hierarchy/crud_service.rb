@@ -69,8 +69,13 @@ module Hierarchy
 
       model.transaction do
         audit_destroy!(record)
-        parent = destroy_parent_ref(record) # capturar ANTES de destruir
-        record.destroy!
+        parent = destroy_parent_ref(record) # capturar ANTES de arquivar
+        # hierarchy-soft-delete D4 — SOFT-delete, não `destroy!`. A trilha de
+        # avanços é imutável e trava as tarefas com FK ON DELETE RESTRICT; um
+        # DELETE físico de robô/projeto com avanços daria 500. Arquivar a subárvore
+        # (auditoria + recompute do pai na MESMA transação) preserva a trilha e o
+        # contrato 204. O recompute lê as views, que já excluem o arquivado.
+        SoftDeleteService.call(record: record)
         cascade_after_destroy(parent) # progress-rollup 2.4
       end
       success_response({}, 204)
