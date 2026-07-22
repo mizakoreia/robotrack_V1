@@ -10,27 +10,27 @@ require 'rails_helper'
 # do pano fora dos writers abençoados, ou abrir `without_cascade` sem fechar com
 # `BulkRecompute`, o CI reprova nomeando arquivo e linha.
 RSpec.describe 'Fronteira de escrita do progresso (D5.b)', type: :model do
-  APP = Rails.root.join('app')
+  PWB_APP = Rails.root.join('app')
 
   def self.rb_files
-    Dir[APP.join('**/*.rb')]
+    Dir[PWB_APP.join('**/*.rb')]
   end
 
   # Escritas de `progress_cache`: atribuição, chave de hash de update, ou SQL SET.
   # Leituras (`record.progress_cache`, `x.progress_cache)`) não casam.
-  CACHE_WRITE = /progress_cache\s*(=[^=]|:)|SET\s+progress_cache/i
+  PWB_CACHE_WRITE = /progress_cache\s*(=[^=]|:)|SET\s+progress_cache/i
   # Só `app/services/progress/` pode escrever o cache.
-  PROGRESS_DIR = %r{/app/services/progress/}
+  PWB_PROGRESS_DIR = %r{/app/services/progress/}
 
   it 'nenhum arquivo fora de app/services/progress/ escreve progress_cache' do
     ofensores = []
     self.class.rb_files.each do |file|
-      next if file.match?(PROGRESS_DIR)
+      next if file.match?(PWB_PROGRESS_DIR)
 
       File.readlines(file).each_with_index do |linha, i|
         next if linha.strip.start_with?('#')
 
-        ofensores << "#{file.sub(APP.to_s, 'app')}:#{i + 1}" if linha.match?(CACHE_WRITE)
+        ofensores << "#{file.sub(PWB_APP.to_s, 'app')}:#{i + 1}" if linha.match?(PWB_CACHE_WRITE)
       end
     end
     expect(ofensores).to be_empty,
@@ -40,18 +40,18 @@ RSpec.describe 'Fronteira de escrita do progresso (D5.b)', type: :model do
   # `tasks.progress/status/weight` só podem ser mutados por baixo do pano
   # (`update_column(s)`, `update_all`, SQL SET) nos writers abençoados. Um
   # importador novo com `update_column(:progress, …)` cai aqui.
-  BLESSED = %r{/app/services/(tasks|task_advances|robots|progress)/}
-  RAW_TASK_WRITE = /update_columns?\(\s*:?(progress|status|weight)\b|update_all\(.*\b(progress|status|weight)\s*:|SET\s+(progress|status|weight)\b/i
+  PWB_BLESSED = %r{/app/services/(tasks|task_advances|robots|progress)/}
+  PWB_RAW_TASK_WRITE = /update_columns?\(\s*:?(progress|status|weight)\b|update_all\(.*\b(progress|status|weight)\s*:|SET\s+(progress|status|weight)\b/i
 
   it 'tasks.progress/status/weight só são mutados via os services abençoados' do
     ofensores = []
     self.class.rb_files.each do |file|
-      next if file.match?(BLESSED)
+      next if file.match?(PWB_BLESSED)
 
       File.readlines(file).each_with_index do |linha, i|
         next if linha.strip.start_with?('#')
 
-        ofensores << "#{file.sub(APP.to_s, 'app')}:#{i + 1}" if linha.match?(RAW_TASK_WRITE)
+        ofensores << "#{file.sub(PWB_APP.to_s, 'app')}:#{i + 1}" if linha.match?(PWB_RAW_TASK_WRITE)
       end
     end
     expect(ofensores).to be_empty,
@@ -67,7 +67,7 @@ RSpec.describe 'Fronteira de escrita do progresso (D5.b)', type: :model do
       conteudo = File.read(file)
       next unless conteudo.include?('without_cascade')
 
-      ofensores << file.sub(APP.to_s, 'app') unless conteudo.include?('BulkRecompute')
+      ofensores << file.sub(PWB_APP.to_s, 'app') unless conteudo.include?('BulkRecompute')
     end
     expect(ofensores).to be_empty,
                          "without_cascade sem BulkRecompute no mesmo arquivo (D5.c):\n#{ofensores.join("\n")}"
