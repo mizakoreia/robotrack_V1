@@ -9,13 +9,13 @@
 
 ## 2. Cache: cascata em transação
 
-- [ ] 2.1 Implementar `Progress::CascadeRecompute.call(robot_id:)` com 3 `UPDATE ... FROM` em ordem fixa robô → célula → projeto, `ORDER BY id` dentro de cada statement. (§D5 — dois avanços concorrentes em tarefas do mesmo robô serializam sem deadlock; teste com duas threads e `advisory` de barreira)
-- [ ] 2.2 Ligar `CascadeRecompute` à transação do avanço de `progress-advances`, sem transação aninhada própria. (§2.4 — rollback por conflito de `lock_version` (409) deixa os três `progress_cache` nos valores anteriores, não adiantados)
-- [ ] 2.3 Ligar `CascadeRecompute` ao CRUD de tarefa de `robot-tasks` (criar, excluir, alterar peso, alterar status). (§2.1 — excluir a última tarefa `Concluído` de um robô leva o cache de 100 para 0, não deixa 100)
-- [ ] 2.4 Ligar `CascadeRecompute` ao CRUD e ao mover de `commissioning-hierarchy`, recalculando **as duas** células ao mover um robô. (§2.9 — mover robô de ponderado 100 de `C1` para `C2` deixa `C1` em 0 e `C2` em 75; a célula de origem não fica com o valor velho)
-- [ ] 2.5 Implementar `Progress.without_cascade` (flag de thread) e `Progress::BulkRecompute.call(workspace_id:)` em 3 `UPDATE` set-based. (§1.4 — criar 50 robôs × 31 tarefas invoca `CascadeRecompute` 0 vez e `BulkRecompute` 1 vez)
-- [ ] 2.6 Escrever o sweep spec que falha se qualquer arquivo fora de `app/services/progress/` escrever em `tasks.progress`, `tasks.status`, `tasks.weight` ou `*.progress_cache`, e se algum bloco `without_cascade` não terminar em `BulkRecompute`. (§D5 — um `update_column(:progress, …)` novo num service de importação falha o CI nomeando arquivo e linha)
-- [ ] 2.7 Teste de integração de ponta a ponta da cascata: avanço 0 → 100 numa tarefa e asserção dos três níveis no mesmo commit, mais leitura concorrente vendo os valores antigos antes do commit. (§2.1 — leitura em outra conexão durante a transação não enxerga o valor novo)
+- [x] 2.1 Implementar `Progress::CascadeRecompute.call(robot_id:)` com 3 `UPDATE ... FROM` em ordem fixa robô → célula → projeto, `ORDER BY id` dentro de cada statement. (§D5 — dois avanços concorrentes em tarefas do mesmo robô serializam sem deadlock; teste com duas threads e `advisory` de barreira)
+- [x] 2.2 Ligar `CascadeRecompute` à transação do avanço de `progress-advances`, sem transação aninhada própria. (§2.4 — rollback por conflito de `lock_version` (409) deixa os três `progress_cache` nos valores anteriores, não adiantados)
+- [x] 2.3 Ligar `CascadeRecompute` ao CRUD de tarefa de `robot-tasks` (criar, excluir, alterar peso, alterar status). (§2.1 — excluir a última tarefa `Concluído` de um robô leva o cache de 100 para 0, não deixa 100)
+- [x] 2.4 Ligar `CascadeRecompute` ao CRUD e ao mover de `commissioning-hierarchy`, recalculando **as duas** células ao mover um robô. (§2.9 — mover robô de ponderado 100 de `C1` para `C2` deixa `C1` em 0 e `C2` em 75; a célula de origem não fica com o valor velho)
+- [x] 2.5 Implementar `Progress.without_cascade` (flag de thread) e `Progress::BulkRecompute.call(workspace_id:)` em 3 `UPDATE` set-based. (§1.4 — criar 50 robôs × 31 tarefas invoca `CascadeRecompute` 0 vez e `BulkRecompute` 1 vez)
+- [x] 2.6 Escrever o sweep spec que falha se qualquer arquivo fora de `app/services/progress/` escrever em `tasks.progress`, `tasks.status`, `tasks.weight` ou `*.progress_cache`, e se algum bloco `without_cascade` não terminar em `BulkRecompute`. (§D5 — um `update_column(:progress, …)` novo num service de importação falha o CI nomeando arquivo e linha)
+- [x] 2.7 Teste de integração de ponta a ponta da cascata: avanço 0 → 100 numa tarefa e asserção dos três níveis no mesmo commit, mais leitura concorrente vendo os valores antigos antes do commit. (§2.1 — leitura em outra conexão durante a transação não enxerga o valor novo)
 
 ## 3. Leitura, envelopes e orçamento de query
 

@@ -38,14 +38,20 @@ module Robots
       templates = applicable_templates(application)
 
       ActiveRecord::Base.transaction do
-        ::Robot.lock_position_scope!(cell_id)
-        robot_rows = build_robot_rows(normalized, cell_id, workspace_id, application)
-        ::Robot.insert_all!(robot_rows)
+        # progress-rollup 2.5 — o caminho em massa suprime a cascata por linha
+        # (50 robôs × 31 tarefas seriam até 1.550 recálculos) e recalcula o
+        # workspace inteiro em 3 statements antes do commit.
+        ::Progress.without_cascade do
+          ::Robot.lock_position_scope!(cell_id)
+          robot_rows = build_robot_rows(normalized, cell_id, workspace_id, application)
+          ::Robot.insert_all!(robot_rows)
 
-        task_rows = build_task_rows(robot_rows, templates, workspace_id)
-        ::Task.insert_all!(task_rows) if task_rows.any?
+          task_rows = build_task_rows(robot_rows, templates, workspace_id)
+          ::Task.insert_all!(task_rows) if task_rows.any?
 
-        @created = robot_rows
+          @created = robot_rows
+        end
+        ::Progress::BulkRecompute.call(workspace_id: workspace_id)
       end
 
       success_response(
