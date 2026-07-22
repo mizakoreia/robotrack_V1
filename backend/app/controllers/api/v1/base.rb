@@ -31,6 +31,9 @@ module Api
       # Tarefas do robô (robot-tasks 3.1–3.6)
       mount Api::V1::Tasks
 
+      # Recálculo manual do progresso (progress-rollup 4.5)
+      mount Api::V1::ProgressEndpoint
+
       # Criação de robôs em lote (robot-tasks 5.5)
       mount Api::V1::RobotBatches
 
