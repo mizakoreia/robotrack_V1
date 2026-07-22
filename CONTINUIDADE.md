@@ -15,23 +15,35 @@ main (48497fd)                       ← ondas 1–4, sem nada desta sessão
             └── robot-tasks                 change COMPLETA — 6 de 6 grupos
                 └── progress-advances        change COMPLETA — 6 de 6 grupos
                     └── progress-rollup          change COMPLETA — 6 de 6 grupos
-                        └── design-system                     change COMPLETA — 8 de 8 grupos
-                            └── app-shell-navigation (atual)  change COMPLETA — 6 de 6 grupos
+                        └── design-system                  change COMPLETA — 8 de 8 grupos
+                            └── app-shell-navigation       change COMPLETA — 6 de 6 grupos
+                                └── hierarchy-screens (atual)  change COMPLETA — 7 de 7 grupos
 ```
 
-**A branch atual contém todo o trabalho** (`app-shell-navigation` empilhada sobre
-`design-system`; é frontend-only). É nela que se continua. Push por branch canônica
-(`git push origin HEAD:app-shell-navigation`). Os PRs para a `main` podem ser abertos
+**A branch atual contém todo o trabalho** (`hierarchy-screens` empilhada sobre
+`app-shell-navigation`; full-stack). É nela que se continua. Push por branch canônica
+(`git push origin HEAD:hierarchy-screens`). Os PRs para a `main` podem ser abertos
 depois, na ordem do empilhamento.
 
-## Suítes (medidas na branch `app-shell-navigation`)
+## Suítes (medidas na branch `hierarchy-screens`)
 
 | Suíte | Resultado |
 |---|---|
-| Backend `bundle exec rspec` (como `robotrack_app`, `--seed 12345`) | **933 / 0 falhas / 9 pending** |
-| Frontend `vitest run` | **221 / 0** |
+| Backend `bundle exec rspec` (como `robotrack_app`, `--seed 12345`) | baseline **933/0/9pending** + specs novos de hierarchy-screens **49/0** (contrato+overview+busca+cross-tenant) |
+| Frontend `vitest run` | **231 / 0** |
 | Frontend `tsc --noEmit` | limpo |
-| Frontend `pnpm build` | limpo — bundle principal 388kB |
+| Frontend `pnpm build` | limpo |
+
+> **Provisionamento do banco (container efêmero — refazer a cada sessão):**
+> `service postgresql start`; como `postgres` superuser criar `robotrack_user`
+> (SUPERUSER) + os bancos `robotrack_dev`/`robotrack_test` + aplicar `db/roles.sql`
+> nos dois; `PATH=/opt/rbenv/shims:$PATH` para ruby 3.2.3 (o `/usr/local/bin/ruby`
+> 3.3 sombreia). O schema já vem carregado (session-start hook). Detalhes em
+> `backend/db/PROVISIONING.md`.
+>
+> **Screenshots das telas** (sem backend): `pnpm dev` + Playwright global
+> (`/opt/node22/lib/node_modules/playwright`) interceptando a API — o harness está em
+> `scratchpad/shot.mjs` (semeia sessão+workspace no localStorage, mocka os overviews).
 
 > Lição desta change: constantes definidas dentro de `RSpec.describe do … end`
 > VAZAM para o topo (Object). Dois specs com `ALLOWLIST`/`ENVELOPES`/`APP` colidem
@@ -46,7 +58,7 @@ destravaram e viraram verdes ao longo de `robot-tasks`.)
 > suíte completa (estado do Rack::Attack sensível à ordem aleatória do RSpec);
 > passa isolado. Não é regressão desta sessão. Rodar com `--seed` fixo estabiliza.
 
-## Changes concluídas (12 de 24)
+## Changes concluídas (13 de 24)
 
 `seal-template-baseline`, `workspace-tenancy`, `identity-and-auth`,
 `workspace-invitations` (anteriores) e:
@@ -138,23 +150,39 @@ destravaram e viraram verdes ao longo de `robot-tasks`.)
   autenticada (landing do template → `/apresentacao`); telas de destino são STUBS
   (`hierarchy-screens`/`my-tasks-view`/`commissioning-report` as preenchem); sem página do
   template em React Query para migrar (6.3 = verificar + ligar o guard).
+- **`hierarchy-screens`** (G0..G7, COMPLETA, full-stack, Onda 7) — as três telas de navegação
+  (Visão Geral, Projeto, Célula) + a busca. O CORAÇÃO é D15: as DUAS métricas na mesma dobra —
+  hub = contagem crua §3.2, anel = ponderado §2.1 — com nomes SEPARADOS na API (`raw_completion`
+  vs `weighted_progress`, nunca `progress`) e teste sobre a fixture DIVERGENTE (ponderado 40 ≠
+  crua 25, provado sob a fórmula SQL real). Backend: 3 services agregadores (`Hierarchy::
+  *OverviewService`, ≤3 queries constantes em N, lendo `progress_cache`), a Visão Geral estende o
+  `/projects/overview` de progress-rollup (aditivo), busca server-side (`ILIKE` escapado,
+  `path_label` de locale, escopo por RLS), entities-contrato + scanner anti-`progress`, isolamento
+  cross-tenant 404 nos 3 endpoints. Frontend: OverviewPage/ProjectPage/CellPage (hub + grade +
+  vazio/carregando/erro), CRUD de célula ligado ao overview, "adicionar robôs" (assistente de
+  robot-tasks), busca com debounce/flush/keepPreviousData substituindo a visão pelo termo, E2E de
+  navegação. **Divergências:** rotas pt-BR sem `:wsId` (tenant pelo header); overviews ganharam
+  `id`/`name`/`lock_version` (cabeçalho + renomear); peso da fixture 2:1 (o texto dizia 5, que dá
+  63 na fórmula real — usei o que bate o alvo 40 que a tarefa 4.6 asserta). Robô (`/robo/:id`) é de
+  `robot-task-table` — aqui só navego para lá.
 
 Cada change tem seu `openspec/changes/<nome>/EXECUCAO.md` com o mapa de grupos, as
 decisões tomadas na execução, as armadilhas encontradas e a CONCLUSÃO com o relatório
 final. **Leia o EXECUCAO.md antes de tocar no código de uma change.**
 
-## Onde parou: `app-shell-navigation` COMPLETA; a moldura e as convenções fechadas
+## Onde parou: `hierarchy-screens` COMPLETA; as três telas de navegação + busca
 
-Fechou (6/6 grupos) — ver `openspec/changes/app-shell-navigation/EXECUCAO.md`. A
-moldura permanente existe (AppShell: sidebar/topbar/gaveta, contexto de workspace,
-menus em portal) E as convenções que desbloqueiam as telas: D9 (React Query padrão,
-factory `qk.*`, guard ligado no `main.tsx`), a barreira CLIENTE de vazamento
-(`switchWorkspace` = `clear()` na troca), o contrato do indicador de gravação
-(`persistenceStore`), e o sweep de convenção no CI. Tudo testado (221 testes frontend).
+Fechou (7/7 grupos) — ver `openspec/changes/hierarchy-screens/EXECUCAO.md`. As telas
+Visão Geral / Projeto / Célula existem e navegam ponta a ponta, com as DUAS métricas
+lado a lado (hub cru vs anel ponderado, D15) provadas por teste sobre a fixture
+divergente. Backend: 3 endpoints agregados (≤3 queries), busca server-side, isolamento
+404. Frontend: hub+grade+estados, CRUD de célula, assistente de robôs, busca. Testado
+(frontend 231/0, backend da change 49/0). Os stubs `OverviewPage` estão preenchidos; a
+rota do robô (`/robo/:id`) ainda é STUB — é `robot-task-table`.
 
-**Antes:** `design-system` (COMPLETA, 8/8) — a base visual: token set único (dois
-temas), contraste medido no CI, tipografia, ícones, empilhamento, tema (dark default),
-9+ primitivos em `components/ui/`, luz ambiente, dívida do template removida.
+**Antes:** `app-shell-navigation` (COMPLETA, 6/6) — a moldura permanente (AppShell,
+menus em portal) + as convenções D9 (factory `qk.*`, guard, barreira de vazamento na
+troca de workspace, contrato do indicador de gravação, sweep de convenção).
 
 **Pendências conhecidas (documentadas, não atribuídas):**
 - **design-system:** `tokens-campfire.css` + aliases shadcn seguem no repo (só vars
@@ -173,30 +201,27 @@ temas), contraste medido no CI, tipografia, ícones, empilhamento, tema (dark de
 - `<ProgressRing>`/`<MetricStat>` existem (progress-rollup 6.2) mas a TELA que os
   monta (Visão Geral, hubs, cards) é de `hierarchy-screens`.
 
-**Próximo passo — as telas de conteúdo.** O backend do núcleo (hierarquia + tarefas +
-avanços + rollup), a base visual (`design-system`) e agora a moldura + convenções
-(`app-shell-navigation`) estão fechados. Falta preencher os STUBS de destino. Ver abaixo.
+**Próximo passo — `robot-task-table`.** Toda a navegação até o robô existe; falta a
+TELA OPERACIONAL do robô (a tabela de tarefas). Ver abaixo.
 
-## Depois de `app-shell-navigation` — as telas de conteúdo
+## Depois de `hierarchy-screens` — as telas restantes
 
-A moldura e os contratos estão prontos. O caminho: **`hierarchy-screens`** (árvore de
-projetos/células/robôs, Visão Geral com os anéis/hubs de `progress-rollup` — consome os
-envelopes rotulados e os primitivos `EntityCard`/`Hub`/`ProgressRing`; preenche o stub
-`OverviewPage`) → **`robot-task-table`** (a tabela do robô: CONSOME `progress-advances` —
-reusa `<AdvanceControls>`, aviso "trilha faltando" com `advances_count` — e
-`progress-rollup` — os envelopes). Também `my-tasks-view` (preenche `MyTasksPage`),
-`workspace-settings`, `commissioning-report` (preenche `ReportPage`).
+Próxima: **`robot-task-table`** (a tabela do robô, destino do "Abrir"/rota `/robo/:id`
+que hoje é STUB): CONSOME `progress-advances` (reusa `features/advances/` —
+`<AdvanceControls>`, aviso "trilha faltando" com `advances_count`) e `progress-rollup`
+(os envelopes rotulados). Depois: `my-tasks-view` (preenche o stub `MyTasksPage`),
+`workspace-settings`, `commissioning-report` (preenche `ReportPage`), `realtime-collaboration`
+(D6 — invalida as keys `['ws',wsId,'overview'|'project'|'cell'|…]` que hierarchy-screens já
+declara), `offline-pwa`.
 
-Ao montar telas, **use as convenções de `app-shell-navigation`**: leituras via hooks em
-`features/<dominio>/api/` com a factory `qk.*` (o guard reprova key fora de `['ws', wsId, …]`);
-mutations invalidam a chave ESPECÍFICA, nunca o tenant inteiro; nada de `createPortal` fora de
-`components/menu/`; o indicador de gravação lê `persistenceStore`. Comece por
-**`hierarchy-screens`** (maior valor, contratos prontos via HANDOFFs). Leia o
-`proposal.md`/`design.md` e escreva o `EXECUCAO.md` (G0) antes de qualquer código.
-**Nota:** ao montar telas, MIGRE as classes shadcn (`bg-primary`, `text-muted-foreground`…)
-para os papéis (`bg-accent`, `text-text-muted`) e então remova os aliases +
-`tokens-campfire.css` (a parte adiada do G8 do design-system). E `/` agora é a Visão Geral
-autenticada — a landing do template ficou em `/apresentacao` (dívida do `seal-template-baseline`).
+Ao montar telas, **use as convenções já vigentes**: leituras via hooks em `features/<dominio>/`
+com a factory `qk.*` (o guard reprova key fora de `['ws', wsId, …]`); as telas (em `app/`) NÃO
+importam `lib/api` direto — os DTOs vêm reexportados pela feature; mutations invalidam a chave
+ESPECÍFICA (incl. o overview do nível), nunca o tenant inteiro; `createPortal` só em
+`components/menu/`. Escreva o `EXECUCAO.md` (G0) antes de qualquer código. **Nota:** ao montar
+telas, MIGRE as classes shadcn (`bg-primary`…) para os papéis (`bg-accent`…) e então remova os
+aliases + `tokens-campfire.css` (parte adiada do G8 do design-system). `/` é a Visão Geral
+autenticada; a landing do template ficou em `/apresentacao` (dívida do `seal-template-baseline`).
 
 ## Método (não abrir mão)
 
@@ -255,23 +280,23 @@ O frontend usa **pnpm** (`pnpm-lock.yaml`); o `package-lock.json` está dessincr
 >
 > Leia `CONTINUIDADE.md` na raiz do repositório: ele tem o estado atual, o que já foi
 > entregue, onde parei e o método de trabalho. `robot-tasks`, `task-catalog`,
-> `progress-advances`, `progress-rollup`, `design-system` e `app-shell-navigation` estão
-> COMPLETAS (leia os EXECUCAO.md delas). Todo o BACKEND do núcleo (hierarquia, tarefas,
-> catálogo, avanços, progresso consolidado), a BASE VISUAL (design-system) e a MOLDURA +
-> CONVENÇÕES (app-shell-navigation: AppShell, D9/factory de keys + guard, barreira de
-> vazamento na troca de workspace) estão fechados de ponta a ponta.
+> `progress-advances`, `progress-rollup`, `design-system`, `app-shell-navigation` e
+> `hierarchy-screens` estão COMPLETAS (leia os EXECUCAO.md delas). Todo o BACKEND do núcleo,
+> a BASE VISUAL, a MOLDURA + CONVENÇÕES e as TRÊS TELAS DE NAVEGAÇÃO (Visão Geral, Projeto,
+> Célula) + busca estão fechados de ponta a ponta. `/` já é a Visão Geral autenticada.
 >
-> Trabalhe na branch `app-shell-navigation` (as branches são empilhadas; ela contém tudo;
-> é frontend-only). O próximo passo é PREENCHER OS STUBS DE TELA sobre a moldura:
-> `hierarchy-screens` (Visão Geral, stub `OverviewPage`) → `robot-task-table` (+
-> `my-tasks-view` no stub `MyTasksPage`, `workspace-settings`, `commissioning-report` no
-> stub `ReportPage`). Escolha a próxima change, comece pelo `EXECUCAO.md` dela (commit G0)
-> — antes de qualquer código — e faça push por branch canônica (`git push origin
-> HEAD:<change>`). Use as convenções de `app-shell-navigation`: hooks em `features/*/api/`
-> com a factory `qk.*` (o guard reprova key fora de `['ws', wsId, …]`), invalidar chave
-> específica (nunca o tenant inteiro), `createPortal` só em `components/menu/`. Os contratos
-> de dados estão nos `HANDOFF-*.md`; os primitivos de UI em `frontend/src/components/ui/`. Ao
-> montar telas, migre as classes shadcn para os papéis e remova os aliases +
+> Trabalhe na branch `hierarchy-screens` (as branches são empilhadas; ela contém tudo;
+> full-stack). O próximo passo é **`robot-task-table`** — a tela operacional do robô (destino
+> da rota `/robo/:id`, hoje STUB): consome `progress-advances` (reusa `features/advances/`) e
+> `progress-rollup` (envelopes). Depois `my-tasks-view` (stub `MyTasksPage`),
+> `workspace-settings`, `commissioning-report` (stub `ReportPage`), `realtime-collaboration`,
+> `offline-pwa`. Comece pelo `EXECUCAO.md` da change (commit G0) — antes de qualquer código —
+> e faça push por branch canônica (`git push origin HEAD:<change>`). Convenções vigentes:
+> hooks em `features/<dominio>/` com a factory `qk.*` (o guard reprova key fora de
+> `['ws', wsId, …]`), telas em `app/` NÃO importam `lib/api` (DTOs reexportados pela feature),
+> invalidar a chave específica (nunca o tenant inteiro), `createPortal` só em `components/menu/`.
+> Para RODAR/testar: provisione o banco (ver bloco no topo) e use `scratchpad/shot.mjs` p/ prints.
+> Ao montar telas, migre as classes shadcn para os papéis e remova os aliases +
 > `tokens-campfire.css` (a parte adiada do G8 do design-system).
 >
 > Siga o método: um grupo por vez, e ao fim de cada grupo me apresente um resumo e peça
