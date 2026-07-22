@@ -24,6 +24,9 @@ module Api
       mount Api::V1::Cells
       mount Api::V1::Robots
 
+      # Busca da hierarquia (hierarchy-screens 3.1)
+      mount Api::V1::Search
+
       # Catálogo de tarefas-base e metadados (task-catalog 4.2–4.5)
       mount Api::V1::TaskTemplates
       mount Api::V1::Meta

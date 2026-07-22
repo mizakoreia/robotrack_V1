@@ -1,0 +1,11 @@
+pt-BR:
+  hierarchy:
+    search:
+      # hierarchy-screens 3.2 (§3.7, D14) — os rótulos de caminho da busca, montados
+      # NO SERVIDOR com format string versionada. O robô órfão de célula (defensivo:
+      # a FK impede na prática) cai no rótulo curto, nunca "Robô · em  · ".
+      path:
+        project: "Projeto"
+        cell: "Célula · em %{project}"
+        robot: "Robô · em %{cell} · %{project}"
+        robot_orphan: "Robô"
