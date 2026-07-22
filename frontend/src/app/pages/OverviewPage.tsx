@@ -15,6 +15,9 @@ import {
   type WorkspaceOverviewDTO,
 } from '@/features/hierarchy/useOverview'
 import { useCreateProject } from '@/features/hierarchy/useHierarchy'
+import { useSearchQuery } from '@/features/hierarchy/useSearch'
+import { HierarchySearchField } from '@/features/hierarchy/HierarchySearchField'
+import { SearchResults } from '@/features/hierarchy/SearchResults'
 import { useWorkspaceStore } from '@/store/workspaceStore'
 import { qk } from '@/lib/query/keys'
 import { hierarchyText } from '@/lib/i18n/hierarchy'
@@ -31,30 +34,36 @@ export function OverviewPage() {
   const canCreate = role === 'owner' || role === 'edit' // §4.1 — view não cria
   const navigate = useNavigate()
   const [creating, setCreating] = useState(false)
-
-  if (isLoading) return <OverviewSkeleton />
-  if (isError || !data) return <OverviewError onRetry={() => void refetch()} />
-
-  const empty = data.projects.length === 0
+  const { query, setQuery, debounced, flush, clear } = useSearchQuery()
+  // 6.3 (D-E) — visão substituída pelo TERMO derivado, sem flag booleana
+  const isSearching = debounced.trim().length > 0
 
   return (
     <section aria-labelledby="ov-title" className="mx-auto max-w-6xl space-y-6">
-      <div className="flex items-center justify-between gap-3">
-        <h1 id="ov-title" className="title">
-          Visão Geral
-        </h1>
-        {canCreate && !empty && (
-          <Button onClick={() => setCreating(true)}>
-            <Icon name="plus" size="sm" className="mr-1" />
-            {hierarchyText.overview.empty.cta}
-          </Button>
-        )}
-      </div>
+      <h1 id="ov-title" className="title">
+        Visão Geral
+      </h1>
 
-      {empty ? (
+      <HierarchySearchField value={query} onChange={setQuery} onSubmit={flush} onClear={clear} />
+
+      {isSearching ? (
+        <SearchResults query={debounced} onClear={clear} />
+      ) : isLoading ? (
+        <OverviewSkeleton />
+      ) : isError || !data ? (
+        <OverviewError onRetry={() => void refetch()} />
+      ) : data.projects.length === 0 ? (
         <OverviewEmpty canCreate={canCreate} onCreate={() => setCreating(true)} />
       ) : (
         <>
+          <div className="flex items-center justify-end">
+            {canCreate && (
+              <Button onClick={() => setCreating(true)}>
+                <Icon name="plus" size="sm" className="mr-1" />
+                {hierarchyText.overview.empty.cta}
+              </Button>
+            )}
+          </div>
           <OverviewHub counts={data.counts} raw={data.raw_completion} />
           {/* legenda única da grade (D-B): o anel não repete rótulo por card */}
           <p className="label-sm text-text-muted">Anéis: progresso ponderado por peso de tarefa</p>
