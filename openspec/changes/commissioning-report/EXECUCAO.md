@@ -102,6 +102,26 @@ paralela a partir do contrato.
 8. **Quebra de página cortando tarefa/histórico** — `.rpt-task` indivisível; só o teste
    printToPDF (7.5) prova o CSS.
 
+### Decisões tomadas na G1 (registro pós-execução)
+
+- **Não-membro → 403 (não 404, corrigindo o G0)**: NÃO é o gate — é a RESOLUÇÃO DE
+  TENANT (X-Workspace-Id) que barra o não-membro com `workspace_access_denied` ANTES
+  do endpoint. Leak-free (corpo sem nome/contagens). O 404 da spec 1.5 para não-membro
+  não é alcançável neste app; o isolamento (não vazar) está garantido pelo 403. O 404
+  REAL é o do `scope=project` com projeto de outro ws (RLS → find_by nil).
+- **Bind de array em `= ANY($1)`** não casta via `exec_query` (TypeError) → monto a
+  lista de uuids quotada (`ANY(ARRAY[...]::uuid[])`); ids vêm do banco (trusted). Vale
+  p/ `fetch_advances` e `CompletionAuthorship`.
+- **Árvore = 1 query** (LEFT JOINs projetos→células→robôs), montada em Ruby → 5 queries
+  totais (tree, tasks+assignees, advances, status_counts, authorship). Authorship só
+  roda se houver tarefa a 100 (senão 4). Constante em N provado (q1==q8).
+- **Fixture congelada** (`spec/fixtures/reports/commissioning_report.json`) com o shape
+  completo; spec amarra o payload real a ela (mesmas chaves de topo).
+- **Isenção D15 da my-tasks-view**: `MyTaskRow#progress` foi adicionado ao
+  `PME_EXEMPT` do sweep de envelope (progresso de tarefa atômica, como `Task#progress`
+  — não é métrica de rollup). Era a única falha da suíte cheia da my-tasks (1009/1→0).
+- **swagger allowlist** ganhou `/api/v1/commissioning_report`.
+
 ## Protocolo por grupo
 
 Aplicar → backend `rspec` dirigido (0 falhas) e/ou frontend `vitest`+`tsc` (0) → marcar
@@ -113,7 +133,7 @@ suítes ao mesmo tempo (contenção de lock no banco de teste — trava as duas)
 ## Progresso
 
 - [x] G0 — este mapa (commit G0)
-- [ ] G1 — contrato + endpoint (1.1–1.5)
+- [x] G1 — contrato + endpoint (1.1–1.5)
 - [ ] G2 — cabeçalho + carimbo (2.1–2.4)
 - [ ] G3 — metadados + id (3.1–3.3)
 - [ ] G4 — distribuição + glifos (4.1–4.3)

@@ -37,6 +37,9 @@ module Api
       # Minhas Tarefas — a lista pessoal do viewer (my-tasks-view 3.3)
       mount Api::V1::MyTasks
 
+      # Protocolo de Comissionamento (commissioning-report 1.3)
+      mount Api::V1::Reports
+
       # Recálculo manual do progresso (progress-rollup 4.5)
       mount Api::V1::ProgressEndpoint
 

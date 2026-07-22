@@ -9,11 +9,11 @@
 
 ## 1. Contrato do payload e endpoint (bloqueante)
 
-- [ ] 1.1 Definir `Api::Entities::CommissioningReport` com todos os campos derivados (carimbo, id, contagens, árvore, histórico, conclusões, avisos de volume) e publicar uma fixture JSON congelada em `spec/fixtures/reports/commissioning_report.json`, consumida por backend e frontend. (§3.8 — a fixture é o contrato; se um campo derivado faltar, o consumidor teria de calcular, e os grupos paralelos destravariam com o formato errado)
-- [ ] 1.2 Implementar `Reports::CommissioningReportService` no contrato singleton `ApiResponseHandler`, com resolução de escopo `all` / `project` e recusa `400` para qualquer outro valor. (§3.8 — `scope=cell` responde `400`, não silenciosamente `all`)
-- [ ] 1.3 Montar o endpoint `GET /api/v1/workspaces/:workspace_id/commissioning_report` em `api/v1/base.rb` com policy explícita (D3): membro `view`/`edit`/dono emitem; não-membro recebe `404` sem vazar nome nem contagens. (§4.1 inv. 1 — um `GET` com token de outro tenant não pode devolver `403` com o nome do workspace na mensagem)
-- [ ] 1.4 Implementar a montagem em ≤5 queries constantes, com `task_advances` buscado por `task_id = ANY(...)`. (§3.8 — teste de contagem de queries sobre 8 projetos/200 robôs falha se o número crescer com o nº de projetos)
-- [ ] 1.5 **Verificação:** spec de request cobrindo os 4 caminhos de autorização (view → `200`, não-membro → `404`, projeto de outro workspace → `404`, `X-Skip-Auth: 1` → `401`), com o teste de RLS removendo a checagem de aplicação. (§4.1 inv. 1/2 — o `404` cross-tenant tem de vir do banco, não do Ruby)
+- [x] 1.1 Definir `Api::Entities::CommissioningReport` com todos os campos derivados (carimbo, id, contagens, árvore, histórico, conclusões, avisos de volume) e publicar uma fixture JSON congelada em `spec/fixtures/reports/commissioning_report.json`, consumida por backend e frontend. (§3.8 — a fixture é o contrato; se um campo derivado faltar, o consumidor teria de calcular, e os grupos paralelos destravariam com o formato errado)
+- [x] 1.2 Implementar `Reports::CommissioningReportService` no contrato singleton `ApiResponseHandler`, com resolução de escopo `all` / `project` e recusa `400` para qualquer outro valor. (§3.8 — `scope=cell` responde `400`, não silenciosamente `all`)
+- [x] 1.3 Montar o endpoint `GET /api/v1/workspaces/:workspace_id/commissioning_report` em `api/v1/base.rb` com policy explícita (D3): membro `view`/`edit`/dono emitem; não-membro recebe `404` sem vazar nome nem contagens. (§4.1 inv. 1 — um `GET` com token de outro tenant não pode devolver `403` com o nome do workspace na mensagem)
+- [x] 1.4 Implementar a montagem em ≤5 queries constantes, com `task_advances` buscado por `task_id = ANY(...)`. (§3.8 — teste de contagem de queries sobre 8 projetos/200 robôs falha se o número crescer com o nº de projetos)
+- [x] 1.5 **Verificação:** spec de request cobrindo os 4 caminhos de autorização (view → `200`, não-membro → `404`, projeto de outro workspace → `404`, `X-Skip-Auth: 1` → `401`), com o teste de RLS removendo a checagem de aplicação. (§4.1 inv. 1/2 — o `404` cross-tenant tem de vir do banco, não do Ruby)
 
 ## 2. Cabeçalho e carimbo
 
