@@ -134,7 +134,7 @@ suítes ao mesmo tempo (contenção de lock no banco de teste — trava as duas)
 
 - [x] G0 — este mapa (commit G0)
 - [x] G1 — contrato + endpoint (1.1–1.5)
-- [ ] G2 — cabeçalho + carimbo (2.1–2.4)
+- [x] G2 — cabeçalho + carimbo (2.1–2.4)
 - [ ] G3 — metadados + id (3.1–3.3)
 - [ ] G4 — distribuição + glifos (4.1–4.3)
 - [ ] G5 — corpo + histórico + conclusões (5.1–5.5, 6.1–6.4)
