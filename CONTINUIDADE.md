@@ -15,22 +15,23 @@ main (48497fd)                       ← ondas 1–4, sem nada desta sessão
             └── robot-tasks                 change COMPLETA — 6 de 6 grupos
                 └── progress-advances        change COMPLETA — 6 de 6 grupos
                     └── progress-rollup          change COMPLETA — 6 de 6 grupos
-                        └── design-system (branch atual)  change COMPLETA — 8 de 8 grupos
+                        └── design-system                     change COMPLETA — 8 de 8 grupos
+                            └── app-shell-navigation (atual)  change COMPLETA — 6 de 6 grupos
 ```
 
-**`design-system` contém todo o trabalho** (empilhada sobre `progress-rollup`; é
-frontend-only). É nela que se continua. Push por branch canônica (`git push origin
-HEAD:design-system`). Os PRs para a `main` podem ser abertos depois, na ordem do
-empilhamento.
+**A branch atual contém todo o trabalho** (`app-shell-navigation` empilhada sobre
+`design-system`; é frontend-only). É nela que se continua. Push por branch canônica
+(`git push origin HEAD:app-shell-navigation`). Os PRs para a `main` podem ser abertos
+depois, na ordem do empilhamento.
 
-## Suítes (medidas na branch `design-system`)
+## Suítes (medidas na branch `app-shell-navigation`)
 
 | Suíte | Resultado |
 |---|---|
 | Backend `bundle exec rspec` (como `robotrack_app`, `--seed 12345`) | **933 / 0 falhas / 9 pending** |
-| Frontend `vitest run` | **160 / 0** |
+| Frontend `vitest run` | **221 / 0** |
 | Frontend `tsc --noEmit` | limpo |
-| Frontend `pnpm build` | limpo — bundle principal caiu 591kB→383kB (Recharts/TipTap/Slate fora) |
+| Frontend `pnpm build` | limpo — bundle principal 388kB |
 
 > Lição desta change: constantes definidas dentro de `RSpec.describe do … end`
 > VAZAM para o topo (Object). Dois specs com `ALLOWLIST`/`ENVELOPES`/`APP` colidem
@@ -45,7 +46,7 @@ destravaram e viraram verdes ao longo de `robot-tasks`.)
 > suíte completa (estado do Rack::Attack sensível à ordem aleatória do RSpec);
 > passa isolado. Não é regressão desta sessão. Rodar com `--seed` fixo estabiliza.
 
-## Changes concluídas (11 de 24)
+## Changes concluídas (12 de 24)
 
 `seal-template-baseline`, `workspace-tenancy`, `identity-and-auth`,
 `workspace-invitations` (anteriores) e:
@@ -119,21 +120,41 @@ destravaram e viraram verdes ao longo de `robot-tasks`.)
   ortogonais aos papéis; remoção real quando as telas substituírem as páginas do template —
   EXECUCAO decisão 3/4). HANDOFF de CSP para `delivery-and-observability`. Backup em
   `git tag pre-design-system-cleanup` (local — o proxy rejeita push de tag).
+- **`app-shell-navigation`** (G0..G6, COMPLETA, frontend-only, Onda 2) — a moldura permanente
+  e as convenções que DESBLOQUEIAM as seis telas. Fundação D9: defaults do QueryClient
+  (staleTime 30s, mutation retry 0), factory tipada de chaves `qk.*` (`['ws', wsId, …]` exige
+  wsId), e o **guard de forma de key** ligado no `main.tsx` (DEV lança, prod reporta; tolera
+  tenant null da query desabilitada). Menu em portal (`#rt-overlays`, fixed, medição prévia, 5
+  gatilhos de fechamento, teclado virtual, a11y). `AppShell` envolve toda a área autenticada
+  (sidebar de 3 destinos por preenchimento tintado — nunca faixa lateral; rodapé com card de
+  usuário + indicador de gravação; topbar com contexto de workspace e menu da conta; gaveta
+  <768px). Contexto de workspace: seletor só com >1 (senão texto estático fora do Tab), papel
+  como **badge** (não select), e `switchWorkspace` = a **barreira CLIENTE contra vazamento**
+  (`cancelQueries` → `clear()` cache inteiro → reset → grava wsId; testes 5.5/5.6 provam que
+  cache quente de um tenant não reaparece após a troca). `persistenceStore` (contrato para
+  `offline-pwa`, dedup por id) + indicador como projeção pura (erro > salvando > salvo). Sweep
+  de convenção no CI (componentes não importam a API, createPortal só em menu/, stores não
+  buscam dado, sem invalidação do tenant inteiro). **Divergências:** `/` virou a Visão Geral
+  autenticada (landing do template → `/apresentacao`); telas de destino são STUBS
+  (`hierarchy-screens`/`my-tasks-view`/`commissioning-report` as preenchem); sem página do
+  template em React Query para migrar (6.3 = verificar + ligar o guard).
 
 Cada change tem seu `openspec/changes/<nome>/EXECUCAO.md` com o mapa de grupos, as
 decisões tomadas na execução, as armadilhas encontradas e a CONCLUSÃO com o relatório
 final. **Leia o EXECUCAO.md antes de tocar no código de uma change.**
 
-## Onde parou: `design-system` COMPLETA; a base visual fechada
+## Onde parou: `app-shell-navigation` COMPLETA; a moldura e as convenções fechadas
 
-Fechou (8/8 grupos) — ver `openspec/changes/design-system/EXECUCAO.md`. A fundação
-visual existe: token set único (dois temas), contraste medido no CI, tipografia,
-ícones, empilhamento, tema (dark default, não segue o SO), 9+ primitivos em
-`components/ui/`, luz ambiente, e a dívida do template (Recharts/TipTap/Slate)
-removida. Tudo que as telas consomem está pronto e testado (160 testes frontend).
+Fechou (6/6 grupos) — ver `openspec/changes/app-shell-navigation/EXECUCAO.md`. A
+moldura permanente existe (AppShell: sidebar/topbar/gaveta, contexto de workspace,
+menus em portal) E as convenções que desbloqueiam as telas: D9 (React Query padrão,
+factory `qk.*`, guard ligado no `main.tsx`), a barreira CLIENTE de vazamento
+(`switchWorkspace` = `clear()` na troca), o contrato do indicador de gravação
+(`persistenceStore`), e o sweep de convenção no CI. Tudo testado (221 testes frontend).
 
-**Antes:** `progress-rollup` (COMPLETA) — as duas métricas de progresso SÓ em SQL,
-cache em cascata, job de reconciliação, rotulagem D15. Ver o EXECUCAO dela.
+**Antes:** `design-system` (COMPLETA, 8/8) — a base visual: token set único (dois
+temas), contraste medido no CI, tipografia, ícones, empilhamento, tema (dark default),
+9+ primitivos em `components/ui/`, luz ambiente, dívida do template removida.
 
 **Pendências conhecidas (documentadas, não atribuídas):**
 - **design-system:** `tokens-campfire.css` + aliases shadcn seguem no repo (só vars
@@ -152,27 +173,30 @@ cache em cascata, job de reconciliação, rotulagem D15. Ver o EXECUCAO dela.
 - `<ProgressRing>`/`<MetricStat>` existem (progress-rollup 6.2) mas a TELA que os
   monta (Visão Geral, hubs, cards) é de `hierarchy-screens`.
 
-**Próximo passo — montar as telas sobre a base.** O backend do núcleo (hierarquia +
-tarefas + avanços + rollup) e a base visual (`design-system`) estão fechados. Falta
-compor as telas. Ver abaixo.
+**Próximo passo — as telas de conteúdo.** O backend do núcleo (hierarquia + tarefas +
+avanços + rollup), a base visual (`design-system`) e agora a moldura + convenções
+(`app-shell-navigation`) estão fechados. Falta preencher os STUBS de destino. Ver abaixo.
 
-## Depois de `design-system` — as telas
+## Depois de `app-shell-navigation` — as telas de conteúdo
 
-Com a base pronta, o caminho: **`app-shell-navigation`** (Onda 2, depende de
-`design-system` — shell, sidebar/topbar, rotas, seletor de workspace, indicador de
-gravação) → **`hierarchy-screens`** (árvore de projetos/células/robôs, Visão Geral
-com os anéis/hubs de `progress-rollup` — consome os envelopes rotulados e os
-primitivos `EntityCard`/`Hub`/`ProgressRing`) → **`robot-task-table`** (a tabela do
-robô: CONSOME `progress-advances` — reusa `<AdvanceControls>`, aviso "trilha faltando"
-com `advances_count` — e `progress-rollup` — os envelopes). Também `my-tasks-view`,
-`workspace-settings`, `commissioning-report`.
+A moldura e os contratos estão prontos. O caminho: **`hierarchy-screens`** (árvore de
+projetos/células/robôs, Visão Geral com os anéis/hubs de `progress-rollup` — consome os
+envelopes rotulados e os primitivos `EntityCard`/`Hub`/`ProgressRing`; preenche o stub
+`OverviewPage`) → **`robot-task-table`** (a tabela do robô: CONSOME `progress-advances` —
+reusa `<AdvanceControls>`, aviso "trilha faltando" com `advances_count` — e
+`progress-rollup` — os envelopes). Também `my-tasks-view` (preenche `MyTasksPage`),
+`workspace-settings`, `commissioning-report` (preenche `ReportPage`).
 
-Comece por **`app-shell-navigation`** (desbloqueia as telas seguintes), ou, por valor
-de negócio, `hierarchy-screens`/`robot-task-table` (têm todos os contratos de dados
-prontos via os HANDOFFs). Leia o `proposal.md`/`design.md` e escreva o `EXECUCAO.md`
-(G0) antes de qualquer código. **Nota:** ao montar telas, MIGRE as classes shadcn
-(`bg-primary`, `text-muted-foreground`…) para os papéis (`bg-accent`, `text-text-muted`)
-e então remova os aliases + `tokens-campfire.css` (a parte adiada do G8 do design-system).
+Ao montar telas, **use as convenções de `app-shell-navigation`**: leituras via hooks em
+`features/<dominio>/api/` com a factory `qk.*` (o guard reprova key fora de `['ws', wsId, …]`);
+mutations invalidam a chave ESPECÍFICA, nunca o tenant inteiro; nada de `createPortal` fora de
+`components/menu/`; o indicador de gravação lê `persistenceStore`. Comece por
+**`hierarchy-screens`** (maior valor, contratos prontos via HANDOFFs). Leia o
+`proposal.md`/`design.md` e escreva o `EXECUCAO.md` (G0) antes de qualquer código.
+**Nota:** ao montar telas, MIGRE as classes shadcn (`bg-primary`, `text-muted-foreground`…)
+para os papéis (`bg-accent`, `text-text-muted`) e então remova os aliases +
+`tokens-campfire.css` (a parte adiada do G8 do design-system). E `/` agora é a Visão Geral
+autenticada — a landing do template ficou em `/apresentacao` (dívida do `seal-template-baseline`).
 
 ## Método (não abrir mão)
 
@@ -231,20 +255,24 @@ O frontend usa **pnpm** (`pnpm-lock.yaml`); o `package-lock.json` está dessincr
 >
 > Leia `CONTINUIDADE.md` na raiz do repositório: ele tem o estado atual, o que já foi
 > entregue, onde parei e o método de trabalho. `robot-tasks`, `task-catalog`,
-> `progress-advances`, `progress-rollup` e `design-system` estão COMPLETAS (leia os
-> EXECUCAO.md delas). Todo o BACKEND do núcleo (hierarquia, tarefas, catálogo, avanços,
-> progresso consolidado) E a BASE VISUAL (design-system: tokens, contraste medido,
-> primitivos, luz ambiente) estão fechados de ponta a ponta.
+> `progress-advances`, `progress-rollup`, `design-system` e `app-shell-navigation` estão
+> COMPLETAS (leia os EXECUCAO.md delas). Todo o BACKEND do núcleo (hierarquia, tarefas,
+> catálogo, avanços, progresso consolidado), a BASE VISUAL (design-system) e a MOLDURA +
+> CONVENÇÕES (app-shell-navigation: AppShell, D9/factory de keys + guard, barreira de
+> vazamento na troca de workspace) estão fechados de ponta a ponta.
 >
-> Trabalhe na branch `design-system` (as branches são empilhadas; ela contém tudo; é
-> frontend-only). O próximo passo é COMPOR AS TELAS sobre a base: `app-shell-navigation`
-> → `hierarchy-screens` → `robot-task-table` (+ `my-tasks-view`, `workspace-settings`,
-> `commissioning-report`). Escolha a próxima change, comece pelo `EXECUCAO.md` dela
-> (commit G0) — antes de qualquer código — e faça push por branch canônica
-> (`git push origin HEAD:<change>`). Os contratos de dados que as telas consomem já estão
-> escritos nos `HANDOFF-*.md` das changes consumidoras; os primitivos de UI estão em
-> `frontend/src/components/ui/`. Ao montar telas, migre as classes shadcn para os papéis
-> e remova os aliases + `tokens-campfire.css` (a parte adiada do G8 do design-system).
+> Trabalhe na branch `app-shell-navigation` (as branches são empilhadas; ela contém tudo;
+> é frontend-only). O próximo passo é PREENCHER OS STUBS DE TELA sobre a moldura:
+> `hierarchy-screens` (Visão Geral, stub `OverviewPage`) → `robot-task-table` (+
+> `my-tasks-view` no stub `MyTasksPage`, `workspace-settings`, `commissioning-report` no
+> stub `ReportPage`). Escolha a próxima change, comece pelo `EXECUCAO.md` dela (commit G0)
+> — antes de qualquer código — e faça push por branch canônica (`git push origin
+> HEAD:<change>`). Use as convenções de `app-shell-navigation`: hooks em `features/*/api/`
+> com a factory `qk.*` (o guard reprova key fora de `['ws', wsId, …]`), invalidar chave
+> específica (nunca o tenant inteiro), `createPortal` só em `components/menu/`. Os contratos
+> de dados estão nos `HANDOFF-*.md`; os primitivos de UI em `frontend/src/components/ui/`. Ao
+> montar telas, migre as classes shadcn para os papéis e remova os aliases +
+> `tokens-campfire.css` (a parte adiada do G8 do design-system).
 >
 > Siga o método: um grupo por vez, e ao fim de cada grupo me apresente um resumo e peça
 > autorização antes de seguir para o próximo. Não regrida nenhuma das regras listadas na
