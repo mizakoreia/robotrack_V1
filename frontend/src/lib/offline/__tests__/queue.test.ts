@@ -79,6 +79,10 @@ describe('teto e poda (3.3)', () => {
     expect((await listMutations('W1')).map((m) => m.id)).toEqual(['c', 'd', 'e'])
   })
 
+  // Timeout folgado: enfileirar 500 itens no fake-indexeddb é rápido isolado
+  // (~1s), mas sob contenção de CPU no run paralelo pode passar dos 5s default do
+  // vitest. O gargalo é o backing store em memória do fake-indexeddb, não o código
+  // (enqueue é O(1): count() + total de bytes em meta).
   it('a 501ª é REJEITADA e o item mais antigo NÃO é descartado (D7-12)', async () => {
     const db = await openQueueDb()
     for (let i = 0; i < MAX_ITEMS; i++) await enqueueMutation(input({ id: `m${i}` }), { db })
@@ -89,7 +93,7 @@ describe('teto e poda (3.3)', () => {
     expect(items).toHaveLength(MAX_ITEMS)
     expect(items[0].id).toBe('m0') // o mais antigo continua lá
     expect(items.some((m) => m.id === 'overflow')).toBe(false)
-  })
+  }, 20_000)
 })
 
 describe('resolved_uuids (D7-4)', () => {
