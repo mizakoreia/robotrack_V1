@@ -121,22 +121,40 @@
 
 ## 4. Núcleo do importador: identidade e idempotência
 
-- [ ] 4.1 Implementar `Legacy::IdDerivation`: UUIDv5 sobre o caminho legado canônico, com a
+- [x] 4.1 Implementar `Legacy::IdDerivation`: UUIDv5 sobre o caminho legado canônico, com a
   regra de caminho para célula/robô sem id (índice do array). (D-LDM-2 — dois robôs
   homônimos na mesma célula precisam gerar ids distintos, não colidir num só.)
-- [ ] 4.2 Implementar o wrapper de escrita `INSERT … ON CONFLICT (id) DO NOTHING` com
+      *(ENTREGUE — `Legacy::IdDerivation`. `NAMESPACE` fixo (congelado — mudá-lo reescreve
+      todos os ids). `ref(obj,index)` = id-se-houver-senão-índice; construtores de caminho
+      por entidade + açúcar `<ent>_id`. Prova: homônimos R05 (id `r-2` vs índice) → ids
+      distintos; `person_id` colapsa "João Silva"/"joão silva" por downcase.)*
+- [x] 4.2 Implementar o wrapper de escrita `INSERT … ON CONFLICT (id) DO NOTHING` com
   contagem de criados vs. pulados e gravação paralela em `legacy_id_map`. (D-LDM-2 — o
   modo de falha é usar `DO UPDATE` e o segundo run sobrescrever edição feita pelo usuário
   depois do corte.)
-- [ ] 4.3 Implementar o set explícito de `app.current_workspace_id` por workspace, a recusa
+      *(ENTREGUE — `Legacy::Writer.insert` via `insert_all(unique_by: :id)` = `ON CONFLICT
+      (id) DO NOTHING` (o `unique_by: :id` é obrigatório: sem ele o insert_all esbarra na
+      unique DEFERÍVEL de posição como árbitro). Conta criados/pulados e grava `legacy_id_map`
+      só dos criados (2º run cria 0 → 0 linhas de mapa novas).)*
+- [x] 4.3 Implementar o set explícito de `app.current_workspace_id` por workspace, a recusa
   quando não definido, e a verificação de procedência `ownerUid` do arquivo vs. dono do
   workspace de destino. (D2, D-LDM-1 — chamar o service sem a variável tem de falhar antes
   da primeira escrita, nunca gravar no workspace errado; e é isto que substitui o "só o
   dono" que no legado era runtime.)
-- [ ] 4.4 **Verificação**: spec que importa a fixture duas vezes no mesmo banco e afirma
+      *(ENTREGUE — `Legacy::ImportContext`: `with_workspace` abre o Tenant e verifica a
+      procedência JÁ DENTRO (runs anteriores são RLS-escapados); `require_context!` (chamado
+      pelo Writer) recusa escrever sem contexto. RECONCILIAÇÃO: o mapeamento ownerUid-Firebase
+      → user Rails não é definido nesta change; a procedência aqui é a COERÊNCIA entre runs do
+      mesmo workspace (um 2º arquivo de outro ownerUid é recusado) — o par com o sha256 da 8.4.)*
+- [x] 4.4 **Verificação**: spec que importa a fixture duas vezes no mesmo banco e afirma
   `criados: 0` no segundo run para os oito tipos de entidade, mais `count(*)` idêntico e
   `updated_at` inalterado num robô renomeado entre os runs. (D-LDM-2 — cenário central
   desta capacidade.)
+      *(ENTREGUE — `import_core_spec` (7 ex., verde) prova o MECANISMO sobre projeto→célula→
+      robô (o caminho que carrega FK + `updated_at`): 2º run cria 0 / pula 3, robô renomeado
+      no 2º run mantém o nome do 1º (DO NOTHING, não DO UPDATE) e `updated_at` inalterado,
+      `count(*)` idêntico. RECONCILIAÇÃO: a varredura fim-a-fim das 8 entidades com contagem
+      por tabela é a spec 5.8 (precisa dos importadores de G5) — aqui está o mecanismo.)*
 
 ## 5. Importadores por entidade
 
