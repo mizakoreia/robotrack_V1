@@ -15,18 +15,20 @@
 # aplicação (transação + lock pessimista + até três escritas) e o alvo natural de
 # enumeração. Aceite: 10/10min por IP e por sessão. Pré-visualização (pública,
 # pré-login): 20/10min por IP.
+require_relative '../rate_limits'
+
 module Rack
   class Attack
-    # Store: Redis quando disponível (já configurado para o Sidekiq), para que o
-    # teto valha entre PROCESSOS — com MemoryStore, N pumas dariam N vezes o
-    # limite. Cai para memória quando não há Redis (test, dev sem serviço), sem
-    # derrubar o boot: um rate limit degradado é melhor que uma app que não sobe.
+    # Store: Redis de CACHE (delivery-and-observability 7.1), para que o teto valha
+    # entre PROCESSOS — com MemoryStore, N pumas dariam N vezes o limite. Cai para
+    # memória quando não há Redis (test, dev sem serviço), sem derrubar o boot: um
+    # rate limit degradado é melhor que uma app que não sobe.
     Rack::Attack.cache.store =
       begin
         if Rails.env.test? || ENV['REDIS_URL'].blank?
           ActiveSupport::Cache::MemoryStore.new
         else
-          ActiveSupport::Cache::RedisCacheStore.new(url: ENV.fetch('REDIS_URL'))
+          ActiveSupport::Cache::RedisCacheStore.new(url: EnvSchema.redis_for(:cache))
         end
       rescue StandardError => e
         Rails.logger.warn({ event: 'rack_attack_store_fallback', error: e.class.name }.to_json)
@@ -74,6 +76,19 @@ module Rack
       req.ip if req.get? && PREVIEW_PATH.match?(req.path)
     end
 
+    # ── Tetos por CLASSE de domínio (7.2/7.3), por minuto, por identidade ──────
+    # Um throttle por classe; o discriminador devolve a chave só quando a
+    # requisição pertence àquela classe, senão a ignora. `limit` é lido do ENV a
+    # cada request (barato) para o teto ser configurável sem redeploy.
+    %i[read write robot_batch advance report].each do |klass|
+      throttle("domain/#{klass}", limit: ->(_req) { RateLimits.limit(klass) }, period: 60) do |req|
+        next unless RateLimits.classify(req.request_method, req.path) == klass
+
+        bearer = req.get_header('HTTP_AUTHORIZATION').to_s.split(' ').last
+        RateLimits.identity(bearer, req.ip)
+      end
+    end
+
     self.throttled_responder = lambda do |req|
       match = req.env['rack.attack.match_data'] || {}
       retry_after = (match[:period] || 300).to_i
@@ -98,7 +113,9 @@ module Rack
         'RateLimit-Limit' => match[:limit].to_s,
         'RateLimit-Remaining' => '0'
       }
-      [429, headers, [{ error: 'Muitas tentativas. Tente novamente mais tarde.' }.to_json]]
+      body = I18n.t('errors.rate_limited', locale: :'pt-BR',
+                    default: 'Muitas tentativas. Tente novamente mais tarde.')
+      [429, headers, [{ error: body }.to_json]]
     end
   end
 end

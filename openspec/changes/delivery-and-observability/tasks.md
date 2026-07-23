@@ -45,10 +45,10 @@
 
 ## 7. Rate limiting de domínio
 
-- [ ] 7.1 Trocar o store do `rack-attack` de `ActiveSupport::Cache::MemoryStore` para o Redis de cache. (§Contador compartilhado — com 4 processos Puma o limite de 120/min hoje vale 480; passa a valer 120)
-- [ ] 7.2 Implementar chave de throttle por `user_id` extraída do JWT (só `sub`/`jti`, sem consulta a `users`), caindo para IP derivado de proxy confiável. (§Rate limit por identidade — 8 engenheiros no mesmo NAT do galpão não se bloqueiam quando um excede o limite)
-- [ ] 7.3 Configurar os limites por classe via ENV (leitura 300, escrita 120, lote de robôs 10, avanço 60, auth 5, relatório 5) e reapontar os throttles de auth dos paths do magic-link para os de D4. (§Limites por classe — a 11ª criação em lote no minuto responde 429 enquanto as leituras do mesmo usuário seguem 2xx; o throttle deixa de proteger `/api/v1/auth/login`, que `identity-and-auth` apaga)
-- [ ] 7.4 **Verificação:** spec que dispara 121 escritas num minuto e assere 429 com `Retry-After` numérico e corpo pt-BR de `config/locales`, mais spec provando que 429 repetido não marca a mutation offline como poison message. (§Resposta 429 — a fila de D7 recua pelo valor do servidor em vez de reenviar na hora e ser bloqueada de novo; 429 é backpressure, não erro de validação)
+- [x] 7.1 Trocar o store do `rack-attack` de `ActiveSupport::Cache::MemoryStore` para o Redis de cache. (§Contador compartilhado — com 4 processos Puma o limite de 120/min hoje vale 480; passa a valer 120)
+- [x] 7.2 Implementar chave de throttle por `user_id` extraída do JWT (só `sub`/`jti`, sem consulta a `users`), caindo para IP derivado de proxy confiável. (§Rate limit por identidade — 8 engenheiros no mesmo NAT do galpão não se bloqueiam quando um excede o limite)
+- [x] 7.3 Configurar os limites por classe via ENV (leitura 300, escrita 120, lote de robôs 10, avanço 60, auth 5, relatório 5) e reapontar os throttles de auth dos paths do magic-link para os de D4. (§Limites por classe — a 11ª criação em lote no minuto responde 429 enquanto as leituras do mesmo usuário seguem 2xx; o throttle deixa de proteger `/api/v1/auth/login`, que `identity-and-auth` apaga)
+- [x] 7.4 **Verificação:** spec que dispara 121 escritas num minuto e assere 429 com `Retry-After` numérico e corpo pt-BR de `config/locales`, mais spec provando que 429 repetido não marca a mutation offline como poison message. (§Resposta 429 — a fila de D7 recua pelo valor do servidor em vez de reenviar na hora e ser bloqueada de novo; 429 é backpressure, não erro de validação)
 
 ## 8. Rollback e prova de entrega
 

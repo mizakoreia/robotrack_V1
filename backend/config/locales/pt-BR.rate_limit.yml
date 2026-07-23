@@ -1,0 +1,4 @@
+# delivery-and-observability 7.4 — corpo pt-BR do 429 (rate limit).
+pt-BR:
+  errors:
+    rate_limited: "Muitas requisições em pouco tempo. Aguarde e tente novamente."

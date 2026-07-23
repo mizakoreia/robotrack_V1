@@ -114,6 +114,19 @@ describe('401 pausa a fila (5.2)', () => {
   })
 })
 
+describe('429 é backpressure, não poison (delivery-and-observability 7.4)', () => {
+  it('429 volta a enqueued com backoff (não vira failed/poison)', async () => {
+    await enqueueMutation(input({ id: 'R' }))
+    const send = vi.fn(async (): Promise<SendResult> => ({ ok: false, status: 429 }))
+    await drainQueue({ probe: okProbe, send, now: () => 0, random: () => 0.5 })
+
+    const r = byId(await listMutations('W1'), 'R')
+    expect(r.state).toBe('enqueued') // recua pelo backoff, não é descartada
+    expect(r.state).not.toBe('failed')
+    expect(r.next_attempt_at).toBeGreaterThan(0) // agenda o reenvio
+  })
+})
+
 describe('409 lock_version → reconciliação, sem reenvio (5.4)', () => {
   it('vira failed "conflito" com o estado do servidor no corpo', async () => {
     await enqueueMutation(input({ id: 'A', kind: 'advance.create', method: 'PATCH' }))
