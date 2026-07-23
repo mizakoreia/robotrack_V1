@@ -15,10 +15,10 @@
 
 ## 3. Fila de mutations: esquema e persistência (§4.2)
 
-- [ ] 3.1 Criar o banco IndexedDB `robotrack` com object store `mutations` (`keyPath: id`, `seq` autoincremental), índices `by_state_and_seq` e `by_workspace`, store auxiliar `resolved_uuids`, e `onupgradeneeded` versionado com quarentena de item irreconhecível (§4.2 — item gravado por esquema anterior e não migrável vai para `failed` classe "incompatível", nunca é apagado)
-- [ ] 3.2 Implementar `enqueueMutation` com `depends_on` obrigatório no tipo (sem default) e carimbo de `recorded_at` no instante da confirmação do usuário (D8 — um hook novo que esqueça `depends_on` não compila em TypeScript)
-- [ ] 3.3 Implementar o teto de 500 itens / 5 MB com rejeição na entrada e poda de itens `done`, e o store Zustand da fila como projeção reativa do IndexedDB escopada por `workspace_id` (§4.2/D9 — com 500 pendentes a 501ª é rejeitada e o item mais antigo **não** é descartado; a fila de `W1` não aparece nem é enviada na UI de `W2`)
-- [ ] 3.4 **Verificação:** teste com `fake-indexeddb` cobrindo reabertura, ordem de `seq` e poda (§4.2 — após drenar 200 de 500, a contagem é exatamente 300 e novas mutations voltam a ser aceitas)
+- [x] 3.1 Criar o banco IndexedDB `robotrack` com object store `mutations` (`keyPath: id`, `seq` autoincremental), índices `by_state_and_seq` e `by_workspace`, store auxiliar `resolved_uuids`, e `onupgradeneeded` versionado com quarentena de item irreconhecível (§4.2 — item gravado por esquema anterior e não migrável vai para `failed` classe "incompatível", nunca é apagado)
+- [x] 3.2 Implementar `enqueueMutation` com `depends_on` obrigatório no tipo (sem default) e carimbo de `recorded_at` no instante da confirmação do usuário (D8 — um hook novo que esqueça `depends_on` não compila em TypeScript)
+- [x] 3.3 Implementar o teto de 500 itens / 5 MB com rejeição na entrada e poda de itens `done`, e o store Zustand da fila como projeção reativa do IndexedDB escopada por `workspace_id` (§4.2/D9 — com 500 pendentes a 501ª é rejeitada e o item mais antigo **não** é descartado; a fila de `W1` não aparece nem é enviada na UI de `W2`)
+- [x] 3.4 **Verificação:** teste com `fake-indexeddb` cobrindo reabertura, ordem de `seq` e poda (§4.2 — após drenar 200 de 500, a contagem é exatamente 300 e novas mutations voltam a ser aceitas)
 
 ## 4. Fila: grafo de dependência e drenagem (D7-4)
 
