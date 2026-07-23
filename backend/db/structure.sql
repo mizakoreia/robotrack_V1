@@ -184,11 +184,13 @@ BEGIN
   END IF;
   IF ROW(NEW.id, NEW.workspace_id, NEW.recipient_person_id, NEW.actor_person_id,
          NEW.type, NEW.msg, NEW.author_name_snapshot, NEW.recorded_at, NEW.created_at,
-         NEW.ts_local, NEW.ctx_project_id, NEW.ctx_cell_id, NEW.ctx_robot_id, NEW.ctx_task_id)
+         NEW.ts_local, NEW.format_version, NEW.ctx_project_id, NEW.ctx_cell_id,
+         NEW.ctx_robot_id, NEW.ctx_task_id)
      IS DISTINCT FROM
      ROW(OLD.id, OLD.workspace_id, OLD.recipient_person_id, OLD.actor_person_id,
          OLD.type, OLD.msg, OLD.author_name_snapshot, OLD.recorded_at, OLD.created_at,
-         OLD.ts_local, OLD.ctx_project_id, OLD.ctx_cell_id, OLD.ctx_robot_id, OLD.ctx_task_id)
+         OLD.ts_local, OLD.format_version, OLD.ctx_project_id, OLD.ctx_cell_id,
+         OLD.ctx_robot_id, OLD.ctx_task_id)
   THEN
     RAISE EXCEPTION 'notifications: só read/read_at podem mudar (inv. 4)';
   END IF;
@@ -698,6 +700,7 @@ CREATE TABLE public.notifications (
     ctx_cell_id uuid,
     ctx_robot_id uuid,
     ctx_task_id uuid,
+    format_version smallint DEFAULT 1 NOT NULL,
     CONSTRAINT msg_max_500 CHECK ((char_length(msg) <= 500)),
     CONSTRAINT read_at_coherence CHECK ((((read = false) AND (read_at IS NULL)) OR ((read = true) AND (read_at IS NOT NULL))))
 );
@@ -2541,6 +2544,7 @@ ALTER TABLE public.workspaces ENABLE ROW LEVEL SECURITY;
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260724100002'),
 ('20260724100001'),
 ('20260723160001'),
 ('20260723150001'),

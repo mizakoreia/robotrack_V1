@@ -21,10 +21,10 @@
 
 ## 4. Persistência best-effort
 
-- [ ] 4.1 Implementar `Notifications::CreateService` (contrato singleton do template) que compõe classifier + resolver + builder e insere as linhas, tolerando violação do índice único de 1.5 sem levantar. (§2.7 — reexecutar o serviço com os mesmos parâmetros não cria segunda linha e conclui com sucesso)
-- [ ] 4.2 Implementar `NotifyTaskEventJob` (`queue: :notifications`, `retry: 5`) chamando o serviço, com reporte estruturado de erro no esgotamento das retentativas. (D-N7 — job que levanta `CheckViolation` reporta ao rastreador e vai para a dead set; não retenta infinitamente)
-- [ ] 4.3 Ligar o job por `after_commit` nos pontos de `progress-advances` (registro de avanço) e `robot-tasks` (mudança de `task_assignees`), **fora** da transação. (§2.7 — rollback da transação do avanço enfileira zero jobs; e uma exceção dentro do job deixa o `task_advance` persistido com progresso 45)
-- [ ] 4.4 Escrever spec de resiliência: Redis indisponível e criação de notificação levantando exceção, ambos com o avanço permanecendo salvo e a requisição retornando sucesso. (§2.7 — "falha ao notificar nunca derruba o save": a resposta do avanço é 2xx com Sidekiq fora do ar)
+- [x] 4.1 Implementar `Notifications::CreateService` (contrato singleton do template) que compõe classifier + resolver + builder e insere as linhas, tolerando violação do índice único de 1.5 sem levantar. (§2.7 — reexecutar o serviço com os mesmos parâmetros não cria segunda linha e conclui com sucesso)
+- [x] 4.2 Implementar `NotifyTaskEventJob` (`queue: :notifications`, `retry: 5`) chamando o serviço, com reporte estruturado de erro no esgotamento das retentativas. (D-N7 — job que levanta `CheckViolation` reporta ao rastreador e vai para a dead set; não retenta infinitamente)
+- [x] 4.3 Ligar o job por `after_commit` nos pontos de `progress-advances` (registro de avanço) e `robot-tasks` (mudança de `task_assignees`), **fora** da transação. (§2.7 — rollback da transação do avanço enfileira zero jobs; e uma exceção dentro do job deixa o `task_advance` persistido com progresso 45)
+- [x] 4.4 Escrever spec de resiliência: Redis indisponível e criação de notificação levantando exceção, ambos com o avanço permanecendo salvo e a requisição retornando sucesso. (§2.7 — "falha ao notificar nunca derruba o save": a resposta do avanço é 2xx com Sidekiq fora do ar)
 
 ## 5. API e autorização
 
