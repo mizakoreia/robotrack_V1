@@ -55,13 +55,14 @@ RSpec.describe ApplicationCable::Connection, type: :channel do
     expect { connect "/cable?token=#{token}" }.to have_rejected_connection
   end
 
-  it 'não deixou nenhum canal legado para trás' do
+  it 'não deixou nenhum canal legado para trás (só a base + o WorkspaceChannel)' do
     channels = Dir.glob(Rails.root.join('app/channels/**/*.rb'))
                   .map { |path| path.sub("#{Rails.root}/", '') }
 
     expect(channels).to contain_exactly(
       'app/channels/application_cable/channel.rb',
-      'app/channels/application_cable/connection.rb'
+      'app/channels/application_cable/connection.rb',
+      'app/channels/workspace_channel.rb'
     )
   end
 end

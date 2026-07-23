@@ -25,15 +25,15 @@
 
 ## 2. `WorkspaceChannel` e autorização de assinatura
 
-- [ ] 2.1 Criar `WorkspaceChannel` com `stream_from "ws:#{workspace_id}:v1"` e `reject`
+- [x] 2.1 Criar `WorkspaceChannel` com `stream_from "ws:#{workspace_id}:v1"` e `reject`
   salvo se houver `Membership` ativa do `current_user`, consultada no banco.
   (§Req. "Autorização de assinatura" — usuário membro só de W2 assinando W1 é rejeitado e
   não recebe nenhum envelope de W1; a decisão não olha nada enviado pelo cliente.)
-- [ ] 2.2 Igualar a resposta de "não é membro" e "workspace inexistente", e adicionar
+- [x] 2.2 Igualar a resposta de "não é membro" e "workspace inexistente", e adicionar
   reverificação de membership no ponto de entrega, com `reject_and_stop` quando sumir.
   (§Req. autorização + §Req. revogação — assinatura autorizada às 09h não continua
   autorizada às 10h; e um UUID inexistente não é distinguível de um workspace alheio.)
-- [ ] 2.3 Spec de canal com os 4 cenários de assinatura, incluindo o negativo entre tenants
+- [x] 2.3 Spec de canal com os 4 cenários de assinatura, incluindo o negativo entre tenants
   e o papel `view` sendo aceito.
   (Verificação do grupo 2 — o negativo cross-tenant é obrigatório; falha se qualquer byte
   de W1 chegar a um não-membro.)
