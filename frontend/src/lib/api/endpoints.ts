@@ -61,6 +61,12 @@ export const authApi = {
     apiClient.post(`/api/v1/invitations/${encodeURIComponent(token)}/accept`),
 }
 
+// realtime-collaboration 1.1 / D6.8 — troca o Bearer por um ticket opaco de 60s
+// e uso único para o handshake do Cable (o JWT nunca vai na URL do WebSocket).
+export const cableTicketsApi = {
+  create: () => apiClient.post<{ ticket: string; ttl: number }>('/api/v1/cable_tickets'),
+}
+
 export const usersApi = {
   list: (params?: { page?: number; perPage?: number; q?: string; type?: 'og' | 'client' }) => {
     const page = params?.page ?? 1

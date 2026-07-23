@@ -83,22 +83,22 @@
 
 ## 5. Cliente de tempo real
 
-- [ ] 5.1 Criar `lib/realtime/connection.ts`: obtenção do ticket, `createConsumer` do
+- [x] 5.1 Criar `lib/realtime/connection.ts`: obtenção do ticket, `createConsumer` do
   `@rails/actioncable`, assinatura do `WorkspaceChannel` do workspace corrente, e
   re-assinatura na troca de workspace descartando a anterior (`app-shell-navigation` §3.10).
   (§Req. autorização — trocar de W1 para W2 encerra a assinatura de W1; assinatura órfã
   continuaria invalidando chaves de um workspace que não está mais na tela.)
-- [ ] 5.2 Criar `stores/realtimeStore.ts` (Zustand, estado de cliente por D9) com a máquina
+- [x] 5.2 Criar `stores/realtimeStore.ts` (Zustand, estado de cliente por D9) com a máquina
   `connecting|live|degraded|offline`, últimos `seq` por workspace e `origin_id` da aba.
   (§Req. fallback — o estado é lido pelo indicador de conexão; sem ele o modo degradado é
   invisível e um `/cable` mal roteado passa meses despercebido.)
-- [ ] 5.3 Escrever `lib/realtime/eventMap.ts` como `Record<EventType, Mapper>` sobre união
+- [x] 5.3 Escrever `lib/realtime/eventMap.ts` como `Record<EventType, Mapper>` sobre união
   fechada, com a tabela de D6.3 incluindo a cadeia de rollup derivada de `scope`.
   (§Req. invalidação — `task_advance.created` invalida também `cell`, `project` e
   `overview`; sem isso o anel ponderado (§2.1) e a contagem crua (§3.2) aparecem em
   desacordo na mesma tela; e um envelope `gizmo.created` fora da união cai no handler de
   tipo desconhecido, que invalida `['ws', wsId]` e avisa em vez de descartar em silêncio.)
-- [ ] 5.4 Implementar a fila de invalidação com drenagem a cada 250 ms e deduplicação por
+- [x] 5.4 Implementar a fila de invalidação com drenagem a cada 250 ms e deduplicação por
   chave, usando `refetchType: 'active'`.
   (§Req. invalidação — 8 envelopes do mesmo robô em 900 ms produzem 1 refetch, e query
   desmontada é marcada stale sem disparar requisição.)
