@@ -4,6 +4,8 @@ import { PeoplePanel } from '@/features/settings/PeoplePanel'
 import { CatalogPanel } from '@/features/settings/CatalogPanel'
 import { AppearancePanel } from '@/features/settings/AppearancePanel'
 import { UtilitiesPanel } from '@/features/settings/UtilitiesPanel'
+import { QueueDiagnostics } from '@/components/offline/QueueDiagnostics'
+import { ReconciliationPanel } from '@/components/offline/ReconciliationPanel'
 import { AuditLogModal } from '@/features/audit/AuditLogModal'
 import { Button } from '@/components/ui/Button'
 import { settingsText as T } from '@/lib/i18n/settings'
@@ -28,6 +30,9 @@ export function SettingsPage() {
       <PeoplePanel canWrite={canWrite} />
       <CatalogPanel canWrite={canWrite} />
       <AppearancePanel />
+      {/* offline-pwa 5.4/8.3 — reconciliação de falhas + backup da fila offline */}
+      <ReconciliationPanel />
+      <QueueDiagnostics />
       <section aria-labelledby="audit-section-title" className="space-y-3">
         <h2 id="audit-section-title" className="panel-header">{auditText.title}</h2>
         <div className="surface-panel space-y-2 rounded-lg border p-4">

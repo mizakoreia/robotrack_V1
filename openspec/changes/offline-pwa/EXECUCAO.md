@@ -110,6 +110,30 @@ destrava a honestidade temporal (D8) que o relatório assinado promete.
 Frontend 402/0; tsc limpo (fechamento de `realtime-collaboration` G9). Backend
 verde. Sem service worker, sem IndexedDB, sem fila — tudo desta onda nasce aqui.
 
+## FECHAMENTO (G8) — handoffs e o corte de produtores
+
+- **E2E Chromium+WebKit (8.6): HANDOFF para `quality-and-accessibility`.** O repo
+  não tem harness Playwright (mesma divergência de `realtime-collaboration`
+  7.5/9.2). Entregue AQUI a versão integração (`temporalHonesty.test.ts` prova a
+  honestidade temporal 14:03/17:41 pela fila+drenagem reais, e a honestidade de
+  deploy pelo próprio `sw.js`). O caminho de fallback sem Web Locks já é
+  exercitado no `coordination.test.ts`. Registrar no runbook de
+  `delivery-and-observability` a suíte offline em Chromium+WebKit quando o harness
+  existir.
+- **Header `Cache-Control` de `/sw.js` (2.4): HANDOFF para
+  `delivery-and-observability`** — `no-cache, must-revalidate` no servidor de
+  assets (não há server de assets no repo; Vite dev só).
+- **Corte de produtores (o seam do G7):** os produtores existem
+  (`producers.ts`: `enqueueAdvance`/`enqueueRobotCreate`, carimbando `recorded_at`
+  no enfileiramento e com `depends_on` correto) e a sobreposição/indicador/gate já
+  consomem a fila. O passo que FALTA para a experiência ficar ligada de ponta a
+  ponta no app rodando é FLIPAR os hooks de mutação (`useRecordAdvance`,
+  `useHierarchy`) para enfileirar quando offline em vez do POST direto, e retirar o
+  `setQueryData` otimista do `useHierarchy` (o overlay o substitui). É uma mudança
+  de fluxo central, deliberadamente deixada como integração à parte com sua
+  própria bateria de testes — a máquina (fila, grafo, drenagem, classificação,
+  cascata, líder, overlay, indicador, backup, migração) está completa e provada.
+
 ## RETOMADA
 
 Ler este arquivo + design.md (D7-1…D7-12). Estado por grupo em tasks.md (`- [x]`).
