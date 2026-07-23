@@ -15,6 +15,7 @@ import { useOfflineQueueStore, selectPendingCount, selectHasBlocked } from '@/st
 import { useTheme } from '@/hooks/useTheme'
 import { useRealtime } from '@/hooks/useRealtime'
 import { useOfflineSync } from '@/hooks/useOfflineSync'
+import { useOsNotificationAlerts } from '@/features/notifications/useOsNotificationAlerts'
 import { performLogout } from '@/lib/auth/session'
 import { registerRevocationNavigator } from '@/lib/workspace/accessRevoked'
 import { ConnectionIndicator } from '@/components/realtime/ConnectionIndicator'
@@ -45,6 +46,9 @@ export function AppShell() {
 
   // offline-pwa 6.x — hidrata a fila e orquestra a drenagem sob líder/broadcast.
   useOfflineSync()
+
+  // in-app-notifications 7.x — alerta do SO com marca d'água (não dispara no reload).
+  useOsNotificationAlerts()
 
   // Revogação de acesso (workspace-invitations 5.3): empresta o `navigate` do
   // router à rotina que vive fora do React.

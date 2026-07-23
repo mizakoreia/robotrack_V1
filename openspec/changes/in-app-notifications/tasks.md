@@ -42,11 +42,11 @@
 
 ## 7. Alerta do sistema operacional
 
-- [ ] 7.1 Implementar `useOsNotificationAlerts` como ponto único de construção de alerta, com a marca d'água **em memória** de D-N8 (a primeira resposta de listagem da sessão só inicializa, nunca dispara) e a regra de lint que proíbe `new Notification(` fora dele. (§2.7 — recarregar com 10 não lidas de ontem e permissão concedida dispara exatamente 0 alertas do SO; introduzir a chamada num componente quebra o lint no CI)
-- [ ] 7.2 Adicionar o controle "Ativar alertas do sistema" no centro de notificações, chamando `requestPermission()` só nesse clique. (§2.7 — carregar o app com `permission === 'default'` não invoca `requestPermission`; o Chrome não bloqueia o site por pedido não solicitado)
-- [ ] 7.3 Adicionar supressão por `document.visibilityState === 'visible'` e deduplicação por id já alertado. (§2.7 — a mesma notificação chegando via evento em tempo real e via refetch dispara 1 alerta, não 2)
-- [ ] 7.4 Implementar `onclick` do alerta: `window.focus()` + navegação por `ctx`, incluindo troca de workspace quando a notificação é de outro workspace. (§2.7 — clicar num alerta do workspace B estando no A troca de workspace antes de navegar, sem misturar estado)
-- [ ] 7.5 Escrever teste do hook com `Notification` mockado cobrindo os quatro cenários críticos: 10 não lidas antigas no reload → 0 alertas; item novo pós-carga → 1 alerta; permissão negada → 0 construções; 2 dias offline com 40 pendentes → 0 alertas. (§2.7 — o primeiro é o modo de falha explícito desta capacidade; sem esse teste ele volta silenciosamente)
+- [x] 7.1 Implementar `useOsNotificationAlerts` como ponto único de construção de alerta, com a marca d'água **em memória** de D-N8 (a primeira resposta de listagem da sessão só inicializa, nunca dispara) e a regra de lint que proíbe `new Notification(` fora dele. (§2.7 — recarregar com 10 não lidas de ontem e permissão concedida dispara exatamente 0 alertas do SO; introduzir a chamada num componente quebra o lint no CI)
+- [x] 7.2 Adicionar o controle "Ativar alertas do sistema" no centro de notificações, chamando `requestPermission()` só nesse clique. (§2.7 — carregar o app com `permission === 'default'` não invoca `requestPermission`; o Chrome não bloqueia o site por pedido não solicitado)
+- [x] 7.3 Adicionar supressão por `document.visibilityState === 'visible'` e deduplicação por id já alertado. (§2.7 — a mesma notificação chegando via evento em tempo real e via refetch dispara 1 alerta, não 2)
+- [x] 7.4 Implementar `onclick` do alerta: `window.focus()` + navegação por `ctx`, incluindo troca de workspace quando a notificação é de outro workspace. (§2.7 — clicar num alerta do workspace B estando no A troca de workspace antes de navegar, sem misturar estado)
+- [x] 7.5 Escrever teste do hook com `Notification` mockado cobrindo os quatro cenários críticos: 10 não lidas antigas no reload → 0 alertas; item novo pós-carga → 1 alerta; permissão negada → 0 construções; 2 dias offline com 40 pendentes → 0 alertas. (§2.7 — o primeiro é o modo de falha explícito desta capacidade; sem esse teste ele volta silenciosamente)
 
 ## 8. Retenção e fechamento
 

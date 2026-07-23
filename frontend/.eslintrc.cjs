@@ -35,6 +35,16 @@ module.exports = {
       ...STORAGE_GLOBALS.map((property) => ({ object: 'window', property, message: MSG })),
       ...STORAGE_GLOBALS.map((property) => ({ object: 'self', property, message: MSG })),
     ],
+    // in-app-notifications 7.1 (D-N8): `new Notification(` só em
+    // useOsNotificationAlerts — o ponto único garante a marca d'água que impede a
+    // saraivada de alertas no reload. Em qualquer outro arquivo, reprova o CI.
+    'no-restricted-syntax': [
+      'error',
+      {
+        selector: "NewExpression[callee.name='Notification']",
+        message: 'Construa alertas do SO só em useOsNotificationAlerts (in-app-notifications 7.1).',
+      },
+    ],
   },
   overrides: [
     {

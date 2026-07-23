@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/Button'
 import { useNotifications } from './useNotifications'
+import { requestOsAlertPermission } from './useOsNotificationAlerts'
 import { ctxToPath } from './ctxToPath'
 import type { NotificationDTO } from '@/lib/api/endpoints'
 
@@ -32,11 +33,17 @@ export function NotificationCenter() {
             {unreadCount > 0 ? `(${unreadCount} não lidas)` : ''}
           </span>
         </h2>
-        {unreadCount > 0 && (
-          <Button type="button" variant="ghost" onClick={() => markAllRead.mutate()}>
-            Marcar todas como lidas
+        <div className="flex gap-2">
+          {unreadCount > 0 && (
+            <Button type="button" variant="ghost" onClick={() => markAllRead.mutate()}>
+              Marcar todas como lidas
+            </Button>
+          )}
+          {/* 7.2 — pede permissão SÓ neste clique (nunca no carregamento). */}
+          <Button type="button" variant="ghost" onClick={() => void requestOsAlertPermission()}>
+            Ativar alertas do sistema
           </Button>
-        )}
+        </div>
       </header>
 
       {isLoading ? (
