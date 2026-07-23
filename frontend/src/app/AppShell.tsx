@@ -13,6 +13,7 @@ import { useWorkspaceStore } from '@/store/workspaceStore'
 import { usePersistenceStore, selectSaveState } from '@/store/persistenceStore'
 import { useTheme } from '@/hooks/useTheme'
 import { useRealtime } from '@/hooks/useRealtime'
+import { useOfflineSync } from '@/hooks/useOfflineSync'
 import { performLogout } from '@/lib/auth/session'
 import { registerRevocationNavigator } from '@/lib/workspace/accessRevoked'
 import { ConnectionIndicator } from '@/components/realtime/ConnectionIndicator'
@@ -36,6 +37,9 @@ export function AppShell() {
   // realtime-collaboration 7.x — o ciclo de vida do tempo real vive na casca
   // persistente (não remonta na navegação entre destinos).
   useRealtime()
+
+  // offline-pwa 6.x — hidrata a fila e orquestra a drenagem sob líder/broadcast.
+  useOfflineSync()
 
   // Revogação de acesso (workspace-invitations 5.3): empresta o `navigate` do
   // router à rotina que vive fora do React.

@@ -37,9 +37,9 @@
 
 ## 6. Coordenação entre abas (D7-10)
 
-- [ ] 6.1 Implementar a eleição de líder por `navigator.locks.request('robotrack-queue-drain', {mode: 'exclusive'})` em volta do laço de drenagem (§4.2 — três abas abertas produzem uma única requisição por mutation quando a rede volta)
-- [ ] 6.2 Implementar o fan-out de transições por `BroadcastChannel('robotrack-queue')` com hidratação do store nas abas não-líderes, e o fallback (registro `leader` em IndexedDB com `expires_at` renovado a cada 5s, polling de 30s), com toda escrita de `attempts` em transação `readwrite` (§4.2 — enfileirar na aba A atualiza o indicador de B e C sem recarregar; duas abas disputando a liderança numa janela de expiração não fazem `attempts` pular de 3 para 8)
-- [ ] 6.3 **Verificação:** teste multi-contexto com duas instâncias compartilhando o mesmo IndexedDB, contando requisições no servidor (§4.2 — o servidor recebe exatamente 1 requisição para a mutation, não 2)
+- [x] 6.1 Implementar a eleição de líder por `navigator.locks.request('robotrack-queue-drain', {mode: 'exclusive'})` em volta do laço de drenagem (§4.2 — três abas abertas produzem uma única requisição por mutation quando a rede volta)
+- [x] 6.2 Implementar o fan-out de transições por `BroadcastChannel('robotrack-queue')` com hidratação do store nas abas não-líderes, e o fallback (registro `leader` em IndexedDB com `expires_at` renovado a cada 5s, polling de 30s), com toda escrita de `attempts` em transação `readwrite` (§4.2 — enfileirar na aba A atualiza o indicador de B e C sem recarregar; duas abas disputando a liderança numa janela de expiração não fazem `attempts` pular de 3 para 8)
+- [x] 6.3 **Verificação:** teste multi-contexto com duas instâncias compartilhando o mesmo IndexedDB, contando requisições no servidor (§4.2 — o servidor recebe exatamente 1 requisição para a mutation, não 2)
 
 ## 7. Sobreposição otimista e indicador honesto (D7-7)
 

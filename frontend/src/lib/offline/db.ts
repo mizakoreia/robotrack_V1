@@ -18,7 +18,7 @@ import type { QueuedMutation, ResolvedUuid } from './types'
 // observável (monotônico por dispositivo, sobrevive a reabertura).
 
 export const DB_NAME = 'robotrack'
-export const DB_VERSION = 1
+export const DB_VERSION = 2
 
 interface RobotrackDB extends DBSchema {
   mutations: {
@@ -33,6 +33,12 @@ interface RobotrackDB extends DBSchema {
   meta: {
     key: string
     value: { key: string; value: number }
+  }
+  // Eleição de líder de fallback (offline-pwa 6.2), para browsers sem Web Locks
+  // (WebKit antigo). Registro único `leader` com dono e expiração.
+  leader: {
+    key: string
+    value: { key: string; tabId: string; expires_at: number }
   }
 }
 
@@ -91,6 +97,10 @@ export function openQueueDb(): Promise<QueueDB> {
           mutations.createIndex('by_workspace', 'workspace_id')
           db.createObjectStore('resolved_uuids', { keyPath: 'uuid' })
           db.createObjectStore('meta', { keyPath: 'key' })
+        }
+        if (oldVersion < 2) {
+          // Aditivo: store de líder de fallback. Não toca dados existentes.
+          db.createObjectStore('leader', { keyPath: 'key' })
         }
         // Migrações futuras (8.4) quarentenam o irreconhecível ANTES de tocar dados.
         // Em v1 não há base anterior; o gancho fica pronto.
