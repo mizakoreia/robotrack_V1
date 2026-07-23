@@ -1,24 +1,35 @@
 import { createConsumer as railsCreateConsumer } from '@rails/actioncable'
 import type { QueryClient } from '@tanstack/react-query'
-import { cableTicketsApi } from '../api/endpoints'
+import { cableTicketsApi, workspacesApi, type WorkspaceSyncResult } from '../api/endpoints'
 import { useRealtimeStore } from '../../store/realtimeStore'
 import { keysForEvent, type RealtimeEnvelope } from './eventMap'
 import { InvalidationQueue } from './invalidationQueue'
 import { InvalidationGate, type OfflinePendingProbe } from './invalidationGate'
+import { reconcileKeys } from './reconcile'
 
-// realtime-collaboration 5.1 / D6.1, D6.8 — o cliente de conexão. Sequência:
-// pega o TICKET (Bearer → ticket de 60s), abre o consumer em `/cable?ticket=`,
-// e assina o `WorkspaceChannel` do workspace corrente. Na TROCA de workspace,
-// descarta a assinatura anterior ANTES de criar a nova (uma assinatura órfã de W1
-// continuaria invalidando chaves de um workspace que saiu da tela — §3.10 de
-// app-shell-navigation, e a barreira `clear()` de switchWorkspace já correu).
+// realtime-collaboration 5.1 + 7.1/7.4 / D6.1, D6.6, D6.8 — o cliente de conexão.
 //
-// Injetável para teste: `createConsumer`/`fetchTicket` mockados (jsdom não tem
-// WebSocket real). O estado de transporte e o `seq` moram no `realtimeStore`.
+// Ticket (Bearer→ticket 60s) → consumer em `/cable?ticket=` → assina o
+// WorkspaceChannel. O ticket é de USO ÚNICO, então NÃO dá para deixar o
+// ActionCable auto-reconectar com a mesma URL (ticket morto): na queda, encerramos
+// o consumer e reconectamos com um ticket NOVO, em backoff (5s,15s,45s, teto 2min)
+// com jitter, em paralelo ao polling. Sem `welcome` em 8s ou 3 falhas em 60s →
+// `degraded`. Ao (re)conectar, reconcilia por `/sync?since=<seq>` (7.4).
 
 const WS_URL: string =
   (import.meta as { env?: Record<string, string> }).env?.VITE_WS_URL ||
   window.location.origin.replace(/^http/, 'ws').replace('5173', '3000')
+
+const BACKOFF_MS = [5_000, 15_000, 45_000, 120_000]
+const WELCOME_TIMEOUT_MS = 8_000
+const FAILURE_WINDOW_MS = 60_000
+const FAILURE_THRESHOLD = 3
+
+export function backoffDelay(attempt: number, random: () => number): number {
+  const base = BACKOFF_MS[Math.min(attempt, BACKOFF_MS.length - 1)]
+  const jitter = base * 0.2 * (random() * 2 - 1) // ±20%
+  return Math.max(1_000, Math.round(base + jitter))
+}
 
 export interface SubscriptionLike {
   unsubscribe: () => void
@@ -37,10 +48,14 @@ export interface RealtimeClientDeps {
   queryClient: QueryClient
   createConsumer?: (url: string) => ConsumerLike
   fetchTicket?: () => Promise<string>
+  fetchSync?: (wsId: string, since: number) => Promise<WorkspaceSyncResult>
   wsUrl?: string
   intervalMs?: number
-  // D7 (offline-pwa): contrato injetável; default vazio até a fila offline existir.
   offlineProbe?: OfflinePendingProbe
+  welcomeMs?: number
+  random?: () => number
+  now?: () => number
+  isOnline?: () => boolean
 }
 
 function cableUrl(base: string, ticket: string): string {
@@ -53,24 +68,33 @@ export class RealtimeClient {
   private readonly queryClient: QueryClient
   private readonly createConsumer: (url: string) => ConsumerLike
   private readonly fetchTicket: () => Promise<string>
+  private readonly fetchSync: (wsId: string, since: number) => Promise<WorkspaceSyncResult>
   private readonly wsUrl: string
   private readonly queue: InvalidationQueue
+  private readonly welcomeMs: number
+  private readonly random: () => number
+  private readonly now: () => number
+  private readonly isOnline: () => boolean
 
   private consumer: ConsumerLike | null = null
   private subscription: SubscriptionLike | null = null
   private wsId: string | null = null
-  // Geração monotônica: uma chamada `connect` mais nova invalida o resultado
-  // (assíncrono) de uma anterior — troca rápida W1→W2 não deixa a assinatura de
-  // W1 nascer depois do teardown.
   private generation = 0
+  private welcomeTimer: ReturnType<typeof setTimeout> | null = null
+  private retryTimer: ReturnType<typeof setTimeout> | null = null
+  private retryAttempt = 0
+  private failures: number[] = []
 
   constructor(deps: RealtimeClientDeps) {
     this.queryClient = deps.queryClient
     this.createConsumer = deps.createConsumer ?? ((url) => railsCreateConsumer(url) as unknown as ConsumerLike)
     this.fetchTicket = deps.fetchTicket ?? (() => cableTicketsApi.create().then((r) => r.ticket))
+    this.fetchSync = deps.fetchSync ?? ((wsId, since) => workspacesApi.sync(wsId, since))
     this.wsUrl = deps.wsUrl ?? WS_URL
-    // O gate represa invalidações que colidem com mutação em voo / fila offline
-    // (6.2/6.3); o teto de 30s marca a tela como não-sincronizada (6.3).
+    this.welcomeMs = deps.welcomeMs ?? WELCOME_TIMEOUT_MS
+    this.random = deps.random ?? Math.random
+    this.now = deps.now ?? (() => Date.now())
+    this.isOnline = deps.isOnline ?? (() => (typeof navigator === 'undefined' ? true : navigator.onLine))
     const gate = new InvalidationGate(this.queryClient, deps.offlineProbe)
     this.queue = new InvalidationQueue(this.queryClient, {
       intervalMs: deps.intervalMs,
@@ -80,69 +104,141 @@ export class RealtimeClient {
     })
   }
 
-  // (Re)assina o workspace `wsId`, descartando qualquer assinatura anterior.
   async connect(wsId: string): Promise<void> {
     const gen = ++this.generation
-    this.teardown()
+    this.teardownConsumer()
+    this.clearTimers()
     this.wsId = wsId
+
+    if (!this.isOnline()) {
+      useRealtimeStore.getState().setTransport('offline')
+      this.scheduleReconnect(wsId, gen)
+      return
+    }
     useRealtimeStore.getState().setTransport('connecting')
+
+    // Sem `welcome` em 8s → degraded (o proxy pode estar engolindo o Upgrade),
+    // seguindo a reconexão em paralelo ao polling.
+    this.welcomeTimer = setTimeout(() => {
+      if (gen !== this.generation) return
+      useRealtimeStore.getState().setTransport('degraded')
+      this.scheduleReconnect(wsId, gen)
+    }, this.welcomeMs)
 
     let ticket: string
     try {
       ticket = await this.fetchTicket()
     } catch {
-      if (gen === this.generation) useRealtimeStore.getState().setTransport('offline')
+      if (gen === this.generation) {
+        useRealtimeStore.getState().setTransport('degraded')
+        this.clearWelcome()
+        this.scheduleReconnect(wsId, gen)
+      }
       return
     }
-    if (gen !== this.generation) return // trocou de workspace durante o await
+    if (gen !== this.generation) return
 
     const consumer = this.createConsumer(cableUrl(this.wsUrl, ticket))
     const subscription = consumer.subscriptions.create(
       { channel: 'WorkspaceChannel', workspace_id: wsId },
       {
         connected: () => {
-          if (gen === this.generation) useRealtimeStore.getState().setTransport('live')
+          if (gen === this.generation) this.onConnected(wsId)
         },
         disconnected: () => {
-          // A máquina de degradação/backoff (8s, 3-em-60s) é do G7; aqui só o
-          // básico: caiu → tentando reconectar.
-          if (gen === this.generation) useRealtimeStore.getState().setTransport('connecting')
+          if (gen === this.generation) this.onDisconnected(wsId, gen)
         },
         received: (data: unknown) => {
           if (gen === this.generation) this.onEnvelope(data as RealtimeEnvelope)
         },
       },
     )
-
     this.consumer = consumer
     this.subscription = subscription
   }
 
+  private onConnected(wsId: string): void {
+    this.clearWelcome()
+    this.clearRetry()
+    this.retryAttempt = 0
+    this.failures = []
+    useRealtimeStore.getState().setTransport('live')
+    void this.reconcile(wsId)
+  }
+
+  private onDisconnected(wsId: string, gen: number): void {
+    this.clearWelcome()
+    const t = this.now()
+    this.failures = this.failures.filter((ts) => t - ts < FAILURE_WINDOW_MS)
+    this.failures.push(t)
+
+    if (!this.isOnline()) {
+      useRealtimeStore.getState().setTransport('offline')
+    } else if (this.failures.length >= FAILURE_THRESHOLD) {
+      useRealtimeStore.getState().setTransport('degraded')
+    }
+    // Encerra o consumer (evita o auto-retry do ActionCable com o ticket morto) e
+    // reconecta com ticket novo, em backoff.
+    this.teardownConsumer()
+    this.scheduleReconnect(wsId, gen)
+  }
+
+  // Reconciliação por lacuna (7.4): pergunta ao servidor o que se perdeu desde o
+  // último `seq` e invalida conforme. `since == current_seq` → nada (sem refetch).
+  private async reconcile(wsId: string): Promise<void> {
+    const since = useRealtimeStore.getState().lastSeq[wsId] ?? 0
+    try {
+      const result = await this.fetchSync(wsId, since)
+      if (this.wsId !== wsId) return
+      useRealtimeStore.getState().noteSeq(wsId, result.current_seq)
+      const keys = reconcileKeys(wsId, result)
+      if (keys.length) this.queue.enqueue(keys)
+    } catch {
+      /* best-effort: a próxima reconexão tenta de novo */
+    }
+  }
+
+  private scheduleReconnect(wsId: string, gen: number): void {
+    this.clearRetry()
+    const delay = backoffDelay(this.retryAttempt, this.random)
+    this.retryAttempt++
+    this.retryTimer = setTimeout(() => {
+      if (gen === this.generation) void this.connect(wsId)
+    }, delay)
+  }
+
   private onEnvelope(env: RealtimeEnvelope): void {
-    // Envelope de outro workspace (assinatura em teardown) é descartado.
     if (!env || env.workspace_id !== this.wsId) return
-
-    // O `seq` avança MESMO no eco próprio — a reconciliação não pode ficar para
-    // trás só porque fui eu quem mutou.
     useRealtimeStore.getState().noteSeq(env.workspace_id, env.seq)
-
-    // realtime-collaboration 6.1 / D6.4 — descarta o PRÓPRIO eco: quem originou já
-    // aplicou a mutação (otimista) e reconcilia pela resposta HTTP; refetchar aqui
-    // é o flicker auto-infligido 60→40→60. Mata a maioria absoluta dos flickers.
     if (env.origin_id && env.origin_id === useRealtimeStore.getState().originId) return
-
     this.queue.enqueue(keysForEvent(env.workspace_id, env))
   }
 
   disconnect(): void {
     this.generation++
-    this.teardown()
+    this.teardownConsumer()
+    this.clearTimers()
+    this.retryAttempt = 0
+    this.failures = []
     this.wsId = null
+    this.queue.clear()
     useRealtimeStore.getState().reset()
   }
 
-  private teardown(): void {
-    this.queue.clear()
+  private clearWelcome(): void {
+    if (this.welcomeTimer !== null) clearTimeout(this.welcomeTimer)
+    this.welcomeTimer = null
+  }
+  private clearRetry(): void {
+    if (this.retryTimer !== null) clearTimeout(this.retryTimer)
+    this.retryTimer = null
+  }
+  private clearTimers(): void {
+    this.clearWelcome()
+    this.clearRetry()
+  }
+
+  private teardownConsumer(): void {
     try {
       this.subscription?.unsubscribe()
     } catch {

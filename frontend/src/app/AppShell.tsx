@@ -12,8 +12,10 @@ import { useAuthStore } from '@/store/authStore'
 import { useWorkspaceStore } from '@/store/workspaceStore'
 import { usePersistenceStore, selectSaveState } from '@/store/persistenceStore'
 import { useTheme } from '@/hooks/useTheme'
+import { useRealtime } from '@/hooks/useRealtime'
 import { performLogout } from '@/lib/auth/session'
 import { registerRevocationNavigator } from '@/lib/workspace/accessRevoked'
+import { ConnectionIndicator } from '@/components/realtime/ConnectionIndicator'
 
 // app-shell-navigation 4.1–4.5 (§3.10, D-F) — a casca PERSISTENTE. Sidebar de 3
 // destinos (ativo por preenchimento tintado + ícone em accent, NUNCA faixa
@@ -29,6 +31,10 @@ export function AppShell() {
   const user = useAuthStore((s) => s.user)
   const role = useWorkspaceStore((s) => s.currentRoleLabel)
   const saveState = usePersistenceStore((s) => selectSaveState(s))
+
+  // realtime-collaboration 7.x — o ciclo de vida do tempo real vive na casca
+  // persistente (não remonta na navegação entre destinos).
+  useRealtime()
 
   // Revogação de acesso (workspace-invitations 5.3): empresta o `navigate` do
   // router à rotina que vive fora do React.
@@ -191,6 +197,9 @@ function Topbar({
       <div className="md:hidden">
         <SaveIndicator state={saveState} />
       </div>
+
+      {/* indicador de transporte (7.3): só aparece em degraded/offline */}
+      <ConnectionIndicator />
 
       {/* slot nomeado de notificações — vazio não desloca o layout */}
       <div data-slot="notifications" className="flex h-9 w-9 items-center justify-center" />

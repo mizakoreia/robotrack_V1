@@ -126,24 +126,24 @@
 
 ## 7. Fallback de polling
 
-- [ ] 7.1 Implementar a detecção de degradação: sem `welcome` em 8 s ou 3 falhas em 60 s →
+- [x] 7.1 Implementar a detecção de degradação: sem `welcome` em 8 s ou 3 falhas em 60 s →
   `degraded`; backoff de retentativa (5 s, 15 s, 45 s, teto 2 min) com jitter, em paralelo
   ao polling.
   (§Req. fallback — com `Upgrade:` bloqueado pelo proxy, a sessão entra em `degraded` em
   8 s em vez de ficar em `connecting` para sempre.)
-- [ ] 7.2 Aplicar `refetchInterval` de 20 s às queries ativas em `degraded`, com
+- [x] 7.2 Aplicar `refetchInterval` de 20 s às queries ativas em `degraded`, com
   `refetchIntervalInBackground: false` e redução para 60 s após 5 min sem interação.
   (§Req. fallback — avanço de outro membro aparece em ≤20 s com WS bloqueado, e aba oculta
   não emite nenhuma requisição.)
-- [ ] 7.3 Ligar o indicador de transporte da topbar (`app-shell-navigation`) e emitir a
+- [x] 7.3 Ligar o indicador de transporte da topbar (`app-shell-navigation`) e emitir a
   métrica de sessões em `degraded` para `delivery-and-observability`.
   (§Req. fallback — sessão degradada por >60 s exibe "atualizando periodicamente"; sem a
   métrica, 100% das sessões degradadas passa como normal.)
-- [ ] 7.4 Implementar a reconciliação no `live`: chamar `/sync?since=<seq>` ao conectar e
+- [x] 7.4 Implementar a reconciliação no `live`: chamar `/sync?since=<seq>` ao conectar e
   reconectar, invalidando conforme `gap`, e desligar todo `refetchInterval`.
   (§Req. reconciliação — após 45 s de queda com 6 mutações, o cliente converge; sem isso o
   cliente reconecta e mostra dado velho até alguém mexer na tela.)
-- [ ] 7.5 Teste E2E (Playwright, harness de `quality-and-accessibility`) com WebSocket
+- [x] 7.5 Teste E2E (Playwright, harness de `quality-and-accessibility`) com WebSocket
   bloqueado no contexto do browser, verificando que a tela do robô ainda atualiza.
   (Verificação do grupo 7 — falha se a tela ficar congelada ou se o polling continuar rodando
   depois que o WS voltar a conectar.)

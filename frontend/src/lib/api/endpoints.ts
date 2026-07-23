@@ -166,8 +166,17 @@ export const membershipsApi = {
   remove: (id: string) => apiClient.delete(`/api/v1/memberships/${id}`),
 }
 
+export interface WorkspaceSyncResult {
+  current_seq: number
+  gap: boolean
+  entity_kinds: string[]
+}
+
 export const workspacesApi = {
   list: () => apiClient.get<WorkspaceItem[]>('/api/v1/workspaces'),
+  // realtime-collaboration 4.1 / D6.5 — reconciliação da reconexão.
+  sync: (id: string, since: number) =>
+    apiClient.get<WorkspaceSyncResult>(`/api/v1/workspaces/${id}/sync?since=${since}`),
   updateName: (id: string, name: string) =>
     apiClient.patch<WorkspaceItem>(`/api/v1/workspaces/${id}`, { name }),
 }
