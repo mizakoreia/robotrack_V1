@@ -35,10 +35,10 @@
 
 ## 6. Centro de notificações (UI)
 
-- [ ] 6.1 Criar o hook `useNotifications` sobre React Query com a query key `['ws', wsId, 'notifications']` (D9) e a contagem de não lidas derivada. (D9 — nenhum `useEffect + apiClient` novo; a lista invalida ao marcar como lida sem `window.location.reload()`)
-- [ ] 6.2 Construir o painel do centro de notificações (lista, estado vazio, marcar como lida individual e todas) usando os componentes de `design-system`, com `aria-live="polite"` na contagem. (§3.10 — marcar 1 de 3 como lida move o badge de `3` para `2` sem recarregar; leitor de tela anuncia a mudança)
-- [ ] 6.3 Implementar `ctxToPath(notification)` e a navegação do item da lista até a tela do robô com a tarefa destacada. (§2.7 — `ctx` com `ctx_robot_id` nulo mantém a pessoa no centro de notificações com aviso, em vez de navegar para rota inválida)
-- [ ] 6.4 Escrever teste de componente do painel cobrindo badge, marcação como lida e `ctx` quebrado. (§2.7 — clique em item com `ctx` incompleto não produz tela em branco nem erro de rota)
+- [x] 6.1 Criar o hook `useNotifications` sobre React Query com a query key `['ws', wsId, 'notifications']` (D9) e a contagem de não lidas derivada. (D9 — nenhum `useEffect + apiClient` novo; a lista invalida ao marcar como lida sem `window.location.reload()`)
+- [x] 6.2 Construir o painel do centro de notificações (lista, estado vazio, marcar como lida individual e todas) usando os componentes de `design-system`, com `aria-live="polite"` na contagem. (§3.10 — marcar 1 de 3 como lida move o badge de `3` para `2` sem recarregar; leitor de tela anuncia a mudança)
+- [x] 6.3 Implementar `ctxToPath(notification)` e a navegação do item da lista até a tela do robô com a tarefa destacada. (§2.7 — `ctx` com `ctx_robot_id` nulo mantém a pessoa no centro de notificações com aviso, em vez de navegar para rota inválida)
+- [x] 6.4 Escrever teste de componente do painel cobrindo badge, marcação como lida e `ctx` quebrado. (§2.7 — clique em item com `ctx` incompleto não produz tela em branco nem erro de rota)
 
 ## 7. Alerta do sistema operacional
 

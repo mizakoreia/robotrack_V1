@@ -774,3 +774,30 @@ export const taskAdvancesApi = {
     )
   },
 }
+
+// in-app-notifications 5.1 — o centro de notificações. A `msg` já vem renderizada
+// do servidor; `ctx` são as quatro colunas para a navegação (6.3).
+export interface NotificationDTO {
+  id: string
+  type: 'assign' | 'progress' | 'done'
+  msg: string
+  author_name_snapshot: string
+  recorded_at: string
+  created_at: string
+  ts_local: string
+  read: boolean
+  read_at: string | null
+  ctx: {
+    project_id: string | null
+    cell_id: string | null
+    robot_id: string | null
+    task_id: string | null
+  }
+}
+
+export const notificationsApi = {
+  list: () => apiClient.get<NotificationDTO[]>('/api/v1/notifications'),
+  markRead: (id: string) =>
+    apiClient.post<NotificationDTO>(`/api/v1/notifications/${encodeURIComponent(id)}/read`),
+  markAllRead: () => apiClient.post<{ ok: boolean }>('/api/v1/notifications/read_all'),
+}
