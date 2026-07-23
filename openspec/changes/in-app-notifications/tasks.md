@@ -15,9 +15,9 @@
 
 ## 3. Destinatários e regras de disparo
 
-- [ ] 3.1 Implementar `Notifications::RecipientResolver` com as duas fontes de conjunto bruto — `:assign` usa o delta `novos_assignees − assignees_anteriores`, `:progress`/`:done` usam todos os responsáveis atuais — seguidas de dedup por `person_id` e subtração de `actor_person_id`, nessa ordem. (§2.7 — tarefa com `[Ana, Bruno]` recebendo `[Ana, Bruno, Diego]` produz exatamente 1 destinatário, Diego; responsáveis `[Ana, Bruno, Diego]` com Bruno como autor produzem 2; autor como único responsável produz conjunto vazio, não erro)
-- [ ] 3.2 Implementar `Notifications::EventClassifier` (função pura) que mapeia `(from, to)` para `:progress` (`0 < to < 100`), `:done` (`to == 100`) ou `nil` (`to == 0`). (§2.7 — avanço `45 → 0` retorna `nil` e nenhuma notificação é criada; `60 → 100` retorna `:done` e **não** `:progress`)
-- [ ] 3.3 Escrever spec de tabela do resolver + classifier cobrindo os cinco casos-limite: autoatribuição por §2.3, autor único responsável, reset para 0, 100%, e pessoa repetida no conjunto bruto. (§2.3/§2.7 — autoatribuição não gera `assign` para o próprio autoatribuído)
+- [x] 3.1 Implementar `Notifications::RecipientResolver` com as duas fontes de conjunto bruto — `:assign` usa o delta `novos_assignees − assignees_anteriores`, `:progress`/`:done` usam todos os responsáveis atuais — seguidas de dedup por `person_id` e subtração de `actor_person_id`, nessa ordem. (§2.7 — tarefa com `[Ana, Bruno]` recebendo `[Ana, Bruno, Diego]` produz exatamente 1 destinatário, Diego; responsáveis `[Ana, Bruno, Diego]` com Bruno como autor produzem 2; autor como único responsável produz conjunto vazio, não erro)
+- [x] 3.2 Implementar `Notifications::EventClassifier` (função pura) que mapeia `(from, to)` para `:progress` (`0 < to < 100`), `:done` (`to == 100`) ou `nil` (`to == 0`). (§2.7 — avanço `45 → 0` retorna `nil` e nenhuma notificação é criada; `60 → 100` retorna `:done` e **não** `:progress`)
+- [x] 3.3 Escrever spec de tabela do resolver + classifier cobrindo os cinco casos-limite: autoatribuição por §2.3, autor único responsável, reset para 0, 100%, e pessoa repetida no conjunto bruto. (§2.3/§2.7 — autoatribuição não gera `assign` para o próprio autoatribuído)
 
 ## 4. Persistência best-effort
 
