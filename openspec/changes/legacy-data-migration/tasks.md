@@ -281,14 +281,23 @@
 
 ## 8. Validação, dry-run e corte
 
-- [ ] 8.1 Implementar `Legacy::SampleValidator` recalculando §2.1 (ponderado, ignorando
+- [x] 8.1 Implementar `Legacy::SampleValidator` recalculando §2.1 (ponderado, ignorando
   `N/A`; sem tarefas = 0; só `N/A` = 100) em Ruby puro a partir do JSON, sem ActiveRecord.
   (§2.1, D15, D-LDM-5 — se o validador reutilizar o código do domínio, ele não prova nada
   sobre a tradução, só que o código concorda consigo mesmo.)
-- [ ] 8.2 Implementar a seleção determinística e adversarial da amostra (≥20 robôs,
+      *(ENTREGUE — `SampleValidator.robot_progress`: `round(Σwp/Σw)` sobre não-`N/A` com
+      Rational (sem erro de float no meio-a-meio), espelhando `robot_weighted_progress` sem
+      reusá-lo; tarefas quarentenadas (progress/status inválidos) não entram, como no import.
+      Prova: sem-tarefas=0, só-`N/A`=100, `(2*50+1*100)/3`=67, e diff ZERO em toda a amostra
+      contra o `progress_cache` real (após `BulkRecompute`).)*
+- [x] 8.2 Implementar a seleção determinística e adversarial da amostra (≥20 robôs,
   obrigatoriamente com sem-tarefas, só-`N/A`, pesos ≠ 1, parcial e o de maior número de
   tarefas) e `rake legacy:validate_sample` com tolerância zero. (D-LDM-5 — amostra
   aleatória tende a pegar 20 robôs `Pendente` a 0% e passar sem medir nada.)
+      *(ENTREGUE — `SampleValidator.select_sample` (ordena por caminho, garante os 5 casos
+      obrigatórios + preenche até ≥20, reprodutível) + `rake legacy:validate_sample[arquivo,ws]`
+      (roda `BulkRecompute`, compara, um robô divergente reprova o run e recomenda rollback).
+      Provas: ≥20 com os obrigatórios, reprodutibilidade, e detecção de 1 robô adulterado.)*
 - [x] 8.3 Implementar `rake legacy:import[arquivo,dry_run]` que conta e prevê a quarentena
   sem escrever e sem exigir backup, e o relatório persistido em `report` jsonb com
   criados/pulados/quarentena por entidade. (D-LDM-5 — dry-run que abre transação e faz

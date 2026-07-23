@@ -72,6 +72,27 @@ namespace :legacy do
     puts "  entrada_ja_canonica: #{report[:entrada_ja_canonica]}"
   end
 
+  desc 'Valida §2.1 de uma amostra adversarial contra o export (rake legacy:validate_sample[<arquivo>,<ws>])'
+  task :validate_sample, %i[arquivo workspace_id] => :environment do |_t, args|
+    arquivo = args[:arquivo] or abort('uso: rake legacy:validate_sample[<arquivo.json>,<workspace_id>]')
+    ws_id = args[:workspace_id] or abort('uso: rake legacy:validate_sample[<arquivo.json>,<workspace_id>]')
+    canonical = JSON.parse(File.read(arquivo, encoding: 'UTF-8'))
+    sample = Legacy::SampleValidator.select_sample(canonical)
+
+    divergences = nil
+    Tenant.with(workspace_id: ws_id, user_id: nil) do
+      Progress::BulkRecompute.call(workspace_id: ws_id) # progress_cache tem de estar corrente
+      divergences = Legacy::SampleValidator.diffs(sample)
+    end
+
+    if divergences.any?
+      puts "VALIDAÇÃO REPROVADA — #{divergences.size}/#{sample.size} robô(s) divergente(s):"
+      divergences.each { |d| puts "  #{d[:legacy_path]}: esperado #{d[:expected]}, banco #{d[:actual]}" }
+      abort('recomendado: rake legacy:rollback[<run_id>] e voltar ao dry-run (runbook passo 5)')
+    end
+    puts "validação OK — #{sample.size} robôs amostrados, diferença zero"
+  end
+
   desc 'Desfaz um run de import legado por legacy_id_map (rake legacy:rollback[<run_id>])'
   task :rollback, [:run_id] => :environment do |_t, args|
     run_id = args[:run_id] or abort('uso: rake legacy:rollback[<run_id>]')
