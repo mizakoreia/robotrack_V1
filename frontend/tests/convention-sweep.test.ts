@@ -84,3 +84,14 @@ describe('convenção D9 — regra D: nenhuma mutation invalida ["ws", wsId] int
     expect(offenders, `invalidam o tenant inteiro: ${offenders.join(', ')}`).toEqual([])
   })
 })
+
+describe('quality-and-accessibility 4.1 — regra E: nada de outline-none INCONDICIONAL', () => {
+  // `outline-none` cru (sem `focus-visible:`/`focus:`) remove o foco em TODO estado,
+  // inclusive teclado — foco invisível sob luz de galpão. O anel do componente deve
+  // ser opt-out explícito (`focus-visible:outline-none` + `focus-visible:ring-*`), e a
+  // rede de segurança do @layer base cobre o resto. Reintroduzir `outline-none` cru falha.
+  it('nenhum className tem outline-none sem prefixo focus-visible:/focus:', () => {
+    const offenders = ALL.filter((f) => /(?<!focus-visible:)(?<!focus:)\boutline-none\b/.test(f.src)).map((f) => f.path)
+    expect(offenders, `outline-none incondicional (use focus-visible:outline-none + ring): ${offenders.join(', ')}`).toEqual([])
+  })
+})

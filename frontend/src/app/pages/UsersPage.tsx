@@ -289,7 +289,7 @@ export function UsersPage() {
                   {!viewOnly && (
                     <button
                       type="button"
-                      className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full bg-primary text-primary-foreground border border-border shadow-lg flex items-center justify-center hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                      className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full bg-primary text-primary-foreground border border-border shadow-lg flex items-center justify-center hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                       onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click() }}
                     >
                       <Upload className="h-4 w-4" />

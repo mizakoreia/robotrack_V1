@@ -36,7 +36,7 @@ export function HierarchySearchField({
         placeholder="Buscar projeto, célula ou robô"
         aria-label="Buscar projeto, célula ou robô"
         // fonte ≥ 16px evita o zoom-no-foco do iOS (7.1)
-        className="h-8 min-w-0 flex-1 bg-transparent text-base text-text-main outline-none placeholder:text-text-muted"
+        className="h-8 min-w-0 flex-1 bg-transparent text-base text-text-main placeholder:text-text-muted"
       />
       {value && <IconButton icon="close" label="Limpar busca" size="sm" onClick={onClear} />}
       <button type="submit" className="label-md rounded-md bg-accent px-3 py-1 font-medium text-accent-ink">

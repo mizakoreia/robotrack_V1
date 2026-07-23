@@ -75,7 +75,9 @@
   --destructive: var(--danger);
   --destructive-foreground: 0 0% 100%;
   --input: var(--border);
-  --ring: var(--accent);
+  /* q&a 4.1 — anel de foco AA: #60a5fa sobre superfícies escuras (≈7.5:1),
+     independente de --accent (que é o azul de MARCA, fraco como contorno). */
+  --ring: 213 94% 68%;          /* #60a5fa */
   --radius: var(--r-md);
 
   --scrollbar: #00040d;
@@ -101,6 +103,7 @@
   --warning-ink: 23 83% 31%;    /* #92400e */
   --danger-ink: 0 70% 35%;      /* #991b1b */
   --na-ink: 240 5% 26%;         /* #3f3f46 */
+  --ring: 224 76% 48%;          /* #1d4ed8 — foco AA no claro (≈6.1:1) */
   --sh-1: 0 1px 2px hsl(215 25% 27% / 0.08);
   --sh-2: 0 4px 12px hsl(215 25% 27% / 0.1);
   --sh-3: 0 12px 32px hsl(215 25% 27% / 0.16);
@@ -119,6 +122,18 @@ body {
 @layer base {
   * {
     @apply border-border;
+  }
+  /* q&a 4.1 — rede de segurança de foco: TODO elemento focado por teclado desenha
+     um contorno AA (≥2px) mesmo que o componente esqueça de estilizar o foco. Fica
+     em @layer base para os utilitários (`focus-visible:outline-none` de Button/Input,
+     que preferem o próprio ring) SOBREPOREM — sem contorno duplo. Clique de mouse
+     não desenha (`:focus:not(:focus-visible)`). */
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+  :focus:not(:focus-visible) {
+    outline: none;
   }
   html {
     /* design-system 3.1 — Inter, família única, com fallback que segue legível se

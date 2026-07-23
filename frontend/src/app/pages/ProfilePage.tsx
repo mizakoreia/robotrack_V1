@@ -18,7 +18,7 @@ function RichTextEditor({ value, onChange }: { value: string; onChange: (v: stri
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder="Escreva sua biografia..."
-      className="w-full min-h-[160px] p-3 text-sm text-foreground bg-background border border-border rounded-md outline-none"
+      className="w-full min-h-[160px] p-3 text-sm text-foreground bg-background border border-border rounded-md"
       spellCheck={false}
     />
   )

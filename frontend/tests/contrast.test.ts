@@ -60,4 +60,14 @@ describe('contraste medido dos tokens (D-DS-2)', () => {
       expect(r, `${s.name}: ${r.toFixed(2)}:1, mínimo ${s.min}:1`).toBeGreaterThanOrEqual(s.min)
     })
   })
+
+  // q&a 4.1 — o contorno de foco (--ring) é elemento não-texto (piso 3:1) e tem de
+  // ser visível sobre as DUAS superfícies de cada tema. #60a5fa (escuro) e #1d4ed8
+  // (claro) ficam bem acima (≈6-7:1); abaixo de 3:1 é foco invisível sob luz de galpão.
+  tokens.focus.forEach((s) => {
+    it(`foco ${s.name}: contorno sobre a superfície ≥ ${s.min}:1`, () => {
+      const r = ratio(s.fg, s.bg)
+      expect(r, `${s.name}: ${r.toFixed(2)}:1, mínimo ${s.min}:1`).toBeGreaterThanOrEqual(s.min)
+    })
+  })
 })
