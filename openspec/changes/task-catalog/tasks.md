@@ -5,7 +5,7 @@ Pré-requisito de todas: `commissioning-hierarchy` entregue (tabelas `projects`,
 
 ## 1. Tipo de Aplicação e esquema
 
-- [ ] 1.1 Migration `CREATE TYPE robot_application AS ENUM` com os seis valores de §1.2, na
+- [x] 1.1 Migration `CREATE TYPE robot_application AS ENUM` com os seis valores de §1.2, na
       ordem `Misto / Geral`, `Solda Ponto`, `Solda MIG`, `Handling`, `Sealing`, `Outros`;
       `down` faz `DROP TYPE`. (§1.2 — `SELECT enum_range(NULL::robot_application)` devolve
       6 rótulos na ordem declarada; um 7º valor não existe e `'Solda a Laser'::robot_application`
@@ -16,12 +16,12 @@ Pré-requisito de todas: `commissioning-hierarchy` entregue (tabelas `projects`,
       INVARIANTE que 1.1 defende — banco rejeita valor fora da lista — já vale e
       tem spec. Criar o tipo agora exigiria ALTER TYPE destrutivo para trocar
       uma constraint funcionando por outra menos reversível.)*
-- [ ] 1.2 **Backup antes de destrutivo:** dump de `robots` (`pg_dump -t robots`) e task de
+- [x] 1.2 **Backup antes de destrutivo:** dump de `robots` (`pg_dump -t robots`) e task de
       rollback documentada, antes de qualquer `ALTER TYPE` na coluna existente. (§1.2 —
       se `robots.application` já existir como `varchar` com algum valor fora do enum, a
       conversão do 1.3 aborta e o dump é o único caminho de volta.)
       *(SEM EFEITO — não há `ALTER TYPE` a fazer; ver 1.1.)*
-- [ ] 1.3 Migration que converte `robots.application` para `robot_application` (`USING
+- [x] 1.3 Migration que converte `robots.application` para `robot_application` (`USING
       application::robot_application`) **ou**, se `commissioning-hierarchy` ainda não criou
       a coluna, apenas registra a dependência do tipo. (§1.2 — após a migration,
       `UPDATE robots SET application = 'xpto'` falha no banco, não no model.)
