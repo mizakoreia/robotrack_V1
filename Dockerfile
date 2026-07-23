@@ -1,5 +1,7 @@
-# Base image for backend
-FROM ruby:3.2.0-alpine AS backend-base
+# Base image for backend — deve casar com backend/.ruby-version e o `ruby` do
+# Gemfile (3.2.3). Se divergir, o bundler aborta o build (exit 18: "Your Ruby
+# version is X, but your Gemfile specified 3.2.3").
+FROM ruby:3.2.3-alpine AS backend-base
 
 RUN apk add --no-cache \
     build-base \
