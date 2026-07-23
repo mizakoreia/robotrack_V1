@@ -109,14 +109,13 @@ module Legacy
 
       entries = projects.each_index.map do |i|
         p = projects[i]
-        { id: IdDerivation.project_id(ctx.lws, p['id']), legacy_path: "proj:#{p['id']}",
-          attrs: { workspace_id: ctx.ws_id, name: p['name'], position: order[i] }, _src: p }
+        ppath = IdDerivation.project_path(ctx.lws, p['id'])
+        { id: IdDerivation.uuid(ppath), legacy_path: ppath,
+          attrs: { workspace_id: ctx.ws_id, name: p['name'], position: order[i] }, _src: p, _path: ppath }
       end
-      flush(ctx, ::Project, 'project', entries.map { |e| e.except(:_src) })
+      flush(ctx, ::Project, 'project', entries.map { |e| e.slice(:id, :legacy_path, :attrs) })
 
-      entries.each do |e|
-        import_cells(ctx, project_id: e[:id], project: e[:_src])
-      end
+      entries.each { |e| import_cells(ctx, project_id: e[:id], project: e[:_src], project_path: e[:_path]) }
     end
 
     # position contígua 0-based por (_ord numérico, ordem de aparição) — desempate estável.
@@ -127,35 +126,34 @@ module Legacy
       order
     end
 
-    def import_cells(ctx, project_id:, project:)
+    def import_cells(ctx, project_id:, project:, project_path:)
       cells = array_of(project['cells'])
       entries = cells.each_index.map do |i|
         c = cells[i]
-        ref = IdDerivation.ref(c, i)
-        { id: IdDerivation.cell_id(ctx.lws, project['id'], ref), legacy_path: "proj:#{project['id']}/cell:#{ref}",
-          attrs: { workspace_id: ctx.ws_id, project_id: project_id, name: c['name'], position: i }, _src: c, _ref: ref }
+        cpath = "#{project_path}/cell:#{IdDerivation.ref(c, i)}"
+        { id: IdDerivation.uuid(cpath), legacy_path: cpath,
+          attrs: { workspace_id: ctx.ws_id, project_id: project_id, name: c['name'], position: i }, _src: c, _path: cpath }
       end
       resolve_name_collisions(ctx, ::Cell, entries, :project_id, :name, 'lower(name)')
       flush(ctx, ::Cell, 'cell', entries.map { |e| e.slice(:id, :legacy_path, :attrs) })
 
-      entries.each { |e| import_robots(ctx, project: project, cell_id: e[:id], cell: e[:_src], cell_ref: e[:_ref]) }
+      entries.each { |e| import_robots(ctx, cell_id: e[:id], cell: e[:_src], cell_path: e[:_path]) }
     end
 
-    def import_robots(ctx, project:, cell_id:, cell:, cell_ref:)
+    def import_robots(ctx, cell_id:, cell:, cell_path:)
       robots = array_of(cell['robots'])
       entries = []
       robots.each_index do |i|
         r = robots[i]
-        ref = IdDerivation.ref(r, i)
-        path = "proj:#{project['id']}/cell:#{cell_ref}/robot:#{ref}"
+        rpath = "#{cell_path}/robot:#{IdDerivation.ref(r, i)}"
         unless APPLICATIONS.include?(r['application'])
-          ctx.report.quarantine!(legacy_path: path, field: 'application', value: r['application'],
+          ctx.report.quarantine!(legacy_path: rpath, field: 'application', value: r['application'],
                                  reason: 'application_fora_do_enum')
           next # robô e suas tarefas ficam de fora
         end
-        entries << { id: IdDerivation.robot_id(ctx.lws, project['id'], cell_ref, ref), legacy_path: path,
+        entries << { id: IdDerivation.uuid(rpath), legacy_path: rpath,
                      attrs: { workspace_id: ctx.ws_id, cell_id: cell_id, name: r['name'],
-                              application: r['application'], position: i }, _src: r, _path: path }
+                              application: r['application'], position: i }, _src: r, _path: rpath }
       end
       resolve_name_collisions(ctx, ::Robot, entries, :cell_id, :name, 'lower(name)')
       flush(ctx, ::Robot, 'robot', entries.map { |e| e.slice(:id, :legacy_path, :attrs) })

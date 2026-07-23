@@ -224,26 +224,43 @@
 
 ## 6. As três regras de §1.4
 
-- [ ] 6.1 Implementar a cascata de responsáveis com a precedência escrita, incluindo o caso
+> **G6 — o COMPORTAMENTO das 3 regras foi construído no caminho de import (G5); G6 é a prova
+> granular por-regra (positivo + negativo), em `spec/legacy/rules_spec.rb` (11 ex., verde).**
+
+- [x] 6.1 Implementar a cascata de responsáveis com a precedência escrita, incluindo o caso
   `assignees: []` **parando** a cascata, e a gravação em `task_assignees` por `person_id`.
   (§1.4 item 1, D-LDM-4 — `assignees: []` com `resp: "Maria"` importa com **zero**
   responsáveis; cair para `resp` ressuscita quem o usuário removeu.)
-- [ ] 6.2 Implementar a conversão de `obs` em entrada `legacy` no contrato de
+      *(ENTREGUE — `assignee_cascade`/`import_assignees`: `assignees` Array (mesmo vazio)
+      ENCERRA a cascata; senão `resp` não-sentinela; senão vazio. Prova: assignees vence resp
+      (João não é criado), `assignees:[]` com resp Maria → 0 e Maria nem consultada.)*
+- [x] 6.2 Implementar a conversão de `obs` em entrada `legacy` no contrato de
   `progress-advances` (`by NULL`, `"(nota anterior)"`, `0→0`, `legacy: true`), com
   `recorded_at` derivado de `_updatedAt`/`exportedAt` e **nunca** de `Time.now`.
   (§1.4 item 2, D-LEG de `progress-advances` — dois runs em dias diferentes precisam
   produzir `recorded_at` idêntico, senão o UUIDv5 do avanço não é estável e a 4.4 quebra.)
-- [ ] 6.3 Implementar o descarte de `obs` quando `history` já tem entradas
+      *(ENTREGUE — `obs_advance`: `recorded_at` de `_updatedAt`/`exportedAt`, nunca `Time.now`.
+      Prova de determinismo: dois exports distintos com o mesmo `_updatedAt` → `recorded_at`
+      idêntico (== o valor do arquivo).)*
+- [x] 6.3 Implementar o descarte de `obs` quando `history` já tem entradas
   (`obs_descartado_historico_presente`) e a regra de status↔progresso incoerentes, com
   `progress` como fonte de verdade e `status` derivado por §2.2. (§1.4 item 2, §2.2,
   D-LDM-7 — `Concluído` com `progress: 80` importa como `Em Andamento` + 80, nem
   quarentena nem `progress: 100`.)
-- [ ] 6.4 Implementar a quarentena genérica (campo, valor bruto, `legacy_path`, motivo) sem
+      *(ENTREGUE — `quarantine_obs_if_present` + `StatusDerivation.reconcile`: `Concluído`+80
+      → `Em Andamento`+80 (aviso `status_derivado_de_progresso`); obs com history presente →
+      quarentena `obs_descartado_historico_presente`, history entra, nada legacy.)*
+- [x] 6.4 Implementar a quarentena genérica (campo, valor bruto, `legacy_path`, motivo) sem
   relaxar nenhuma constraint nem criar valor de enum novo. (D-LDM-7 — `progress: 150` não
   vira `100`: a tarefa não entra e as tarefas irmãs entram normalmente.)
-- [ ] 6.5 **Verificação**: um spec por regra de §1.4, cada um exercitando o caminho
+      *(ENTREGUE — `ImportReport#quarantine!` (legacy_path+campo+valor+motivo); nenhuma
+      constraint afrouxada. Prova: `progress:150` não vira 100, a tarefa não entra, a irmã sim.)*
+- [x] 6.5 **Verificação**: um spec por regra de §1.4, cada um exercitando o caminho
   positivo **e** o negativo da fixture. (§1.4 — o erro histórico é testar só o caminho
   feliz das três regras e descobrir o resto em produção.)
+      *(ENTREGUE — `rules_spec` (11 ex.): 3 da cascata, 4 do obs→avanço (incl. determinismo e
+      obs-vazio), 4 de coerência/quarentena (status derivado, progress 150, status inválido,
+      application inválida) — cada regra com caminho positivo E negativo.)*
 
 ## 7. Prova do sentinela (D11)
 
