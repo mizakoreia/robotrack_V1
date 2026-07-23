@@ -1,0 +1,9 @@
+# in-app-notifications 2.1 (§2.7 / D14). Bloco v1 — as três format strings EXATAS.
+# `%{n}%%` rende "45%" (o %% vira % literal, sem espaço antes). Mover qualquer
+# destas strings para um .rb quebra o CI (grep-guard de 2.3).
+pt-BR:
+  notifications:
+    v1:
+      assign: '%{author} atribuiu você à tarefa "%{task}" (robô %{robot})'
+      progress: '%{author} registrou %{n}%% na tarefa "%{task}" (robô %{robot}): %{comment}'
+      done: 'Tarefa "%{task}" (robô %{robot}) foi concluída por %{author}'

@@ -9,9 +9,9 @@
 
 ## 2. Mensagens versionadas
 
-- [ ] 2.1 Criar `config/locales/pt-BR.notifications.yml` com o bloco `v1` contendo as três format strings exatas de §2.7 (D14). (§2.7 — `I18n.t('notifications.v1.progress', ...)` produz `Bruno registrou 45% na tarefa "Ajuste de TCP" (robô R03 - Handling): Calibrado eixo 6`, com `%%` escapado corretamente e sem espaço antes do `%`)
-- [ ] 2.2 Implementar `Notifications::MessageBuilder` (objeto puro) que renderiza a chave por `type`, grava `format_version` e trunca **apenas** `%{comment}` com `…` quando a `msg` passa de 500. (§2.7 + inv. 8 — comentário de 900 chars gera `msg` de exatamente 500 chars com a descrição da tarefa e o nome do robô íntegros; a truncagem nunca corta o nome do robô)
-- [ ] 2.3 Adicionar spec de contrato que compara as três strings renderizadas caractere a caractere com os literais de §2.7, e um teste de grep que falha se `atribuiu você à tarefa` aparecer fora do locale e de testes. (D14 — mover a string para um `.rb` quebra o CI)
+- [x] 2.1 Criar `config/locales/pt-BR.notifications.yml` com o bloco `v1` contendo as três format strings exatas de §2.7 (D14). (§2.7 — `I18n.t('notifications.v1.progress', ...)` produz `Bruno registrou 45% na tarefa "Ajuste de TCP" (robô R03 - Handling): Calibrado eixo 6`, com `%%` escapado corretamente e sem espaço antes do `%`)
+- [x] 2.2 Implementar `Notifications::MessageBuilder` (objeto puro) que renderiza a chave por `type`, grava `format_version` e trunca **apenas** `%{comment}` com `…` quando a `msg` passa de 500. (§2.7 + inv. 8 — comentário de 900 chars gera `msg` de exatamente 500 chars com a descrição da tarefa e o nome do robô íntegros; a truncagem nunca corta o nome do robô)
+- [x] 2.3 Adicionar spec de contrato que compara as três strings renderizadas caractere a caractere com os literais de §2.7, e um teste de grep que falha se `atribuiu você à tarefa` aparecer fora do locale e de testes. (D14 — mover a string para um `.rb` quebra o CI)
 
 ## 3. Destinatários e regras de disparo
 
