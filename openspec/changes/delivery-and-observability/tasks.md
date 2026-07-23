@@ -7,10 +7,10 @@
 
 ## 2. Imagem, processos e saúde
 
-- [ ] 2.1 Corrigir o estágio `backend-prod` do `Dockerfile`: remover `rails assets:precompile` (a app é API-only), rodar como usuário não-root, adicionar `HEALTHCHECK` para `/health/live`. (§Topologia — o build de produção deixa de depender de um pipeline de assets inexistente e `whoami` no container não retorna `root`)
-- [ ] 2.2 Criar `Procfile` de produção (`web`/`worker`/`release`), `bin/release` com `db:migrate` sob `lock_timeout=5s` e `statement_timeout=15min`, e remover qualquer `db:migrate` do `CMD`/entrypoint. (§Fase de release — dois `web` subindo em paralelo com migration pendente não disputam o lock de `schema_migrations`; lock não obtido em 5s aborta o deploy com os `web` antigos ainda no ar)
-- [ ] 2.3 Implementar `GET /health/live` e `GET /health/ready` públicos, com `/ready` checando Postgres, Redis de fila e migrations pendentes. (§Endpoints de saúde — com Postgres fora, `/live` responde 200 e `/ready` responde 503; nenhum dos dois depende do header `X-Skip-Auth` que `seal-template-baseline` elimina)
-- [ ] 2.4 **Verificação:** criar `docker-compose.staging.yml` sobre a imagem de produção (com `healthcheck` e `depends_on: service_healthy`) e um smoke que sobe a stack, roda `bin/release` e assere 200 em `/health/ready`. (§Topologia — um `Procfile` com processo faltando reprova o smoke, não o primeiro deploy real)
+- [x] 2.1 Corrigir o estágio `backend-prod` do `Dockerfile`: remover `rails assets:precompile` (a app é API-only), rodar como usuário não-root, adicionar `HEALTHCHECK` para `/health/live`. (§Topologia — o build de produção deixa de depender de um pipeline de assets inexistente e `whoami` no container não retorna `root`)
+- [x] 2.2 Criar `Procfile` de produção (`web`/`worker`/`release`), `bin/release` com `db:migrate` sob `lock_timeout=5s` e `statement_timeout=15min`, e remover qualquer `db:migrate` do `CMD`/entrypoint. (§Fase de release — dois `web` subindo em paralelo com migration pendente não disputam o lock de `schema_migrations`; lock não obtido em 5s aborta o deploy com os `web` antigos ainda no ar)
+- [x] 2.3 Implementar `GET /health/live` e `GET /health/ready` públicos, com `/ready` checando Postgres, Redis de fila e migrations pendentes. (§Endpoints de saúde — com Postgres fora, `/live` responde 200 e `/ready` responde 503; nenhum dos dois depende do header `X-Skip-Auth` que `seal-template-baseline` elimina)
+- [x] 2.4 **Verificação:** criar `docker-compose.staging.yml` sobre a imagem de produção (com `healthcheck` e `depends_on: service_healthy`) e um smoke que sobe a stack, roda `bin/release` e assere 200 em `/health/ready`. (§Topologia — um `Procfile` com processo faltando reprova o smoke, não o primeiro deploy real)
 
 ## 3. Redis, ActionCable e CDN
 

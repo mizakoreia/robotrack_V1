@@ -1,0 +1,76 @@
+# Staging sobre a IMAGEM DE PRODUÇÃO (delivery-and-observability 2.4). Prova que o
+# build de produção sobe: `release` roda as migrations, `web`/`worker` só sobem
+# depois, e o healthcheck de `/health/ready` gate o `depends_on`. Um Procfile com
+# processo faltando reprova o smoke, não o primeiro deploy real.
+#
+# HANDOFF: o smoke (scripts/staging_smoke.sh) precisa de um daemon Docker, ausente
+# neste ambiente efêmero — registrado no runbook de delivery-and-observability.
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: robotrack_app
+      POSTGRES_PASSWORD: app_dev_pw
+      POSTGRES_DB: robotrack_staging
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U robotrack_app -d robotrack_staging']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  release:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: backend-prod
+    command: ['bin/release']
+    environment: &backend_env
+      RAILS_ENV: production
+      DATABASE_URL: postgres://robotrack_app:app_dev_pw@postgres/robotrack_staging
+      REDIS_URL: redis://redis:6379/1
+      SECRET_KEY_BASE: staging-secret-not-for-production
+      ACTION_CABLE_URL: ws://localhost:3000/cable
+      CORS_ORIGINS: http://localhost:3000
+      RAILS_LOG_TO_STDOUT: 'true'
+      FORCE_SSL: 'false'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: backend-prod
+    environment: *backend_env
+    ports:
+      - '3000:3000'
+    depends_on:
+      release:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ['CMD', 'curl', '-fsS', 'http://localhost:3000/health/ready']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: backend-prod
+    command: ['bundle', 'exec', 'sidekiq', '-C', 'config/sidekiq.yml']
+    environment: *backend_env
+    depends_on:
+      release:
+        condition: service_completed_successfully

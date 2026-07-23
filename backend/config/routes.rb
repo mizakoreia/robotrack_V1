@@ -3,6 +3,11 @@
 Robotrack::Application.routes.draw do
   # Rotas Rails mínimas; todo roteamento da API é feito via Grape
 
+  # Sondas de orquestrador (delivery-and-observability 2.3). ANTES do mount do
+  # Grape em '/', senão seriam engolidas. Públicas, sem auth.
+  get '/health/live', to: 'health#live'
+  get '/health/ready', to: 'health#ready'
+
   # Monta Grape API
   mount Api::Root => '/'
 

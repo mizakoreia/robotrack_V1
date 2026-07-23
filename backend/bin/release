@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Fase de release (delivery-and-observability 2.2). Migrations sob lock CURTO:
+#  - lock_timeout=5s: se outro processo segura o lock de schema_migrations (dois
+#    deploys concorrentes, um web antigo), aborta em 5s com os web atuais ainda no
+#    ar, em vez de pendurar o deploy.
+#  - statement_timeout=15min: uma migration que trava indefinidamente é morta, não
+#    deixa a tabela sob lock exclusivo para sempre.
+export PGOPTIONS="-c lock_timeout=5s -c statement_timeout=15min"
+
+echo "[release] rodando db:migrate sob lock_timeout=5s / statement_timeout=15min"
+bundle exec rails db:migrate
+echo "[release] migrations concluídas"

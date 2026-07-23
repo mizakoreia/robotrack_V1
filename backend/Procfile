@@ -1,0 +1,6 @@
+# Processos de produção (delivery-and-observability 2.2). O `release` roda ANTES
+# de web/worker subirem (fase de release da plataforma); migrations NÃO ficam em
+# CMD/entrypoint — dois web em paralelo não disputariam o lock de schema_migrations.
+web: bundle exec puma -C config/puma.rb
+worker: bundle exec sidekiq -C config/sidekiq.yml
+release: bin/release

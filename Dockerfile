@@ -34,11 +34,21 @@ CMD ["bundle", "exec", "rails", "server", "-b", "0.0.0.0"]
 # Production stage
 FROM backend-base AS backend-prod
 
-COPY backend/ .
+# delivery-and-observability 2.1: app é API-only (sem pipeline de assets), roda
+# como usuário NÃO-root e expõe um HEALTHCHECK de liveness. `curl` para a sonda.
+RUN apk add --no-cache curl && \
+    addgroup -S app && adduser -S app -G app
 
-RUN RAILS_ENV=production bundle exec rails assets:precompile
+COPY backend/ .
+RUN chown -R app:app /app
+USER app
 
 EXPOSE 3000
+
+# Liveness: o processo responde? (NÃO checa Postgres/Redis — isso é /health/ready,
+# do orquestrador, não do restart de container.)
+HEALTHCHECK --interval=30s --timeout=3s --start-period=20s --retries=3 \
+  CMD curl -fsS http://localhost:3000/health/live || exit 1
 
 CMD ["bundle", "exec", "puma", "-C", "config/puma.rb"]
 
