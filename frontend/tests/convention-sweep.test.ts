@@ -85,6 +85,25 @@ describe('convenção D9 — regra D: nenhuma mutation invalida ["ws", wsId] int
   })
 })
 
+describe('quality-and-accessibility 8.4 (D-QA-7) — gsap fora do chunk de entrada', () => {
+  // gsap é pesado e SÓ serve à landing de marketing (campfire). Import estático no
+  // grafo do entry o punha no chunk inicial (estourando o teto gzip). Duas travas
+  // garantem o code-split: (1) gsap só vive em components/campfire/; (2) a landing
+  // entra por `lazy(() => import(...))` em App.tsx, nunca por import estático.
+  it('gsap só é importado dentro de components/campfire/', () => {
+    const offenders = ALL.filter(
+      (f) => /from ['"]gsap['"]/.test(f.src) && !f.path.startsWith('components/campfire/'),
+    ).map((f) => f.path)
+    expect(offenders, `gsap importado fora de campfire/ (entraria no entry): ${offenders.join(', ')}`).toEqual([])
+  })
+
+  it('a landing (campfire/HomePage) é lazy em App.tsx — nunca import estático', () => {
+    const app = ALL.find((f) => f.path === 'app/App.tsx')!.src
+    expect(/const HomePage = lazy\(\s*\(\)\s*=>\s*import\(/.test(app), 'HomePage tem de ser lazy(() => import(...))').toBe(true)
+    expect(/^import\s+\{[^}]*\bHomePage\b[^}]*\}\s+from/m.test(app), 'HomePage não pode ter import estático em App.tsx').toBe(false)
+  })
+})
+
 describe('quality-and-accessibility 4.1 — regra E: nada de outline-none INCONDICIONAL', () => {
   // `outline-none` cru (sem `focus-visible:`/`focus:`) remove o foco em TODO estado,
   // inclusive teclado — foco invisível sob luz de galpão. O anel do componente deve

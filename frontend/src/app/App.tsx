@@ -1,10 +1,13 @@
 // App component
-import { useEffect } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import { initAmbient } from '@/lib/ambient'
-import { HomePage } from '@/app/pages/HomePage'
+// quality-and-accessibility 8.4 (D-QA-7) — a landing de marketing arrasta o campfire
+// e o `gsap` (pesado); carregá-la EAGER punha `gsap` no chunk de entrada e estourava
+// o teto gzip. `lazy` a manda para um chunk próprio, alcançado só em `/apresentacao`.
+const HomePage = lazy(() => import('@/app/pages/HomePage').then((m) => ({ default: m.HomePage })))
 import { AuthPage } from '@/features/auth/AuthPage'
 import { OAuthCallbackPage } from '@/features/auth/OAuthCallbackPage'
 import { InviteRoute } from '@/features/auth/InviteRoute'
@@ -41,7 +44,7 @@ function App() {
           {/* app-shell-navigation 4.1 — a landing de marketing do template sai de
               `/` (que passa a ser a Visão Geral autenticada) e fica alcançável em
               `/apresentacao` até `seal-template-baseline` decidir seu destino. */}
-          <Route path="/apresentacao" element={<HomePage />} />
+          <Route path="/apresentacao" element={<Suspense fallback={null}><HomePage /></Suspense>} />
           <Route path="/entrar" element={<AuthPage />} />
           <Route path="/build" element={<BuildPage />} />
 
