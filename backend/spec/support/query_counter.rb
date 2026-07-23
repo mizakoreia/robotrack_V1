@@ -32,3 +32,32 @@ RSpec::Matchers.define :issue_at_most do |max|
       @queries.map { |q| "  #{q.gsub(/\s+/, ' ')[0, 100]}" }.join("\n")
   end
 end
+
+# quality-and-accessibility 8.2 — contagem crua de SELECT de um bloco, para medir a
+# VARIAÇÃO com o tamanho do dataset (a assinatura real de N+1: teto absoluto passa
+# folgado com dataset pequeno; o que morde é a contagem crescer com N). Limpa o
+# cache de query do AR ANTES de medir, senão a 2ª amostra herda resultados em cache
+# e a variação some. Mesma filtragem do `issue_at_most` (sem SCHEMA/TRANSACTION/`SELECT 1`).
+module QueryCountHelper
+  def count_queries
+    ActiveRecord::Base.connection.clear_query_cache
+    queries = []
+    sub = ActiveSupport::Notifications.subscribe('sql.active_record') do |*, payload|
+      name = payload[:name].to_s
+      sql = payload[:sql].to_s
+      next if name =~ /SCHEMA|TRANSACTION/i
+      next unless sql =~ /\A\s*SELECT/i
+      next if sql =~ /\A\s*SELECT\s+1\b/i
+
+      queries << sql
+    end
+    begin
+      ActiveRecord::Base.uncached { yield }
+    ensure
+      ActiveSupport::Notifications.unsubscribe(sub)
+    end
+    queries.size
+  end
+end
+
+RSpec.configure { |c| c.include QueryCountHelper }
