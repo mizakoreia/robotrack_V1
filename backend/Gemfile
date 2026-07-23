@@ -76,3 +76,9 @@ end
 group :test do
   gem 'simplecov', require: false
 end
+
+# delivery-and-observability 4.1-4.3 — observabilidade
+gem 'lograge'
+gem 'sentry-ruby'
+gem 'sentry-rails'
+gem 'sentry-sidekiq'

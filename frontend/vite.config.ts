@@ -50,6 +50,10 @@ export default defineConfig({
     },
   },
   build: {
+    // delivery-and-observability 4.2 — emite source maps para o Sentry mapear o
+    // stack de produção. O CI os ENVIA ao Sentry e NÃO os publica no CDN (o
+    // nginx.conf só serve /assets; os .map ficam fora do bundle servido).
+    sourcemap: true,
     rollupOptions: {
       output: {
         manualChunks: {

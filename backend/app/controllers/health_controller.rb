@@ -2,7 +2,7 @@
 
 # Sondas de orquestrador (delivery-and-observability 2.3). Rotas Rails PÚBLICAS,
 # montadas ANTES do Grape (senão o mount em '/' as engoliria), sem passar pelo
-# before-hook de autenticação da API e sem depender do header `X-Skip-Auth`.
+# before-hook de autenticação da API e sem depender de nenhum header de bypass.
 #
 # Distinção que importa:
 #   /health/live  — "o processo está vivo?" — NÃO toca dependências. É o que o

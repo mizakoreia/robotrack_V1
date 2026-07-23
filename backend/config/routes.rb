@@ -8,6 +8,9 @@ Robotrack::Application.routes.draw do
   get '/health/live', to: 'health#live'
   get '/health/ready', to: 'health#ready'
 
+  # Métricas Prometheus (delivery-and-observability 4.4), protegidas por METRICS_TOKEN.
+  get '/metrics', to: 'metrics#index'
+
   # Monta Grape API
   mount Api::Root => '/'
 

@@ -56,6 +56,11 @@ module EnvSchema
       name: 'CORS_ORIGINS', type: :csv, required_in: %i[production staging],
       default: nil, help: 'Origens permitidas, separadas por vírgula.'
     ),
+    # ── Observabilidade ──────────────────────────────────────────────────────
+    Entry.new(name: 'METRICS_TOKEN', type: :string, required_in: %i[production staging],
+              default: nil, help: 'Bearer token do /metrics (Prometheus). Sem ele o endpoint responde 401.'),
+    Entry.new(name: 'SENTRY_DSN', type: :string, required_in: [], default: nil,
+              help: 'DSN do Sentry. Ausente = rastreio de exceção desligado (dev/test).'),
     # ── Toggles com default seguro ───────────────────────────────────────────
     Entry.new(name: 'FORCE_SSL', type: :bool, required_in: [], default: 'true',
               help: 'Redireciona http→https. Default ligado.'),
