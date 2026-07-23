@@ -70,9 +70,9 @@ npm install
 ## 3. Paridade — deve passar igual ao container (confirma que a WSL está sã)
 
 ```bash
-# BACKEND: a suíte INTEIRA num run só. No container rodei DIRIGIDO por capacidade
-# (contenção de lock ao rodar duas suítes juntas); na WSL vale rodar tudo de uma vez
-# — é validação cross-capability que eu não fiz aqui.
+# BACKEND: a suíte INTEIRA num run só. ATUALIZAÇÃO: o container remoto AGORA roda a
+# suíte inteira (ruby 3.2.3 + gems prontos) — resultado de referência 1382/0, 8 pending,
+# com raise_on_missing_translations ligado e Redis no ar. Rode aqui pra confirmar paridade.
 cd backend
 export PATH="$(rbenv root)/versions/3.2.3/bin:$PATH"   # ou rbenv shims
 RAILS_ENV=test bundle exec rspec        # roda como robotrack_app; esperado: verde

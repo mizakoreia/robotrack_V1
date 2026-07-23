@@ -1,4 +1,4 @@
-# Continuidade — estado em 23/07/2026
+# Continuidade — estado em 23/07/2026 (atualizado ao fim da sessão de validação+q&a)
 
 Ponto de retomada do porte. Para uma sessão nova de agente, o prompt de partida
 está em [PROMPT DE RETOMADA](#prompt-de-retomada), no fim.
@@ -7,7 +7,7 @@ está em [PROMPT DE RETOMADA](#prompt-de-retomada), no fim.
 
 **Mudou desde as ondas iniciais: não é mais empilhamento de branches.** Agora:
 
-- Todo o trabalho vive em `main` — **`main` é a versão mais atual** (tip `208b332`).
+- Todo o trabalho vive em `main` — **`main` é a versão mais atual** (tip `72f0847`).
 - O desenvolvimento acontece na branch de feature
   `claude/robotrack-task-catalog-tc-g3-6os4vm`, que é **fast-forwarded para `main`
   a cada grupo** e empurrada. No momento a feature e `main` apontam para o MESMO
@@ -19,37 +19,57 @@ está em [PROMPT DE RETOMADA](#prompt-de-retomada), no fim.
   apagadas, MAS o `git push origin --delete` está bloqueado pelo classificador de
   permissão do ambiente — apagar pela UI do GitHub ou liberar a permissão Bash.
 
-> **22 de 24 changes COMPLETAS.** Faltam só: `quality-and-accessibility` (gate de
-> release — depende de um harness de CI/Playwright que NÃO existe no repo; seria
-> entrega de config + specs + handoff) e `legacy-data-migration` (**BLOQUEADA** —
-> falta o insumo `RoboTrack_Database.json`, o export de dados legado).
+> **23 de 24 changes 100% COMPLETAS** (0 tarefas abertas). Em andamento:
+> `quality-and-accessibility` — **25/39 tarefas fechadas** (todo o delta que fecha
+> SEM navegador: G0 reconciliação, G1 fundação de teste, G2 i18n, G3 contraste,
+> G4 foco, G5 leitor de tela, e G8 perf 8.2/8.4 + 8.1/8.3/8.6 reconciliadas). As
+> **14 restantes são G-B — o harness Playwright + os 5 fluxos E2E + gate axe-core +
+> INP + E2E de teclado + auditor de toque** (browser-gated). Chromium roda AQUI, mas
+> WebKit + pipeline de CI são handoff — ver a seção "quality-and-accessibility".
+> `legacy-data-migration` segue **BLOQUEADA** (falta `RoboTrack_Database.json`).
 
-## Suítes (estado atual, na `main`)
+## Suítes (estado atual, na `main` — RODADAS INTEIRAS, não mais dirigidas)
+
+**Correção importante desta sessão: o toolchain RODA por completo aqui.** O ruby 3.2.3
+está em `/opt/rbenv/versions/3.2.3` COM as gems instaladas (`bundle check` ok, Rails
+8.0.4), e a suíte backend inteira roda num run só.
 
 | Suíte | Resultado |
 |---|---|
-| Frontend `vitest run` | **527 / 0** |
-| Frontend `tsc --noEmit` / `npm run lint` | limpos |
-| Backend `rspec` (por capacidade; suíte dirigida por grupo) | verde em cada grupo entregue (ex.: notifications+ops+advances+sweeps 155/0; governança/health 277/0) |
+| Backend `rspec` (INTEIRA, como `robotrack_app`) | **1382 / 0** (8 pending; com `raise_on_missing_translations` ligado) |
+| Frontend `vitest run` | **537 / 0** (93 arquivos) |
+| Frontend `tsc --noEmit` (build) / `npm run lint` | limpos |
+| Guarda de import em teste (`typecheck:test-imports`) | limpo (reprova `TS2307`) |
+
+> Nota: as 5 "falhas" que aparecem se o **Redis estiver desligado** são todas
+> `cable_tickets`/`ApplicationCable::Connection` (`ECONNREFUSED`) — ambientais.
+> Com `redis-server` no ar, esses 9 exemplos passam. Suba o Redis antes da suíte cheia.
 
 > **Ambiente (container efêmero — refazer a cada sessão):**
+> - **Ruby PRONTO:** `export PATH="/opt/rbenv/versions/3.2.3/bin:$PATH"` (o 3.3 do
+>   sistema sombreia; sem o export, `bundle` recusa por versão e não acha `rails`).
+>   As gems JÁ estão instaladas — não precisa `bundle install`.
 > - **Postgres CAI com frequência** ("Connection refused" na 5432): reinicie com
->   `pg_ctlcluster 16 main start`. Migrations como `robotrack_migrator`
->   (`DATABASE_URL="postgres://robotrack_migrator:mig_dev_pw@localhost/robotrack_<dev|test>"`);
->   a suíte roda como `robotrack_app` (default do `database.yml`).
-> - **Redis:** instalado; subir com `redis-server --daemonize yes` quando um spec
->   precisar (dedup de alerta, rack-attack, topologia). Já foi subido nesta sessão.
-> - **Ruby:** `export PATH="/opt/rbenv/versions/3.2.3/bin:$PATH"` (o 3.3 sombreia).
-> - **Frontend:** usa **npm** (`npm run lint`, `npx vitest run`, `npx tsc`). Há
->   `.eslintrc.cjs` mínimo (guarda de storage + `new Notification`).
-> - **Sem daemon Docker** (smokes de deploy = handoff). **Sem Playwright local**
->   (E2E são integração RTL/`fake-indexeddb`; screenshots via Chromium headless em
->   `/opt/pw-browsers/chromium_headless_shell-*/chrome-linux/headless_shell
->   --screenshot`).
-> - **Assinatura de commit IMPOSSÍVEL** (sem chave em `/home/claude/.ssh/` e sem
->   `ssh-keygen`): todos os commits saem "Unverified". O e-mail JÁ é
->   `noreply@anthropic.com` — é limitação de ambiente, não erro. O stop-hook avisa
->   toda vez; não há ação a tomar.
+>   `pg_ctlcluster 16 main start` (aconteceu 3× nesta sessão + 1 restart de worker).
+>   Bancos `robotrack_dev`/`robotrack_test` + papéis já existem; migrations como
+>   `robotrack_migrator` (`postgres://robotrack_migrator:mig_dev_pw@localhost:5432/robotrack_<dev|test>`);
+>   a suíte conecta como `robotrack_app` (`app_dev_pw`, default do `database.yml`).
+> - **Redis:** `redis-server --daemonize yes` (necessário para a suíte cheia — cable
+>   tickets — e para specs de alerta/rack-attack/topologia).
+> - **Frontend:** **npm**. Suíte inteira roda (`npx vitest run`). Há `.eslintrc.cjs`
+>   mínimo; a guarda de a11y completa é justamente parte desta última onda.
+> - **Chromium + Playwright FUNCIONAM aqui** (não é mais "sem Playwright"): o binário
+>   está em `/opt/pw-browsers/chromium-*/chrome-linux/chrome`; `playwright-core` foi
+>   instalado no frontend e dirigiu o browser real (login + screenshots das telas).
+>   O harness `@playwright/test` da onda 10 É CONSTRUÍVEL aqui — o que fica de handoff
+>   é o **WebKit** e o **pipeline de CI**, não o Chromium.
+> - **Ainda sem daemon Docker** (smokes de deploy do D11 = handoff pra WSL).
+> - **App demo rodável:** `rails s -p 3000` (dev) + `npm run dev` (vite :5173, proxy
+>   `/api`→:3000). Seed de demo (usuário `demo@robotrack.local`/`demo1234` + workspace
+>   + hierarquia) via `rails runner` — ver o scratchpad da sessão se precisar repetir.
+> - **Assinatura de commit IMPOSSÍVEL** (sem chave): todos os commits saem
+>   "Unverified". O e-mail JÁ é `noreply@anthropic.com` — limitação de ambiente. O
+>   stop-hook avisa toda vez; não há ação a tomar.
 
 ## Changes concluídas (22 de 24)
 
@@ -317,30 +337,54 @@ Cada change tem seu `openspec/changes/<nome>/EXECUCAO.md` com o mapa de grupos, 
 decisões tomadas na execução, as armadilhas encontradas e a CONCLUSÃO com o relatório
 final. **Leia o EXECUCAO.md antes de tocar no código de uma change.**
 
-## Onde parou: 5 waves fechadas nesta sessão; 2 restam
+## Onde parou: validação na WSL + 8 defeitos corrigidos + q&a até 25/39
 
-Nesta sessão fecharam, em ordem: **`workspace-settings`** (reset de fábrica que
-arquiva), **`realtime-collaboration`** (D6, ActionCable), **`offline-pwa`** (D7,
-fila offline + SW + overlay), **`delivery-and-observability`** (D11, infra/observab.)
-e **`in-app-notifications`** (D-N). Cada uma seguiu o protocolo por grupo (G0
-reconciliação → grupo a grupo → commit `G<n>:` → ff `main` → push) e tem seu
-`EXECUCAO.md`. Tudo na `main` (`208b332`).
+Esta sessão fez três coisas, nesta ordem:
 
-## O que resta (2 de 24)
+**1. Validou as 5 waves da sessão anterior na WSL** (o ambiente com Docker/navegador
+que fecha os handoffs). A WSL rodou a suíte INTEIRA e expôs 8 defeitos reais que os
+runs dirigidos-por-capacidade não pegavam — todos corrigidos e verificados AQUI
+(agora que a suíte inteira roda no container):
+  - Dockerfile base `ruby:3.2.0`→`3.2.3` (o build prod abortava, exit 18);
+  - policy de notificação (doubles `person_id`→`recipient_person_id`);
+  - tripwire de realtime (`Notification` sem `RealtimePublishable` → `realtime_publishes`);
+  - contrato D-H6 (dropou FKs de hierarquia de `notifications`, migration `20260724100003`);
+  - cobertura cross-tenant (`/workspaces/:id/sync` + `/notifications/:id/read`);
+  - partição de audit (teste 8.1 acoplado ao relógio → deriva de `Time.current`);
+  - superfície swagger (notifications + health).
 
-- **`quality-and-accessibility`** (Onda 10, gate de release) — depende de TODAS as
-  telas (prontas) mas o PROPRIO proposal diz que NÃO entrega o pipeline de CI, os
-  runners nem o harness Playwright. Neste ambiente não há Docker daemon nem
-  Playwright local. Entregável realista: orçamento de query por tela, sweeps de
-  a11y, specs de integração + a config, com o harness Playwright/WebKit e o
-  pipeline de CI como **handoff** (mesmo padrão dos handoffs de deploy do D11 e do
-  Playwright do realtime/offline). Vários handoffs de outras ondas apontam para
-  cá (E2E offline Chromium+WebKit, etc.).
-- **`legacy-data-migration`** — **BLOQUEADA por insumo ausente**: o proposal declara
-  que o arquivo `RoboTrack_Database.json` (o export do Firestore legado) **não foi
-  fornecido**. Sem ele, a migração real não roda. Dá para entregar o esquema do
-  importador + os validadores + specs contra fixtures sintéticas, mas a execução
-  fim-a-fim precisa do arquivo. **Peça o arquivo ao cliente antes de começar.**
+**2. Diagnosticou e corrigiu o #6 — `BulkRecompute` de 15 min** (rodei EXPLAIN sobre
+93k tasks EU MESMO): **não era RLS nem work_mem, era estatística fria** — após
+`insert_all` massivo o otimizador via `rows≈1` e escolhia nested-loop em cascata
+(~3k×93k). Fix: **`SET LOCAL enable_nestloop = off`** nos 3 roll-ups de
+`Progress::BulkRecompute` (mesmo remédio já usado em `my-tasks-view`). **15 min → ~0,1s**;
+os 3 benchmarks `:slow` passam; `query_budget` mantém 3 UPDATEs.
+
+**3. Onda `quality-and-accessibility` até 25/39** (grupo a grupo, com EXECUCAO G0 que
+mostrou a onda ~70% JÁ satisfeita pelas ondas 1-9). Fechado tudo que não precisa de
+navegador — ver a seção da change abaixo. Também fechou os últimos itens soltos de
+`task-catalog` (1.1-1.3 reconciliados) e `workspace-settings` (5.10, alerta de reset).
+
+Tudo na `main` (`72f0847`). **VALIDACAO_WSL.md** na raiz tem o runbook dos handoffs
+que só a WSL/deploy fecham (incl. §4.6 EXPLAIN e §4.1 smoke Docker).
+
+## O que resta
+
+- **`quality-and-accessibility`** (Onda 10) — **25/39**. As 14 abertas são TODAS o
+  **G-B (browser-gated)**: harness `@playwright/test` (6.1-6.3), os 5 fluxos E2E
+  (7.1-7.7), gate `@axe-core/playwright` (5.6), E2E de teclado (4.4), auditor de alvo
+  de toque (5.5), INP com 24 cards (8.5). O G0 (`EXECUCAO.md`) e os `tasks.md`
+  reconciliam tarefa-a-tarefa o que já estava pronto vs o delta. **Chromium roda AQUI**
+  (dá para construir o harness + os fluxos), mas **WebKit + pipeline de CI são handoff**
+  — e a lógica dos 5 fluxos já tem cobertura de integração RTL. Decisão registrada: não
+  vale construir o G-B num sandbox instável que fecha só parcialmente; melhor no CI
+  limpo. Se for construir aqui: `npm i -D @playwright/test`, `e2e/playwright.config.ts`
+  apontando pro build de produção servido, fixture de 2 `BrowserContext`, seed
+  `rt:seed:e2e` de UUID fixo.
+- **`legacy-data-migration`** — **BLOQUEADA**: falta `RoboTrack_Database.json` (export
+  legado). **Peça o arquivo ao cliente** — destrava 38 tarefas de uma vez. Dá para
+  adiantar esquema do importador + validadores contra fixtures sintéticas, mas a
+  execução fim-a-fim precisa do arquivo.
 
 **SEAMS/handoffs abertos que valem lembrar:**
 - **offline-pwa:** flipar `useRecordAdvance`/`useHierarchy` para ENFILEIRAR quando
@@ -407,17 +451,20 @@ MIG_DEV="postgres://robotrack_migrator:mig_dev_pw@localhost/robotrack_dev"
 MIG_TEST="postgres://robotrack_migrator:mig_dev_pw@localhost/robotrack_test"
 RAILS_ENV=development DATABASE_URL=$MIG_DEV  bundle exec rails db:migrate
 RAILS_ENV=test        DATABASE_URL=$MIG_TEST bundle exec rails db:migrate
-redis-server --daemonize yes    # quando um spec precisar de Redis
-RAILS_ENV=test bundle exec rspec spec/<capacidade>/   # rode DIRIGIDO por capacidade
+redis-server --daemonize yes    # NECESSÁRIO para a suíte cheia (cable tickets)
+RAILS_ENV=test bundle exec rspec              # a suíte INTEIRA roda (1382/0); ou dirija por capacidade
 
 cd ../frontend
-npm run lint && npx tsc --noEmit && npx vitest run    # frontend usa NPM (há .eslintrc.cjs)
+npm run lint && npx tsc --noEmit && npx vitest run    # frontend usa NPM; suíte inteira 537/0
+npm run typecheck:test-imports                # guarda de import em teste (q&a 1.3)
 ```
 
-Screenshots de algo gráfico: Chromium headless em
-`/opt/pw-browsers/chromium_headless_shell-*/chrome-linux/headless_shell --screenshot`
-sobre um HTML no scratchpad (não há Playwright local). Validação de spec OpenSpec:
-`npx --yes @fission-ai/openspec@1.6.0 validate <change> --strict`.
+Para VER a GUI de verdade: `RAILS_ENV=development rails s -p 3000` + `npm run dev`
+(vite :5173, proxy `/api`→:3000) e dirija o Chromium real via `playwright-core`
+(`executablePath: /opt/pw-browsers/chromium-*/chrome-linux/chrome`) — foi assim que os
+screenshots das telas foram feitos. Screenshot rápido de HTML solto também dá por
+`chromium_headless_shell-*/chrome-linux/headless_shell --screenshot`. Validação de spec
+OpenSpec: `npx --yes @fission-ai/openspec@1.6.0 validate <change> --strict`.
 
 ## PROMPT DE RETOMADA
 
@@ -426,18 +473,23 @@ sobre um HTML no scratchpad (não há Playwright local). Validação de spec Ope
 > API-only + React 18/TS, organizada com OpenSpec — 24 changes em `openspec/changes/`.
 >
 > Leia `CONTINUIDADE.md` na raiz: tem o estado atual, o modelo de git, o que já foi
-> entregue e o método. **22 das 24 changes estão COMPLETAS** — todo o backend do núcleo,
-> a base visual, a moldura, as telas (Visão Geral/Projeto/Célula, `/robo/:id`,
-> `/minhas-tarefas`, `/relatorio`, `/configuracoes`), a auditoria imutável, o **tempo
-> real** (ActionCable), a **fila offline** (PWA), a **infra/observabilidade** e as
-> **notificações**. Tudo na `main` (`208b332`); a branch de trabalho
+> entregue e o método. **23 das 24 changes estão 100% COMPLETAS** — todo o backend do
+> núcleo, a base visual, a moldura, as telas, a auditoria imutável, o **tempo real**
+> (ActionCable), a **fila offline** (PWA), a **infra/observabilidade** e as
+> **notificações**. A 24ª, `quality-and-accessibility`, está em **25/39** (só falta o
+> G-B de navegador). Tudo na `main` (`72f0847`); a branch de trabalho
 > `claude/robotrack-task-catalog-tc-g3-6os4vm` aponta para o mesmo commit da `main`.
 >
-> **Restam 2 changes:** `quality-and-accessibility` (gate de release — o harness de
-> CI/Playwright NÃO existe no repo e não há Docker/Playwright neste ambiente; entrega
-> realista = specs de integração + config + handoff do harness) e `legacy-data-migration`
-> (**BLOQUEADA** — falta o insumo `RoboTrack_Database.json`; peça o arquivo ao cliente
-> antes de começar).
+> **O toolchain RODA por completo neste ambiente** (correção sobre notas antigas): ruby
+> 3.2.3 em `/opt/rbenv` COM gems, suíte backend inteira **1382/0**, frontend **537/0**,
+> e Chromium+Playwright dirigem o browser real. O que ainda é handoff: WebKit, pipeline
+> de CI e smokes de deploy Docker (WSL).
+>
+> **Restam:** `quality-and-accessibility` (as 14 tarefas abertas são o G-B: harness
+> Playwright + 5 fluxos E2E + axe + INP + E2E teclado + auditor de toque — Chromium roda
+> aqui, WebKit/CI são handoff; a lógica já tem cobertura de integração RTL) e
+> `legacy-data-migration` (**BLOQUEADA** — falta `RoboTrack_Database.json`; peça o
+> arquivo ao cliente antes de começar).
 >
 > **Método (mantido):** uma change por vez; ANTES de qualquer código escreva
 > `openspec/changes/<change>/EXECUCAO.md` reconciliando o design com a REALIDADE do repo
