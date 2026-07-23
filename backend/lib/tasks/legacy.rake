@@ -1,9 +1,59 @@
 # frozen_string_literal: true
 
-# legacy-data-migration — os pontos de entrada operacionais do porte do legado.
-# G2 entrega o `rollback` (a rede fina de D-LDM-6). `normalize`/`import`/
-# `validate_sample` chegam nos grupos seguintes (G3/G8).
+require 'digest'
+require 'json'
+
+# legacy-data-migration — os pontos de entrada operacionais do porte do legado:
+# `normalize` (G3), `import`/`import[,true]` dry-run/`rollback` (G2/G8). A ordem do
+# corte (runbook) vive em `delivery-and-observability/RUNBOOK-legacy-cutover.md`.
 namespace :legacy do
+  desc 'Importa (ou dry-run) um canônico v1: rake legacy:import[<arquivo>,<dry_run true|false>]'
+  task :import, %i[arquivo dry_run] => :environment do |_t, args|
+    arquivo = args[:arquivo] or abort('uso: rake legacy:import[<arquivo.json>,<dry_run true|false>]')
+    dry = args[:dry_run].to_s == 'true'
+    canonical = JSON.parse(File.read(arquivo, encoding: 'UTF-8'))
+
+    begin
+      Legacy::ImportGuards.verify_schema_version!(canonical)
+      Legacy::ImportGuards.validate_schema!(canonical)
+    rescue Legacy::ImportGuards::SchemaVersionError, Legacy::ImportGuards::SchemaError => e
+      abort("import recusado (nenhuma escrita): #{e.message}")
+    end
+
+    if dry
+      report = Legacy::ImportService.dry_run(canonical: canonical)
+      puts 'DRY-RUN (nada escrito):'
+      print_report(report)
+      next
+    end
+
+    ws_id = ENV['LEGACY_IMPORT_WORKSPACE_ID'] or abort('defina LEGACY_IMPORT_WORKSPACE_ID (workspace de destino)')
+    sha = Digest::SHA256.file(arquivo).hexdigest
+    force = ENV['LEGACY_IMPORT_FORCE'].to_s == 'true'
+    run = nil
+    begin
+      Tenant.with(workspace_id: ws_id, user_id: nil) do
+        Legacy::ImportContext.verify_sha256!(workspace_id: ws_id, file_sha256: sha, force: force)
+        run = LegacyImportRun.create!(workspace_id: ws_id, legacy_owner_uid: canonical.dig('workspace', 'ownerUid'),
+                                      file_sha256: sha, status: 'pending')
+        Legacy::BackupService.call(run: run) # backup ANTES de qualquer escrita (D-LDM-6)
+      end
+    rescue Legacy::ImportContext::Sha256Mismatch, Legacy::ImportContext::ProvenanceError, Legacy::BackupService::Error => e
+      abort("import recusado antes da 1ª escrita: #{e.message}")
+    end
+
+    report = Legacy::ImportService.call(canonical: canonical, run: run)
+    puts "import concluído (run #{run.id}):"
+    print_report(report)
+  end
+
+  def print_report(report)
+    puts "  criados:    #{report.created.to_h}"
+    puts "  pulados:    #{report.skipped.to_h}" if report.skipped.any?
+    puts "  quarentena: #{report.quarantine.size} (#{report.quarantine.map { |q| q['reason'] }.tally})"
+    puts "  avisos:     #{report.warnings.map { |w| w['reason'] }.tally}" if report.warnings.any?
+  end
+
   desc 'Pré-processa o export bruto no canônico v1 (rake legacy:normalize[<entrada>,<saida>])'
   task :normalize, %i[entrada saida] => :environment do |_t, args|
     entrada = args[:entrada] or abort('uso: rake legacy:normalize[<entrada.json>,<saida.json>]')

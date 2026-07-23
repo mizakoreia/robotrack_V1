@@ -10,6 +10,7 @@ module Legacy
   module ImportContext
     ContextMissing  = Class.new(StandardError)
     ProvenanceError = Class.new(StandardError)
+    Sha256Mismatch  = Class.new(StandardError)
 
     module_function
 
@@ -48,6 +49,23 @@ module Legacy
 
       raise ProvenanceError,
             "workspace #{workspace_id} já importado por outro ownerUid — arquivo recusado (procedência)"
+    end
+
+    # legacy-data-migration 8.4 (D-LDM-2) — reimportar um arquivo com `file_sha256` DIFERENTE
+    # para um workspace que já tem run concluído é recusado (sem `--force`), citando os dois
+    # hashes. Reexportar depois de reordenar arrays produz ids diferentes e duplicaria a
+    # hierarquia inteira em silêncio. Deve rodar sob o contexto de tenant (lê `legacy_import_runs`).
+    def verify_sha256!(workspace_id:, file_sha256:, force: false)
+      return if force
+
+      prior = LegacyImportRun.where(workspace_id: workspace_id, status: 'completed')
+                             .where.not(file_sha256: file_sha256)
+                             .order(created_at: :desc).first
+      return unless prior
+
+      raise Sha256Mismatch,
+            "workspace #{workspace_id} já importado com sha256 #{prior.file_sha256}; " \
+            "este arquivo é #{file_sha256}. Use --force para reimportar."
     end
   end
 end

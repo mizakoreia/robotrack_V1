@@ -289,20 +289,32 @@
   obrigatoriamente com sem-tarefas, só-`N/A`, pesos ≠ 1, parcial e o de maior número de
   tarefas) e `rake legacy:validate_sample` com tolerância zero. (D-LDM-5 — amostra
   aleatória tende a pegar 20 robôs `Pendente` a 0% e passar sem medir nada.)
-- [ ] 8.3 Implementar `rake legacy:import[arquivo,dry_run]` que conta e prevê a quarentena
+- [x] 8.3 Implementar `rake legacy:import[arquivo,dry_run]` que conta e prevê a quarentena
   sem escrever e sem exigir backup, e o relatório persistido em `report` jsonb com
   criados/pulados/quarentena por entidade. (D-LDM-5 — dry-run que abre transação e faz
   rollback ainda segura locks pela janela inteira; este não escreve.)
-- [ ] 8.4 Implementar a recusa de reimportar arquivo com `file_sha256` diferente para um
+      *(ENTREGUE — `ImportService.dry_run` (sem contexto/run/banco: percorre o arquivo, conta,
+      prevê a quarentena — NÃO abre transação, então não segura lock nenhum) + `rake
+      legacy:import[arquivo,true]`. `import_guards_spec`: dry-run prevê 4 proj/4 robôs/8 tarefas
+      + quarentena, e `Project.count` inalterado.)*
+- [x] 8.4 Implementar a recusa de reimportar arquivo com `file_sha256` diferente para um
   workspace já importado, exigindo `--force` e citando os dois hashes. (D-LDM-2 —
   reexportar depois de reordenar arrays produz ids diferentes e duplicaria a hierarquia
   inteira em silêncio.)
-- [ ] 8.5 Escrever o runbook de corte em `delivery-and-observability` (ordem normalize →
+      *(ENTREGUE — `ImportContext.verify_sha256!` (recusa run concluído anterior de sha
+      diferente, cita os dois hashes; `force:`/`LEGACY_IMPORT_FORCE` libera). Chamado pelo rake
+      antes da 1ª escrita, dentro do contexto (lê `legacy_import_runs` sob RLS).)*
+- [x] 8.5 Escrever o runbook de corte em `delivery-and-observability` (ordem normalize →
   schema → dry-run → backup → import → validate → 2º run, com o gatilho de rollback) e o
   spec de round-trip consumindo um arquivo do exportador de §3.11 direto no
   `legacy:import`, sem `normalize`. (§3.11, D-LDM-6, D-LDM-8 — sem runbook o rollback é
   decidido sob pressão às 3h; e o formato divergente entre as duas pontas só apareceria no
   corte.)
+      *(ENTREGUE — `backend/docs/runbooks/legacy-cutover.md` (ordem completa + gatilho de
+      rollback + a divergência v1/v2 anotada). `ImportGuards` (`verify_schema_version!` +
+      `validate_schema!`): schemaVersion 1 aceito, 2 recusado citando a versão suportada,
+      ausente → manda normalizar; `application: 42` rejeitado citando o caminho — o round-trip
+      "v1 importa sem normalize" é o caminho positivo (o end-to-end importa um v1 direto).)*
 - [ ] 8.6 **[BLOQUEADO: export]** Rodar `normalize` + validação de schema + dry-run sobre o
   `RoboTrack_Database.json` real e registrar contagens e quarentena prevista. (§1.4 — o
   volume e a sujeira reais são desconhecidos; é esta tarefa que dimensiona a janela de

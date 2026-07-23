@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'time'
+require 'ostruct'
 
 module Legacy
   # legacy-data-migration G5 (5.1-5.7) + as regras de §1.4 (G6) que o mesmo caminho de
@@ -31,24 +32,42 @@ module Legacy
       report = ImportReport.new
 
       ImportContext.with_workspace(workspace_id: run.workspace_id, file_owner_uid: ws['ownerUid']) do
-        ctx = Ctx.new(canonical: canonical, run: run, legacy_ws_id: legacy_ws_id, report: report,
+        ctx = Ctx.new(canonical: canonical, run: run, legacy_ws_id: legacy_ws_id, report: report, dry_run: false,
                       resolver: AssigneeResolver.new(legacy_ws_id: legacy_ws_id, workspace_id: run.workspace_id,
-                                                     run: run, report: report))
-        import_workspace(ctx)
-        import_people_roster(ctx)
-        import_templates(ctx)
-        import_projects_tree(ctx)
-        import_logs(ctx)
-        import_notifications(ctx)
-
+                                                     run: run, report: report, dry_run: false))
+        walk(ctx)
         run.update!(status: 'completed', report: run.report.merge('import' => report.to_h))
       end
 
       report
     end
 
+    # 8.3 — dry-run: percorre o arquivo INTEIRO, conta por entidade e prevê a quarentena,
+    # SEM escrita nenhuma e SEM exigir backup/contexto/run. Assume banco vazio (prevê todos
+    # como criados). workspace_id é irrelevante (nada é gravado); usamos o legado como rótulo.
+    def dry_run(canonical:)
+      ws = canonical.fetch('workspace')
+      legacy_ws_id = ws['id']
+      report = ImportReport.new
+      run = OpenStruct.new(id: nil, workspace_id: legacy_ws_id, report: {})
+      ctx = Ctx.new(canonical: canonical, run: run, legacy_ws_id: legacy_ws_id, report: report, dry_run: true,
+                    resolver: AssigneeResolver.new(legacy_ws_id: legacy_ws_id, workspace_id: legacy_ws_id,
+                                                   run: run, report: report, dry_run: true))
+      walk(ctx)
+      report
+    end
+
+    def walk(ctx)
+      import_workspace(ctx)
+      import_people_roster(ctx)
+      import_templates(ctx)
+      import_projects_tree(ctx)
+      import_logs(ctx)
+      import_notifications(ctx)
+    end
+
     # Contexto de um run (evita passar 5 argumentos por método).
-    Ctx = Struct.new(:canonical, :run, :legacy_ws_id, :report, :resolver, keyword_init: true) do
+    Ctx = Struct.new(:canonical, :run, :legacy_ws_id, :report, :resolver, :dry_run, keyword_init: true) do
       def ws_id = run.workspace_id
       def lws = legacy_ws_id
     end
@@ -56,6 +75,8 @@ module Legacy
     # --- 5.1 workspace (nome) + roster de pessoas (responsibles + membros) ---
 
     def import_workspace(ctx)
+      return if ctx.dry_run
+
       name = ctx.canonical.dig('workspace', 'name')
       ::Workspace.where(id: ctx.ws_id).update_all(name: name) if name.present?
     end
@@ -295,6 +316,10 @@ module Legacy
       end
       return if rows.empty?
 
+      if ctx.dry_run
+        return ctx.report.add_write('audit_log', Writer::Result.new(created: rows.size, skipped: 0))
+      end
+
       inserted = ::AuditLog.insert_all(rows, unique_by: %i[ts id], returning: %w[id])
       ctx.report.add_write('audit_log', Writer::Result.new(created: inserted.rows.size, skipped: rows.size - inserted.rows.size))
     end
@@ -336,6 +361,10 @@ module Legacy
     def flush(ctx, model, entity_type, entries)
       return if entries.blank?
 
+      if ctx.dry_run
+        return ctx.report.add_write(entity_type, Writer::Result.new(created: entries.size, skipped: 0))
+      end
+
       result = Writer.insert(model: model, entity_type: entity_type, run: ctx.run, entries: entries)
       ctx.report.add_write(entity_type, result)
     end
@@ -354,7 +383,7 @@ module Legacy
         base = e[:attrs][name_attr].to_s
         candidate = base
         n = 1
-        while name_taken?(model, scope, scope_col, name_sql, candidate, e[:id], used[scope])
+        while name_taken?(model, scope, scope_col, name_sql, candidate, e[:id], used[scope], ctx.dry_run)
           n += 1
           candidate = "#{base} (#{n})"
         end
@@ -366,9 +395,10 @@ module Legacy
       end
     end
 
-    def name_taken?(model, scope, scope_col, name_sql, candidate, self_id, batch)
+    def name_taken?(model, scope, scope_col, name_sql, candidate, self_id, batch, dry_run)
       key = candidate.strip.downcase
       return true if batch.include?(key)
+      return false if dry_run # dry-run não lê o banco; só a deduplicação do lote
 
       # default_scope do model já exclui soft-deleted — casa com o índice PARCIAL (deleted_at IS NULL).
       model.where(scope_col => scope).where("#{name_sql} = ?", key).where.not(id: self_id).exists?

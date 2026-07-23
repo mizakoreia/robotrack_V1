@@ -15,11 +15,13 @@ module Legacy
   class AssigneeResolver
     # legacy_ws_id: id do workspace NO ARQUIVO (deriva o person_id, como os demais caminhos).
     # workspace_id: id do workspace de DESTINO (vai na linha, RLS/FK). São diferentes.
-    def initialize(legacy_ws_id:, workspace_id:, run:, report:)
+    # dry_run: quando true, resolve o person_id (determinístico) e conta, mas NÃO grava.
+    def initialize(legacy_ws_id:, workspace_id:, run:, report:, dry_run: false)
       @legacy_ws_id = legacy_ws_id
       @ws_id = workspace_id
       @run = run
       @report = report
+      @dry_run = dry_run
       @cache = {}
       @by_deaccent = Hash.new { |h, k| h[k] = [] }
     end
@@ -49,6 +51,10 @@ module Legacy
     private
 
     def create_person(person_id, name, email)
+      if @dry_run
+        return @report.add_write('person', Writer::Result.new(created: 1, skipped: 0))
+      end
+
       attrs = { workspace_id: @ws_id, name: name }
       attrs[:email] = email if email.present?
       result = Writer.insert(
