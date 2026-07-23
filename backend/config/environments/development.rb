@@ -40,4 +40,8 @@ Robotrack::Application.configure do
 
   # Facilita desenvolvimento local/WSL com diferentes hosts
   config.hosts.clear
+
+  # quality-and-accessibility 2.1 — chave de tradução inexistente LEVANTA em dev
+  # (pega cedo, antes de virar "translation missing:" numa linha imutável).
+  config.i18n.raise_on_missing_translations = true
 end
