@@ -10,7 +10,8 @@ import { NAV_DESTINATIONS } from './nav'
 import { WorkspaceContext } from './WorkspaceContext'
 import { useAuthStore } from '@/store/authStore'
 import { useWorkspaceStore } from '@/store/workspaceStore'
-import { usePersistenceStore, selectSaveState } from '@/store/persistenceStore'
+import { usePersistenceStore, selectSaveState, mergeSaveState } from '@/store/persistenceStore'
+import { useOfflineQueueStore, selectPendingCount, selectHasBlocked } from '@/store/offlineQueueStore'
 import { useTheme } from '@/hooks/useTheme'
 import { useRealtime } from '@/hooks/useRealtime'
 import { useOfflineSync } from '@/hooks/useOfflineSync'
@@ -32,7 +33,11 @@ export function AppShell() {
 
   const user = useAuthStore((s) => s.user)
   const role = useWorkspaceStore((s) => s.currentRoleLabel)
-  const saveState = usePersistenceStore((s) => selectSaveState(s))
+  const baseSaveState = usePersistenceStore((s) => selectSaveState(s))
+  const pendingCount = useOfflineQueueStore(selectPendingCount)
+  const hasBlocked = useOfflineQueueStore(selectHasBlocked)
+  // offline-pwa 7.3 — o indicador funde gravação online + fila offline.
+  const saveState = mergeSaveState(baseSaveState, { pending: pendingCount, blocked: hasBlocked ? 1 : 0 })
 
   // realtime-collaboration 7.x — o ciclo de vida do tempo real vive na casca
   // persistente (não remonta na navegação entre destinos).

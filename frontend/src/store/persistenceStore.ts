@@ -5,7 +5,7 @@ import { create } from 'zustand'
 // será o PRODUTOR — programa contra este contrato de escrita sem redesenhar o
 // indicador. `settleMutation` do mesmo id duas vezes NÃO leva `inFlight` a
 // negativo (dedup por id).
-export type SaveState = 'saving' | 'saved' | 'error'
+export type SaveState = 'saving' | 'saved' | 'error' | 'pendente' | 'bloqueado'
 
 interface PersistenceState {
   inFlightIds: Set<string>
@@ -56,4 +56,14 @@ export function selectSaveState(s: Pick<PersistenceState, 'inFlight' | 'queued' 
   if (s.failed > 0) return 'error'
   if (s.inFlight > 0 || s.queued > 0) return 'saving'
   return 'saved'
+}
+
+// offline-pwa 7.3 — funde o estado de gravação online (React Query, acima) com o
+// da fila offline. Precedência: erro/bloqueado (falha, exigem atenção) > pendente
+// (guardado, esperando rede) > salvando (em voo) > salvo. Nunca "salvo" com item
+// na fila — o que seria prometer durabilidade não confirmada.
+export function mergeSaveState(base: SaveState, queue: { pending: number; blocked: number }): SaveState {
+  if (base === 'error' || queue.blocked > 0) return queue.blocked > 0 ? 'bloqueado' : 'error'
+  if (queue.pending > 0) return 'pendente'
+  return base
 }

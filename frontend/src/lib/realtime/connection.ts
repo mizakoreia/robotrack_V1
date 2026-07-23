@@ -8,6 +8,7 @@ import { InvalidationGate, type OfflinePendingProbe } from './invalidationGate'
 import { reconcileKeys } from './reconcile'
 import { handleAccessRevoked } from '../workspace/accessRevoked'
 import { useAuthStore } from '../../store/authStore'
+import { queueOfflineProbe } from '../offline/probe'
 
 // realtime-collaboration 5.1 + 7.1/7.4 / D6.1, D6.6, D6.8 — o cliente de conexão.
 //
@@ -274,7 +275,9 @@ export class RealtimeClient {
 let client: RealtimeClient | null = null
 
 export function initRealtime(queryClient: QueryClient): RealtimeClient {
-  client ??= new RealtimeClient({ queryClient })
+  // offline-pwa 7.3 — o gate de represamento passa a consultar a fila offline:
+  // um evento ao vivo não sobrescreve a sobreposição de um item ainda enfileirado.
+  client ??= new RealtimeClient({ queryClient, offlineProbe: queueOfflineProbe })
   return client
 }
 

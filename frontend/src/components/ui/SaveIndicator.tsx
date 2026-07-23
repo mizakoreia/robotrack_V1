@@ -6,12 +6,17 @@ import type { IconName } from '@/components/icons/sprite'
 // leitor de tela anunciar a mudança. MODO DE FALHA (desonestidade de estado que o
 // PRODUCT.md proíbe): dizer "salvo" quando falhou. Por isso o texto de `error`
 // afirma que NÃO houve gravação — nunca sugere sucesso.
-export type SaveState = 'saving' | 'saved' | 'error'
+export type SaveState = 'saving' | 'saved' | 'error' | 'pendente' | 'bloqueado'
 
 const MAP: Record<SaveState, { icon: IconName; text: string; ink: string }> = {
   saving: { icon: 'spinner', text: 'Salvando…', ink: 'text-text-muted' },
   saved: { icon: 'check', text: 'Salvo', ink: 'text-success-ink' },
   error: { icon: 'alert', text: 'Erro ao gravar — não salvo', ink: 'text-danger-ink' },
+  // offline-pwa 7.3 — a fila offline. `pendente`: há alteração guardada esperando
+  // a rede; `bloqueado`: uma alteração falhou e travou dependentes (precisa da UI
+  // de reconciliação). Nenhum dos dois pode virar "Salvo" — seria desonestidade.
+  pendente: { icon: 'info', text: 'Alterações pendentes', ink: 'text-text-muted' },
+  bloqueado: { icon: 'alert', text: 'Alterações bloqueadas', ink: 'text-danger-ink' },
 }
 
 export function SaveIndicator({ state, className }: { state: SaveState; className?: string }) {

@@ -43,10 +43,10 @@
 
 ## 7. Sobreposição otimista e indicador honesto (D7-7)
 
-- [ ] 7.1 Implementar a função pura `overlay(serverData, pendingMutations)` cobrindo criação de robô, criação de tarefa e avanço de progresso (§2.2 — avanço pendente de 50 → 60 aplicado sobre `serverData` com 50 produz 60, e o status derivado vira `Em Andamento`)
-- [ ] 7.2 Ligar a `overlay` ao `select` dos hooks de leitura de `robot-task-table` e `hierarchy-screens`, garantindo precedência sobre refetch e sobre evento do `WorkspaceChannel`, sem `setQueryData` otimista (D6/D9 — evento ao vivo invalidando a query e trazendo 50 do servidor não faz a UI piscar de 60 para 50 em nenhum quadro)
-- [ ] 7.3 Ligar o produtor do indicador de gravação ao contrato de `app-shell-navigation`, acrescentando `pendente` e `bloqueado`, e desligar a fila em `memory-only` com mutation indo direto à rede (§4.2 — com um item na fila o indicador exibe `pendente`, nunca `salvo`; em `memory-only` mostra `erro` e **não** cria item prometendo envio posterior)
-- [ ] 7.4 **Verificação:** teste da sequência enfileirar → evento do canal → refetch com dado antigo → asserção de que o valor exibido permanece o otimista em todos os quadros (§4.2 — o teste falha se a implementação usar snapshot em memória, porque o remount entre os passos o destrói)
+- [x] 7.1 Implementar a função pura `overlay(serverData, pendingMutations)` cobrindo criação de robô, criação de tarefa e avanço de progresso (§2.2 — avanço pendente de 50 → 60 aplicado sobre `serverData` com 50 produz 60, e o status derivado vira `Em Andamento`)
+- [x] 7.2 Ligar a `overlay` ao `select` dos hooks de leitura de `robot-task-table` e `hierarchy-screens`, garantindo precedência sobre refetch e sobre evento do `WorkspaceChannel`, sem `setQueryData` otimista (D6/D9 — evento ao vivo invalidando a query e trazendo 50 do servidor não faz a UI piscar de 60 para 50 em nenhum quadro)
+- [x] 7.3 Ligar o produtor do indicador de gravação ao contrato de `app-shell-navigation`, acrescentando `pendente` e `bloqueado`, e desligar a fila em `memory-only` com mutation indo direto à rede (§4.2 — com um item na fila o indicador exibe `pendente`, nunca `salvo`; em `memory-only` mostra `erro` e **não** cria item prometendo envio posterior)
+- [x] 7.4 **Verificação:** teste da sequência enfileirar → evento do canal → refetch com dado antigo → asserção de que o valor exibido permanece o otimista em todos os quadros (§4.2 — o teste falha se a implementação usar snapshot em memória, porque o remount entre os passos o destrói)
 
 ## 8. Sessão, convite e prova de ponta a ponta
 
