@@ -63,6 +63,29 @@ module Api
           present OpenStruct.new(id: updated.id, name: updated.name, role: 'owner'),
                   with: Api::Entities::Workspace
         end
+
+        # GET /api/v1/workspaces/:id/sync?since= — reconciliação da reconexão
+        # (realtime-collaboration 4.1 / D6.5). Isenta de tenant (workspace vem do
+        # PATH), então a membership é resolvida e EXIGIDA aqui: não-membro e
+        # inexistente dão o MESMO 403, sem vazar `current_seq` nem tipos de W1.
+        route_setting :policy, access: :authenticated
+        params do
+          requires :id, type: String
+          optional :since, type: Integer, default: 0
+        end
+        get ':id/sync' do
+          user = env['api.current_user']
+          ws_id = params[:id]
+
+          resolution = ActiveRecord::Base.transaction do
+            ::Workspaces::ResolveCurrentService.new(user: user, workspace_id: ws_id).call
+          end
+          error!({ error: resolution.error }, resolution.status) unless resolution.ok
+
+          Tenant.with(workspace_id: ws_id, user_id: user.id) do
+            ::Realtime::SyncService.call(workspace_id: ws_id, since: params[:since])
+          end
+        end
       end
 
       helpers do

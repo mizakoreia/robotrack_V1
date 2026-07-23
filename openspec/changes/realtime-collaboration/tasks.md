@@ -71,12 +71,12 @@
 
 ## 4. Reconciliação e endpoint de sync
 
-- [ ] 4.1 Implementar `GET /api/v1/workspaces/:id/sync?since=` devolvendo `current_seq`,
+- [x] 4.1 Implementar `GET /api/v1/workspaces/:id/sync?since=` devolvendo `current_seq`,
   `gap` e os tipos de entidade alterados por `updated_at`/`created_at` dentro da janela de
   10 minutos, com policy de leitura de workspace (D3).
   (§Req. "Reconciliação após reconexão" — `since` de 40 minutos atrás responde `gap: true`
   sem enumerar; não-membro recebe 403 sem vazar `current_seq`.)
-- [ ] 4.2 Spec de request para `/sync` cobrindo lacuna curta, lacuna longa, `since ==
+- [x] 4.2 Spec de request para `/sync` cobrindo lacuna curta, lacuna longa, `since ==
   current_seq` e o negativo de tenant.
   (Verificação do grupo 4 — `since` igual ao atual não pode devolver entidades, senão todo
   reconnect vira refetch completo.)
