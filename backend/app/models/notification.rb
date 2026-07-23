@@ -11,4 +11,10 @@ class Notification < ApplicationRecord
   belongs_to :actor, class_name: 'Person', foreign_key: :actor_person_id, inverse_of: false
 
   TYPES = %w[assign progress done].freeze
+
+  # in-app-notifications 8.1 (D-N10) — elegível a expurgo: LIDA há mais de 90 dias.
+  # Uma NÃO lida de 730 dias NÃO consta (o usuário ainda não a viu). Ordenado por
+  # `recorded_at` (a coluna do índice de retenção idx_notifications_retention).
+  # O cron de expurgo mora em delivery-and-observability (Ops::RetentionPurge).
+  scope :purgeable, -> { where(read: true).where(arel_table[:recorded_at].lt(90.days.ago)) }
 end

@@ -19,7 +19,9 @@ module Ops
     def run_all(now: Time.current)
       {
         jwt_denylist: purge_expired('jwt_denylist', "exp < '#{now.utc.iso8601}'"),
-        notifications: purge_expired('notifications', "read_at IS NOT NULL AND read_at < '#{(now - 90.days).utc.iso8601}'"),
+        # in-app-notifications D-N10: LIDA há mais de 90 dias (predicado de
+        # Notification.purgeable). Não lida nunca é expurgada.
+        notifications: purge_expired('notifications', "read = true AND recorded_at < '#{(now - 90.days).utc.iso8601}'"),
         login_codes: purge_expired('login_codes', "expires_at < '#{now.utc.iso8601}'"),
         login_attempts: purge_expired('login_attempts', "created_at < '#{(now - 90.days).utc.iso8601}'")
       }

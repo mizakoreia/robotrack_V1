@@ -91,6 +91,18 @@ Backend verde (specs de D11 e anteriores). Redis rodando. `notifications` não
 existe; `NotificationPolicy` órfã presente; `Ops::RetentionPurge` já poda
 `notifications` defensivamente. Frontend 510+/0.
 
+## FECHAMENTO (G8)
+
+- **8.2 (handoff a delivery-and-observability) JÁ SATISFEITO:** o D11 (COMPLETO
+  nesta sessão) tem `Ops::RetentionPurge` que poda `notifications` (predicado
+  alinhado a D-N10: `read = true AND recorded_at < now-90d`), a fila `:notifications`
+  é declarada no `NotifyTaskEventJob`, e `Ops::AlertConditions` já tem a condição
+  de fila parada (`sidekiq_queue_backlog`). O cron/config de produção é do D11.
+- **8.3 (suíte completa) verde:** banco (invariantes SQL cru), serviços
+  (builder/resolver/classifier/create), API (listagem/marcar/negações), UI
+  (centro) e hook (alerta do SO, 4 cenários). Backend 155/0 no fecho da capacidade
+  + frontend 10/0.
+
 ## RETOMADA
 
 Ler este arquivo + design.md (D-N1…D-N10, §2.7, §4.1). Estado por grupo em

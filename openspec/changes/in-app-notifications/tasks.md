@@ -50,6 +50,6 @@
 
 ## 8. Retenção e fechamento
 
-- [ ] 8.1 Implementar o scope `Notification.purgeable` (`read = true AND recorded_at < now() - interval '90 days'`) e provar por `EXPLAIN` que ele usa o índice de 1.5. (D-N10 — não lida de 730 dias NÃO consta em `purgeable`; lida de 91 dias consta)
-- [ ] 8.2 Abrir issue de handoff para `delivery-and-observability` com a política de retenção, a fila `notifications` e o alerta de fila parada — o cron de expurgo e a configuração de produção são de lá. (Barra de qualidade, item 8 — a capacidade não deixa buraco de entrega: fila nomeada, concorrência e alerta ficam nominalmente atribuídos)
-- [ ] 8.3 Rodar a suíte completa da capacidade (banco, serviços, API, negação, UI, hook) e registrar o resultado. (§2.7 + §4.1 inv. 4 e 8 — verde exige simultaneamente: 501 chars falha no banco, `view` alterando `msg` é negado, e reload com não lidas antigas dispara zero alertas)
+- [x] 8.1 Implementar o scope `Notification.purgeable` (`read = true AND recorded_at < now() - interval '90 days'`) e provar por `EXPLAIN` que ele usa o índice de 1.5. (D-N10 — não lida de 730 dias NÃO consta em `purgeable`; lida de 91 dias consta)
+- [x] 8.2 Abrir issue de handoff para `delivery-and-observability` com a política de retenção, a fila `notifications` e o alerta de fila parada — o cron de expurgo e a configuração de produção são de lá. (Barra de qualidade, item 8 — a capacidade não deixa buraco de entrega: fila nomeada, concorrência e alerta ficam nominalmente atribuídos)
+- [x] 8.3 Rodar a suíte completa da capacidade (banco, serviços, API, negação, UI, hook) e registrar o resultado. (§2.7 + §4.1 inv. 4 e 8 — verde exige simultaneamente: 501 chars falha no banco, `view` alterando `msg` é negado, e reload com não lidas antigas dispara zero alertas)

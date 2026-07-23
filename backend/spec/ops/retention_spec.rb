@@ -71,7 +71,9 @@ RSpec.describe 'Retenção e ciclo de vida de dado' do
 
     it 'pula tabelas ainda inexistentes sem quebrar' do
       result = Ops::RetentionPurge.run_all
-      expect(result[:notifications]).to eq(:skipped_missing_table)
+      # notifications existe (in-app-notifications, Onda D-N) → poda de fato (0 aqui);
+      # login_codes/login_attempts (magic-link) não existem → pulados.
+      expect(result[:notifications]).to be_a(Integer)
       expect(result[:login_codes]).to eq(:skipped_missing_table)
     end
   end
