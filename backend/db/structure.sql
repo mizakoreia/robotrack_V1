@@ -58,6 +58,17 @@ CREATE TYPE public.membership_role AS ENUM (
 
 
 --
+-- Name: notification_type; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE public.notification_type AS ENUM (
+    'assign',
+    'progress',
+    'done'
+);
+
+
+--
 -- Name: task_status; Type: TYPE; Schema: public; Owner: -
 --
 
@@ -138,6 +149,48 @@ BEGIN
   ) THEN
     RAISE EXCEPTION
       'o dono do workspace não pode ser membro (§1.1): user_id=%', NEW.user_id;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: notifications_no_insert_read(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.notifications_no_insert_read() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF NEW.read IS TRUE THEN
+    RAISE EXCEPTION 'notifications: read deve ser false no INSERT (inv. 8)';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: notifications_only_read_update(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.notifications_only_read_update() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF OLD.read IS TRUE AND NEW.read IS FALSE THEN
+    RAISE EXCEPTION 'notifications: não é permitido desmarcar como lida (inv. 4)';
+  END IF;
+  IF ROW(NEW.id, NEW.workspace_id, NEW.recipient_person_id, NEW.actor_person_id,
+         NEW.type, NEW.msg, NEW.author_name_snapshot, NEW.recorded_at, NEW.created_at,
+         NEW.ts_local, NEW.ctx_project_id, NEW.ctx_cell_id, NEW.ctx_robot_id, NEW.ctx_task_id)
+     IS DISTINCT FROM
+     ROW(OLD.id, OLD.workspace_id, OLD.recipient_person_id, OLD.actor_person_id,
+         OLD.type, OLD.msg, OLD.author_name_snapshot, OLD.recorded_at, OLD.created_at,
+         OLD.ts_local, OLD.ctx_project_id, OLD.ctx_cell_id, OLD.ctx_robot_id, OLD.ctx_task_id)
+  THEN
+    RAISE EXCEPTION 'notifications: só read/read_at podem mudar (inv. 4)';
   END IF;
   RETURN NEW;
 END;
@@ -625,6 +678,34 @@ ALTER TABLE ONLY public.memberships FORCE ROW LEVEL SECURITY;
 
 
 --
+-- Name: notifications; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.notifications (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    workspace_id uuid NOT NULL,
+    recipient_person_id uuid NOT NULL,
+    actor_person_id uuid NOT NULL,
+    type public.notification_type NOT NULL,
+    msg text NOT NULL,
+    author_name_snapshot text NOT NULL,
+    recorded_at timestamp with time zone NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    ts_local text NOT NULL,
+    read boolean DEFAULT false NOT NULL,
+    read_at timestamp with time zone,
+    ctx_project_id uuid,
+    ctx_cell_id uuid,
+    ctx_robot_id uuid,
+    ctx_task_id uuid,
+    CONSTRAINT msg_max_500 CHECK ((char_length(msg) <= 500)),
+    CONSTRAINT read_at_coherence CHECK ((((read = false) AND (read_at IS NULL)) OR ((read = true) AND (read_at IS NOT NULL))))
+);
+
+ALTER TABLE ONLY public.notifications FORCE ROW LEVEL SECURITY;
+
+
+--
 -- Name: people; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1087,6 +1168,14 @@ ALTER TABLE ONLY public.memberships
 
 
 --
+-- Name: notifications notifications_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.notifications
+    ADD CONSTRAINT notifications_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: people people_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1301,6 +1390,27 @@ CREATE INDEX audit_logs_default_workspace_id_ts_idx ON public.audit_logs_default
 --
 
 CREATE UNIQUE INDEX idx_memberships_one_per_invitation ON public.memberships USING btree (invitation_id) WHERE (invitation_id IS NOT NULL);
+
+
+--
+-- Name: idx_notifications_assign_idempotency; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_notifications_assign_idempotency ON public.notifications USING btree (recipient_person_id, ctx_task_id, type, recorded_at) WHERE (type = 'assign'::public.notification_type);
+
+
+--
+-- Name: idx_notifications_center; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_notifications_center ON public.notifications USING btree (workspace_id, recipient_person_id, recorded_at DESC);
+
+
+--
+-- Name: idx_notifications_retention; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_notifications_retention ON public.notifications USING btree (workspace_id, read, recorded_at);
 
 
 --
@@ -1717,6 +1827,20 @@ CREATE TRIGGER memberships_owner_is_not_member BEFORE INSERT OR UPDATE ON public
 
 
 --
+-- Name: notifications notifications_before_insert; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER notifications_before_insert BEFORE INSERT ON public.notifications FOR EACH ROW EXECUTE FUNCTION public.notifications_no_insert_read();
+
+
+--
+-- Name: notifications notifications_before_update; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER notifications_before_update BEFORE UPDATE ON public.notifications FOR EACH ROW EXECUTE FUNCTION public.notifications_only_read_update();
+
+
+--
 -- Name: audit_logs trg_audit_logs_immutable; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -1913,6 +2037,62 @@ ALTER TABLE ONLY public.memberships
 
 
 --
+-- Name: notifications notifications_actor_person_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.notifications
+    ADD CONSTRAINT notifications_actor_person_id_fkey FOREIGN KEY (actor_person_id) REFERENCES public.people(id) ON DELETE CASCADE;
+
+
+--
+-- Name: notifications notifications_ctx_cell_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.notifications
+    ADD CONSTRAINT notifications_ctx_cell_id_fkey FOREIGN KEY (ctx_cell_id) REFERENCES public.cells(id) ON DELETE SET NULL;
+
+
+--
+-- Name: notifications notifications_ctx_project_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.notifications
+    ADD CONSTRAINT notifications_ctx_project_id_fkey FOREIGN KEY (ctx_project_id) REFERENCES public.projects(id) ON DELETE SET NULL;
+
+
+--
+-- Name: notifications notifications_ctx_robot_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.notifications
+    ADD CONSTRAINT notifications_ctx_robot_id_fkey FOREIGN KEY (ctx_robot_id) REFERENCES public.robots(id) ON DELETE SET NULL;
+
+
+--
+-- Name: notifications notifications_ctx_task_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.notifications
+    ADD CONSTRAINT notifications_ctx_task_id_fkey FOREIGN KEY (ctx_task_id) REFERENCES public.tasks(id) ON DELETE SET NULL;
+
+
+--
+-- Name: notifications notifications_recipient_person_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.notifications
+    ADD CONSTRAINT notifications_recipient_person_id_fkey FOREIGN KEY (recipient_person_id) REFERENCES public.people(id) ON DELETE CASCADE;
+
+
+--
+-- Name: notifications notifications_workspace_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.notifications
+    ADD CONSTRAINT notifications_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE;
+
+
+--
 -- Name: people people_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2069,6 +2249,12 @@ ALTER TABLE public.membership_revocations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.memberships ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: notifications; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: people; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -2199,6 +2385,13 @@ CREATE POLICY tenant_isolation ON public.membership_revocations USING (((workspa
 --
 
 CREATE POLICY tenant_isolation ON public.memberships USING (((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid) OR (user_id = (NULLIF(current_setting('app.current_user_id'::text, true), ''::text))::uuid))) WITH CHECK ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid));
+
+
+--
+-- Name: notifications tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.notifications USING ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid)) WITH CHECK ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid));
 
 
 --
@@ -2348,6 +2541,7 @@ ALTER TABLE public.workspaces ENABLE ROW LEVEL SECURITY;
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260724100001'),
 ('20260723160001'),
 ('20260723150001'),
 ('20260723140002'),
