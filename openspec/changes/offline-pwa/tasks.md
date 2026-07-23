@@ -29,11 +29,11 @@
 
 ## 5. Fila: idempotência, erro e poison message (D7-5, D7-6)
 
-- [ ] 5.1 Implementar a classificação de resposta em retryable / permanente / conflito / autenticação conforme a tabela de D7-5, incluindo `DELETE` com 404 tratado como sucesso (§4.2 — 403 por revogação de papel vai direto para `failed` sem consumir as 8 tentativas, e reenvio de exclusão já aplicada não enche a quarentena)
-- [ ] 5.2 Implementar backoff `min(2^attempts × 1s, 5min)` com jitter de ±20%, teto de 8 tentativas retryable, e a pausa global da fila em 401 sem incremento de `attempts` (§4.2 — 500 repetido oito vezes encerra o reenvio em vez de drenar a bateria em laço; token expirado não queima as 8 tentativas do item em voo)
-- [ ] 5.3 Implementar a cascata de bloqueio: item permanente vai para `failed`, o fechamento transitivo dos dependentes vai para `blocked`, e os independentes continuam drenando (§4.2 — `robot.create` com 422 e 5 dependentes atrás não impede que as 2 mutations independentes cheguem a `done`)
-- [ ] 5.4 Implementar a UI de reconciliação com "Corrigir e reenviar" e "Descartar N alterações" (contagem do fechamento transitivo no rótulo) e o caminho de 409 de `lock_version`, que entra nela sem reenvio automático (§4.2/§2.4 — o botão diz "Descartar 6 alterações" quando há 1 falho e 5 bloqueados; avanço conflitante não é reenviado em laço contra um `lock_version` que nunca vai casar)
-- [ ] 5.5 **Verificação:** teste de tabela cobrindo cada linha da matriz de D7-5, mais o teste de replay duplicado (§4.2 — a mesma `advance.create A` entregue duas vezes produz uma linha em `task_advances` e progresso 30, não 60)
+- [x] 5.1 Implementar a classificação de resposta em retryable / permanente / conflito / autenticação conforme a tabela de D7-5, incluindo `DELETE` com 404 tratado como sucesso (§4.2 — 403 por revogação de papel vai direto para `failed` sem consumir as 8 tentativas, e reenvio de exclusão já aplicada não enche a quarentena)
+- [x] 5.2 Implementar backoff `min(2^attempts × 1s, 5min)` com jitter de ±20%, teto de 8 tentativas retryable, e a pausa global da fila em 401 sem incremento de `attempts` (§4.2 — 500 repetido oito vezes encerra o reenvio em vez de drenar a bateria em laço; token expirado não queima as 8 tentativas do item em voo)
+- [x] 5.3 Implementar a cascata de bloqueio: item permanente vai para `failed`, o fechamento transitivo dos dependentes vai para `blocked`, e os independentes continuam drenando (§4.2 — `robot.create` com 422 e 5 dependentes atrás não impede que as 2 mutations independentes cheguem a `done`)
+- [x] 5.4 Implementar a UI de reconciliação com "Corrigir e reenviar" e "Descartar N alterações" (contagem do fechamento transitivo no rótulo) e o caminho de 409 de `lock_version`, que entra nela sem reenvio automático (§4.2/§2.4 — o botão diz "Descartar 6 alterações" quando há 1 falho e 5 bloqueados; avanço conflitante não é reenviado em laço contra um `lock_version` que nunca vai casar)
+- [x] 5.5 **Verificação:** teste de tabela cobrindo cada linha da matriz de D7-5, mais o teste de replay duplicado (§4.2 — a mesma `advance.create A` entregue duas vezes produz uma linha em `task_advances` e progresso 30, não 60)
 
 ## 6. Coordenação entre abas (D7-10)
 

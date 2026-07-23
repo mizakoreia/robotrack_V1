@@ -40,7 +40,14 @@ export interface QueuedMutation {
   attempts: number
   next_attempt_at: number | null
   last_error: string | null
+  // Por que falhou (D7-5): preenchido ao entrar em `failed`. Rotula a reconciliação.
+  failure_class?: FailureClass
+  // Corpo do servidor no 409 lock_version (§2.4): a verdade contra a qual o
+  // usuário reconcilia. Só presente em conflito.
+  server_state?: unknown
 }
+
+export type FailureClass = 'esgotado' | 'permanente' | 'conflito' | 'auth'
 
 // O que o produtor fornece. `depends_on` é OBRIGATÓRIO (sem default no tipo): um
 // hook novo que o esqueça não compila — é a rede de segurança de D7-4. `recorded_at`
