@@ -75,6 +75,10 @@ module Api
       # Metadados globais (task-catalog 4.5): o enum de Aplicações é o mesmo para
       # todo tenant; a rota exige login (não é pública) mas não workspace-scoped.
       %r{^/api/v1/meta/},
+      # Ticket do Cable (realtime-collaboration 1.1): o ticket é do usuário, não
+      # de um workspace — exige login, mas não `X-Workspace-Id`. A autorização por
+      # membership é do `WorkspaceChannel`, no `subscribed` de cada assinatura.
+      %r{^/api/v1/cable_tickets/?$},
       ['GET',  %r{^/api/v1/invitations/[^/]+/?$}],
       ['POST', %r{^/api/v1/invitations/[^/]+/accept/?$}]
     ].freeze

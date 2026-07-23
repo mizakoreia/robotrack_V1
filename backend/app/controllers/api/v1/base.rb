@@ -52,6 +52,9 @@ module Api
       # Reset de fábrica do workspace (workspace-settings 5, D12)
       mount Api::V1::WorkspaceFactoryReset
 
+      # Ticket de conexão do ActionCable (realtime-collaboration 1.1, D6.8)
+      mount Api::V1::CableTickets
+
       # Recálculo manual do progresso (progress-rollup 4.5)
       mount Api::V1::ProgressEndpoint
 

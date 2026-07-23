@@ -13,20 +13,15 @@ module ApplicationCable
     # Ponto de estrangulamento do Cable: nenhum canal é instanciado sem passar
     # por aqui, então um canal futuro não pode esquecer de verificar identidade
     # (só pode esquecer de verificar autorização, que é problema da D3/D6).
+    #
+    # Autenticação por TICKET (realtime-collaboration 1.1 / D6.8), não mais por
+    # `?token=`: o ticket é opaco, de uso único e 60s, consumido com GETDEL. Um
+    # ticket ausente, expirado, já consumido ou desconhecido cai em `nil` e a
+    # conexão é REJEITADA — nunca estabelecida com `current_user = nil` como no
+    # template. O caminho `?token=` deixou de existir: um JWT de sessão na query
+    # string do handshake não é aceito (a prova é o spec do grupo 1).
     def find_verified_user
-      token = request.params[:token]
-      reject_unauthorized_connection if token.blank?
-
-      user = begin
-        payload = nil
-        payload = Warden::JWTAuth::TokenDecoder.new.call(token) if defined?(Warden::JWTAuth::TokenDecoder)
-        payload ||= Auth::TokenService.new(nil).decode_token(token, verify_exp: true)
-        uid = payload['sub'] || payload['user_id']
-        User.find_by(id: uid)
-      rescue StandardError
-        nil
-      end
-
+      user = ::Realtime::CableTicketService.consume(request.params[:ticket])
       reject_unauthorized_connection if user.nil?
       user
     end

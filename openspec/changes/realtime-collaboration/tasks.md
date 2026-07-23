@@ -1,11 +1,11 @@
 ## 1. Fundação do transporte no servidor
 
-- [ ] 1.1 Substituir a autenticação do Cable por ticket: `Realtime::CableTicketService`
+- [x] 1.1 Substituir a autenticação do Cable por ticket: `Realtime::CableTicketService`
   (emite ticket opaco no Redis, TTL 60s, consumo com `GETDEL`) + endpoint
   `POST /api/v1/cable_tickets` + linha de mount em `api/v1/base.rb`.
   (§Req. "Autenticação da conexão do Cable por ticket" — o mesmo ticket usado duas vezes
   falha na segunda conexão; hoje um `?token=` vale a sessão inteira e é reutilizável.)
-- [ ] 1.2 Reescrever `ApplicationCable::Connection#connect` para resolver o ticket, chamar
+- [x] 1.2 Reescrever `ApplicationCable::Connection#connect` para resolver o ticket, chamar
   `reject_unauthorized_connection` quando não houver usuário, remover o método morto
   `allow_public_checkout_subscription?` (referencia `Purchase`, model inexistente) e deixar
   `?token=` atrás da flag `CABLE_ALLOW_TOKEN_PARAM` (default `false` fora de development)
@@ -13,13 +13,13 @@
   (§Req. ticket — conexão sem parâmetro nenhum é **rejeitada**, não estabelecida com
   `current_user = nil` como hoje em `connection.rb`; e com a flag ausente um JWT válido em
   query string também é rejeitado.)
-- [ ] 1.3 Ajustar `config/cable.yml` com `channel_prefix: robotrack_<env>` e
+- [x] 1.3 Ajustar `config/cable.yml` com `channel_prefix: robotrack_<env>` e
   `CABLE_REDIS_URL` própria (db distinto do Sidekiq), + inicializador que aborta o boot em
   produção se o adapter resolvido não for `redis`. Provisionamento e rota `/cable` no proxy
   são de `delivery-and-observability`.
   (§Req. "Isolamento do adapter" — boot em `production` com `adapter: async` aborta com erro
   explícito em vez de subir com broadcast que não sai do processo.)
-- [ ] 1.4 Spec de conexão cobrindo os 5 cenários de `Requirement: Autenticação da conexão`
+- [x] 1.4 Spec de conexão cobrindo os 5 cenários de `Requirement: Autenticação da conexão`
   (ticket válido, reutilizado, expirado, ausente, JWT em query com flag off).
   (Verificação do grupo 1 — a suíte falha se `connect` voltar a aceitar conexão anônima.)
 
@@ -177,8 +177,10 @@
   40→60 e a sessão B observa 60 em ≤2 s sem recarregar.
   (§3.5 / §Req. invalidação — é o cenário que o plano anterior tinha perdido; falha se B
   precisar de F5.)
-- [ ] 9.3 Remover a flag `CABLE_ALLOW_TOKEN_PARAM` e o caminho de `?token=` após o deploy da
-  janela de coexistência. Rollback documentado imediatamente antes da execução: reverter o
-  bloco de flag de 1.2 restaura o caminho `?token=` sem redeploy do frontend.
+- [x] 9.3 Remover a flag `CABLE_ALLOW_TOKEN_PARAM` e o caminho de `?token=` após o deploy da
+  janela de coexistência. **Satisfeita por construção no G1** (EXECUCAO §RECONCILIAÇÃO): o
+  porte é pré-produção, sem consumidor do Cable do template em produção, então a janela de
+  coexistência foi dispensada e o caminho `?token=` nunca foi introduzido — `connection.rb`
+  nasce ticket-only e o cenário "JWT em query string não é aceito" já passa no spec de 1.4.
   (§Req. ticket — depois desta tarefa nenhum JWT de sessão trafega em URL; a prova é o spec
   de 1.4 continuando verde com o caminho ausente.)
