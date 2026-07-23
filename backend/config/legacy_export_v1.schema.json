@@ -1,0 +1,107 @@
+{
+  "title": "RoboTrack — export legado canônico v1",
+  "description": "Contrato de DUAS pontas (D-LDM-8): a legacy-data-migration VALIDA contra ele antes de importar, e workspace-settings §3.11 EMITE contra ele. Valida ESTRUTURA e TIPOS (falha rápida com o caminho do campo, em vez de NoMethodError no meio do run). NÃO fecha os value-enums de application/status nem a faixa de progress: valores fora do domínio (application 'Paletização', status inválido, progress 150) são TIPOS válidos que o IMPORT manda para quarentena (D-LDM-7) — fechá-los aqui impediria o import de quarentená-los. O que o schema pega é tipo errado, como application: 42 (número, não string).",
+  "type": "object",
+  "required": ["schemaVersion", "workspace", "projects"],
+  "properties": {
+    "schemaVersion": { "enum": [1] },
+    "exportedAt": { "type": "string" },
+    "workspace": {
+      "type": "object",
+      "required": ["id", "ownerUid", "name"],
+      "properties": {
+        "id": { "type": "string" },
+        "ownerUid": { "type": "string" },
+        "name": { "type": "string" },
+        "responsibles": { "type": "array", "items": { "type": "string" } },
+        "defaultTasks": { "type": "array", "items": { "$ref": "#/definitions/template" } }
+      }
+    },
+    "projects": { "type": "array", "items": { "$ref": "#/definitions/project" } },
+    "logs": { "type": "array", "items": { "type": "object" } },
+    "members": { "type": "array", "items": { "$ref": "#/definitions/member" } },
+    "notifications": { "type": "array", "items": { "type": "object" } }
+  },
+  "definitions": {
+    "template": {
+      "type": "object",
+      "required": ["cat", "desc"],
+      "properties": {
+        "id": { "type": "string" },
+        "cat": { "type": "string" },
+        "desc": { "type": "string" },
+        "weight": { "type": "number" },
+        "appFilters": { "type": "array", "items": { "type": "string" } },
+        "apps": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "member": {
+      "type": "object",
+      "required": ["uid", "role"],
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": ["string", "null"] },
+        "name": { "type": ["string", "null"] },
+        "role": { "type": "string", "enum": ["edit", "view"] }
+      }
+    },
+    "project": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "id": { "type": "string" },
+        "workspaceId": { "type": "string" },
+        "name": { "type": "string" },
+        "_ord": { "type": ["number", "string", "null"] },
+        "cells": { "type": ["array", "null"], "items": { "$ref": "#/definitions/cell" } }
+      }
+    },
+    "cell": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "robots": { "type": ["array", "null"], "items": { "$ref": "#/definitions/robot" } }
+      }
+    },
+    "robot": {
+      "type": "object",
+      "required": ["name", "application"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "application": { "type": "string" },
+        "tasks": { "type": ["array", "null"], "items": { "$ref": "#/definitions/task" } }
+      }
+    },
+    "task": {
+      "type": "object",
+      "required": ["cat", "desc"],
+      "properties": {
+        "id": { "type": "string" },
+        "cat": { "type": "string" },
+        "desc": { "type": "string" },
+        "weight": { "type": "number" },
+        "progress": { "type": "number" },
+        "status": { "type": "string" },
+        "position": { "type": ["number", "null"] },
+        "assignees": { "type": "array", "items": { "type": "string" } },
+        "resp": { "type": ["string", "null"] },
+        "obs": { "type": ["string", "null"] },
+        "_updatedAt": { "type": ["string", "null"] },
+        "history": { "type": ["array", "null"], "items": { "$ref": "#/definitions/advance" } }
+      }
+    },
+    "advance": {
+      "type": "object",
+      "properties": {
+        "from": { "type": ["number", "null"] },
+        "to": { "type": "number" },
+        "comment": { "type": ["string", "null"] },
+        "byName": { "type": ["string", "null"] },
+        "ts": { "type": ["string", "number", "null"] }
+      }
+    }
+  }
+}

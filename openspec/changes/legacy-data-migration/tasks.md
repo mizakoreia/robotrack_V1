@@ -6,23 +6,36 @@
 
 ## 1. Contrato de arquivo e insumo
 
-- [ ] 1.1 Escrever `backend/config/legacy_export_v1.schema.json` (JSON Schema) cobrindo
+- [x] 1.1 Escrever `backend/config/legacy_export_v1.schema.json` (JSON Schema) cobrindo
   workspace, `responsibles`, `defaultTasks`, `projects`/`cells`/`robots`/`tasks`/`history`,
   `logs` e `members`, com `schemaVersion` obrigatório no topo e os enums de §1.1/§1.2
   fechados. (§1.1, D-LDM-8 — um arquivo com `application: 42` é rejeitado citando o
   caminho `projects[1].cells[0].robots[3]`, não com `NoMethodError` no meio do run.)
-- [ ] 1.2 Escrever as duas fixtures: `canonical_v1.json` cobrindo projeto sem `cells`,
+- [x] 1.2 Escrever as duas fixtures: `canonical_v1.json` cobrindo projeto sem `cells`,
   célula sem `robots`, robô sem `tasks`, `resp: "Não Atribuído"`, `assignees: []` com
   `resp` preenchido, `obs` com e sem histórico, template com `apps` e com `appFilters`,
   `"Todas"`, dois robôs homônimos na mesma célula, `status` inválido, `progress: 150`,
   `Concluído` com `progress: 80`; e `raw_nested.json` no formato antigo de §4.4, sem
   `schemaVersion`. (§1.4, §4.4, D-LDM-7 — se um cenário da spec não tiver dado
   correspondente aqui, o teste passa vazio e o defeito só aparece no corte.)
-- [ ] 1.3 **Verificação**: spec que valida `canonical_v1.json` contra o schema e exige que
+- [x] 1.3 **Verificação**: spec que valida `canonical_v1.json` contra o schema e exige que
   `raw_nested.json` **falhe** a validação; registrar no `design.md` de
   `workspace-settings` o acordo de que §3.11 emite este mesmo schema. (§3.11, D-LDM-8 —
   schema que aceita as duas fixtures não é schema; e os dois lados inventando formato
   próprio só quebraria no round-trip da 8.5.)
+      *(ENTREGUE — `spec/legacy/schema_contract_spec.rb` (3/3): canônico passa, bruto sem
+      `schemaVersion` falha, `application: 42` (tipo) é pego citando o caminho.
+      DECISÃO DE RECONCILIAÇÃO (registrada no EXECUCAO): o schema valida ESTRUTURA+TIPOS+
+      `schemaVersion`, mas NÃO fecha os value-enums de application/status nem a faixa de
+      progress — porque esses VALORES ruins (application 'Paletização', status inválido,
+      progress 150) são casos de QUARENTENA do import (D-LDM-7) e precisam passar o schema
+      pra serem quarentenados; fechá-los aqui contradiria 5.5/6.4. Notas técnicas: sem
+      `$schema`/`$id` (a gem json-schema só traz a meta-schema draft-04) e `use_multi_json
+      = false` (MultiJSON manglava o UTF-8). DIVERGÊNCIA com workspace-settings: o backup
+      de §3.11 hoje emite `schemaVersion: 2` (fixture `roboTrack_database_v2.json`, campo
+      `advances`), enquanto o canônico legado é v1 (`history`). O alinhamento real das duas
+      pontas é exercido no round-trip da 8.5; não editei o design de workspace-settings
+      (change completa) — a divergência fica anotada aqui.)*
 
 ## 2. Infraestrutura de run, backup e rollback
 

@@ -1,0 +1,103 @@
+{
+  "schemaVersion": 1,
+  "exportedAt": "2024-05-01T12:00:00Z",
+  "workspace": {
+    "id": "ws-legacy-1",
+    "ownerUid": "u-dono",
+    "name": "Fábrica Legada",
+    "responsibles": ["Não Atribuído", "Ana Lima", "Bruno Souza", "João Silva"],
+    "defaultTasks": [
+      { "id": "tpl-apps", "cat": "D. Processo", "desc": "Calibração de Cola", "weight": 1, "apps": ["Sealing"] },
+      { "id": "tpl-filters", "cat": "D. Processo", "desc": "Check de Gripper", "weight": 1, "appFilters": ["Handling"] },
+      { "id": "tpl-both", "cat": "A. Hardware", "desc": "Power On", "weight": 2, "apps": ["Handling"], "appFilters": ["Sealing"] },
+      { "id": "tpl-todas", "cat": "A. Hardware", "desc": "Mastering Check", "weight": 1, "apps": ["Todas"] }
+    ]
+  },
+  "projects": [
+    {
+      "id": "p-1", "workspaceId": "ws-legacy-1", "name": "Linha A", "_ord": 1700000000000,
+      "cells": [
+        {
+          "id": "c-1", "name": "Célula 01",
+          "robots": [
+            {
+              "id": "r-1", "name": "R01", "application": "Solda Ponto",
+              "tasks": [
+                {
+                  "cat": "A. Hardware", "desc": "Fixação da base", "weight": 1, "progress": 100, "status": "Concluído",
+                  "assignees": ["Ana Lima"], "resp": "Bruno Souza",
+                  "history": [
+                    { "from": 40, "to": 100, "comment": "Torqueado", "byName": "Ana Lima", "ts": "2024-04-18T17:02:00Z" }
+                  ]
+                },
+                {
+                  "cat": "B. Rede", "desc": "Config IP", "weight": 1, "progress": 0, "status": "Pendente",
+                  "assignees": [], "resp": "Bruno Souza"
+                },
+                {
+                  "cat": "D. Processo", "desc": "TCP Check", "weight": 2, "progress": 50, "status": "Em Andamento",
+                  "resp": "Não Atribuído",
+                  "obs": "Cabo de encoder pendente com o fornecedor", "history": [], "_updatedAt": "2024-03-11T14:02:00Z"
+                },
+                {
+                  "cat": "D. Processo", "desc": "Payload", "weight": 1, "progress": 80, "status": "Concluído"
+                },
+                {
+                  "cat": "E. Trajetórias", "desc": "Carregar OLP", "weight": 1, "progress": 150, "status": "Em Andamento"
+                },
+                {
+                  "cat": "E. Trajetórias", "desc": "Manutenção", "weight": 1, "progress": 30, "status": "EstadoInexistente"
+                },
+                {
+                  "cat": "F. Interlocks", "desc": "Sinais PLC", "weight": 1, "progress": 20, "status": "Em Andamento",
+                  "obs": "revisar", "history": [
+                    { "from": 0, "to": 10, "comment": "início", "byName": "Ana Lima", "ts": "2024-04-01T10:00:00Z" },
+                    { "from": 10, "to": 20, "comment": "seguindo", "byName": "Ana Lima", "ts": "2024-04-02T10:00:00Z" }
+                  ]
+                }
+              ]
+            },
+            { "id": "r-2", "name": "R05", "application": "Handling", "tasks": [] },
+            { "name": "R05", "application": "Handling",
+              "tasks": [
+                { "cat": "A. Hardware", "desc": "Power On", "weight": 1, "progress": 0, "status": "N/A",
+                  "assignees": ["joão silva"] }
+              ] }
+          ]
+        },
+        { "id": "c-2", "name": "Célula 02", "robots": [] }
+      ]
+    },
+    {
+      "id": "p-2", "workspaceId": "ws-legacy-1", "name": "Linha B", "_ord": 1500000000000,
+      "cells": [
+        {
+          "name": "Célula B1",
+          "robots": [
+            { "name": "R09", "application": "Sealing",
+              "tasks": [
+                { "cat": "A. Hardware", "desc": "Montagem", "weight": 1, "progress": 100, "status": "Concluído",
+                  "assignees": ["João Silva"] },
+                { "cat": "B. Rede", "desc": "Sub Rede", "weight": 1, "progress": 0, "status": "N/A" }
+              ] },
+            { "name": "R10", "application": "Paletização", "tasks": [
+              { "cat": "A. Hardware", "desc": "não deve entrar", "weight": 1, "progress": 0, "status": "Pendente" }
+            ] }
+          ]
+        }
+      ]
+    },
+    { "id": "p-3", "workspaceId": "ws-legacy-1", "name": "Linha C", "_ord": 1900000000000 },
+    { "id": "p-4", "workspaceId": "ws-legacy-1", "name": "Linha D", "_ord": 1600000000000, "cells": null }
+  ],
+  "logs": [
+    { "workspaceId": "ws-legacy-1", "ts": "2024-04-18T17:02:00Z", "eventType": "task_completed", "byName": "Ana Lima", "msg": "R01 · Fixação da base concluída" }
+  ],
+  "members": [
+    { "uid": "u-dono", "email": "dono@ex.com", "name": "Dona Legada", "role": "edit" },
+    { "uid": "u-bruno", "email": "bruno@ex.com", "name": "Bruno Souza", "role": "view" }
+  ],
+  "notifications": [
+    { "recipientName": "Ana Lima", "actorName": "Bruno Souza", "type": "assign", "read": false, "msg": "Você foi atribuído a Fixação da base", "recordedAt": "2024-04-18T17:03:00Z" }
+  ]
+}
