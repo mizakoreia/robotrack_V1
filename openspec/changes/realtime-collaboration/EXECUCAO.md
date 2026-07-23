@@ -97,6 +97,27 @@ Backend 1203/0/8 (`--tag ~slow --seed 12345`, medido no fechamento de
 hierarchy-soft-delete G4) + G5/G6 do workspace-settings verdes (131/0 dirigido).
 Frontend 355/0; tsc limpo.
 
+## REVISÃO DO BACKEND (pós-G4, antes do frontend)
+
+Revisão adversarial do servidor (G1–G4). Dois achados registrados:
+
+- **[CORRIGIDO — G3-fix] Perda silenciosa de evento na reserva de seq.** O `seq`
+  era reservado na MESMA transação do traversal de `scope`; uma falha ali (ou no
+  UPDATE) revertia o incremento e o evento sumia SEM lacuna, anulando o esquema
+  seq/gap. Correção em `PublisherService#publish_change`: reserva o seq primeiro e
+  isola o scope num savepoint (`safe_scope`) — falha degrada para `scope: {}` sem
+  reverter o seq nem impedir o broadcast. Só o UPDATE do seq fica irredutível.
+- **[ACEITO — não corrigir] `/sync` sub-invalida em queda longa (>10min) com
+  atividade recente de outro tipo.** O código é FIEL ao design (D6.5: janela de
+  10min, `queda curta: gap=false`); o conserto exato exigiria índice seq→tempo ou
+  log de eventos (NÃO-OBJETIVO). E o buraco é coberto pela arquitetura em camadas:
+  toda queda >10min passou por `degraded` (limiar 8s), onde o `refetchInterval` de
+  20s (7.2) já mantém as queries ATIVAS frescas durante a queda inteira. No
+  reconnect, o resíduo é uma query INATIVA de tipo não-enumerado, que refaz no
+  remount. A Opção B (`gap:true` sempre) reintroduziria o "todo reconnect = refetch
+  completo" que o `/sync` existe para evitar — pior numa rede de galpão. Registrado
+  para não ser re-sinalizado.
+
 ## RETOMADA
 
 Ler este arquivo + design.md (D6.1–D6.7). Estado por grupo em tasks.md (`- [x]`).
