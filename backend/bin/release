@@ -9,6 +9,13 @@ set -euo pipefail
 #    deixa a tabela sob lock exclusivo para sempre.
 export PGOPTIONS="-c lock_timeout=5s -c statement_timeout=15min"
 
+# Guarda de backup (delivery-and-observability 8.3): se há migration `contract`
+# (destrutiva) pendente, exige um backup fresco (< 1h) e VERIFICADO por restore
+# antes de tocar o esquema. Sem rede de segurança, uma contração destrutiva NÃO
+# chega a rodar. O manifesto vem de BACKUP_MANIFEST (deploy).
+echo "[release] verificando pré-condição de backup para migrations contract"
+bundle exec rails ops:guard_contract_backup
+
 echo "[release] rodando db:migrate sob lock_timeout=5s / statement_timeout=15min"
 bundle exec rails db:migrate
 echo "[release] migrations concluídas"

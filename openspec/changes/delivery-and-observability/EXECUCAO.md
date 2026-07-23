@@ -99,6 +99,27 @@ já em `DATABASE_URL`; `cable.yml` com `channel_prefix`; `rack-attack` já
 Redis-quando-disponível. Sem Procfile/bin/release/lograge/Sentry/metrics/alerta/
 partição/retenção.
 
+## FECHAMENTO — handoffs de deploy (o que precisa de um alvo real)
+
+Toda a LÓGICA + CONFIG + SPEC estão entregues e testadas contra PG+Redis local. O
+que exige um alvo de deploy real fica registrado aqui (padrão da casa — como o
+Playwright do realtime):
+
+- **Smoke do `docker-compose.staging`** (2.4) e **broadcast multi-processo**
+  (3.4): daemon Docker + 2 web. Artefatos entregues (`docker-compose.staging.yml`,
+  `scripts/staging_smoke.sh`).
+- **Headers de cache contra o CDN publicado** (3.3): conformidade do `nginx.conf`
+  testada aqui; o header no CDN é do provedor.
+- **Ingestão real do Sentry** (DSN) e **upload de source maps no CI** (4.1/4.2):
+  scrubbing/config/release testados; o envio é do deploy.
+- **Coleta de métricas + janelas sustentadas** do alerta (5.3): a lógica das
+  condições é testada sobre um snapshot; o coletor é monitoramento de deploy.
+- **Object storage do export de partição** (6.3) e **DDL de partição sob papel de
+  manutenção** (6.2/6.4): SQL/lógica entregues; a execução privilegiada é de deploy.
+- **Ensaio de rollback em staging** (8.4): o runbook (`docs/runbooks/rollback.md`)
+  e os guards (`db:rollback` recusa contract; `bin/release` exige backup verificado)
+  estão entregues; o ensaio datado é pré-requisito do primeiro deploy de produção.
+
 ## RETOMADA
 
 Ler este arquivo + design.md. Estado por grupo em tasks.md (`- [x]`). Protocolo
