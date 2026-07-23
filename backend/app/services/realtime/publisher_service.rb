@@ -40,12 +40,17 @@ module Realtime
 
         envelope = nil
         Tenant.with(workspace_id: ws_id, user_id: Current.user_id) do
-          scope = record.realtime_scope
+          # O `seq` é reservado PRIMEIRO. O traversal de `scope` (que faz leituras
+          # e pode estourar) roda num savepoint: se falhar, volta ao savepoint SEM
+          # reverter o UPDATE do seq — o número já avançado vira uma lacuna que o
+          # cliente reconcilia, em vez de o evento sumir sem rastro (o que anularia
+          # o próprio esquema seq/gap). Sobra só o UPDATE do seq como ponto
+          # irredutível: qualquer falha DEPOIS dele deixa a publicação recuperável.
           seq = reserve_seq(ws_id)
           envelope = build_envelope(
             workspace_id: ws_id, seq: seq,
             type: record.realtime_event_type(action),
-            entity: record.realtime_entity, scope: scope
+            entity: record.realtime_entity, scope: safe_scope(record)
           )
         end
         broadcast(envelope)
@@ -86,6 +91,16 @@ module Realtime
       end
 
       private
+
+      # Traversal de scope isolado num savepoint: uma falha de leitura degrada
+      # para `{}` (o cliente invalida a chave da entidade e reconcilia o rollup
+      # pela lacuna de seq) sem abortar a transação que já reservou o seq.
+      def safe_scope(record)
+        ActiveRecord::Base.transaction(requires_new: true) { record.realtime_scope }
+      rescue StandardError => e
+        Rails.logger.warn({ event: 'realtime_scope_failed', error: e.class.name }.to_json)
+        {}
+      end
 
       def build_envelope(workspace_id:, seq:, type:, entity:, scope:, actor_person_id: :default)
         {

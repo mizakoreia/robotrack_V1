@@ -121,6 +121,25 @@ RSpec.describe Realtime::PublisherService, :tenancy do
     expect(env.to_json).not_to include('TEXTO-SECRETO')
   end
 
+  it 'falha no traversal de scope não reverte o seq nem impede o broadcast (scope degrada p/ vazio)' do
+    # Regressão da revisão: se o scope (leituras de ancestrais) dividisse a
+    # transação do UPDATE do seq, uma falha ali reverteria o número e o evento
+    # sumiria SEM lacuna — perda silenciosa que anula o esquema seq/gap. Com o
+    # savepoint, o seq avança, a lacuna fica reconciliável e ainda transmitimos.
+    h = build_hierarchy
+    robot = in_workspace(ws) { Robot.find(h[:robot]) }
+    captured.clear
+    allow(Realtime::Scope).to receive(:for_robot).and_raise(StandardError.new('pick falhou'))
+
+    in_workspace(ws) { create_task(robot, desc: 'Y', weight: 1, position: 2) }
+
+    seq_after = in_workspace(ws) { Workspace.where(id: ws.id).pick(:realtime_seq) }
+    expect(seq_after).to eq(1)                             # seq avançou apesar da falha
+    expect(captured.size).to eq(1)                         # ainda transmitiu
+    expect(captured.first[:payload]['scope']).to eq({})    # scope degradado
+    expect(captured.first[:payload]['seq']).to eq(1)
+  end
+
   it 'falha de broadcast (Redis) não derruba a mutação e incrementa o contador' do
     allow(ActionCable.server).to receive(:broadcast).and_raise(StandardError.new('redis down'))
 
