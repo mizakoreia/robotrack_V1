@@ -28,10 +28,10 @@
 
 ## 5. API e autorização
 
-- [ ] 5.1 Criar `Api::Entities::Notification` e o endpoint de listagem paginada (`recorded_at DESC`, escopo `recipient_person_id = current_person`) com header de contagem de não lidas. (§3.10 — Ana listando num workspace onde Bruno tem 20 notificações recebe zero linhas de Bruno)
-- [ ] 5.2 Criar `POST /notifications/:id/read` e `POST /notifications/read_all` — e **nenhum** `PATCH /notifications/:id` genérico. (§4.1 inv. 4 — o route-sweep prova que não existe rota de update genérica sobre `notifications`; a superfície é removida, não filtrada)
-- [ ] 5.3 Implementar `NotificationPolicy` (D3) exigindo `recipient_person_id == current_person.id` em `mark_read?` para os três papéis, e negando `create?` para `view`. (§4.1 inv. 4 — o **dono** do workspace marcando a notificação de Ana como lida recebe negação, porque a spec diz "a própria")
-- [ ] 5.4 Registrar os endpoints no route-sweep de D3 e escrever as specs de negação: `view` alterando `msg` além de `read`; `view` marcando notificação alheia; `view` criando notificação; membro do workspace A tocando notificação do workspace B. (§4.1 inv. 4 e 1 — cada um dos quatro é negado, o de outro tenant sem vazar a existência do id; e remover a declaração de policy de `read_all` quebra o CI)
+- [x] 5.1 Criar `Api::Entities::Notification` e o endpoint de listagem paginada (`recorded_at DESC`, escopo `recipient_person_id = current_person`) com header de contagem de não lidas. (§3.10 — Ana listando num workspace onde Bruno tem 20 notificações recebe zero linhas de Bruno)
+- [x] 5.2 Criar `POST /notifications/:id/read` e `POST /notifications/read_all` — e **nenhum** `PATCH /notifications/:id` genérico. (§4.1 inv. 4 — o route-sweep prova que não existe rota de update genérica sobre `notifications`; a superfície é removida, não filtrada)
+- [x] 5.3 Implementar `NotificationPolicy` (D3) exigindo `recipient_person_id == current_person.id` em `mark_read?` para os três papéis, e negando `create?` para `view`. (§4.1 inv. 4 — o **dono** do workspace marcando a notificação de Ana como lida recebe negação, porque a spec diz "a própria")
+- [x] 5.4 Registrar os endpoints no route-sweep de D3 e escrever as specs de negação: `view` alterando `msg` além de `read`; `view` marcando notificação alheia; `view` criando notificação; membro do workspace A tocando notificação do workspace B. (§4.1 inv. 4 e 1 — cada um dos quatro é negado, o de outro tenant sem vazar a existência do id; e remover a declaração de policy de `read_all` quebra o CI)
 
 ## 6. Centro de notificações (UI)
 

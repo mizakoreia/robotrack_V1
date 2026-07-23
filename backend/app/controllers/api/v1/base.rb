@@ -52,6 +52,9 @@ module Api
       # Reset de fábrica do workspace (workspace-settings 5, D12)
       mount Api::V1::WorkspaceFactoryReset
 
+      # Centro de notificações (in-app-notifications 5.1/5.2)
+      mount Api::V1::Notifications
+
       # Sonda de saúde da fila offline (offline-pwa 4.3) — pública, sem tenant
       mount Api::V1::Health
 

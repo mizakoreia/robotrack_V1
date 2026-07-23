@@ -14,7 +14,7 @@ class NotificationPolicy < BasePolicy
       return false unless PermissionMatrix.allows?(:mark_notification_read, context.role)
       return false if notification && context.person.nil?
 
-      notification.nil? || notification.person_id == context.person.id
+      notification.nil? || notification.recipient_person_id == context.person.id
     end
   end
 end
