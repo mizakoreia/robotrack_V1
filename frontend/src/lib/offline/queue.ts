@@ -108,6 +108,21 @@ export async function enqueueMutation(
   return record
 }
 
+// Transição de estado de um item (usada pela drenagem). Patch parcial opcional
+// (attempts, last_error, next_attempt_at). Sem-op se o item já saiu da fila.
+export async function transition(
+  id: string,
+  state: MutationState,
+  patch: Partial<QueuedMutation> = {},
+  db?: QueueDB,
+): Promise<void> {
+  const d = db ?? (await openQueueDb())
+  const tx = d.transaction('mutations', 'readwrite')
+  const rec = await tx.store.get(id)
+  if (rec) await tx.store.put({ ...rec, ...patch, state })
+  await tx.done
+}
+
 // Lista mutations, opcionalmente escopadas por workspace, em ordem de `seq`.
 export async function listMutations(workspaceId?: string, db?: QueueDB): Promise<QueuedMutation[]> {
   const d = db ?? (await openQueueDb())

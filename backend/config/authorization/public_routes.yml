@@ -16,6 +16,9 @@
 - path: /api/v1/countries
   method: GET
   reason: "Lista estática de países para formulário de cadastro, sem dado de usuário."
+- path: /api/v1/health
+  method: GET
+  reason: "Sonda de saúde da fila offline (offline-pwa 4.3) — porteiro barato da drenagem, sem dado de usuário, tocada antes de um token garantido."
 - path: /auth/v1/session
   method: POST
   reason: "Login por e-mail e senha — é o que EMITE a credencial (D4.8)."

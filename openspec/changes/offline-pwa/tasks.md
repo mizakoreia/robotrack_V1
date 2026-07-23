@@ -22,10 +22,10 @@
 
 ## 4. Fila: grafo de dependência e drenagem (D7-4)
 
-- [ ] 4.1 Implementar o cálculo de elegibilidade por `depends_on` contra `resolved_uuids`, pulando itens não elegíveis sem bloquear os posteriores (§4.2 — `project.rename` de `seq` 4 sobe enquanto `task.create` de `seq` 2 espera pelo robô)
-- [ ] 4.2 Implementar o povoamento de `resolved_uuids` a partir de respostas 2xx e de uuids lidos do servidor (D1 — tarefa criada offline contra um robô que já existia no servidor é elegível sem depender de nenhuma mutation de criação)
-- [ ] 4.3 Implementar o laço de drenagem sequencial por `seq` restrito pelo grafo, com uma requisição em voo por vez, e os gatilhos (`online`, `visibilitychange`, foco, sucesso, timer de 30s) filtrados pela sonda `HEAD /api/v1/health` (§4.2 — Wi-Fi de galpão sem rota de saída dispara uma sonda, não 40 requisições)
-- [ ] 4.4 **Verificação:** E2E do cenário canônico com rede cortada — criar robô `R`, tarefa `T`, avanço `A`, restaurar rede, afirmar a ordem das três chamadas no servidor (§4.2 — se a ordem inverter, `T` recebe 422 por FK ausente e o teste falha; ele não pode passar por acidente)
+- [x] 4.1 Implementar o cálculo de elegibilidade por `depends_on` contra `resolved_uuids`, pulando itens não elegíveis sem bloquear os posteriores (§4.2 — `project.rename` de `seq` 4 sobe enquanto `task.create` de `seq` 2 espera pelo robô)
+- [x] 4.2 Implementar o povoamento de `resolved_uuids` a partir de respostas 2xx e de uuids lidos do servidor (D1 — tarefa criada offline contra um robô que já existia no servidor é elegível sem depender de nenhuma mutation de criação)
+- [x] 4.3 Implementar o laço de drenagem sequencial por `seq` restrito pelo grafo, com uma requisição em voo por vez, e os gatilhos (`online`, `visibilitychange`, foco, sucesso, timer de 30s) filtrados pela sonda `HEAD /api/v1/health` (§4.2 — Wi-Fi de galpão sem rota de saída dispara uma sonda, não 40 requisições)
+- [x] 4.4 **Verificação:** E2E do cenário canônico com rede cortada — criar robô `R`, tarefa `T`, avanço `A`, restaurar rede, afirmar a ordem das três chamadas no servidor (§4.2 — se a ordem inverter, `T` recebe 422 por FK ausente e o teste falha; ele não pode passar por acidente)
 
 ## 5. Fila: idempotência, erro e poison message (D7-5, D7-6)
 

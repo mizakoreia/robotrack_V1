@@ -24,6 +24,9 @@ module Api
     PUBLIC_ROUTES = [
       %r{^/swagger_doc},
       %r{^/api/v1/countries/?$},
+      # Sonda de saúde da fila offline (offline-pwa 4.3): a drenagem toca esta
+      # rota ANTES de ter um token válido garantido — é só "o servidor responde?".
+      %r{^/api/v1/health/?$},
       # Auth pública, ANCORADA (D4.8): `session/?$` NÃO casa `session/renew`.
       ['POST', %r{^/auth/v1/session/?$}],
       ['POST', %r{^/auth/v1/registration/?$}],
@@ -70,6 +73,7 @@ module Api
       %r{^/api/v1/workspaces},
       %r{^/api/v1/users},
       %r{^/api/v1/countries},
+      %r{^/api/v1/health/?$},
       %r{^/api/v1/uploads},
       %r{^/api/v1/downloads},
       # Metadados globais (task-catalog 4.5): o enum de Aplicações é o mesmo para
