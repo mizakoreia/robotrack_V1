@@ -73,7 +73,11 @@ RSpec.describe 'Varredura negativa de vazamento entre tenants', :tenancy, type: 
     # tenant é escondida pela RLS, então o find_by devolve nil → 404 (People::
     # ArchiveService). Registro faltante desde workspace-settings; exposto na
     # primeira suíte COMPLETA (reconciliação hierarchy-soft-delete G4).
-    'DELETE /api/v1/people/:id' => ->(ids) { ["/api/v1/people/#{ids[:person]}", {}] }
+    'DELETE /api/v1/people/:id' => ->(ids) { ["/api/v1/people/#{ids[:person]}", {}] },
+    # in-app-notifications: marcar-como-lida entra na varredura — notificação de
+    # outro tenant é escondida pela RLS (find_by → nil → error!('not_found', 404)),
+    # byte-a-byte igual ao 404 de um id inexistente.
+    'POST /api/v1/notifications/:id/read' => ->(ids) { ["/api/v1/notifications/#{ids[:notification]}/read", {}] }
   }.freeze
 
   it 'toda rota com id tem gerador OU override — e nenhum órfão' do
@@ -119,8 +123,15 @@ RSpec.describe 'Varredura negativa de vazamento entre tenants', :tenancy, type: 
         template = TaskTemplate.create!(cat: 'A. Hardware', desc: 'Template de A')
         tarefa = Task.create!(robot_id: robo.id, cat: 'A. Hardware', desc: 'Tarefa de A', position: 0)
         pessoa = Person.create!(name: 'Pessoa Alvo A') # workspace-settings: alvo do DELETE de pessoa
+        # in-app-notifications: alvo do POST /notifications/:id/read cross-tenant.
+        notificacao = Notification.create!(
+          workspace_id: ws_a.id, recipient_person_id: pessoa.id, actor_person_id: pessoa.id,
+          type: 'assign', msg: 'Notificação de A', author_name_snapshot: 'Ana',
+          recorded_at: Time.current, ts_local: '23/07 14:00'
+        )
         { project: projeto.id, cell: celula.id, robot: robo.id,
-          task_template: template.id, task: tarefa.id, person: pessoa.id }
+          task_template: template.id, task: tarefa.id, person: pessoa.id,
+          notification: notificacao.id }
       end
 
       { membership: membership_id, invitation: invitation_id }.merge(hierarquia)
