@@ -1,78 +1,57 @@
-# Continuidade — estado em 22/07/2026
+# Continuidade — estado em 23/07/2026
 
 Ponto de retomada do porte. Para uma sessão nova de agente, o prompt de partida
 está em [PROMPT DE RETOMADA](#prompt-de-retomada), no fim.
 
-## Onde está o trabalho
+## Onde está o trabalho (modelo de git ATUAL)
 
-**As branches são empilhadas, não independentes:**
+**Mudou desde as ondas iniciais: não é mais empilhamento de branches.** Agora:
 
-```
-main (48497fd)                       ← ondas 1–4, sem nada desta sessão
-└── authorization-policies (6b89283)     change COMPLETA
-    └── commissioning-hierarchy (b75b072)  change COMPLETA
-        └── task-catalog                   change COMPLETA — 6 de 6 (TC-G6 fechou)
-            └── robot-tasks                 change COMPLETA — 6 de 6 grupos
-                └── progress-advances        change COMPLETA — 6 de 6 grupos
-                    └── progress-rollup          change COMPLETA — 6 de 6 grupos
-                        └── design-system                  change COMPLETA — 8 de 8 grupos
-                            └── app-shell-navigation       change COMPLETA — 6 de 6 grupos
-                                └── hierarchy-screens          change COMPLETA — 7 de 7 grupos
-                                    └── robot-task-table       change COMPLETA — 7 de 7 grupos
-                                        └── my-tasks-view          change COMPLETA — 7 de 7 grupos
-                                            └── commissioning-report   change COMPLETA — 8 de 8 grupos
-                                                └── audit-log          change COMPLETA — 8 de 8 grupos
-                                                    └── workspace-settings   change COMPLETA — G0..G6 (5.9/5.10 = handoffs nomeados)
-                                                        └── hierarchy-soft-delete   change COMPLETA — 4 de 4 grupos
-```
+- Todo o trabalho vive em `main` — **`main` é a versão mais atual** (tip `208b332`).
+- O desenvolvimento acontece na branch de feature
+  `claude/robotrack-task-catalog-tc-g3-6os4vm`, que é **fast-forwarded para `main`
+  a cada grupo** e empurrada. No momento a feature e `main` apontam para o MESMO
+  commit — nada pendente para mergear.
+- Protocolo de push por grupo: commit `G<n>:` na feature → `git checkout main &&
+  git merge --ff-only <feature>` → `git push -u origin main` → `git checkout
+  <feature>`.
+- **Branches remotas antigas** (as ~19 de capacidades já mergeadas) podem ser
+  apagadas, MAS o `git push origin --delete` está bloqueado pelo classificador de
+  permissão do ambiente — apagar pela UI do GitHub ou liberar a permissão Bash.
 
-**A branch atual contém todo o trabalho** (empilhamento full-stack). É nela que se
-continua. Push por branch canônica (`git push origin HEAD:<change>`). Os PRs para a
-`main` podem ser abertos depois, na ordem do empilhamento.
+> **22 de 24 changes COMPLETAS.** Faltam só: `quality-and-accessibility` (gate de
+> release — depende de um harness de CI/Playwright que NÃO existe no repo; seria
+> entrega de config + specs + handoff) e `legacy-data-migration` (**BLOQUEADA** —
+> falta o insumo `RoboTrack_Database.json`, o export de dados legado).
 
-> **Ordem invertida por dependência:** `workspace-settings` começou (G0..G4: Equipe,
-> catálogo, backup — todos verdes), mas o G5 (reset de fábrica) esbarrou num bloqueio
-> estrutural: `task_advances` é IMUTÁVEL (REVOKE DELETE + trigger) e trava as tarefas
-> com FK `ON DELETE RESTRICT`, então `DELETE FROM projects` é impossível quando há
-> avanços (o caso normal). O reset precisa ARQUIVAR, não apagar. Isso exigiu primeiro o
-> **soft-delete de hierarquia** — a change `hierarchy-soft-delete` (agora COMPLETA, 4/4),
-> que também quitou a pendência D-H6×D-IMUT. **`workspace-settings` G5/G6 estão
-> DESBLOQUEADOS** — o reset passa a arquivar via `Hierarchy::SoftDeleteService`.
-
-## Suítes (medidas na branch `hierarchy-soft-delete`)
+## Suítes (estado atual, na `main`)
 
 | Suíte | Resultado |
 |---|---|
-| Backend `bundle exec rspec --tag ~slow` (como `robotrack_app`, `--seed 12345`) | **1203 exemplos / 0 falhas / 8 pending** — suíte COMPLETA desta sessão (ex-benchmarks `:slow`). Expôs 2 falhas PRÉ-EXISTENTES (factory morta `:audit_log` de audit-log G2; `DELETE /api/v1/people/:id` sem gerador no cross_tenant sweep, de workspace-settings G1) — ambas corrigidas em `hierarchy-soft-delete` G4 como reconciliações cross-change. Os benchmarks `:slow` (`spec/progress/load_dataset_spec.rb`, 93k tarefas) ficam fora: são medição de tempo dependente de hardware, não regressão. |
-| Frontend `vitest run` | **329 / 0** (57 arquivos) |
-| Frontend `tsc --noEmit` | limpo |
-| Frontend `pnpm build` | limpo |
+| Frontend `vitest run` | **527 / 0** |
+| Frontend `tsc --noEmit` / `npm run lint` | limpos |
+| Backend `rspec` (por capacidade; suíte dirigida por grupo) | verde em cada grupo entregue (ex.: notifications+ops+advances+sweeps 155/0; governança/health 277/0) |
 
-> **Provisionamento do banco (container efêmero — refazer a cada sessão):**
-> `service postgresql start`; como `postgres` superuser criar `robotrack_user`
-> (SUPERUSER) + os bancos `robotrack_dev`/`robotrack_test` + aplicar `db/roles.sql`
-> nos dois; `PATH=/opt/rbenv/shims:$PATH` para ruby 3.2.3 (o `/usr/local/bin/ruby`
-> 3.3 sombreia). O schema já vem carregado (session-start hook). Detalhes em
-> `backend/db/PROVISIONING.md`.
->
-> **Screenshots das telas** (sem backend): `pnpm dev` + Playwright global
-> (`/opt/node22/lib/node_modules/playwright`) interceptando a API — o harness está em
-> `scratchpad/shot.mjs` (semeia sessão+workspace no localStorage, mocka os overviews).
+> **Ambiente (container efêmero — refazer a cada sessão):**
+> - **Postgres CAI com frequência** ("Connection refused" na 5432): reinicie com
+>   `pg_ctlcluster 16 main start`. Migrations como `robotrack_migrator`
+>   (`DATABASE_URL="postgres://robotrack_migrator:mig_dev_pw@localhost/robotrack_<dev|test>"`);
+>   a suíte roda como `robotrack_app` (default do `database.yml`).
+> - **Redis:** instalado; subir com `redis-server --daemonize yes` quando um spec
+>   precisar (dedup de alerta, rack-attack, topologia). Já foi subido nesta sessão.
+> - **Ruby:** `export PATH="/opt/rbenv/versions/3.2.3/bin:$PATH"` (o 3.3 sombreia).
+> - **Frontend:** usa **npm** (`npm run lint`, `npx vitest run`, `npx tsc`). Há
+>   `.eslintrc.cjs` mínimo (guarda de storage + `new Notification`).
+> - **Sem daemon Docker** (smokes de deploy = handoff). **Sem Playwright local**
+>   (E2E são integração RTL/`fake-indexeddb`; screenshots via Chromium headless em
+>   `/opt/pw-browsers/chromium_headless_shell-*/chrome-linux/headless_shell
+>   --screenshot`).
+> - **Assinatura de commit IMPOSSÍVEL** (sem chave em `/home/claude/.ssh/` e sem
+>   `ssh-keygen`): todos os commits saem "Unverified". O e-mail JÁ é
+>   `noreply@anthropic.com` — é limitação de ambiente, não erro. O stop-hook avisa
+>   toda vez; não há ação a tomar.
 
-> Lição desta change: constantes definidas dentro de `RSpec.describe do … end`
-> VAZAM para o topo (Object). Dois specs com `ALLOWLIST`/`ENVELOPES`/`APP` colidem
-> e a última carga vence, quebrando um ou outro conforme a seed. Prefixe (ex.:
-> `PME_`, `PWB_`). Foi o que mordeu no G6.
-
-Todos os 10 pending nomeiam a capacidade que os desbloqueia — nenhum é dívida
-anônima. (Dois pendings de cascade — `tasks→robots` e `task_assignees→tasks` —
-destravaram e viraram verdes ao longo de `robot-tasks`.)
-
-> Nota de ambiente: `spec/requests/auth/rate_limit_spec.rb` é levemente FLAKY na
-> suíte completa (estado do Rack::Attack sensível à ordem aleatória do RSpec);
-> passa isolado. Não é regressão desta sessão. Rodar com `--seed` fixo estabiliza.
-
-## Changes concluídas (19 de 24)
+## Changes concluídas (22 de 24)
 
 `seal-template-baseline`, `workspace-tenancy`, `identity-and-auth`,
 `workspace-invitations` (anteriores) e:
@@ -279,112 +258,121 @@ destravaram e viraram verdes ao longo de `robot-tasks`.)
   desde workspace-settings G4) e falha pré-existente do relatório (listava tarefa excluída
   individualmente — `t.deleted_at` agora filtrado). Decisões D1–D7 no EXECUCAO.
 
+- **`workspace-settings`** (G0..G6, COMPLETA) — Equipe/catálogo/backup + reset de fábrica
+  (D12) que ARQUIVA via `Hierarchy::SoftDeleteService` (não apaga), gates
+  frase/backup≤15min/consumo CAS, auditoria `workspace_reset.v1` na transação, endpoint
+  owner-only atrás de `FEATURE_FACTORY_RESET`. Tela `/configuracoes` (PeoplePanel/
+  CatalogPanel/AppearancePanel/Utilitários + AuditLogModal). Pendings 5.9 (broadcast) e
+  5.10 (alerta) quitados pelas ondas seguintes.
+- **`realtime-collaboration`** (G0..G9, COMPLETA, full-stack, Onda D6) — tempo real por
+  ActionCable. Backend: tickets de Cable opacos de uso único (Redis SETEX/GETDEL 60s),
+  `WorkspaceChannel` por workspace com auth por membership + reverificação por entrega,
+  envelopes de PONTEIRO (`{v,seq,workspace_id,type,entity,scope,actor_person_id,origin_id,
+  at}` — sem conteúdo), `workspaces.realtime_seq` monotônico (UPDATE...RETURNING) p/ gap,
+  `RealtimePublishable` (after_*_commit), `/sync` (janela 10min). Frontend: máquina de
+  transporte (connecting|live|degraded|offline, backoff com ticket FRESCO), factory de
+  keys D9, fila de invalidação com GATE de represamento (defere invalidações que
+  intersectam mutationKeys em voo), poller do modo degradado, indicador de conexão,
+  revogação viva (self-revocation). Handoffs: header do `/sw.js`, métricas de transporte.
+- **`offline-pwa`** (G0..G8, COMPLETA, full-stack, Onda D7) — o que o Firestore dava de
+  graça, agora de primeira classe. `safeStorage` com NÍVEIS (persistent/session-only/
+  memory-only) + sonda de boot + aviso D7-11; service worker (`public/sw.js` network-first,
+  guarda de não-interceptação, CACHE_NAME por plugin do Vite, aviso de nova versão); FILA
+  de mutations em IndexedDB (`idb`; log de comandos, `depends_on`, `recorded_at` no
+  enfileiramento, teto 500/5MB); grafo de dependência + drenagem sequencial (1 em voo,
+  sonda `HEAD /api/v1/health`); classificação D7-5 (retry/permanente/conflito/auth, DELETE
+  404=sucesso) + backoff + cascata de bloqueio + reconciliação; líder por `navigator.locks`
+  + fallback IndexedDB + `BroadcastChannel`; **overlay** otimista DERIVADO DA FILA (vence
+  evento ao vivo, sobrevive a remount) + indicador honesto (pendente/bloqueado) + probe
+  `hasPendingFor` ligado ao gate de D6; export/migração versionada. **SEAM aberto:** os
+  hooks de mutação (`useRecordAdvance`/`useHierarchy`) ainda NÃO enfileiram offline nem
+  saiu o `setQueryData` — a máquina está pronta e provada (E2E de honestidade temporal),
+  falta flipar os hooks. Backend: só `HEAD /api/v1/health`.
+- **`delivery-and-observability`** (G0..G8, COMPLETA, backend+config, Onda D11) — a infra
+  que todo o domínio assume. Registro único de env (`config/env_schema.rb`) + guarda de
+  boot; Dockerfile prod (não-root, HEALTHCHECK, sem assets), Procfile/bin/release (migrate
+  sob lock), `/health/live`+`/ready`; isolamento de Redis por função + guarda de topologia;
+  contrato de cache do PWA (`frontend/nginx.conf`); Sentry (scrubbing/PII) + lograge JSON +
+  `/metrics` por token; `Ops::AlertService` (dedup atômico, roteamento, blindagem) +
+  condições; partição de `audit_logs` + retenção/expurgo (`Ops::RetentionPurge`,
+  `AuditPartitionMaintenance`); rate limit por classe/identidade (rack-attack Redis);
+  runbook de rollback + guarda de migration `contract` + backup verificado. **HANDOFFS de
+  deploy** (docker-compose staging smoke, CDN, ingestão Sentry, ensaio de rollback) — code+
+  config+spec entregues, execução real é do deploy. Registrados no EXECUCAO (FECHAMENTO).
+- **`in-app-notifications`** (G0..G8, COMPLETA, full-stack, Onda D-N) — notificações
+  assign/progress/done. Banco: enum + tabela `notifications` (D-N2), invariantes 4 e 8 em
+  TRIGGER/CHECK (read=true no INSERT falha; UPDATE só read/read_at; sem read:true→false),
+  RLS, índice único de idempotência de assign. `MessageBuilder` (locale v1, trunca só
+  `%{comment}`), `RecipientResolver` (delta/todos − autor), `EventClassifier`,
+  `CreateService` (idempotente sob unique), `NotifyTaskEventJob` (fila :notifications) ligado
+  por subscriber aos eventos PÓS-commit (best-effort — Redis fora não derruba o save). API
+  (listagem escopada por destinatário + header de não-lidas, POST :id/read + read_all, SEM
+  PATCH genérico), `NotificationPolicy` (a PRÓPRIA). Frontend: `useNotifications` (D9),
+  `NotificationCenter`, `ctxToPath`, e **alerta do SO com marca d'água EM MEMÓRIA** (reload
+  com pendências antigas → 0 alertas — o modo de falha desta capacidade) + regra de lint
+  proibindo `new Notification(` fora do hook único. Retenção `Notification.purgeable` (o
+  cron mora em D11).
+
 Cada change tem seu `openspec/changes/<nome>/EXECUCAO.md` com o mapa de grupos, as
 decisões tomadas na execução, as armadilhas encontradas e a CONCLUSÃO com o relatório
 final. **Leia o EXECUCAO.md antes de tocar no código de uma change.**
 
-## Onde parou: `workspace-settings` COMPLETA (G0..G6) — o reset de fábrica existe
+## Onde parou: 5 waves fechadas nesta sessão; 2 restam
 
-`workspace-settings` fechou: G5 (reset de fábrica RECONCILIADO — ARQUIVA via
-`Hierarchy::SoftDeleteService`, gates frase/backup≤15min/consumo CAS em
-`consumed_at`, auditoria `workspace_reset.v1` NA transação, savepoint em vez de
-SERIALIZABLE — impossível: todo contexto de tenant já abre a transação externa do
-SET LOCAL; endpoint owner-only atrás de `FEATURE_FACTORY_RESET` default off → 404;
-`FactoryResetModal` com export SEMPRE antes + cancel/clear pós-sucesso) e G6 (tela
-`/configuracoes` montando PeoplePanel/CatalogPanel/AppearancePanel/Utilitários +
-`AuditLogModal`; menu do rodapé sem destinos-fantasma; themeStore com storage
-try/catch — modo privado não lança mais no toggle; E2E de fechamento nos dois
-temas). Pendings NOMEADOS: 5.9 broadcast (realtime-collaboration), 5.10 alerta
-(delivery-and-observability), 5.1 round-trip (legacy-data-migration).
-Suítes: backend dirigido 131/0 (incl. sweeps), frontend **355/0**, tsc limpo.
+Nesta sessão fecharam, em ordem: **`workspace-settings`** (reset de fábrica que
+arquiva), **`realtime-collaboration`** (D6, ActionCable), **`offline-pwa`** (D7,
+fila offline + SW + overlay), **`delivery-and-observability`** (D11, infra/observab.)
+e **`in-app-notifications`** (D-N). Cada uma seguiu o protocolo por grupo (G0
+reconciliação → grupo a grupo → commit `G<n>:` → ff `main` → push) e tem seu
+`EXECUCAO.md`. Tudo na `main` (`208b332`).
 
-**Antes: `hierarchy-soft-delete` COMPLETA (4/4)**
+## O que resta (2 de 24)
 
-`hierarchy-soft-delete` (backend-only) fechou os 4 grupos: soft-delete de
-`projects`/`cells`/`robots` (`deleted_at` + `default_scope`, `position` nullable zerada no
-arquivamento, índices de nome parciais, 4 views de progresso excluindo o arquivado);
-`Hierarchy::SoftDeleteService` (cascade em UPDATE por nível + remove `task_assignees`);
-`CrudService#destroy` arquiva em vez de `destroy!`, mantendo **204** e auditoria+recompute na
-transação; e a blindagem de todos os leitores em SQL cru (relatório, minhas-tarefas, overviews,
-busca, dump, reconciliação). Fechou a tensão **D-H6×D-IMUT** e DESTRAVOU o reset de fábrica.
-Ver `openspec/changes/hierarchy-soft-delete/EXECUCAO.md`.
+- **`quality-and-accessibility`** (Onda 10, gate de release) — depende de TODAS as
+  telas (prontas) mas o PROPRIO proposal diz que NÃO entrega o pipeline de CI, os
+  runners nem o harness Playwright. Neste ambiente não há Docker daemon nem
+  Playwright local. Entregável realista: orçamento de query por tela, sweeps de
+  a11y, specs de integração + a config, com o harness Playwright/WebKit e o
+  pipeline de CI como **handoff** (mesmo padrão dos handoffs de deploy do D11 e do
+  Playwright do realtime/offline). Vários handoffs de outras ondas apontam para
+  cá (E2E offline Chromium+WebKit, etc.).
+- **`legacy-data-migration`** — **BLOQUEADA por insumo ausente**: o proposal declara
+  que o arquivo `RoboTrack_Database.json` (o export do Firestore legado) **não foi
+  fornecido**. Sem ele, a migração real não roda. Dá para entregar o esquema do
+  importador + os validadores + specs contra fixtures sintéticas, mas a execução
+  fim-a-fim precisa do arquivo. **Peça o arquivo ao cliente antes de começar.**
 
-**Próximo passo — `workspace-settings` G5/G6 (DESBLOQUEADO).** O reset de fábrica (D12) agora
-é viável: em vez de `DELETE FROM projects` (impossível — avanços imutáveis + FK RESTRICT),
-**arquiva** cada projeto do workspace via `Hierarchy::SoftDeleteService`, reusa
-`AuditLog::RecordService.record!(event: :workspace_reset, …)` na MESMA transação (o log
-sobrevive porque `audit_logs` não tem FK para a hierarquia), e monta o `AuditLogModal` no
-painel Utilitários (G6, + preferência de tema). O `AskUserQuestion` que originou o desvio já
-foi respondido ("Soft-delete primeiro"); o pré-requisito existe.
+**SEAMS/handoffs abertos que valem lembrar:**
+- **offline-pwa:** flipar `useRecordAdvance`/`useHierarchy` para ENFILEIRAR quando
+  offline + retirar o `setQueryData` (a máquina — fila/drenagem/overlay/indicador —
+  está pronta e provada; falta a última fiação dos hooks de mutação). É uma mudança
+  de fluxo central; merece sua própria rodada com testes.
+- **delivery-and-observability:** smokes de deploy (docker-compose staging, CDN,
+  Sentry real, ensaio de rollback em staging) — artefatos entregues, execução é do
+  primeiro deploy real. Ver FECHAMENTO no EXECUCAO da change.
+- **Branches remotas antigas** (~19) prontas para apagar; o `git push --delete` está
+  bloqueado pela política de permissão (apagar pela UI do GitHub ou liberar a
+  permissão).
 
-**`workspace-settings` G0..G4** seguem verdes (Equipe, catálogo, backup —
-`people.archived_at`, `workspace_backups`, 3 policies). Ver o EXECUCAO da change.
-
-**`audit-log` fechou antes** (8/8) — `audit_logs` append-only, imutável no BANCO para
-todos inclusive o dono (§4.1 inv. 3), particionada por mês, 3 camadas (REVOKE + trigger +
-RLS sem policy de mutação). Grava sozinho na conclusão a 100%; leitura clamp 200; modal
-frontend pronto (monta em `workspace-settings`); retenção por DDL (nunca DELETE). Testado
-(frontend **329/0**; backend `spec/audit` 51/0 isolado).
-
-**Antes:** `commissioning-report` (COMPLETA, 8/8) — o Protocolo A4 assinável
-(`/relatorio`; payload congelado, ≤5 queries, printToPDF real). E `my-tasks-view` (7/7)
-— a lista pessoal (`/minhas-tarefas`; 409 identidade nunca vira vazio). E
-`robot-task-table` (7/7) — a tela operacional do robô. E `hierarchy-screens` (7/7) —
-as três telas de navegação + busca (D15). E `app-shell-navigation` (6/6) — a moldura
-permanente + as convenções D9 (factory `qk.*`, guard, barreira de vazamento na troca de
-workspace, sweep de convenção).
-
-**Pendências conhecidas (documentadas, não atribuídas):**
-- **design-system:** `tokens-campfire.css` + aliases shadcn seguem no repo (só vars
-  da landing, ortogonais aos papéis). A remoção real (e a migração das classes
-  shadcn → papéis) acontece quando `app-shell-navigation`/`hierarchy-screens`
-  substituírem as páginas do template. `git tag pre-design-system-cleanup` (local)
-  é o ponto de rollback do G8.
-- **design-system:** p50 de frame da luz ambiente é medição de hardware (o CI trava
-  só o determinístico) — job de perf de `delivery-and-observability` (HANDOFF lá).
-- ~~Tensão D-H6×D-IMUT (de progress-advances): hard delete de robô/projeto com
-  tarefas que têm avanços daria 500.~~ **RESOLVIDA** por `hierarchy-soft-delete`
-  (COMPLETA): a exclusão da hierarquia virou soft-delete em cascata; o endpoint
-  segue 204 e a trilha imutável fica intacta. Destravou o reset de `workspace-settings`.
-- Os p95 de latência de `progress-rollup` (120ms/25ms/8s) são alvo de hardware; o
-  CI trava o NÚMERO de statements (determinístico) e mede latência com teto
-  tolerante (EXECUCAO decisão 7). O job de perf real é de `delivery-and-observability`.
-- `<ProgressRing>`/`<MetricStat>` existem (progress-rollup 6.2) mas a TELA que os
-  monta (Visão Geral, hubs, cards) é de `hierarchy-screens`.
-
-**Próximo passo — `hierarchy-soft-delete`** (pré-requisito destravado acima). Adiciona
-`deleted_at` a `projects`/`cells`/`robots` com `default_scope` (espelhando `tasks`),
-converte o delete físico da hierarquia (`Hierarchy::CrudService`) em soft-delete em
-cascata, e blinda os leitores em SQL cru com `deleted_at IS NULL`. Depois volta-se ao
-**`workspace-settings` G5/G6**: o reset passa a ARQUIVAR (não apagar), reusando
-`AuditLog::RecordService.record!(event: :workspace_reset, …)` na transação e montando o
-`AuditLogModal` em Utilitários. Alternativa geral: `realtime-collaboration` (D6).
-
-## Depois de `workspace-settings` — o que resta
-
-Próximas:
-`realtime-collaboration`
-(D6 — invalida as keys `['ws',wsId,'overview'|'project'|'cell'|…]` que hierarchy-screens já
-declara), `offline-pwa`.
-
-Ao montar telas, **use as convenções já vigentes**: leituras via hooks em `features/<dominio>/`
-com a factory `qk.*` (o guard reprova key fora de `['ws', wsId, …]`); as telas (em `app/`) NÃO
-importam `lib/api` direto — os DTOs vêm reexportados pela feature; mutations invalidam a chave
-ESPECÍFICA (incl. o overview do nível), nunca o tenant inteiro; `createPortal` só em
-`components/menu/`. Escreva o `EXECUCAO.md` (G0) antes de qualquer código. **Nota:** ao montar
-telas, MIGRE as classes shadcn (`bg-primary`…) para os papéis (`bg-accent`…) e então remova os
-aliases + `tokens-campfire.css` (parte adiada do G8 do design-system). `/` é a Visão Geral
-autenticada; a landing do template ficou em `/apresentacao` (dívida do `seal-template-baseline`).
+**Convenções vigentes (não regredir ao montar mais telas):** leituras via hooks em
+`features/<dominio>/` com a factory `qk.*` (o guard reprova key fora de
+`['ws', wsId, …]`); telas em `app/` NÃO importam `lib/api` direto (DTOs reexportados
+pela feature); mutations invalidam a chave ESPECÍFICA, nunca o tenant inteiro;
+`createPortal` só em `components/menu/`; `new Notification(` só no hook de alerta do
+SO (regra de lint); storage só por `lib/safeStorage` (regra de lint).
 
 ## Método (não abrir mão)
 
-1. Uma change por vez, cada uma na sua branch, empilhada na anterior.
-2. **Antes de qualquer código**, escrever `openspec/changes/<change>/EXECUCAO.md` com o
-   mapa de grupos, decisões próprias, armadilhas previstas e seção RETOMADA — commit `G0`.
-3. Executar grupo a grupo. Por grupo: aplicar → `bundle exec rspec` (0 falhas) → marcar
+1. Uma change por vez, na branch de trabalho, **fast-forwarded para `main` a cada
+   grupo** (`main` é a versão mais atual — não há mais empilhamento de branches).
+2. **Antes de qualquer código**, escrever `openspec/changes/<change>/EXECUCAO.md`
+   RECONCILIANDO o design com a REALIDADE do repo (o que já existe/evoluiu, o que é
+   handoff), com o mapa de grupos, decisões e armadilhas previstas — commit `G0`.
+3. Executar grupo a grupo. Por grupo: aplicar → specs dirigidos (0 falhas) → marcar
    `- [x]` em `tasks.md` → `npx --yes @fission-ai/openspec@1.6.0 validate <change>
-   --strict` → **um commit** `G<n>: ...`.
-4. Ao fim de cada grupo: resumir e **pedir autorização antes do próximo**.
+   --strict` → **um commit** `G<n>: ...` → ff `main` + push.
+4. Ao fim de cada grupo: resumo pt-BR client-friendly (cliente não-expert). Em lotes
+   autorizados ("vai até G4"), seguir sem pausar; senão, pedir autorização.
 5. Divergência entre o design e a realidade (ou entre duas changes): decidir, **registrar
    a decisão com o motivo** no EXECUCAO.md e anotar no `tasks.md`. Nunca em silêncio.
 6. `pending` sempre nomeia a capacidade bloqueadora; nada de spec pendente fingindo
@@ -405,60 +393,68 @@ autenticada; a landing do template ficou em `/apresentacao` (dívida do `seal-te
 
 ## Ambiente de desenvolvimento
 
-Migrations rodam como `robotrack_migrator`; a suíte roda como `robotrack_app`. Detalhes em
+Migrations rodam como `robotrack_migrator`; a suíte roda como `robotrack_app` (default do
+`database.yml`, que já usa `DATABASE_URL` em todos os ambientes). Detalhes em
 [backend/db/PROVISIONING.md](backend/db/PROVISIONING.md):
 
 ```bash
+# Postgres cai com frequência — reinicie quando "Connection refused":
+pg_ctlcluster 16 main start
+
+export PATH="/opt/rbenv/versions/3.2.3/bin:$PATH"   # ruby 3.2.3 (o 3.3 sombreia)
 cd backend
 MIG_DEV="postgres://robotrack_migrator:mig_dev_pw@localhost/robotrack_dev"
 MIG_TEST="postgres://robotrack_migrator:mig_dev_pw@localhost/robotrack_test"
 RAILS_ENV=development DATABASE_URL=$MIG_DEV  bundle exec rails db:migrate
 RAILS_ENV=test        DATABASE_URL=$MIG_TEST bundle exec rails db:migrate
-bundle exec rspec
+redis-server --daemonize yes    # quando um spec precisar de Redis
+RAILS_ENV=test bundle exec rspec spec/<capacidade>/   # rode DIRIGIDO por capacidade
 
 cd ../frontend
-./node_modules/.bin/vitest run && ./node_modules/.bin/tsc --noEmit
+npm run lint && npx tsc --noEmit && npx vitest run    # frontend usa NPM (há .eslintrc.cjs)
 ```
 
-O frontend usa **pnpm** (`pnpm-lock.yaml`); o `package-lock.json` está dessincronizado —
-`npm ci` falha. Seed de demonstração da hierarquia:
-`RAILS_ENV=development bundle exec rails runner db/seeds/hierarchy_demo.rb`.
+Screenshots de algo gráfico: Chromium headless em
+`/opt/pw-browsers/chromium_headless_shell-*/chrome-linux/headless_shell --screenshot`
+sobre um HTML no scratchpad (não há Playwright local). Validação de spec OpenSpec:
+`npx --yes @fission-ai/openspec@1.6.0 validate <change> --strict`.
 
 ## PROMPT DE RETOMADA
 
 > Estou continuando o desenvolvimento do RoboTrack (github.com/mizakoreia/robotrack_V1):
 > reimplementação de um sistema legado (PWA + Firestore) sobre um template Rails 8
-> API-only + React 18/TS, organizada com OpenSpec — 24 changes em `openspec/changes/`,
-> cada uma com proposta, design, deltas de spec e tarefas.
+> API-only + React 18/TS, organizada com OpenSpec — 24 changes em `openspec/changes/`.
 >
-> Leia `CONTINUIDADE.md` na raiz do repositório: ele tem o estado atual, o que já foi
-> entregue, onde parei e o método de trabalho. `robot-tasks`, `task-catalog`,
-> `progress-advances`, `progress-rollup`, `design-system`, `app-shell-navigation`,
-> `hierarchy-screens`, `robot-task-table`, `my-tasks-view`, `commissioning-report` e
-> `audit-log` estão COMPLETAS (leia os EXECUCAO.md delas). Todo o BACKEND do núcleo, a BASE
-> VISUAL, a MOLDURA + CONVENÇÕES, as TRÊS TELAS DE NAVEGAÇÃO (Visão Geral, Projeto, Célula) +
-> busca, a TELA OPERACIONAL DO ROBÔ (`/robo/:id`), a LISTA PESSOAL (`/minhas-tarefas`), o
-> PROTOCOLO DE COMISSIONAMENTO (`/relatorio`, A4 assinável) e a TRILHA DE AUDITORIA imutável
-> (`audit_logs` + `AuditLogModal`, monta em Configurações) estão fechados de ponta a ponta.
-> `/` já é a Visão Geral.
+> Leia `CONTINUIDADE.md` na raiz: tem o estado atual, o modelo de git, o que já foi
+> entregue e o método. **22 das 24 changes estão COMPLETAS** — todo o backend do núcleo,
+> a base visual, a moldura, as telas (Visão Geral/Projeto/Célula, `/robo/:id`,
+> `/minhas-tarefas`, `/relatorio`, `/configuracoes`), a auditoria imutável, o **tempo
+> real** (ActionCable), a **fila offline** (PWA), a **infra/observabilidade** e as
+> **notificações**. Tudo na `main` (`208b332`); a branch de trabalho
+> `claude/robotrack-task-catalog-tc-g3-6os4vm` aponta para o mesmo commit da `main`.
 >
-> Trabalhe na branch `audit-log` (as branches são empilhadas; ela contém tudo; full-stack). O
-> próximo passo é **`workspace-settings`** (DESBLOQUEADA por `audit-log` — o reset de fábrica
-> D12 reusa `AuditLog::RecordService.record!(event: :workspace_reset)` na transação do reset,
-> e monta o `AuditLogModal` em Utilitários). Alternativa: `realtime-collaboration` (D6,
-> invalida as keys `['ws', wsId, …]` que as telas já declaram). Depois
-> `offline-pwa`. Comece pelo `EXECUCAO.md` da change (commit G0) — antes de qualquer código —
-> e faça push por branch canônica (`git push origin HEAD:<change>`). Convenções vigentes:
-> hooks em `features/<dominio>/` com a factory `qk.*` (o guard reprova key fora de
-> `['ws', wsId, …]`), telas em `app/` NÃO importam `lib/api` (DTOs reexportados pela feature),
-> invalidar a chave específica (nunca o tenant inteiro), `createPortal` só em `components/menu/`.
-> Para RODAR/testar: provisione o banco (ver bloco no topo) e use `scratchpad/shot.mjs` p/ prints.
-> Migrations rodam como `robotrack_migrator` (dono); a suíte como `robotrack_app`. NUNCA rodar
-> duas suítes ao mesmo tempo (contenção de lock). DDL em teste (partições) NÃO é revertido pela
-> truncation — limpe em `ensure`.
-> Ao montar telas, migre as classes shadcn para os papéis e remova os aliases +
-> `tokens-campfire.css` (a parte adiada do G8 do design-system).
+> **Restam 2 changes:** `quality-and-accessibility` (gate de release — o harness de
+> CI/Playwright NÃO existe no repo e não há Docker/Playwright neste ambiente; entrega
+> realista = specs de integração + config + handoff do harness) e `legacy-data-migration`
+> (**BLOQUEADA** — falta o insumo `RoboTrack_Database.json`; peça o arquivo ao cliente
+> antes de começar).
 >
-> Siga o método: um grupo por vez, e ao fim de cada grupo me apresente um resumo e peça
-> autorização antes de seguir para o próximo. Não regrida nenhuma das regras listadas na
-> seção "Regras que não podem regredir".
+> **Método (mantido):** uma change por vez; ANTES de qualquer código escreva
+> `openspec/changes/<change>/EXECUCAO.md` reconciliando o design com a REALIDADE do repo
+> (muita coisa já evoluiu além do que o design assume) — commit `G0`. Depois grupo a
+> grupo: aplicar → specs dirigidos 0 falhas (suba Postgres/Redis quando preciso, NUNCA
+> duas suítes ao mesmo tempo) → marcar `- [x]` em `tasks.md` → `validate --strict` → UM
+> commit `G<n>:` → `git checkout main && git merge --ff-only <feature> && git push -u
+> origin main && git checkout <feature>` → resumo pt-BR client-friendly ao cliente
+> (não-expert) → seguir. Verificações que exigem deploy real/harness ausente viram
+> HANDOFF documentado (padrão da casa). Commits terminam com o rodapé
+> `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>` + a linha de sessão; NÃO
+> inclua o id do modelo. Assinatura de commit é impossível neste ambiente (sem chave) —
+> os "Unverified" do stop-hook são esperados, sem ação.
+>
+> Convenções (não regredir): hooks em `features/<dominio>/` com a factory `qk.*` (guard
+> reprova key fora de `['ws', wsId, …]`); telas em `app/` não importam `lib/api`;
+> invalidar a chave específica; `createPortal` só em `components/menu/`; `new
+> Notification(` só no hook de alerta do SO; storage só por `lib/safeStorage`. As regras
+> de banco (RLS forçada como `robotrack_app` sem BYPASSRLS, invariantes em trigger/CHECK,
+> vazamento cross-tenant = 404) estão na seção "Regras que não podem regredir".
