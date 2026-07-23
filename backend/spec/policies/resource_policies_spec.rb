@@ -68,8 +68,8 @@ RSpec.describe 'Policies de recurso' do
   end
 
   describe 'notificações (§4.1 L6, inv. 4)' do
-    minha  = Struct.new(:person_id).new('p-1')
-    alheia = Struct.new(:person_id).new('p-2')
+    minha  = Struct.new(:recipient_person_id).new('p-1')
+    alheia = Struct.new(:recipient_person_id).new('p-2')
     clara  = papel.new(:view, Struct.new(:id).new('p-1'))
 
     it 'qualquer papel marca a PRÓPRIA como lida' do

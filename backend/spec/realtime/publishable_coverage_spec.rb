@@ -11,8 +11,8 @@ require 'rails_helper'
 # (`in-app-notifications` não construída) — entra aqui como HANDOFF explícito
 # quando nascer, para não passar despercebido.
 RSpec.describe 'Cobertura de RealtimePublishable nos models de domínio' do
-  LIVE_DOMAIN_MODELS = %w[Project Cell Robot Task TaskAdvance Membership].freeze
-  PENDING_LIVE_MODELS = %w[Notification].freeze # handoff: in-app-notifications
+  LIVE_DOMAIN_MODELS = %w[Project Cell Robot Task TaskAdvance Membership Notification].freeze
+  PENDING_LIVE_MODELS = [].freeze # `Notification` nasceu (in-app-notifications) e entrou na lista viva
 
   LIVE_DOMAIN_MODELS.each do |name|
     it "#{name} inclui RealtimePublishable" do

@@ -8,7 +8,7 @@ require 'rails_helper'
 # de colunas (`hasOnly(['read'])` → trigger) vale para todos, inclusive owner.
 RSpec.describe 'Invariante 4 — notificação: só read muda, e só pelo destinatário' do
   papel = Struct.new(:role, :person)
-  destinatario = Struct.new(:person_id)
+  destinatario = Struct.new(:recipient_person_id)
 
   it 'a policy exige o destinatário — marcar a alheia nega para QUALQUER papel' do
     minha  = destinatario.new('p-clara')

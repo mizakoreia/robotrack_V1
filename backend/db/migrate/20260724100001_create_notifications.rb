@@ -21,9 +21,14 @@ class CreateNotifications < ActiveRecord::Migration[7.1]
         ts_local              text NOT NULL,
         read                  boolean NOT NULL DEFAULT false,
         read_at               timestamptz NULL,
-        ctx_project_id        uuid NULL REFERENCES projects(id) ON DELETE SET NULL,
-        ctx_cell_id           uuid NULL REFERENCES cells(id) ON DELETE SET NULL,
-        ctx_robot_id          uuid NULL REFERENCES robots(id) ON DELETE SET NULL,
+        -- D-H6: os ids da hierarquia vão como VALOR SOLTO, não como referência —
+        -- a notificação de que o robô/célula/projeto existiu tem de SOBREVIVER ao
+        -- apagamento dele (nada de FK/cascade da hierarquia; ver hierarchy_fk_
+        -- contract_spec). `ctx_task_id` mantém FK: task é soft-delete (nunca some)
+        -- e a FK ancora o índice único de idempotência de assign.
+        ctx_project_id        uuid NULL,
+        ctx_cell_id           uuid NULL,
+        ctx_robot_id          uuid NULL,
         ctx_task_id           uuid NULL REFERENCES tasks(id) ON DELETE SET NULL,
 
         CONSTRAINT msg_max_500 CHECK (char_length(msg) <= 500),

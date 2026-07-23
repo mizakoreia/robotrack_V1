@@ -73,13 +73,29 @@ RSpec.describe 'audit-log — retenção por DDL', :tenancy, type: :request do
       end
     end
 
+    # `today` da manutenção para o teste 8.1. A migração cria o LASTRO de partições
+    # [mês corrente .. +3] usando o relógio REAL de quando roda; escolher meses
+    # ESTRITAMENTE anteriores ao mês corrente garante disjunção com esse lastro,
+    # seja qual for o relógio da máquina (aqui e a migração usam o MESMO
+    # `Time.current`). -5 meses → a manutenção cria now-4/-3/-2, disjunto do lastro
+    # e dentro da retenção (< 24 meses). Fixar '2026-03-14' era frágil: quando o
+    # relógio real caía em abril–junho, 04/05/06 já existiam no lastro e colidiam.
+    def maintenance_today
+      Time.current.utc.beginning_of_month.advance(months: -5)
+    end
+
+    def maintenance_future_names
+      base = maintenance_today.beginning_of_month
+      (1..3).map { |i| "audit_logs_#{base.advance(months: i).strftime('%Y_%m')}" }
+    end
+
     around do |example|
       @bucket = Dir.mktmpdir('audit-archive')
       ENV['AUDIT_ARCHIVE_BUCKET'] = @bucket
       @conn = mig
       example.run
     ensure
-      %w[audit_logs_2024_01 audit_logs_2026_04 audit_logs_2026_05 audit_logs_2026_06].each do |p|
+      (['audit_logs_2024_01'] + maintenance_future_names).each do |p|
         @conn.exec("DROP TABLE IF EXISTS #{p}")
       rescue StandardError
         nil
@@ -93,8 +109,8 @@ RSpec.describe 'audit-log — retenção por DDL', :tenancy, type: :request do
       ws # força a criação do workspace antes de usar a conn do migrator
       # uma linha vai para a DEFAULT (mês sem partição dedicada — 2027)
       seed_rows(@conn, 1, '2027-05-10 12:00:00+00')
-      result = AuditLog::PartitionMaintenance.run(conn: @conn, today: Time.utc(2026, 3, 14))
-      expect(result[:created]).to include('audit_logs_2026_04', 'audit_logs_2026_05', 'audit_logs_2026_06')
+      result = AuditLog::PartitionMaintenance.run(conn: @conn, today: maintenance_today)
+      expect(result[:created]).to include(*maintenance_future_names)
       expect(result[:default_row_count]).to be >= 1
       # a linha da DEFAULT NÃO é removida
       remaining = @conn.exec('SELECT count(*) FROM audit_logs_default').getvalue(0, 0).to_i

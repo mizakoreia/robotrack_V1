@@ -2048,30 +2048,6 @@ ALTER TABLE ONLY public.notifications
 
 
 --
--- Name: notifications notifications_ctx_cell_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.notifications
-    ADD CONSTRAINT notifications_ctx_cell_id_fkey FOREIGN KEY (ctx_cell_id) REFERENCES public.cells(id) ON DELETE SET NULL;
-
-
---
--- Name: notifications notifications_ctx_project_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.notifications
-    ADD CONSTRAINT notifications_ctx_project_id_fkey FOREIGN KEY (ctx_project_id) REFERENCES public.projects(id) ON DELETE SET NULL;
-
-
---
--- Name: notifications notifications_ctx_robot_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.notifications
-    ADD CONSTRAINT notifications_ctx_robot_id_fkey FOREIGN KEY (ctx_robot_id) REFERENCES public.robots(id) ON DELETE SET NULL;
-
-
---
 -- Name: notifications notifications_ctx_task_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2544,6 +2520,7 @@ ALTER TABLE public.workspaces ENABLE ROW LEVEL SECURITY;
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260724100003'),
 ('20260724100002'),
 ('20260724100001'),
 ('20260723160001'),

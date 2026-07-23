@@ -16,3 +16,6 @@
 - path: /api/v1/workspaces/:id
   method: PATCH
   reason: "Isenta de tenant (workspace vem do path); anti-enumeração provada em team_panel_spec: workspace alheio e inexistente respondem o MESMO 403 workspace_access_denied."
+- path: /api/v1/workspaces/:id/sync
+  method: GET
+  reason: "Isenta de tenant (workspace vem do path): a membership é resolvida por ResolveCurrentService e EXIGIDA no endpoint. Não-membro recebe 403 sem vazar current_seq nem entity_kinds — provado em workspace_sync_spec ('não-membro recebe 403 e a resposta não vaza...'). Não semeia recurso em WS-A (o :id é o próprio workspace), fora do padrão do gerador."

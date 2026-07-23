@@ -6,6 +6,14 @@
 class Notification < ApplicationRecord
   self.inheritance_column = nil
 
+  # realtime-collaboration 3.6 / in-app-notifications (EXECUCAO §"tempo real"):
+  # a notificação nova é entregue ao vivo consumindo o WorkspaceChannel de D6. O
+  # front invalida `['ws', wsId, 'notifications']` ao receber `notification.created`
+  # e refaz o fetch (escopado ao próprio destinatário). Só `:created` publica —
+  # marcar-como-lida (update) e expurgo (destroy) NÃO viram evento de workspace.
+  include RealtimePublishable
+  realtime_publishes :created
+
   belongs_to :workspace
   belongs_to :recipient, class_name: 'Person', foreign_key: :recipient_person_id, inverse_of: false
   belongs_to :actor, class_name: 'Person', foreign_key: :actor_person_id, inverse_of: false
