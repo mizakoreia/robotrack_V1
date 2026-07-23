@@ -84,6 +84,26 @@ RSpec.describe 'workspace-settings — POST /api/v1/workspace/factory_reset', :t
       end
     end
 
+    it 'emite alerta operacional pós-commit com workspace, autor e contagens (5.10/§3.11)' do
+      ids = seed
+      allow(Ops::AlertService).to receive(:raise_alert).and_call_original
+
+      reset!(ids)
+
+      expect(response).to have_http_status(:ok)
+      expect(Ops::AlertService).to have_received(:raise_alert).with(
+        hash_including(
+          key: "workspace_reset:#{ws.id}",
+          severity: :warning,
+          message: a_string_including('Fábrica Alfa'),
+          context: hash_including(
+            workspace_id: ws.id, by_name: 'Ana',
+            projects_archived: 2, templates_reseeded: 31
+          )
+        )
+      )
+    end
+
     it 'não emite DELETE/UPDATE contra audit_logs durante o reset (D12/5.6)' do
       ids = seed
       mutacoes = []

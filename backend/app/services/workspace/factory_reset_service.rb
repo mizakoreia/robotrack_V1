@@ -15,8 +15,8 @@ class Workspace
   # Destinos: hierarquia → ARQUIVADA; `task_templates` → DELETE + re-seed dos 31
   # padrões; convites pendentes → REVOGADOS (o caminho de workspace-invitations é
   # DELETE real, sem `revoked_at`); `people`/`memberships`/`workspaces`/`workspace_
-  # backups` → PRESERVADOS. `notifications`/`WorkspaceChannel`/alerta de operação são
-  # HANDOFF (as capacidades ainda não existem).
+  # backups` → PRESERVADOS. O broadcast `workspace.reset` (5.9) e o alerta de operação
+  # (5.10, via `Ops::AlertService`) JÁ estão ligados; ambos pós-commit e best-effort.
   class FactoryResetService
     include ApiResponseHandler
 
@@ -43,6 +43,7 @@ class Workspace
       return error_response('reset_backup_invalid', 422) unless backup_usable?(backup)
 
       projects_count = 0
+      templates_count = 0
       # Design pedia SERIALIZABLE; impossível aqui: TODO contexto de tenant (o
       # middleware TenantTransaction no request, `Tenant.with` fora dele) JÁ abre a
       # transação externa — o `SET LOCAL` da RLS vive nela — e isolamento não pode
@@ -62,6 +63,7 @@ class Workspace
 
         ::TaskTemplate.delete_all
         ::Workspaces::SeedDefaultTaskTemplatesService.new(workspace_id: ws.id).call
+        templates_count = ::TaskTemplate.count
 
         ::Invitation.pending.delete_all # revogar = DELETE (workspace-invitations)
 
@@ -81,6 +83,26 @@ class Workspace
       ::Realtime.after_commit do
         ::Realtime::PublisherService.publish_aggregate(
           workspace_id: ws.id, type: 'workspace.reset', scope: {}
+        )
+      end
+
+      # workspace-settings 5.10 (§3.11) — a ÚNICA operação destrutiva em massa não
+      # pode ser invisível para quem opera. Alerta operacional pós-commit (não
+      # alertar um reset que o rollback externo desfaça), `:warning` = log + webhook
+      # (o canal de alerta de `delivery-and-observability`). Carrega workspace, autor
+      # e as contagens (hierarquia arquivada + catálogo re-semeado). Best-effort: um
+      # webhook fora do ar NÃO desfaz o reset já commitado.
+      autor = @context.person
+      ::Realtime.after_commit do
+        ::Ops::AlertService.raise_alert(
+          key: "workspace_reset:#{ws.id}",
+          severity: :warning,
+          message: "Reset de fábrica executado no workspace \"#{ws.name}\"",
+          context: {
+            workspace_id: ws.id, workspace_name: ws.name,
+            by_person_id: autor&.id, by_name: autor&.name,
+            projects_archived: projects_count, templates_reseeded: templates_count
+          }
         )
       end
 

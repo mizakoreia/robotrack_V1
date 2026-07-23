@@ -119,9 +119,16 @@ imediatamente antes. Todo grupo termina em tarefa de verificação.
   `['ws', wsId, …]` no cliente (D6/D9 — membro `edit` com a tela do robô aberta cai no
   estado vazio em vez de exibir dados apagados, e continua autenticado com papel `edit`)
   **NOTA (execução):** a metade LOCAL já existia (o modal aplica `cancelQueries` + `clear()` após o sucesso). O BROADCAST aos demais membros foi fechado em `realtime-collaboration`: `FactoryResetService` publica `workspace.reset` via `Realtime.after_commit`/`PublisherService.publish_aggregate` no stream `ws:<id>:v1`, e o `eventMap` do cliente mapeia `workspace.reset` → `['ws', w]` (invalidação da subárvore inteira).
-- [ ] 5.10 **PENDING (bloqueada por `delivery-and-observability`):** alerta de operação ao executar um reset, coordenado com
+- [x] 5.10 **ENTREGUE (desbloqueada por `delivery-and-observability`):** alerta de operação ao executar um reset, coordenado com
   `delivery-and-observability` (§3.11 — um reset em produção aparece no canal de alerta
   com workspace, autor e contagens; sem isso a operação é invisível para quem opera)
+  **NOTA (execução):** `FactoryResetService` levanta `Ops::AlertService.raise_alert`
+  (`:warning` = log + webhook) **pós-commit** via `Realtime.after_commit` — não alerta
+  um reset que o rollback externo desfaça, e webhook fora do ar não desfaz o reset. O
+  `context` carrega `workspace_id`/`workspace_name`, `by_person_id`/`by_name` do autor e
+  as contagens `projects_archived`/`templates_reseeded`. Provado em
+  `workspace_factory_reset_spec` ("emite alerta operacional pós-commit com workspace,
+  autor e contagens").
 
 ## 6. Tema, auditoria e fechamento
 
