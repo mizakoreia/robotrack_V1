@@ -115,10 +115,10 @@ imediatamente antes. Todo grupo termina em tarefa de verificação.
   da frase, botão desabilitado até casar, chamada automática do export imediatamente antes
   e gating por `FEATURE_FACTORY_RESET` (§3.11 — não existe caminho de UI que chegue ao
   reset sem backup gerado; com a flag desligada o endpoint devolve `404` e o botão some)
-- [ ] 5.9 **PENDING (bloqueada por `realtime-collaboration` — `WorkspaceChannel` não existe):** publicação do evento terminal no `WorkspaceChannel` e invalidação das query keys
+- [x] 5.9 **ENTREGUE por `realtime-collaboration` (G3 3.5 + G5 5.3):** publicação do evento terminal no `WorkspaceChannel` e invalidação das query keys
   `['ws', wsId, …]` no cliente (D6/D9 — membro `edit` com a tela do robô aberta cai no
   estado vazio em vez de exibir dados apagados, e continua autenticado com papel `edit`)
-  **NOTA (execução):** a metade LOCAL já existe — o modal aplica `cancelQueries` + `clear()` (a barreira de `switchWorkspace`) após o sucesso; o que falta é o BROADCAST aos demais membros via canal.
+  **NOTA (execução):** a metade LOCAL já existia (o modal aplica `cancelQueries` + `clear()` após o sucesso). O BROADCAST aos demais membros foi fechado em `realtime-collaboration`: `FactoryResetService` publica `workspace.reset` via `Realtime.after_commit`/`PublisherService.publish_aggregate` no stream `ws:<id>:v1`, e o `eventMap` do cliente mapeia `workspace.reset` → `['ws', w]` (invalidação da subárvore inteira).
 - [ ] 5.10 **PENDING (bloqueada por `delivery-and-observability`):** alerta de operação ao executar um reset, coordenado com
   `delivery-and-observability` (§3.11 — um reset em produção aparece no canal de alerta
   com workspace, autor e contagens; sem isso a operação é invisível para quem opera)
