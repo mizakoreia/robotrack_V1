@@ -150,7 +150,7 @@
 
 ## 8. Revogação de acesso ao vivo (§3.10)
 
-- [ ] 8.1 Implementar `revokeWorkspaceAccess(wsId)` no cliente — aviso, remoção do índice
+- [x] 8.1 Implementar `revokeWorkspaceAccess(wsId)` no cliente — aviso, remoção do índice
   local, `removeQueries(['ws', wsId])`, navegação ao workspace próprio — idempotente por
   guarda de execução única, chamada pelos dois gatilhos: `membership.revoked` para o próprio
   usuário no handler do canal e 403 em rota do workspace corrente no interceptor de
@@ -158,22 +158,22 @@
   (§3.10 / §Req. revogação — evento e 403 chegando com 300 ms de diferença produzem um
   aviso e uma navegação, não dois; e com transporte em `degraded` a revogação ainda é
   detectada pelo 403 do próximo polling, em vez de deixar o usuário numa tela morta.)
-- [ ] 8.2 Encerrar os streams no servidor (`stop_all_streams` + `reject_and_stop`) no
+- [x] 8.2 Encerrar os streams no servidor (`stop_all_streams` + `reject_and_stop`) no
   `after_commit` da revogação de membership.
   (§Req. revogação — cliente que ignora o evento para de receber envelopes de W1 mesmo
   assim; a autorização não pode depender de cooperação do cliente.)
-- [ ] 8.3 Teste de integração dos 5 cenários de revogação, incluindo o negativo em que a
+- [x] 8.3 Teste de integração dos 5 cenários de revogação, incluindo o negativo em que a
   revogação é de outro membro.
   (Verificação do grupo 8 — falha se `membership.revoked` de D expulsar C da tela; deve
   apenas invalidar `members` e `people`.)
 
 ## 9. Prova ponta a ponta e entrega
 
-- [ ] 9.1 Adicionar `VITE_REALTIME_ENABLED` (default ligado) que desativa todo o cliente de
+- [x] 9.1 Adicionar `VITE_REALTIME_ENABLED` (default ligado) que desativa todo o cliente de
   tempo real deixando a aplicação correta, só não ao vivo.
   (§Req. fallback — com a flag desligada nenhuma conexão de Cable é aberta e nenhuma tela
   quebra; rollback vira toggle em vez de redeploy.)
-- [ ] 9.2 Teste E2E de duas sessões simultâneas na tela do mesmo robô: a sessão A registra
+- [x] 9.2 Teste E2E de duas sessões simultâneas na tela do mesmo robô: a sessão A registra
   40→60 e a sessão B observa 60 em ≤2 s sem recarregar.
   (§3.5 / §Req. invalidação — é o cenário que o plano anterior tinha perdido; falha se B
   precisar de F5.)

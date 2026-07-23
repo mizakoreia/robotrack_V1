@@ -210,7 +210,9 @@ destravaram e viraram verdes ao longo de `robot-tasks`.)
   parcial de abertas). Provas §3.6: avanço 45→100 some da lista, N/A não aparece, multi-responsável
   1x, Person sem user_id não vaza; isolamento cross-tenant + RLS-stub. Frontend: 6 colunas, Badge
   estático (LEITURA PURA), linha `<a>` deep-link `/robo/:id?task=` (D-MTV-9), TRÊS estados distintos
-  (vazio/409/erro — o 409 nunca vira vazio), mobile em cartões, `useMyTasksLive` (WorkspaceChannel).
+  (vazio/409/erro — o 409 nunca vira vazio), mobile em cartões. Ao vivo NÃO por um hook próprio
+  (`useMyTasksLive` nunca existiu): a lista é invalidada pelo cliente de tempo real (`useRealtime` →
+  `WorkspaceChannel`), cujo `eventMap` invalida `['ws',w,'my-tasks']` em `task.*`/`task_advance.created`.
   **Divergências:** status ENUM pt-BR (design usava placeholders `pending/...`); endpoint header-tenant
   (não `/workspaces/:id/my_tasks`); não-membro→403 (coleção, não 404); **`SET LOCAL enable_nestloop
   = off`** no service (a RLS `current_setting` faz o estimador dar `rows=1` e um nested loop de 28s no

@@ -20,6 +20,13 @@ class Membership < ApplicationRecord
     { created: 'membership.created', updated: 'membership.role_changed', destroyed: 'membership.revoked' }.fetch(action)
   end
 
+  # realtime-collaboration 8.1 / D6.7 — o envelope leva o `user_id` afetado (é
+  # identidade/ponteiro, não conteúdo): é como o cliente sabe se a revogação é
+  # DELE (sai do workspace) ou de outro membro (só invalida members/people).
+  def realtime_entity
+    { kind: 'membership', id: id, user_id: user_id }
+  end
+
   # workspace-invitations 1.3: a membership nascida de um convite guarda a
   # referência (ON DELETE RESTRICT no banco) — é a prova auditável de por que
   # aquela pessoa tem acesso. `optional` porque memberships migradas do legado e

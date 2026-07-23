@@ -27,8 +27,15 @@ class WorkspaceChannel < ApplicationCable::Channel
 
     ws_id = resolution.workspace_id
     stream_from(self.class.stream_name(ws_id), coder: ActiveSupport::JSON) do |message|
-      if still_authorized?(ws_id)
+      case delivery_decision(ws_id, message)
+      when :transmit
         transmit(message)
+      when :self_revoke
+        # revogação viva (8.2/D6.7): deixa o usuário SABER que foi removido (o
+        # ponteiro do próprio user_id, sem vazamento) e ENCERRA o stream — não
+        # depende de o cliente cooperar; nenhum envelope posterior de W1 chega.
+        transmit(message)
+        reject_and_stop
       else
         reject_and_stop
       end
@@ -36,6 +43,22 @@ class WorkspaceChannel < ApplicationCable::Channel
   end
 
   private
+
+  # Decisão de entrega por envelope (extraída para ser testável direto). Autorizado
+  # → entrega; senão, se for a revogação DESTE usuário → entrega-e-encerra; senão
+  # → descarta-e-encerra (fail-closed).
+  def delivery_decision(workspace_id, message)
+    return :transmit if still_authorized?(workspace_id)
+    return :self_revoke if self_revocation?(message)
+
+    :stop
+  end
+
+  def self_revocation?(message)
+    message.is_a?(Hash) &&
+      message['type'] == 'membership.revoked' &&
+      message.dig('entity', 'user_id') == current_user&.id
+  end
 
   # Reverificação na entrega (D6.1/D6.7). Reusa a MESMA regra do `subscribed`
   # (dono via `owner_user_id` OU membership ativa), consultada no banco.

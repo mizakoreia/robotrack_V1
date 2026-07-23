@@ -2,6 +2,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import type { QueryClient } from '@tanstack/react-query'
 import { RealtimeClient, backoffDelay, type RealtimeClientDeps } from '../connection'
 import { useRealtimeStore } from '../../../store/realtimeStore'
+import { useAuthStore } from '../../../store/authStore'
+import { useWorkspaceStore } from '../../../store/workspaceStore'
+import { resetAccessRevokedState } from '../../workspace/accessRevoked'
 import type { RealtimeEnvelope } from '../eventMap'
 import type { WorkspaceSyncResult } from '../../api/endpoints'
 
@@ -159,5 +162,34 @@ describe('RealtimeClient (5.1 + 7.1/7.4)', () => {
     await client({ fetchTicket: vi.fn(async () => { throw new Error('sem ticket') }) }).connect('w1')
     expect(useRealtimeStore.getState().transport).toBe('degraded')
     expect(createConsumer).not.toHaveBeenCalled()
+  })
+
+  describe('revogação viva (8.1)', () => {
+    beforeEach(() => {
+      resetAccessRevokedState()
+      useAuthStore.setState({ user: { id: 'me', name: 'Eu', email: 'e@x.com' } } as never)
+      useWorkspaceStore.setState({
+        workspaces: [{ id: 'w1', name: 'W1', role: 'edit' }, { id: 'own', name: 'Meu', role: 'owner' }],
+        currentWorkspaceId: 'w1', currentRoleLabel: 'edit',
+      })
+    })
+
+    it('membership.revoked do PRÓPRIO usuário → sai do workspace, sem invalidar', async () => {
+      await client().connect('w1')
+      mixin.received!(makeEnv({ type: 'membership.revoked', entity: { kind: 'membership', id: 'm1', user_id: 'me' } }))
+      await new Promise((r) => setTimeout(r, 20))
+
+      expect(useWorkspaceStore.getState().workspaces.map((w) => w.id)).not.toContain('w1')
+      expect(invalidateQueries).not.toHaveBeenCalled()
+    })
+
+    it('membership.revoked de OUTRO usuário → invalida members/people, sem sair', async () => {
+      await client().connect('w1')
+      mixin.received!(makeEnv({ type: 'membership.revoked', entity: { kind: 'membership', id: 'm2', user_id: 'outro' } }))
+      await new Promise((r) => setTimeout(r, 20))
+
+      expect(useWorkspaceStore.getState().workspaces.map((w) => w.id)).toContain('w1')
+      expect(invalidateQueries).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['ws', 'w1', 'members'] }))
+    })
   })
 })

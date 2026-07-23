@@ -28,7 +28,9 @@ export interface RealtimeEnvelope {
   seq: number
   workspace_id: string
   type: string
-  entity: { kind: string; id: string } | null
+  // `user_id` só vem em eventos de membership (8.1): é como o cliente sabe se a
+  // revogação é dele. É identidade/ponteiro, não conteúdo.
+  entity: { kind: string; id: string; user_id?: string } | null
   scope: RealtimeScope
   actor_person_id: string | null
   origin_id: string | null

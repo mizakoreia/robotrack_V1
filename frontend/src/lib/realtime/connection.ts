@@ -6,6 +6,8 @@ import { keysForEvent, type RealtimeEnvelope } from './eventMap'
 import { InvalidationQueue } from './invalidationQueue'
 import { InvalidationGate, type OfflinePendingProbe } from './invalidationGate'
 import { reconcileKeys } from './reconcile'
+import { handleAccessRevoked } from '../workspace/accessRevoked'
+import { useAuthStore } from '../../store/authStore'
 
 // realtime-collaboration 5.1 + 7.1/7.4 / D6.1, D6.6, D6.8 — o cliente de conexão.
 //
@@ -211,7 +213,21 @@ export class RealtimeClient {
     if (!env || env.workspace_id !== this.wsId) return
     useRealtimeStore.getState().noteSeq(env.workspace_id, env.seq)
     if (env.origin_id && env.origin_id === useRealtimeStore.getState().originId) return
+
+    // realtime-collaboration 8.1 / D6.7 — revogação viva: `membership.revoked` do
+    // PRÓPRIO usuário dispara a MESMA rotina idempotente do caminho 403 (aviso,
+    // saída do índice, limpeza do cache, ida ao workspace próprio). Não faz
+    // sentido invalidar chaves de um workspace do qual estamos saindo.
+    if (env.type === 'membership.revoked' && this.isSelfRevocation(env)) {
+      handleAccessRevoked(env.workspace_id)
+      return
+    }
     this.queue.enqueue(keysForEvent(env.workspace_id, env))
+  }
+
+  private isSelfRevocation(env: RealtimeEnvelope): boolean {
+    const uid = env.entity?.user_id
+    return Boolean(uid && uid === useAuthStore.getState().user?.id)
   }
 
   disconnect(): void {
