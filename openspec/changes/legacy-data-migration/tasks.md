@@ -264,14 +264,20 @@
 
 ## 7. Prova do sentinela (D11)
 
-- [ ] 7.1 Spec que importa a fixture (sentinela presente em `responsibles`, em `assignees`
+- [x] 7.1 Spec que importa a fixture (sentinela presente em `responsibles`, em `assignees`
   e em `resp`) e afirma `count(*) FROM people WHERE btrim(lower(name)) = 'não atribuído'`
   = `0`, mais a tarefa com `resp: "Não Atribuído"` com zero linhas em `task_assignees` e
   contagem de `people` do workspace inalterada. (D11 — a armadilha é o resolver criar a
   pessoa a partir de qualquer uma das três origens.)
-- [ ] 7.2 **Verificação**: spec que tenta `INSERT` direto do sentinela por SQL cru,
+      *(ENTREGUE — `sentinel_spec`: canônico com o sentinela nas TRÊS origens (responsibles,
+      assignees com variações de caixa/espaço, resp); afirma 0 pessoas sentinela, só Ana/Bruno
+      viram Person, tarefa com assignees sentinela → 1 (Ana), tarefa com resp sentinela → 0.)*
+- [x] 7.2 **Verificação**: spec que tenta `INSERT` direto do sentinela por SQL cru,
   contornando o model, e exige violação de CHECK. (D-LDM-3 — prova de que a defesa está no
   banco; a camada Ruby sozinha se contorna por `rails console`.)
+      *(ENTREGUE — `sentinel_spec`: `INSERT INTO people ... 'Não Atribuído'` por SQL cru sob
+      contexto de tenant levanta `StatementInvalid` citando `people_name_not_sentinel` — a
+      camada 3 (banco) já existia (2.2 reconciliada); este é o teste dela.)*
 
 ## 8. Validação, dry-run e corte
 
