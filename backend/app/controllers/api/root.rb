@@ -126,6 +126,13 @@ module Api
       @current_user = user
       env['api.current_user'] = @current_user
 
+      # realtime-collaboration 3.4 / D6.4 — contexto por request para o publisher:
+      # `origin_id` (a aba que originou a mutação, via header) vai no envelope e o
+      # cliente descarta o próprio eco por ele; `user_id` reabre o tenant no
+      # `after_commit` para reservar o `seq`. `Current` reseta a cada request.
+      ::Current.user_id = @current_user.id
+      ::Current.origin_id = headers['X-RoboTrack-Origin'] || headers['HTTP_X_ROBOTRACK_ORIGIN']
+
       # Contexto de tenant das rotas de domínio (workspace-tenancy 4.2). Roda
       # dentro da transação aberta por Tenant::TransactionMiddleware.
       unless Api::Root.tenant_exempt?(request.request_method, request.path)

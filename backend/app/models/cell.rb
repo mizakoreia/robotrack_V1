@@ -5,11 +5,17 @@
 class Cell < ApplicationRecord
   include WorkspaceScoped
   include PositionScoped
+  include RealtimePublishable
   position_scoped_by :project_id
 
   belongs_to :project
   has_many :robots, dependent: nil
   belongs_to :updated_by_person, class_name: 'Person', optional: true
+
+  # realtime-collaboration 3.3 — a célula carrega projeto (ancestral) + a si.
+  def realtime_scope
+    { project_id: project_id, cell_id: id }
+  end
 
   # hierarchy-soft-delete D7 — arquivada some da leitura; compõe com o tenant.
   default_scope { where(deleted_at: nil) }

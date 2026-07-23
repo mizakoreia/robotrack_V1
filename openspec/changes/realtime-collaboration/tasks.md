@@ -40,31 +40,31 @@
 
 ## 3. Publicação de eventos de domínio
 
-- [ ] 3.1 Migration aditiva `add_column :workspaces, :realtime_seq, :bigint, null: false,
+- [x] 3.1 Migration aditiva `add_column :workspaces, :realtime_seq, :bigint, null: false,
   default: 0` (reversível, sem backfill, sem destrutivo).
   (§Req. "Envelope versionado" — sem a coluna não há como detectar lacuna na reconexão.)
-- [ ] 3.2 Implementar `Realtime::PublisherService.publish` com incremento transacional do
+- [x] 3.2 Implementar `Realtime::PublisherService.publish` com incremento transacional do
   `seq` (`UPDATE ... RETURNING`), montagem do envelope (`v`, `seq`, `type`, `entity`,
   `scope` com os três ancestrais, `actor_person_id`, `origin_id`, `at`) e broadcast, com
   rescue que loga e incrementa contador em vez de propagar.
   (§Req. envelope + §Req. publicação — transação abortada não consome número: a mutação
   seguinte publica o mesmo `seq`; e Redis fora do ar não faz o POST de avanço responder 500.)
-- [ ] 3.3 Criar o concern `RealtimePublishable` com `after_commit on: [:create, :update,
+- [x] 3.3 Criar o concern `RealtimePublishable` com `after_commit on: [:create, :update,
   :destroy]` e incluí-lo em `Project`, `Cell`, `Robot`, `Task`, `TaskAdvance`, `Membership`
   e `Notification`.
   (§Req. publicação — evento sai só depois do commit; publicar dentro da transação entrega
   ponteiro para linha que pode sofrer rollback.)
-- [ ] 3.4 Capturar `X-RoboTrack-Origin` no `before` de `api/root.rb` para
+- [x] 3.4 Capturar `X-RoboTrack-Origin` no `before` de `api/root.rb` para
   `Current.origin_id` e propagá-lo ao envelope.
   (§Req. "Evento não reverte interface otimista" — sem `origin_id` o autor do avanço recebe
   o próprio eco e refetcha por cima da própria atualização otimista.)
-- [ ] 3.5 Implementar publicação agregada para operação em massa: contexto de supressão de
+- [x] 3.5 Implementar publicação agregada para operação em massa: contexto de supressão de
   evento por linha, emitindo um único envelope terminal — `robot.batch_created` no lote de
   robôs (§3.4) e `workspace.reset` / `import.finished` na importação e no reset
   (`legacy-data-migration`, §1.4).
   (§Req. publicação — lote de 50 robôs produz 1 envelope com `scope.cell_id`, não 50; e
   importar 3.000 tarefas não gera 3.000 broadcasts nem contenção na linha `realtime_seq`.)
-- [ ] 3.6 Spec de cobertura que enumera os models de domínio e falha nomeando qualquer um
+- [x] 3.6 Spec de cobertura que enumera os models de domínio e falha nomeando qualquer um
   que não inclua `RealtimePublishable`.
   (Verificação do grupo 3 — é a trava contra a regressão que originou esta proposta: uma
   entidade parar de ser ao vivo sem ninguém perceber.)

@@ -54,6 +54,17 @@ module Robots
         ::Progress::BulkRecompute.call(workspace_id: workspace_id)
       end
 
+      # realtime-collaboration 3.5 — UM envelope agregado `robot.batch_created`
+      # (não 50 `robot.created`: o `insert_all` nem dispara callback), pós-commit
+      # da request. Invalida cell/project/overview pelo `scope`, sem N broadcasts
+      # nem N contenções na linha `realtime_seq`.
+      ::Realtime.after_commit do
+        ::Realtime::PublisherService.publish_aggregate(
+          workspace_id: workspace_id, type: 'robot.batch_created',
+          scope: { project_id: cell.project_id, cell_id: cell_id }
+        )
+      end
+
       success_response(
         { robots: @created.map { |r| r.slice(:id, :name, :application, :position) },
           robot_count: @created.size, tasks_per_robot: templates.size },

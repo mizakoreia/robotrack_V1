@@ -9,10 +9,16 @@
 class Project < ApplicationRecord
   include WorkspaceScoped
   include PositionScoped
+  include RealtimePublishable
   position_scoped_by :workspace_id
 
   has_many :cells, dependent: nil
   belongs_to :updated_by_person, class_name: 'Person', optional: true
+
+  # realtime-collaboration 3.3 — o projeto é a raiz da cadeia de rollup.
+  def realtime_scope
+    { project_id: id }
+  end
 
   # hierarchy-soft-delete D7 — some da leitura quando arquivado; compõe (AND) com
   # o default_scope de tenant do WorkspaceScoped, espelhando `Task`. `unscoped`

@@ -15,10 +15,18 @@
 # "Não Atribuído" (D10/D11) — ver `task_assignees`.
 class Task < ApplicationRecord
   include WorkspaceScoped
+  include RealtimePublishable
 
   STATUSES = ['Pendente', 'Em Andamento', 'Concluído', 'N/A'].freeze
 
   belongs_to :robot
+
+  # realtime-collaboration 3.3 — a tarefa carrega os TRÊS ancestrais (robô, célula,
+  # projeto) para a cadeia de rollup de D6.3; a coluna só tem `robot_id`, os demais
+  # vêm por `unscoped` (robusto a ancestral arquivado).
+  def realtime_scope
+    Realtime::Scope.for_robot(robot_id)
+  end
 
   # D10/D11 — responsáveis por identidade. `assignees` é o conjunto de `Person`;
   # tarefa sem responsável responde `[]`, nunca um registro "Não Atribuído".

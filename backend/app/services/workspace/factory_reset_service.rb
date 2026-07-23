@@ -74,6 +74,16 @@ class Workspace
         )
       end
 
+      # realtime-collaboration 3.5 (handoff 5.9) — UM envelope agregado
+      # `workspace.reset` pós-commit: a hierarquia foi arquivada por `update_all`
+      # (sem callback), então nenhum evento por linha sai. O cliente invalida a
+      # subárvore `['ws', w]` inteira. Falha do publish não desfaz o reset (D6.9).
+      ::Realtime.after_commit do
+        ::Realtime::PublisherService.publish_aggregate(
+          workspace_id: ws.id, type: 'workspace.reset', scope: {}
+        )
+      end
+
       success_response({ projects_count: projects_count }, 200)
     rescue BackupAlreadyConsumed
       error_response('reset_backup_invalid', 422)

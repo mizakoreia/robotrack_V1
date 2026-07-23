@@ -7,9 +7,18 @@
 # (D-5). O dono nunca vira linha aqui (trigger memberships_owner_is_not_member).
 class Membership < ApplicationRecord
   include WorkspaceScoped
+  include RealtimePublishable
 
   belongs_to :user
   belongs_to :person
+
+  # realtime-collaboration 3.3 / D6.3 — o vocabulário da membership não é o verbo
+  # genérico: uma atualização é `role_changed`, uma exclusão é `revoked` (é o que
+  # o eventMap e a revogação viva do G8 consomem). Escopo é o workspace inteiro
+  # (invalida `members`/`people`), sem cadeia de rollup.
+  def realtime_event_type(action)
+    { created: 'membership.created', updated: 'membership.role_changed', destroyed: 'membership.revoked' }.fetch(action)
+  end
 
   # workspace-invitations 1.3: a membership nascida de um convite guarda a
   # referência (ON DELETE RESTRICT no banco) — é a prova auditável de por que

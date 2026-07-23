@@ -9,11 +9,23 @@
 # é o único nome legítimo do esquema (snapshot histórico imutável, D10/D11).
 class TaskAdvance < ApplicationRecord
   include WorkspaceScoped
+  include RealtimePublishable
 
   self.ignored_columns = [] # nada; `by` é atributo normal
 
   belongs_to :task
   belongs_to :author, class_name: 'Person', foreign_key: :by, optional: true, inverse_of: false
+
+  # realtime-collaboration 3.3 — o avanço é APPEND-ONLY, então só `created` sai por
+  # aqui. O evento aponta a TAREFA (o cliente refetcha a tarefa e sua trilha), e o
+  # `scope` é o da tarefa (rollup do anel de progresso ancestral, D6.3/§2.1).
+  def realtime_entity
+    { kind: 'task', id: task_id }
+  end
+
+  def realtime_scope
+    Realtime::Scope.for_task(task_id)
+  end
 
   validates :author_name_snapshot, presence: true, length: { maximum: 200 }
   validates :recorded_at, presence: true

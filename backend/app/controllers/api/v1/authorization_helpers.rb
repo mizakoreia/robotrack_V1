@@ -38,6 +38,11 @@ module Api
         )
         env['api.authorization_context'] = context
 
+        # realtime-collaboration 3.4 — o autor da mutação para o envelope do
+        # publisher (a Person do usuário no workspace corrente). Resolvido uma vez
+        # por request de domínio, não por evento.
+        ::Current.actor_person_id = context.person&.id
+
         policy.authorize!(context, declaration.fetch(:action))
       end
     end

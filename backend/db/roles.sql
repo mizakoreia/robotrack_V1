@@ -131,7 +131,10 @@ DO $$
 BEGIN
   IF to_regclass('public.workspaces') IS NOT NULL THEN
     REVOKE UPDATE ON workspaces FROM robotrack_app;
-    GRANT  UPDATE (name, updated_at) ON workspaces TO robotrack_app;
+    -- realtime_seq: o publisher do tempo real faz UPDATE ... RETURNING nessa
+    -- coluna (realtime-collaboration 3.1). name/updated_at seguem mutáveis; o
+    -- resto (owner_user_id, id) continua protegido pelo revoke de tabela + trigger.
+    GRANT  UPDATE (name, updated_at, realtime_seq) ON workspaces TO robotrack_app;
   END IF;
 END
 $$;

@@ -909,7 +909,8 @@ CREATE TABLE public.workspaces (
     name text NOT NULL,
     owner_user_id uuid NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    realtime_seq bigint DEFAULT 0 NOT NULL
 );
 
 ALTER TABLE ONLY public.workspaces FORCE ROW LEVEL SECURITY;
@@ -2347,6 +2348,7 @@ ALTER TABLE public.workspaces ENABLE ROW LEVEL SECURITY;
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260723160001'),
 ('20260723150001'),
 ('20260723140002'),
 ('20260723140001'),
