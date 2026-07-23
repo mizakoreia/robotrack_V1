@@ -76,6 +76,10 @@ npm install
 cd backend
 export PATH="$(rbenv root)/versions/3.2.3/bin:$PATH"   # ou rbenv shims
 RAILS_ENV=test bundle exec rspec        # roda como robotrack_app; esperado: verde
+# ^ os benchmarks `:slow` (progress/load_dataset = 93k tasks, my_tasks & reports
+#   load_perf) NÃO entram nesse run — ficam de fora por padrão. Isso é de propósito:
+#   são orçamentos de latência sensíveis a tuning do Postgres, não teste de paridade.
+#   Para rodá-los EXPLICITAMENTE (ver §4.6): SLOW=1 bundle exec rspec --tag slow
 
 # FRONTEND
 cd ../frontend
@@ -167,6 +171,79 @@ Com Redis de Cable real, dois processos `web` e um cliente conectado em cada:
 prova que um broadcast originado no processo B chega ao cliente conectado no A.
 (É a versão real do que os specs cobrem em processo único.) Roteiro no
 `openspec/changes/delivery-and-observability/EXECUCAO.md` (FECHAMENTO).
+
+### 4.6 Diagnóstico do rollup de progresso (`:slow` — DÚVIDA EM ABERTO)
+
+**Contexto:** o benchmark `spec/progress/load_dataset_spec.rb` (agora fora do run
+padrão, roda só com `SLOW=1`) semeia 93k tasks num workspace e afirma que
+`Progress::BulkRecompute` fecha em < 20s (alvo de prod p95 ≤ 8s). Na primeira
+execução até o fim (na WSL) uma única `UPDATE projects … FROM
+project_weighted_progress` rodou **15-17 min**. Preciso saber se é (a) regressão de
+plano — RLS `security_invoker` barrando pushdown de predicado nas views agregadas —
+ou (b) Postgres da WSL sub-tunado (`work_mem` baixo → a agregação de 3 níveis
+derrama pra disco). **Não reescrevi nada às cegas**; o `EXPLAIN` abaixo decide.
+
+```bash
+cd backend
+export PATH="$(rbenv root)/versions/3.2.3/bin:$PATH"
+
+# 1) Semeia o dataset de 93k tasks UMA vez, COMMITADO (rails runner não abre
+#    transação, então as linhas ficam no banco pro EXPLAIN de outra sessão).
+#    Usa os mesmos helpers do spec (FactoryBot + make_workspace + Tenant.with).
+MIG_TEST="postgres://robotrack_migrator:mig_dev_pw@localhost/robotrack_test"
+RAILS_ENV=test DATABASE_URL=$MIG_TEST bundle exec rails runner '
+  require "factory_bot"
+  FactoryBot.find_definitions
+  require "./spec/support/tenancy_helpers"
+  require "./spec/support/progress_load_dataset"
+  include FactoryBot::Syntax::Methods
+  include TenancyHelpers
+  include ProgressLoadDataset
+  u  = create(:user, name: "Ana Load")
+  ws = make_workspace(owner: u)
+  in_workspace(ws) { seed_progress_load(ws.id) }   # 20×10×15×31 = 93k tasks
+  puts "WORKSPACE_ID=#{ws.id}"
+'  # anote o WORKSPACE_ID impresso
+#  ^ semeia como robotrack_migrator (dono das linhas); o EXPLAIN abaixo roda como
+#    robotrack_app pra pegar a RLS/security_invoker real do runtime.
+
+# 2) EXPLAIN da statement do roll-up de projeto, DENTRO do escopo de tenant
+#    (a RLS security_invoker precisa do current_workspace_id setado). Troque
+#    <WSID> pelo valor impresso acima. A senha da app é app_dev_pw (db/roles.sql).
+psql "postgres://robotrack_app:app_dev_pw@localhost/robotrack_test" <<'SQL'
+SET app.current_workspace_id = '<WSID>';
+EXPLAIN (ANALYZE, BUFFERS, VERBOSE)
+UPDATE projects p
+SET progress_cache = pwp.value, progress_cached_at = now()
+FROM project_weighted_progress pwp
+WHERE pwp.project_id = p.id AND p.workspace_id = '<WSID>';
+SQL
+
+# 3) Repita o EXPLAIN com work_mem alto pra isolar derrame-pra-disco (causa (b)):
+psql "postgres://robotrack_app:app_dev_pw@localhost/robotrack_test" <<'SQL'
+SET app.current_workspace_id = '<WSID>';
+SET work_mem = '256MB';
+EXPLAIN (ANALYZE, BUFFERS, VERBOSE)
+UPDATE projects p
+SET progress_cache = pwp.value, progress_cached_at = now()
+FROM project_weighted_progress pwp
+WHERE pwp.project_id = p.id AND p.workspace_id = '<WSID>';
+SQL
+```
+
+O que olhar no plano e me mandar **inteiro**:
+
+- **`Buffers: … temp read/written`** grandes ou `Sort Method: external merge Disk` →
+  é derrame por `work_mem` baixo (causa (b), tuning da WSL). Teste rápido:
+  `SET work_mem = '256MB';` antes do EXPLAIN e veja se despenca.
+- **`Seq Scan on tasks`** re-agregando as 93k linhas por dentro sem o filtro de
+  workspace empurrado, ou um nó de agregação processando muito mais linhas do que o
+  workspace tem → é (a), pushdown barrado pela view `security_invoker`. Aí o conserto
+  é de código (materializar o rollup / forçar o predicado), e eu faço.
+
+Me mande a saída dos dois EXPLAIN (com e sem `work_mem` alto). É o que separa "bug de
+query" de "Postgres da WSL apertado" — e eu não consigo rodar isso no container (sem
+o dataset e sem daemon).
 
 ---
 
