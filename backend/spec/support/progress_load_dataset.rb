@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'pg'
+
 # progress-rollup 3.4 — o dataset de CARGA, compartilhado com quality-and-
 # accessibility. Full: 20 projetos × 10 células × 15 robôs × 31 tarefas = 3.000
 # robôs, 93.000 tarefas, num único workspace. Semeado por `insert_all` em lote,
@@ -17,11 +19,32 @@ module ProgressLoadDataset
     ::Progress.without_cascade do
       insert_load(workspace_id, s)
     end
+    # ANALYZE ANTES de medir: `insert_all` de dezenas de milhares de linhas não
+    # atualiza pg_statistic, e o autovacuum ainda não rodou — o otimizador vê
+    # rows≈1 e escolhe nested-loop em cascata (para cada robô, re-varre TODAS as
+    # tasks do workspace por index_tasks_on_workspace_id → ~3k×93k comparações,
+    # ~15 min). Com estatística fresca o plano vira hash-join (~80 ms). Em produção
+    # o BulkRecompute roda sobre workspaces já analisados (autovacuum/atividade
+    # prévia); o benchmark tem de medir ESSE steady-state, não a patologia de
+    # stats frias. ANALYZE exige papel dono → conexão do migrator (o app não pode).
+    analyze_progress_tables
     ::Progress::BulkRecompute.call(workspace_id: workspace_id)
     workspace_id
   end
 
   private
+
+  def analyze_progress_tables
+    cfg = ActiveRecord::Base.connection_db_config.configuration_hash
+    conn = PG.connect(
+      host: cfg[:host] || 'localhost', port: cfg[:port] || 5432, dbname: cfg[:database],
+      user: ENV.fetch('MIGRATOR_DB_USER', 'robotrack_migrator'),
+      password: ENV.fetch('MIGRATOR_DB_PASSWORD', 'mig_dev_pw')
+    )
+    conn.exec('ANALYZE projects, cells, robots, tasks')
+  ensure
+    conn&.close
+  end
 
   def insert_load(ws, s)
     now = Time.current
