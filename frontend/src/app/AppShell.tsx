@@ -20,6 +20,8 @@ import { performLogout } from '@/lib/auth/session'
 import { registerRevocationNavigator } from '@/lib/workspace/accessRevoked'
 import { ConnectionIndicator } from '@/components/realtime/ConnectionIndicator'
 import { StorageWarning } from '@/components/StorageWarning'
+import { LiveRegions } from '@/components/a11y/LiveRegions'
+import { LiveAnnouncer } from '@/components/a11y/LiveAnnouncer'
 
 // app-shell-navigation 4.1–4.5 (§3.10, D-F) — a casca PERSISTENTE. Sidebar de 3
 // destinos (ativo por preenchimento tintado + ícone em accent, NUNCA faixa
@@ -65,6 +67,10 @@ export function AppShell() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-bg-main text-text-main">
+      {/* q&a 5.1 — regiões vivas persistentes (montadas vazias) + roteador do
+          transporte de tempo real para #rt-status. Incondicionais no shell. */}
+      <LiveRegions />
+      <LiveAnnouncer />
       <Sidebar
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
