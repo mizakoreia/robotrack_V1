@@ -14,10 +14,10 @@
 
 ## 3. Redis, ActionCable e CDN
 
-- [ ] 3.1 Separar `REDIS_CACHE_URL`, `REDIS_QUEUE_URL` e `REDIS_CABLE_URL` em `production.rb`, `initializers/sidekiq.rb` e `cable.yml`, com fallback a `REDIS_URL` em `development`. (§Isolamento de Redis — hoje cache, Sidekiq e Cable dividem `redis://…/1`; dev com só `REDIS_URL` continua subindo)
-- [ ] 3.2 Criar `initializers/redis_topology.rb` que aborta o boot em `staging`/`production` quando duas URLs resolvem para o mesmo `(host, porta, db)` ou quando `channel_prefix` está ausente, e adicionar `channel_prefix: robotrack_<env>` ao `cable.yml`. (§Isolamento de Redis / §ActionCable — pressão de memória num cache `allkeys-lru` deixa de poder evictar jobs enfileirados, e staging deixa de poder entregar broadcast a clientes de produção)
-- [ ] 3.3 Definir o contrato de cache do bundle React na CDN: `index.html` e `sw.js` com `no-store`, assets com hash `immutable`, `/api/**` `no-store` e sem cache de resposta autenticada. (§Hospedagem do PWA — `index.html` com `max-age` positivo trava o usuário numa versão antiga do service worker de D7)
-- [ ] 3.4 **Verificação:** smoke pós-deploy asserindo os três headers de cache, mais teste de integração com dois processos `web` provando que broadcast originado em B chega ao cliente conectado em A. (§ActionCable — é a prova executável de que D6 funciona multi-processo; e a configuração de CDN regride por clique no console do provedor)
+- [x] 3.1 Separar `REDIS_CACHE_URL`, `REDIS_QUEUE_URL` e `REDIS_CABLE_URL` em `production.rb`, `initializers/sidekiq.rb` e `cable.yml`, com fallback a `REDIS_URL` em `development`. (§Isolamento de Redis — hoje cache, Sidekiq e Cable dividem `redis://…/1`; dev com só `REDIS_URL` continua subindo)
+- [x] 3.2 Criar `initializers/redis_topology.rb` que aborta o boot em `staging`/`production` quando duas URLs resolvem para o mesmo `(host, porta, db)` ou quando `channel_prefix` está ausente, e adicionar `channel_prefix: robotrack_<env>` ao `cable.yml`. (§Isolamento de Redis / §ActionCable — pressão de memória num cache `allkeys-lru` deixa de poder evictar jobs enfileirados, e staging deixa de poder entregar broadcast a clientes de produção)
+- [x] 3.3 Definir o contrato de cache do bundle React na CDN: `index.html` e `sw.js` com `no-store`, assets com hash `immutable`, `/api/**` `no-store` e sem cache de resposta autenticada. (§Hospedagem do PWA — `index.html` com `max-age` positivo trava o usuário numa versão antiga do service worker de D7)
+- [x] 3.4 **Verificação:** smoke pós-deploy asserindo os três headers de cache, mais teste de integração com dois processos `web` provando que broadcast originado em B chega ao cliente conectado em A. (§ActionCable — é a prova executável de que D6 funciona multi-processo; e a configuração de CDN regride por clique no console do provedor)
 
 ## 4. Observabilidade
 

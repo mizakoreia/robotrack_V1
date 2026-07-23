@@ -35,8 +35,18 @@ module EnvSchema
     Entry.new(
       name: 'REDIS_URL', type: :url, required_in: %i[production staging],
       default: 'redis://localhost:6379/1',
-      help: 'Redis base; em produção é sobreposto pelas URLs por função (cache/fila/cable).'
+      help: 'Redis base; em dev serve de fallback para as URLs por função (cache/fila/cable).'
     ),
+    # Isolamento de Redis por função (3.1): cache pode `allkeys-lru` evictar; fila
+    # e cable NÃO podem perder dado. Em produção cada um é uma instância/db própria;
+    # em dev caem no REDIS_URL. Obrigatórias em produção/staging → o guarda de
+    # topologia (redis_topology.rb) ainda proíbe duas apontando para o mesmo lugar.
+    Entry.new(name: 'REDIS_CACHE_URL', type: :url, required_in: %i[production staging],
+              default: nil, help: 'Redis do cache (evictável). Fallback REDIS_URL em dev.'),
+    Entry.new(name: 'REDIS_QUEUE_URL', type: :url, required_in: %i[production staging],
+              default: nil, help: 'Redis da fila Sidekiq (não-evictável). Fallback REDIS_URL em dev.'),
+    Entry.new(name: 'REDIS_CABLE_URL', type: :url, required_in: %i[production staging],
+              default: nil, help: 'Redis do ActionCable (pub/sub). Fallback REDIS_URL em dev.'),
     # ── ActionCable / CORS ───────────────────────────────────────────────────
     Entry.new(
       name: 'ACTION_CABLE_URL', type: :url, required_in: %i[production staging],
@@ -75,6 +85,12 @@ module EnvSchema
     return value if value.present?
 
     entry.default
+  end
+
+  # URL do Redis por função com fallback ao REDIS_URL (dev). Em produção a por-
+  # função é obrigatória (o guarda de boot cobra) e o fallback nunca é exercido.
+  def self.redis_for(function)
+    fetch("REDIS_#{function.to_s.upcase}_URL") || fetch('REDIS_URL')
   end
 
   # Obrigatórias ausentes no ambiente dado (para o guarda de boot).

@@ -12,7 +12,7 @@ Robotrack::Application.configure do
 
   # Cache (Redis)
   config.cache_store = :redis_cache_store, {
-    url: EnvSchema.fetch('REDIS_URL'),
+    url: EnvSchema.redis_for(:cache),
     namespace: 'cache_prod',
     reconnect_attempts: 1
   }
