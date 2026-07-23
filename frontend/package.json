@@ -9,6 +9,7 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "test": "vitest",
+    "typecheck:test-imports": "node scripts/check-test-imports.mjs",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
     "test:print": "node scripts/print-report.mjs"
@@ -34,6 +35,7 @@
   "devDependencies": {
     "@testing-library/jest-dom": "^6.1.5",
     "@testing-library/react": "^14.1.2",
+    "@types/node": "^26.1.1",
     "@types/rails__actioncable": "^8.0.3",
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",

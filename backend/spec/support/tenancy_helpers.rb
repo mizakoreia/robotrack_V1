@@ -24,6 +24,43 @@ module TenancyHelpers
     Tenant.with(workspace_id: workspace.id, user_id: (user || workspace.owner).id, &block)
   end
 
+  # quality-and-accessibility 1.2 — headers de REQUEST autenticados como membro do
+  # workspace com o papel dado, JÁ com o `X-Workspace-Id`. Une autenticação e
+  # contexto de tenant num lugar só: a RLS é aberta pela própria requisição (o
+  # middleware de tenant lê o header), então autenticar sem endereçar o workspace
+  # devolve lista vazia e o spec "passa" por engano (D2). `role: 'owner'` reusa o
+  # dono; os demais papéis criam um usuário e o adicionam como membership.
+  # Precisa de `bearer_headers` (RequestAuthHelper) — use em specs `type: :request`.
+  def as_member_of(workspace, role: 'edit', user: nil)
+    member =
+      if role.to_s == 'owner'
+        workspace.owner
+      else
+        u = user || create(:user)
+        add_member(workspace, u, role.to_s)
+        u
+      end
+    bearer_headers(member).merge('X-Workspace-Id' => workspace.id)
+  end
+
+  # "Factories" de tenant no idioma de `create_task`: pressupõem contexto aberto
+  # (use dentro de `in_workspace`) e resolvem `workspace_id` pelo PAI, para os
+  # specs não repetirem a resolução e errarem em um deles (§1.1/D2).
+  def create_project(workspace, **attrs)
+    ws_id = workspace.respond_to?(:id) ? workspace.id : workspace
+    Project.create!({ name: "Projeto #{SecureRandom.hex(4)}", position: 0 }.merge(attrs).merge(workspace_id: ws_id))
+  end
+
+  def create_cell(project, **attrs)
+    Cell.create!({ name: "Célula #{SecureRandom.hex(4)}", position: 0 }
+      .merge(attrs).merge(project_id: project.id, workspace_id: project.workspace_id))
+  end
+
+  def create_robot(cell, **attrs)
+    Robot.create!({ name: "Robô #{SecureRandom.hex(4)}", application: 'Handling', position: 0 }
+      .merge(attrs).merge(cell_id: cell.id, workspace_id: cell.workspace_id))
+  end
+
   # Adiciona `user` como membro (`role`) do workspace, criando a Person dele.
   def add_member(workspace, user, role)
     in_workspace(workspace) do
