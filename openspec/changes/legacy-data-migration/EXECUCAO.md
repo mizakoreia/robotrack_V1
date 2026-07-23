@@ -54,7 +54,21 @@ O que o porte precisa saber sobre o formato antigo já está DECLARADO no `desig
 - **Grupo 4 (identidade+idempotência) — DELTA.** `Legacy::IdDerivation` (UUIDv5 sobre o
   caminho legado), wrapper `INSERT … ON CONFLICT (id) DO NOTHING` + `legacy_id_map`, set de
   `app.current_workspace_id` por workspace + procedência `ownerUid`.
-- **Grupo 5 (importadores por entidade) — DELTA, mas os ALVOS existem:** `people`
+- **Grupo 5 (importadores por entidade) — FEITO. Duas reconciliações de schema:**
+  - **(a) Membership NÃO é criada:** `memberships.user_id` é NOT NULL (FK `users`), e o mapa
+    ownerUid-Firebase → user Rails não é definido nesta change (mesma lacuna do 4.3). Os
+    membros do arquivo entram como PESSOAS (via resolver), não como membership/acesso. "Nenhum
+    convite importado" vale trivialmente. O acesso real é reconstruído fora deste porte.
+  - **(b) Homônimos na mesma célula:** commissioning-hierarchy D-H8 força `UNIQUE (cell_id,
+    lower(name))` — CONTRADIZ o cenário de legacy-import "dois R05 viram duas linhas". Não
+    afrouxamos a constraint nem quarentenamos (a spec pede duas linhas): DESAMBIGUAMOS o nome
+    do colidente (`R05`→`R05 (2)`), determinístico por ordem de aparição, com aviso
+    `nome_desambiguado`. O id vem do CAMINHO (índice/id), não do nome → idempotente. Mesmo
+    guard aplicado a células (nome) e tarefas (desc), que têm o mesmo índice único parcial.
+  - Os "8 services" viraram SEÇÕES do orquestrador `Legacy::ImportService` (métodos por
+    entidade) + `AssigneeResolver`/`StatusDerivation`/`ImportReport` à parte. A cascata de
+    §1.4, obs→avanço e quarentena vivem no mesmo caminho (as provas por-regra são G6).
+- **Grupo 5 (alvos de schema que já existiam):** `people`
   (sentinela no banco ✓), `task_assignees` por `person_id` (robot-tasks ✓), `task_advances`
   contrato `legacy` (`legacy` bool, `by` NULL só se legacy, comentário isento — migration
   20260721160002 ✓), `progress_cache` em robots/cells ✓, enum `task_status` ✓, CHECK

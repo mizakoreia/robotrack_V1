@@ -18,7 +18,15 @@ module Legacy
     # congelado (não é o namespace DNS/URL padrão de propósito).
     NAMESPACE = '6d9a0f3e-6c2b-4b7a-9f1e-2c4d6e8a0b12'
 
+    SENTINELS = ['não atribuído', 'nao atribuido'].freeze
+
     module_function
+
+    # O sentinela "Não Atribuído" (D-LDM-3) — a mesma checagem que a normalização usa,
+    # reusada pelo resolver (camada 2) para NUNCA criar a Person.
+    def sentinel_name?(name)
+      SENTINELS.include?(name.to_s.strip.downcase)
+    end
 
     # id-ou-índice: a regra de caminho para entidades que podem não ter id no legado.
     def ref(obj, index)

@@ -158,38 +158,69 @@
 
 ## 5. Importadores por entidade
 
-- [ ] 5.1 `Legacy::ImportWorkspaceService` + `ImportMembershipsService` — workspace,
+> **G5 — RECONCILIAÇÃO (registrada no EXECUCAO §G5).** Os "8 services" de 5.1/5.3-5.7 são
+> as SEÇÕES do orquestrador `Legacy::ImportService` (métodos privados por entidade), não 8
+> classes — o que os specs verificam é a contagem por tabela e o relatório. `AssigneeResolver`
+> (5.2) e `StatusDerivation` (§2.2) ficam à parte (estado/regra próprios). Duas reconciliações
+> com a realidade do schema: (a) **membership NÃO é criada** — a coluna exige `user_id` Rails e
+> o mapa ownerUid-Firebase→user não existe nesta change (4.3); os membros entram como PESSOAS.
+> (b) **homônimos na mesma célula** — o schema força `UNIQUE (cell_id, lower(name))` (D-H8), que
+> contradiz "duas linhas". Não afrouxamos nem perdemos o robô: DESAMBIGUAMOS o nome do colidente
+> (`R05`→`R05 (2)`) determinísticamente + aviso `nome_desambiguado`. O id vem do CAMINHO, então
+> é idempotente. (A cascata/obs/quarentena de §1.4 vivem no mesmo caminho — as provas por-regra
+> são G6.)
+
+- [x] 5.1 `Legacy::ImportWorkspaceService` + `ImportMembershipsService` — workspace,
   `ownerUid`, nome, e membros ativos com papel `edit`/`view`; **nenhum** convite é
   importado. (§1.1 — o modo de falha é importar convite expirado e criar acesso fantasma.)
-- [ ] 5.2 `Legacy::AssigneeResolver` — ponto **único** de criação de `Person`, com trim +
+      *(ENTREGUE como `import_workspace` (nome) + `import_people_roster` (membros→pessoas).
+      Nenhum convite/membership fabricado — ver reconciliação (a).)*
+- [x] 5.2 `Legacy::AssigneeResolver` — ponto **único** de criação de `Person`, com trim +
   downcase, filtro do sentinela, colapso de homônimos por caixa e aviso (não colapso) para
   colisão só por acento. (D10, D11, D-LDM-3 — `"João Silva"`/`"joão silva"` viram uma
   `Person`; `"Joao"`/`"João"` viram duas, com aviso no relatório.)
-- [ ] 5.3 `Legacy::ImportTaskTemplatesService` — `defaultTasks`, com a regra `appFilters`
+      *(ENTREGUE — `Legacy::AssigneeResolver` memoizado; id do caminho usa o ws LEGADO, a
+      linha usa o ws de DESTINO. Aviso `homonimo_por_acento` via `I18n.transliterate`.)*
+- [x] 5.3 `Legacy::ImportTaskTemplatesService` — `defaultTasks`, com a regra `appFilters`
   vs. `apps`, precedência do nome novo quando ambos vierem, e preservação de `"Todas"`.
   (§1.4 item 3, D-LDM-4 — dois templates idênticos exceto pelo nome do campo têm de
   produzir linhas idênticas; `"Todas"` virar lista vazia destrói a escolha do usuário.)
-- [ ] 5.4 `Legacy::ImportProjectsService` — `Array()` defensivo em `cells` e renumeração de
+      *(ENTREGUE — `import_templates`/`template_filters`: appFilters vence apps, aviso
+      `app_filters_divergentes`, `"Todas"` preservado, valor fora do enum → quarentena.)*
+- [x] 5.4 `Legacy::ImportProjectsService` — `Array()` defensivo em `cells` e renumeração de
   `_ord` timestamp para `position` contígua 0-based com desempate estável pela ordem de
   aparição. (§1.4 defensiva, §2.9 — `_ord` `1700…`/`1500…`/`1900…` vira `position`
   `1`/`0`/`2`; `_ord` empatado não pode alternar entre runs.)
-- [ ] 5.5 `Legacy::ImportCellsService` + `ImportRobotsService` — `position` pelo índice do
+      *(ENTREGUE — `import_projects_tree`/`renumber`: sort estável por `[_ord, aparição]`.)*
+- [x] 5.5 `Legacy::ImportCellsService` + `ImportRobotsService` — `position` pelo índice do
   array, `application` validado contra o enum de §1.2, `Array()` defensivo em `robots` e
   `tasks`. (§1.2, §1.4 — `application: "Paletização"` manda o robô e suas tarefas para
   quarentena sem abortar o run; célula sem `robots` importa com zero filhos.)
-- [ ] 5.6 `Legacy::ImportTasksService` — `cat`, `desc`, `weight`, `progress`, `status`,
+      *(ENTREGUE — `import_cells`/`import_robots`: `application` fora do enum → quarentena do
+      robô (e suas tarefas nem são visitadas); `array_of` trata cells/robots null/ausente.)*
+- [x] 5.6 `Legacy::ImportTasksService` — `cat`, `desc`, `weight`, `progress`, `status`,
   `position`, **sem** colunas `resp` e `obs`. (§1.1, `robot-tasks` D-RT-2 — o modo de falha
   é o importador tentar gravar `resp` numa coluna que não existe e derrubar o run inteiro.)
-- [ ] 5.7 `Legacy::ImportAdvancesService` + `ImportAuditLogsService` +
+      *(ENTREGUE — `import_tasks`/`prepare_task`: só as 6 colunas; `resp`/`obs` nunca gravados.)*
+- [x] 5.7 `Legacy::ImportAdvancesService` + `ImportAuditLogsService` +
   `ImportNotificationsService` — `history` para `task_advances` com `recorded_at` vindo do
   `ts` legado (D8) e `author_name_snapshot` de `byName`; logs de §2.8; notificações de §2.7
   com `read` preservado e `msg` truncado a 500 com aviso. (D8, §4.1 inv. 8 — trocar
   `recorded_at` por `created_at` reescreve a cronologia da trilha; notificação de 501 chars
   não pode violar a constraint nem abortar o run.)
-- [ ] 5.8 **Verificação**: spec end-to-end que importa a fixture e afirma a contagem exata
+      *(ENTREGUE — `import_advances` (history→task_advances, recorded_at do `ts`; logs em
+      `audit_logs` via `insert_all unique_by:[ts,id]` pela PK composta particionada);
+      `import_notifications` (resolve destinatário/ator, `read`/`read_at` coerentes, `msg`
+      truncada a 500 com aviso `msg_truncada`). obs→avanço legado é 6.2.)*
+- [x] 5.8 **Verificação**: spec end-to-end que importa a fixture e afirma a contagem exata
   por tabela, **incluindo os zeros esperados** (projeto sem `cells` = 0 células, robô sem
   `tasks` = 0 tarefas e `progress_cache` 0). (§1.4, §2.1 — o modo de falha é o importador
   engolir silenciosamente um nível inteiro da hierarquia e ninguém notar.)
+      *(ENTREGUE — `import_end_to_end_spec` (4 ex., verde): 4 projetos / 3 células / 4 robôs /
+      8 tarefas / 4 pessoas / 3 responsáveis / 4 avanços / 4 templates / 1 log / 1 notificação;
+      zeros de p-3/p-4 (0 células) e r-2 (0 tarefas, `progress_cache` 0); homônimo colapsado
+      (João com 2 responsáveis); sentinela → 0 pessoas; quarentena (app/progress/status/obs) e
+      2º run cria 0.)*
 
 ## 6. As três regras de §1.4
 
