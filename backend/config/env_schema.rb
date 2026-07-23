@@ -61,6 +61,10 @@ module EnvSchema
               default: nil, help: 'Bearer token do /metrics (Prometheus). Sem ele o endpoint responde 401.'),
     Entry.new(name: 'SENTRY_DSN', type: :string, required_in: [], default: nil,
               help: 'DSN do Sentry. Ausente = rastreio de exceção desligado (dev/test).'),
+    Entry.new(name: 'ALERT_WEBHOOK_URL', type: :url, required_in: [], default: nil,
+              help: 'Webhook de alerta (warning/critical). Ausente = só log estruturado.'),
+    Entry.new(name: 'ALERT_PAGER_URL', type: :url, required_in: [], default: nil,
+              help: 'Pager de alerta (critical). Ausente = critical degrada para log+Sentry.'),
     # ── Toggles com default seguro ───────────────────────────────────────────
     Entry.new(name: 'FORCE_SSL', type: :bool, required_in: [], default: 'true',
               help: 'Redireciona http→https. Default ligado.'),

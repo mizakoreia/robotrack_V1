@@ -29,10 +29,10 @@
 
 ## 5. Canal de alerta
 
-- [ ] 5.1 Implementar `Ops::AlertService.raise_alert(key:, severity:, message:, context:)` singleton, com roteamento por severidade e deduplicação atômica (`SET NX EX 3600`) no Redis de cache. (§Canal único — a mesma `key` às 10h00 e 10h30 notifica uma vez; às 10h00 e 11h05 notifica duas; `:info` não chama webhook nem pager)
-- [ ] 5.2 Blindar o serviço contra falha do destino: webhook 500 não propaga exceção ao chamador e a falha de entrega vai para o log estruturado. (§Canal único — uma reconciliação de D5 não vira job falho porque o Slack caiu)
-- [ ] 5.3 Configurar as condições operacionais: 5xx > 1% em 5 min, fila > 1.000 por 10 min, job na dead set, falha de publicação no Cable, falha da fase de release. (§Condições de alerta — fila que sobe a 1.200 e drena em 4 minutos não dispara nada; a que fica 11 minutos dispara)
-- [ ] 5.4 **Verificação:** spec de dedup com relógio congelado (supressão dentro da janela, reemissão após 1h) e spec de degradação com `ALERT_PAGER_URL` ausente, mais registro do contrato de `key` consumido por `progress-rollup` (D5), `offline-pwa` (D7) e `workspace-invitations`. (§Canal único — D5 chega na Onda 6 e encontra `key: "progress_cache_divergence:<id>"` já definida; sem pager, `critical` degrada para log+Sentry sem levantar exceção)
+- [x] 5.1 Implementar `Ops::AlertService.raise_alert(key:, severity:, message:, context:)` singleton, com roteamento por severidade e deduplicação atômica (`SET NX EX 3600`) no Redis de cache. (§Canal único — a mesma `key` às 10h00 e 10h30 notifica uma vez; às 10h00 e 11h05 notifica duas; `:info` não chama webhook nem pager)
+- [x] 5.2 Blindar o serviço contra falha do destino: webhook 500 não propaga exceção ao chamador e a falha de entrega vai para o log estruturado. (§Canal único — uma reconciliação de D5 não vira job falho porque o Slack caiu)
+- [x] 5.3 Configurar as condições operacionais: 5xx > 1% em 5 min, fila > 1.000 por 10 min, job na dead set, falha de publicação no Cable, falha da fase de release. (§Condições de alerta — fila que sobe a 1.200 e drena em 4 minutos não dispara nada; a que fica 11 minutos dispara)
+- [x] 5.4 **Verificação:** spec de dedup com relógio congelado (supressão dentro da janela, reemissão após 1h) e spec de degradação com `ALERT_PAGER_URL` ausente, mais registro do contrato de `key` consumido por `progress-rollup` (D5), `offline-pwa` (D7) e `workspace-invitations`. (§Canal único — D5 chega na Onda 6 e encontra `key: "progress_cache_divergence:<id>"` já definida; sem pager, `critical` degrada para log+Sentry sem levantar exceção)
 
 ## 6. Ciclo de vida de dado
 
