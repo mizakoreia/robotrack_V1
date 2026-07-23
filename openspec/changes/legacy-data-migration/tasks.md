@@ -39,25 +39,54 @@
 
 ## 2. Infraestrutura de run, backup e rollback
 
-- [ ] 2.1 Migrations criando `legacy_import_runs` (`workspace_id`, `legacy_owner_uid`,
+- [x] 2.1 Migrations criando `legacy_import_runs` (`workspace_id`, `legacy_owner_uid`,
   `file_sha256`, `backup_path`, `status`, `report` jsonb) e `legacy_id_map`
   (`run_id`, `entity_type`, `legacy_path`, `new_id`) com único `(run_id, legacy_path)`.
   (D-LDM-2, D-LDM-6 — sem `legacy_id_map` o rollback degrada para `pg_restore` do banco
   inteiro; sem `file_sha256` não há como detectar a reimportação da 8.4.)
-- [ ] 2.2 Migration adicionando `CHECK (btrim(lower(name)) <> 'não atribuído')` em `people`
+      *(ENTREGUE — `20260724110001_create_legacy_import_infrastructure`. RECONCILIAÇÃO: o
+      `schema_guard` exige de TODA tabela de domínio `workspace_id NOT NULL` + índice
+      liderado por `workspace_id` + FORCE RLS + policy `tenant_isolation`. `legacy_id_map`
+      (spec: só `run_id`) reprovaria — carrega `workspace_id` DENORMALIZADO do run. Ambas
+      com RLS `robotrack_app` (runs: SELECT/INSERT/UPDATE; map: SELECT/INSERT append-only).
+      `status` CHECK inclui `rolled_back`. Índice `(workspace_id, file_sha256)` serve a 8.4.
+      Verificação: `schema_guard_spec` cobre as duas automaticamente — 0 falhas.)*
+- [x] 2.2 Migration adicionando `CHECK (btrim(lower(name)) <> 'não atribuído')` em `people`
   e índice único `(workspace_id, lower(btrim(name)))`. (D11, D-LDM-3 — um `INSERT` por
   `psql` com o nome sentinela tem de ser rejeitado pelo Postgres, não só pelo model.)
-- [ ] 2.3 Implementar a etapa de backup do rake: `pg_dump -Fc` para
+      *(RECONCILIADA — JÁ EXISTE no banco: `people_name_not_sentinel CHECK` e
+      `index_people_on_workspace_id_and_normalized_name UNIQUE` (structure.sql:725,1570).
+      A camada 3 de D-LDM-3 já vale; a prova crua fica em 7.2.)*
+- [x] 2.3 Implementar a etapa de backup do rake: `pg_dump -Fc` para
   `LEGACY_IMPORT_BACKUP_DIR`, gravando `backup_path` e recusando iniciar se o dump falhar
   ou o diretório não for gravável. (D-LDM-6 — diretório somente leitura precisa abortar
   antes da primeira escrita, com `count(*)` de `projects` inalterado.)
-- [ ] 2.4 Implementar `rake legacy:rollback[run_id]` removendo por `legacy_id_map` em ordem
+      *(ENTREGUE — `Legacy::BackupService` (`app/services/legacy/backup_service.rb`): valida
+      diretório definido/existente/gravável ANTES de qualquer `pg_dump`, roda `pg_dump -Fc`
+      com as credenciais da conexão e grava `backup_path`. `backup_spec` prova as 3 recusas
+      (o `pg_dump` só roda no caminho feliz). O teste de dir não-gravável fica `pending`
+      quando a suíte roda como root (o `access()` ignora o bit de permissão).)*
+- [x] 2.4 Implementar `rake legacy:rollback[run_id]` removendo por `legacy_id_map` em ordem
   inversa de dependência, preservando `audit_logs` e gravando o próprio rollback na
   auditoria. (D12, D-LDM-6 — 42 robôs importados + 3 criados depois do corte devem
   resultar em exatamente 3 robôs restantes.)
-- [ ] 2.5 **Verificação**: spec que importa, cria dado por fora, faz rollback e afirma que
+      *(ENTREGUE — `rake legacy:rollback[run_id]` + `Legacy::RollbackService`. RECONCILIAÇÃO
+      CRÍTICA (ver EXECUCAO §G2): o porte tem DUAS tabelas append-only imutáveis por
+      REVOKE+trigger — `task_advances` (D-IMUT) e `audit_logs` (D12). Uma tarefa importada
+      com avanço legado é travada pela FK RESTRICT do avanço; DELETE físico é impossível (o
+      mesmo muro que fez o factory-reset ARQUIVAR). Logo: a HIERARQUIA do run é ARQUIVADA
+      (`deleted_at`, só os ids mapeados — filho pós-corte sobrevive), as FOLHAS sem trava
+      (task_assignees/notifications/task_templates/memberships/people) são DELETADAS, e
+      `task_advances`/`audit_logs` importados NÃO são tocados. "N robôs restantes" = N
+      VISÍVEIS. A entrada de auditoria exigiu um `event_type` novo `legacy_rollback`
+      (migration `20260724110002` estende o CHECK; model/locale/snapshot atualizados).)*
+- [x] 2.5 **Verificação**: spec que importa, cria dado por fora, faz rollback e afirma que
   só o dado do run sumiu e que a auditoria cresceu em 1 entrada. (D-LDM-6 — o modo de
   falha é o rollback apagar dado de produção pós-corte.)
+      *(ENTREGUE — `rollback_spec` (verde): monta um run à mão (hierarquia + folhas + 1
+      avanço legado, tudo em `legacy_id_map`) + dado pós-corte não mapeado; após o rollback
+      afirma hierarquia do run arquivada, folhas deletadas, avanço legado INTOCADO, TODO o
+      dado pós-corte preservado e `audit_logs` +1 com `event_type = legacy_rollback`.)*
 
 ## 3. Pré-processador estrutural (§4.4)
 

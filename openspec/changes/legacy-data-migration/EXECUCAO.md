@@ -32,7 +32,22 @@ O que o porte precisa saber sobre o formato antigo já está DECLARADO no `desig
     (structure.sql:725,1570). A camada 3 de D-LDM-3 (o sentinela morre no BANCO) já vale.
     Marcar reconciliada; 7.2 testa contra ESSA constraint.
   - **2.1/2.3/2.4/2.5 DELTA** — criar `legacy_import_runs` + `legacy_id_map` (migration), a
-    etapa de backup `pg_dump -Fc` e o `rake legacy:rollback` + spec.
+    etapa de backup `pg_dump -Fc` e o `rake legacy:rollback` + spec. **[FEITO G2]**
+    - **RECONCILIAÇÃO 2.1:** `legacy_id_map` carrega `workspace_id` DENORMALIZADO (a spec
+      lista só `run_id`); sem ele o `schema_guard` reprovaria e o rollback não escoparia
+      por RLS. Ambas as tabelas com FORCE RLS + `tenant_isolation`.
+    - **RECONCILIAÇÃO 2.4 (a grande):** D-LDM-6 fala em "apagar em ordem inversa de
+      dependência", mas o porte tem DUAS tabelas append-only IMUTÁVEIS por REVOKE+trigger:
+      `task_advances` (D-IMUT) e `audit_logs` (D12). Uma tarefa importada com avanço legado
+      é travada pela FK RESTRICT do avanço → DELETE físico impossível (o MESMO muro que fez
+      o `FactoryResetService` ARQUIVAR em vez de deletar). Portanto o rollback: (a) ARQUIVA
+      a hierarquia do run (`deleted_at`, só ids mapeados — filho pós-corte sobrevive), (b)
+      DELETA as folhas sem trava (task_assignees, notifications, task_templates, memberships,
+      people — uma a uma, pulando quem virou autor de avanço real), (c) NÃO toca
+      `task_advances`/`audit_logs` importados (imutáveis; marcação legada evita confusão),
+      (d) grava 1 entrada `audit_logs`. Isso exigiu um `event_type` NOVO `legacy_rollback`
+      (migration `20260724110002` estende o CHECK particionado; model/locale/snapshot
+      atualizados). "N robôs restantes" passou a significar N VISÍVEIS (`deleted_at IS NULL`).
 - **Grupo 3 (pré-processador §4.4) — DELTA.** `Legacy::NormalizeExportService` + `rake
   legacy:normalize` (promove `workspace.projects`/`logs` a topo, remove sentinela, no-op
   em canônico, atômico por temp+rename).

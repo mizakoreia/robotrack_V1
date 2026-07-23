@@ -19,12 +19,12 @@ class AuditLog < ApplicationRecord
   belongs_to :author, class_name: 'Person', foreign_key: :by_person_id,
                       optional: true, inverse_of: false
 
-  EVENT_TYPES = %w[task_completed workspace_reset].freeze
+  EVENT_TYPES = %w[task_completed workspace_reset legacy_rollback].freeze
 
   # Versão publicada CORRENTE por evento (Decisão 5). Regra dura: uma vN publicada
   # NUNCA é editada — muda-se o texto criando vN+1 e incrementando aqui. O snapshot
   # congelado em spec/fixtures/audit/published_format_strings.yml guarda isso no CI.
-  FORMAT_VERSIONS = { 'task_completed' => 1, 'workspace_reset' => 1 }.freeze
+  FORMAT_VERSIONS = { 'task_completed' => 1, 'workspace_reset' => 1, 'legacy_rollback' => 1 }.freeze
 
   validates :by_name, presence: true, length: { maximum: 200 }
   validates :msg, presence: true

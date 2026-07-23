@@ -7,3 +7,5 @@ task_completed:
   v1: 'Em [%{robot}], %{assignees} concluiu a tarefa "%{task}" com 100%%.'
 workspace_reset:
   v1: '%{by_name} executou o reset de fábrica do workspace. Projetos removidos: %{projects_count}.'
+legacy_rollback:
+  v1: 'Rollback do import legado (run %{run_id}) revertido: %{projects_count} projeto(s) arquivado(s).'

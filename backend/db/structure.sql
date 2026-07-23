@@ -376,7 +376,7 @@ CREATE TABLE public.audit_logs (
     by_name text NOT NULL,
     payload jsonb DEFAULT '{}'::jsonb NOT NULL,
     CONSTRAINT chk_audit_by_name CHECK (((length(btrim(by_name)) >= 1) AND (length(btrim(by_name)) <= 200))),
-    CONSTRAINT chk_audit_event_type CHECK ((event_type = ANY (ARRAY['task_completed'::text, 'workspace_reset'::text]))),
+    CONSTRAINT chk_audit_event_type CHECK ((event_type = ANY (ARRAY['task_completed'::text, 'workspace_reset'::text, 'legacy_rollback'::text]))),
     CONSTRAINT chk_audit_msg CHECK ((btrim(msg) <> ''::text))
 )
 PARTITION BY RANGE (ts);
@@ -400,7 +400,7 @@ CREATE TABLE public.audit_logs_2026_07 (
     by_name text NOT NULL,
     payload jsonb DEFAULT '{}'::jsonb NOT NULL,
     CONSTRAINT chk_audit_by_name CHECK (((length(btrim(by_name)) >= 1) AND (length(btrim(by_name)) <= 200))),
-    CONSTRAINT chk_audit_event_type CHECK ((event_type = ANY (ARRAY['task_completed'::text, 'workspace_reset'::text]))),
+    CONSTRAINT chk_audit_event_type CHECK ((event_type = ANY (ARRAY['task_completed'::text, 'workspace_reset'::text, 'legacy_rollback'::text]))),
     CONSTRAINT chk_audit_msg CHECK ((btrim(msg) <> ''::text))
 );
 
@@ -423,7 +423,7 @@ CREATE TABLE public.audit_logs_2026_08 (
     by_name text NOT NULL,
     payload jsonb DEFAULT '{}'::jsonb NOT NULL,
     CONSTRAINT chk_audit_by_name CHECK (((length(btrim(by_name)) >= 1) AND (length(btrim(by_name)) <= 200))),
-    CONSTRAINT chk_audit_event_type CHECK ((event_type = ANY (ARRAY['task_completed'::text, 'workspace_reset'::text]))),
+    CONSTRAINT chk_audit_event_type CHECK ((event_type = ANY (ARRAY['task_completed'::text, 'workspace_reset'::text, 'legacy_rollback'::text]))),
     CONSTRAINT chk_audit_msg CHECK ((btrim(msg) <> ''::text))
 );
 
@@ -446,7 +446,7 @@ CREATE TABLE public.audit_logs_2026_09 (
     by_name text NOT NULL,
     payload jsonb DEFAULT '{}'::jsonb NOT NULL,
     CONSTRAINT chk_audit_by_name CHECK (((length(btrim(by_name)) >= 1) AND (length(btrim(by_name)) <= 200))),
-    CONSTRAINT chk_audit_event_type CHECK ((event_type = ANY (ARRAY['task_completed'::text, 'workspace_reset'::text]))),
+    CONSTRAINT chk_audit_event_type CHECK ((event_type = ANY (ARRAY['task_completed'::text, 'workspace_reset'::text, 'legacy_rollback'::text]))),
     CONSTRAINT chk_audit_msg CHECK ((btrim(msg) <> ''::text))
 );
 
@@ -469,7 +469,7 @@ CREATE TABLE public.audit_logs_2026_10 (
     by_name text NOT NULL,
     payload jsonb DEFAULT '{}'::jsonb NOT NULL,
     CONSTRAINT chk_audit_by_name CHECK (((length(btrim(by_name)) >= 1) AND (length(btrim(by_name)) <= 200))),
-    CONSTRAINT chk_audit_event_type CHECK ((event_type = ANY (ARRAY['task_completed'::text, 'workspace_reset'::text]))),
+    CONSTRAINT chk_audit_event_type CHECK ((event_type = ANY (ARRAY['task_completed'::text, 'workspace_reset'::text, 'legacy_rollback'::text]))),
     CONSTRAINT chk_audit_msg CHECK ((btrim(msg) <> ''::text))
 );
 
@@ -492,7 +492,7 @@ CREATE TABLE public.audit_logs_default (
     by_name text NOT NULL,
     payload jsonb DEFAULT '{}'::jsonb NOT NULL,
     CONSTRAINT chk_audit_by_name CHECK (((length(btrim(by_name)) >= 1) AND (length(btrim(by_name)) <= 200))),
-    CONSTRAINT chk_audit_event_type CHECK ((event_type = ANY (ARRAY['task_completed'::text, 'workspace_reset'::text]))),
+    CONSTRAINT chk_audit_event_type CHECK ((event_type = ANY (ARRAY['task_completed'::text, 'workspace_reset'::text, 'legacy_rollback'::text]))),
     CONSTRAINT chk_audit_msg CHECK ((btrim(msg) <> ''::text))
 );
 
@@ -641,6 +641,43 @@ CREATE SEQUENCE public.jwt_denylist_id_seq
 --
 
 ALTER SEQUENCE public.jwt_denylist_id_seq OWNED BY public.jwt_denylist.id;
+
+
+--
+-- Name: legacy_id_map; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.legacy_id_map (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    run_id uuid NOT NULL,
+    workspace_id uuid NOT NULL,
+    entity_type text NOT NULL,
+    legacy_path text NOT NULL,
+    new_id uuid NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+ALTER TABLE ONLY public.legacy_id_map FORCE ROW LEVEL SECURITY;
+
+
+--
+-- Name: legacy_import_runs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.legacy_import_runs (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    workspace_id uuid NOT NULL,
+    legacy_owner_uid text NOT NULL,
+    file_sha256 text NOT NULL,
+    backup_path text,
+    status text DEFAULT 'pending'::text NOT NULL,
+    report jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT chk_lir_status CHECK ((status = ANY (ARRAY['pending'::text, 'completed'::text, 'failed'::text, 'rolled_back'::text])))
+);
+
+ALTER TABLE ONLY public.legacy_import_runs FORCE ROW LEVEL SECURITY;
 
 
 --
@@ -1155,6 +1192,22 @@ ALTER TABLE ONLY public.jwt_denylist
 
 
 --
+-- Name: legacy_id_map legacy_id_map_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.legacy_id_map
+    ADD CONSTRAINT legacy_id_map_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: legacy_import_runs legacy_import_runs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.legacy_import_runs
+    ADD CONSTRAINT legacy_import_runs_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: membership_revocations membership_revocations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1256,6 +1309,14 @@ ALTER TABLE ONLY public.cells
 
 ALTER TABLE ONLY public.cells
     ADD CONSTRAINT uq_cells_position UNIQUE (project_id, "position") DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: legacy_id_map uq_legacy_id_map_run_path; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.legacy_id_map
+    ADD CONSTRAINT uq_legacy_id_map_run_path UNIQUE (run_id, legacy_path);
 
 
 --
@@ -1526,6 +1587,27 @@ CREATE UNIQUE INDEX index_invitations_pending_unique_per_email ON public.invitat
 --
 
 CREATE UNIQUE INDEX index_jwt_denylist_on_jti ON public.jwt_denylist USING btree (jti);
+
+
+--
+-- Name: index_legacy_id_map_on_ws_run_entity; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_legacy_id_map_on_ws_run_entity ON public.legacy_id_map USING btree (workspace_id, run_id, entity_type);
+
+
+--
+-- Name: index_legacy_import_runs_on_workspace_created; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_legacy_import_runs_on_workspace_created ON public.legacy_import_runs USING btree (workspace_id, created_at DESC);
+
+
+--
+-- Name: index_legacy_import_runs_on_workspace_sha; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_legacy_import_runs_on_workspace_sha ON public.legacy_import_runs USING btree (workspace_id, file_sha256);
 
 
 --
@@ -2000,6 +2082,30 @@ ALTER TABLE ONLY public.invitations
 
 
 --
+-- Name: legacy_id_map legacy_id_map_run_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.legacy_id_map
+    ADD CONSTRAINT legacy_id_map_run_id_fkey FOREIGN KEY (run_id) REFERENCES public.legacy_import_runs(id) ON DELETE CASCADE;
+
+
+--
+-- Name: legacy_id_map legacy_id_map_workspace_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.legacy_id_map
+    ADD CONSTRAINT legacy_id_map_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE;
+
+
+--
+-- Name: legacy_import_runs legacy_import_runs_workspace_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.legacy_import_runs
+    ADD CONSTRAINT legacy_import_runs_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE;
+
+
+--
 -- Name: membership_revocations membership_revocations_removed_by_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2216,6 +2322,18 @@ ALTER TABLE public.cells ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.invitations ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: legacy_id_map; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.legacy_id_map ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: legacy_import_runs; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.legacy_import_runs ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: membership_revocations; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -2353,6 +2471,20 @@ CREATE POLICY tenant_isolation ON public.invitations USING (((workspace_id = (NU
 
 
 --
+-- Name: legacy_id_map tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.legacy_id_map FOR SELECT USING ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid));
+
+
+--
+-- Name: legacy_import_runs tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.legacy_import_runs FOR SELECT USING ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid));
+
+
+--
 -- Name: membership_revocations tenant_isolation; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -2481,6 +2613,20 @@ CREATE POLICY tenant_isolation_insert ON public.audit_logs_default FOR INSERT WI
 
 
 --
+-- Name: legacy_id_map tenant_isolation_insert; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation_insert ON public.legacy_id_map FOR INSERT WITH CHECK ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid));
+
+
+--
+-- Name: legacy_import_runs tenant_isolation_insert; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation_insert ON public.legacy_import_runs FOR INSERT WITH CHECK ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid));
+
+
+--
 -- Name: task_advances tenant_isolation_insert; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -2492,6 +2638,13 @@ CREATE POLICY tenant_isolation_insert ON public.task_advances FOR INSERT WITH CH
 --
 
 CREATE POLICY tenant_isolation_insert ON public.workspace_backups FOR INSERT WITH CHECK ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid));
+
+
+--
+-- Name: legacy_import_runs tenant_isolation_update; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation_update ON public.legacy_import_runs FOR UPDATE USING ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid)) WITH CHECK ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid));
 
 
 --
@@ -2520,6 +2673,8 @@ ALTER TABLE public.workspaces ENABLE ROW LEVEL SECURITY;
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260724110002'),
+('20260724110001'),
 ('20260724100003'),
 ('20260724100002'),
 ('20260724100001'),

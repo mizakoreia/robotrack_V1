@@ -44,7 +44,8 @@ class AuditLog
         "audit.#{event}.v#{version}",
         robot: payload[:robot_name], task: payload[:task_desc],
         assignees: Array(payload[:assignee_names]).join(', '),
-        by_name: by_name, projects_count: payload[:projects_count]
+        by_name: by_name, projects_count: payload[:projects_count],
+        run_id: payload[:run_id]
       )
     end
 
