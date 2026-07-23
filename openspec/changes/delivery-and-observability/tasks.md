@@ -36,12 +36,12 @@
 
 ## 6. Ciclo de vida de dado
 
-- [ ] 6.1 Entregar o contrato de particionamento de `audit_logs` (`PARTITION BY RANGE (recorded_at)`, uma partição por mês) como migration de referência + spec de conformidade do DDL que `audit-log` precisa satisfazer. (§audit_logs particionada — se a tabela nascer sem partição na Onda 6, o spec falha ali, não daqui a um ano com uma migration de terabytes sob lock)
-- [ ] 6.2 Implementar job de manutenção que garante folga de duas partições futuras e alerta quando cair para uma. (§audit_logs particionada — insert com `recorded_at = 2026-09-01` nunca falha por partição inexistente, o que derrubaria toda escrita de auditoria)
-- [ ] 6.3 Implementar a exportação da partição expirada para armazenamento de objeto, em formato lido pelo backup JSON. (§Retenção de auditoria — é o backup obrigatório que precede o descarte da tarefa 6.4)
-- [ ] 6.4 Implementar o descarte por `DETACH PARTITION` + `DROP TABLE` após exportação bem-sucedida, com retenção padrão de 24 meses. (§Retenção de auditoria — exportação falhando resulta em zero `DROP` executado e um alerta `warning`, não em partição perdida)
-- [ ] 6.5 Implementar os jobs de expurgo por `DELETE` em lotes de 5.000 (`notifications` 90 dias; `login_codes`, `login_attempts` e `jwt_denylist` expirados), agendados diariamente com trava de execução única. (§Retenção de notificações / §Retenção de autenticação — notificação de 30 dias não lida permanece; entrada de denylist com `exp` daqui a 2 dias permanece, para o logout de D4 seguir efetivo)
-- [ ] 6.6 **Verificação:** spec que, com o job de retenção instalado, executa `DELETE FROM audit_logs` e `UPDATE audit_logs` com o papel de runtime e exige erro de permissão nos dois. (§Retenção de auditoria — prova que a retenção não reabriu o caminho de escrita que D12 fechou com `REVOKE`)
+- [x] 6.1 Entregar o contrato de particionamento de `audit_logs` (`PARTITION BY RANGE (recorded_at)`, uma partição por mês) como migration de referência + spec de conformidade do DDL que `audit-log` precisa satisfazer. (§audit_logs particionada — se a tabela nascer sem partição na Onda 6, o spec falha ali, não daqui a um ano com uma migration de terabytes sob lock)
+- [x] 6.2 Implementar job de manutenção que garante folga de duas partições futuras e alerta quando cair para uma. (§audit_logs particionada — insert com `recorded_at = 2026-09-01` nunca falha por partição inexistente, o que derrubaria toda escrita de auditoria)
+- [x] 6.3 Implementar a exportação da partição expirada para armazenamento de objeto, em formato lido pelo backup JSON. (§Retenção de auditoria — é o backup obrigatório que precede o descarte da tarefa 6.4)
+- [x] 6.4 Implementar o descarte por `DETACH PARTITION` + `DROP TABLE` após exportação bem-sucedida, com retenção padrão de 24 meses. (§Retenção de auditoria — exportação falhando resulta em zero `DROP` executado e um alerta `warning`, não em partição perdida)
+- [x] 6.5 Implementar os jobs de expurgo por `DELETE` em lotes de 5.000 (`notifications` 90 dias; `login_codes`, `login_attempts` e `jwt_denylist` expirados), agendados diariamente com trava de execução única. (§Retenção de notificações / §Retenção de autenticação — notificação de 30 dias não lida permanece; entrada de denylist com `exp` daqui a 2 dias permanece, para o logout de D4 seguir efetivo)
+- [x] 6.6 **Verificação:** spec que, com o job de retenção instalado, executa `DELETE FROM audit_logs` e `UPDATE audit_logs` com o papel de runtime e exige erro de permissão nos dois. (§Retenção de auditoria — prova que a retenção não reabriu o caminho de escrita que D12 fechou com `REVOKE`)
 
 ## 7. Rate limiting de domínio
 
