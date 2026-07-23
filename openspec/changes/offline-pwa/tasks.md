@@ -1,9 +1,9 @@
 ## 1. Fundação de armazenamento (pré-requisito de tudo)
 
-- [ ] 1.1 Criar `frontend/src/lib/storage/safeStorage.ts` com `get`/`set`/`remove` em `try/catch`, adapter em memória, e a sonda de boot que classifica o nível em `persistent` / `session-only` / `memory-only` antes da primeira renderização (§4.2 — `setItem` lançando `QuotaExceededError` devolve `false` sem propagar exceção; com `localStorage` lançando e `sessionStorage` funcional o nível é `session-only`, não `persistent`)
-- [ ] 1.2 Converter `lib/api/client.ts`, `authStore` e `themeStore` para usar exclusivamente o `safeStorage`, e ligar a regra ESLint `no-restricted-globals` para os três globais fora de `lib/storage/` (§4.2 — um `localStorage.getItem` introduzido em um componente novo falha o pipeline, não passa por revisão)
-- [ ] 1.3 Implementar o aviso persistente e dispensável-por-sessão para `session-only` e `memory-only`, com as duas redações de pt-BR de D7-11 (§4.2 — em `memory-only` o aviso inclui a frase sobre alterações offline não serem salvas; em `session-only`, não)
-- [ ] 1.4 **Verificação:** teste de integração que simula os três níveis com os globais lançando e afirma que o login conclui nos três (§4.2 — login em janela privada navega para a Visão Geral, sem tela branca e sem exceção não capturada no console)
+- [x] 1.1 Criar `frontend/src/lib/storage/safeStorage.ts` com `get`/`set`/`remove` em `try/catch`, adapter em memória, e a sonda de boot que classifica o nível em `persistent` / `session-only` / `memory-only` antes da primeira renderização (§4.2 — `setItem` lançando `QuotaExceededError` devolve `false` sem propagar exceção; com `localStorage` lançando e `sessionStorage` funcional o nível é `session-only`, não `persistent`)
+- [x] 1.2 Converter `lib/api/client.ts`, `authStore` e `themeStore` para usar exclusivamente o `safeStorage`, e ligar a regra ESLint `no-restricted-globals` para os três globais fora de `lib/storage/` (§4.2 — um `localStorage.getItem` introduzido em um componente novo falha o pipeline, não passa por revisão)
+- [x] 1.3 Implementar o aviso persistente e dispensável-por-sessão para `session-only` e `memory-only`, com as duas redações de pt-BR de D7-11 (§4.2 — em `memory-only` o aviso inclui a frase sobre alterações offline não serem salvas; em `session-only`, não)
+- [x] 1.4 **Verificação:** teste de integração que simula os três níveis com os globais lançando e afirma que o login conclui nos três (§4.2 — login em janela privada navega para a Visão Geral, sem tela branca e sem exceção não capturada no console)
 
 ## 2. Service worker (§4.3)
 

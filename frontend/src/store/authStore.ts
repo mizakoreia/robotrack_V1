@@ -92,11 +92,11 @@ function hydrate(): Pick<AuthState, 'isAuthenticated' | 'accessToken' | 'user' |
 function migrateLegacyToken(): void {
   try {
     if (safeStorage.get('local', SESSION_KEY) || safeStorage.get('session', SESSION_KEY)) return
-    const legacy = window.localStorage.getItem('access_token') || window.localStorage.getItem('token')
+    const legacy = safeStorage.get('local', 'access_token') || safeStorage.get('local', 'token')
     if (!legacy) return
     persistSession('local', legacy, null) // escreve a nova sessão primeiro
-    window.localStorage.removeItem('access_token')
-    window.localStorage.removeItem('token')
+    safeStorage.remove('local', 'access_token')
+    safeStorage.remove('local', 'token')
   } catch {
     /* armazenamento bloqueado: nada a migrar */
   }

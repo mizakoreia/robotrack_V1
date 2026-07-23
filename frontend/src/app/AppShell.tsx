@@ -16,6 +16,7 @@ import { useRealtime } from '@/hooks/useRealtime'
 import { performLogout } from '@/lib/auth/session'
 import { registerRevocationNavigator } from '@/lib/workspace/accessRevoked'
 import { ConnectionIndicator } from '@/components/realtime/ConnectionIndicator'
+import { StorageWarning } from '@/components/StorageWarning'
 
 // app-shell-navigation 4.1–4.5 (§3.10, D-F) — a casca PERSISTENTE. Sidebar de 3
 // destinos (ativo por preenchimento tintado + ícone em accent, NUNCA faixa
@@ -66,6 +67,8 @@ export function AppShell() {
           onOpenDrawer={() => setDrawerOpen(true)}
           onNavigate={(p) => navigate(p)}
         />
+        {/* aviso de armazenamento bloqueado (offline-pwa 1.3): só em session-only/memory-only */}
+        <StorageWarning />
         <main ref={mainRef} className="main flex-1 overflow-y-auto p-4">
           <Outlet />
         </main>

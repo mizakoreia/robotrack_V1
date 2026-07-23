@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
+import { zustandStorage } from '../lib/safeStorage'
 
 // design-system 4.2 (§5.1, D-DS-3) — o tema. Escuro é o PADRÃO na ausência de
 // `rt-theme` (o modo primário §5.1, o melhor sob luz de galpão); o claro só entra
@@ -21,15 +22,13 @@ export const useThemeStore = create<ThemeState>()(
     }),
     {
       name: 'rt-theme',
-      // workspace-settings 6.1 (§4.2) — armazenamento BLOQUEADO (modo privado)
-      // não pode derrubar o toggle: o persist do zustand NÃO captura o throw do
-      // setItem. Este wrapper degrada em silêncio — o tema troca na sessão e a
-      // preferência simplesmente não é lembrada (o painel Aparência avisa).
-      storage: createJSONStorage(() => ({
-        getItem: (k) => { try { return window.localStorage.getItem(k) } catch { return null } },
-        setItem: (k, v) => { try { window.localStorage.setItem(k, v) } catch { /* bloqueado */ } },
-        removeItem: (k) => { try { window.localStorage.removeItem(k) } catch { /* bloqueado */ } },
-      })),
+      // workspace-settings 6.1 (§4.2) + offline-pwa D7-11 — armazenamento
+      // BLOQUEADO (modo privado) não pode derrubar o toggle: o persist do zustand
+      // NÃO captura o throw do setItem. O adapter do safeStorage degrada em
+      // silêncio (fallback de memória) — o tema troca na sessão e a preferência
+      // simplesmente não é lembrada (o painel Aparência avisa). Um único caminho
+      // de storage, sem `window.localStorage` solto.
+      storage: createJSONStorage(() => zustandStorage('local')),
     },
   ),
 )

@@ -111,7 +111,6 @@ export const eventMap: Record<EventType, Mapper> = {
 export function keysForEvent(wsId: string, env: RealtimeEnvelope): QueryKey[] {
   const mapper = eventMap[env.type as EventType]
   if (!mapper) {
-    // eslint-disable-next-line no-console
     console.warn(`[realtime] tipo de evento desconhecido "${env.type}" — invalidando ['ws', ${wsId}] inteiro`)
     return [['ws', wsId]]
   }

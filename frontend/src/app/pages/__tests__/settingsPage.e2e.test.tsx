@@ -130,9 +130,13 @@ describe('SettingsPage — E2E de fechamento (6.4)', () => {
 describe('AppearancePanel — degradação (6.1)', () => {
   it('armazenamento bloqueado: avisa uma vez, sem exceção; toggle segue na sessão', async () => {
     const { AppearancePanel } = await import('@/features/settings/AppearancePanel')
+    const { resetStorageLevelCache } = await import('@/lib/safeStorage')
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new Error('blocked')
     })
+    // O painel lê o nível cacheado pela sonda de boot (offline-pwa 1.1); como
+    // este teste bloqueia o storage DEPOIS do boot, força a reclassificação.
+    resetStorageLevelCache()
     render(<AppearancePanel />)
     expect(screen.getByRole('status')).toHaveTextContent(/vale só nesta sessão/)
     fireEvent.click(screen.getByRole('button', { name: 'Claro' })) // não lança

@@ -58,6 +58,57 @@ export const safeStorage = {
   },
 }
 
+// ── Nível de degradação (offline-pwa D7-11) ────────────────────────────────
+// A sonda de boot classifica o meio ANTES da primeira renderização, síncrona,
+// para que a UI (aviso), a sessão (authStore) e a fila offline (G3+) saibam o
+// que podem prometer:
+//
+//   persistent   → localStorage grava e lê          → tudo ligado
+//   session-only → localStorage bloqueado, session OK → sessão morre ao fechar
+//                                                        a aba; fila em memória
+//   memory-only  → ambos bloqueados                  → adapter em memória; login
+//                                                        funciona; fila DESLIGADA
+//
+// IndexedDB NÃO entra aqui: o nível da SESSÃO é decidido por local/session. A
+// durabilidade da FILA (que exige IndexedDB) é refinada no grupo 3 — o nível
+// aqui só decide se a fila pode existir, não o esquema dela.
+export type StorageLevel = 'persistent' | 'session-only' | 'memory-only'
+
+function canUse(kind: StorageKind): boolean {
+  return realStorage(kind) !== null
+}
+
+let cachedLevel: StorageLevel | null = null
+
+export function probeStorageLevel(force = false): StorageLevel {
+  if (cachedLevel && !force) return cachedLevel
+  if (canUse('local')) cachedLevel = 'persistent'
+  else if (canUse('session')) cachedLevel = 'session-only'
+  else cachedLevel = 'memory-only'
+  return cachedLevel
+}
+
+// Para testes: recalcula na próxima chamada (os globais mockados mudam entre casos).
+export function resetStorageLevelCache(): void {
+  cachedLevel = null
+}
+
+// Adapter para o middleware `persist` do zustand sobre o safeStorage: assim o
+// tema (e qualquer store persistido) herda o try/catch e o fallback de memória
+// em vez de tocar `window.localStorage` direto — que LANÇA em modo privado e,
+// sem este wrapper, derrubaria o boot do store.
+export function zustandStorage(kind: StorageKind = 'local') {
+  return {
+    getItem: (name: string): string | null => safeStorage.get(kind, name),
+    setItem: (name: string, value: string): void => {
+      safeStorage.set(kind, name, value)
+    },
+    removeItem: (name: string): void => {
+      safeStorage.remove(kind, name)
+    },
+  }
+}
+
 // Handshake com o storage correndo contra um timeout (§3.1): o acesso ao storage
 // pode, em ambientes exóticos, pendurar. `withStorageTimeout` garante que o fluxo
 // de login prossiga em no máximo `ms` — se estourar, resolve `false` (o chamador

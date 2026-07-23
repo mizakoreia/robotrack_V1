@@ -59,7 +59,6 @@ export function UsersPage() {
 
   useEffect(() => {
     fetchUsers()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, perPage, type, q])
 
   useEffect(() => {

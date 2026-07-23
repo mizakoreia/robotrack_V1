@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { Button } from '@/components/ui/Button'
 import { settingsText as T } from '@/lib/i18n/settings'
 import { useThemeStore } from '@/store/themeStore'
+import { probeStorageLevel } from '@/lib/safeStorage'
 
 // workspace-settings 6.1 (§5.1, §4.2, D-DS-3) — o painel Aparência sobre o
 // themeStore existente. Escuro é o PADRÃO e o tema NUNCA deriva do sistema
@@ -9,25 +10,15 @@ import { useThemeStore } from '@/store/themeStore'
 // `useTheme` (claro = `.light` na raiz; escuro é o `:root` — a convenção JÁ
 // ENTREGUE, não a "classe dark" do texto da tarefa).
 //
-// Degradação (§4.2): com o armazenamento bloqueado (modo privado), o zustand
-// persist não grava — o toggle segue funcionando NA SESSÃO. Detectamos com um
-// probe try/catch (sem exceção no console) e avisamos UMA vez, no painel.
-
-function storageBlocked(): boolean {
-  try {
-    const k = '__rt_probe__'
-    window.localStorage.setItem(k, '1')
-    window.localStorage.removeItem(k)
-    return false
-  } catch {
-    return true
-  }
-}
+// Degradação (§4.2 / D7-11): com o armazenamento bloqueado (modo privado), o
+// zustand persist não grava — o toggle segue funcionando NA SESSÃO. O nível vem
+// da sonda única do safeStorage (não de um probe local): `persistent` grava a
+// preferência; qualquer outro nível avisa que o tema vale só nesta sessão.
 
 export function AppearancePanel() {
   const theme = useThemeStore((s) => s.theme)
   const setTheme = useThemeStore((s) => s.setTheme)
-  const blocked = useMemo(storageBlocked, [])
+  const blocked = useMemo(() => probeStorageLevel() !== 'persistent', [])
 
   return (
     <section aria-labelledby="appearance-panel-title" className="space-y-3">
