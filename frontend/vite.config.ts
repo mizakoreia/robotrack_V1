@@ -1,9 +1,36 @@
-import { defineConfig } from 'vite'
+import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
+import fs from 'fs'
+import { createHash } from 'crypto'
+
+// offline-pwa 2.4 — injeta o CACHE_NAME do build no service worker. O sw.js vive
+// em public/ e é copiado cru para dist/ pelo Vite; aqui reescrevemos a cópia do
+// dist trocando o placeholder `__CACHE_NAME__` por `robotrack-cache-<hash>`,
+// onde o hash deriva do conteúdo do build. Cada deploy → cache novo → o
+// `activate` do SW apaga o anterior. Roda só no build (não afeta dev/testes).
+function swCacheName(): Plugin {
+  let cacheName: string | undefined
+  return {
+    name: 'robotrack-sw-cache-name',
+    apply: 'build',
+    generateBundle(_options, bundle) {
+      const material = Object.keys(bundle).sort().join('|')
+      const hash = createHash('sha256').update(material).digest('hex').slice(0, 12)
+      cacheName = `robotrack-cache-${hash}`
+    },
+    closeBundle() {
+      const swPath = path.resolve(__dirname, 'dist/sw.js')
+      if (cacheName && fs.existsSync(swPath)) {
+        const src = fs.readFileSync(swPath, 'utf8').replace('__CACHE_NAME__', cacheName)
+        fs.writeFileSync(swPath, src)
+      }
+    },
+  }
+}
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), swCacheName()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
