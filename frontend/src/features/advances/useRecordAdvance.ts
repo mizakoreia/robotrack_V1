@@ -48,6 +48,11 @@ export function useRecordAdvance(robotId: string) {
   const queryClient = useQueryClient()
 
   return useMutation<RecordAdvanceResult, unknown, RecordAdvanceVars>({
+    // realtime-collaboration 6.2 — a `mutationKey` no ESCOPO do robô é o que o
+    // gate usa para represar um evento de terceiro que chegue enquanto este POST
+    // está em voo (intersecta `['ws',w,'robot',r]` e `…,'tasks']`), evitando o
+    // flicker 60→40→60 na tabela.
+    mutationKey: qk.robot(wsId ?? '_', robotId),
     mutationFn: (vars) =>
       taskAdvancesApi.create(vars.taskId, {
         id: vars.id,

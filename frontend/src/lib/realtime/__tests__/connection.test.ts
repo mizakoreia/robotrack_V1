@@ -51,7 +51,10 @@ describe('RealtimeClient (5.1)', () => {
     })
     fetchTicket = vi.fn(async () => 'TICKET123')
     invalidateQueries = vi.fn()
-    queryClient = { invalidateQueries } as unknown as QueryClient
+    queryClient = {
+      invalidateQueries,
+      getMutationCache: () => ({ getAll: () => [], subscribe: () => () => {} }),
+    } as unknown as QueryClient
   })
 
   const client = () =>

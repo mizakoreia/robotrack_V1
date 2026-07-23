@@ -18,8 +18,13 @@ interface RealtimeState {
   transport: TransportState
   lastSeq: Record<string, number>
   originId: string
+  // realtime-collaboration 6.3 — `false` quando o represamento estourou o teto de
+  // 30s (a tela atualizou mas ADMITE que pode estar dessincronizada). Lido pelo
+  // indicador da topbar (7.3): degradação HONESTA, não mentira indefinida.
+  synced: boolean
   setTransport: (s: TransportState) => void
   noteSeq: (wsId: string, seq: number) => void
+  setSynced: (v: boolean) => void
   reset: () => void
 }
 
@@ -35,8 +40,10 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
   transport: 'connecting',
   lastSeq: {},
   originId: makeOriginId(),
+  synced: true,
 
   setTransport: (transport) => set({ transport }),
+  setSynced: (synced) => set({ synced }),
 
   // Só AVANÇA — um envelope fora de ordem (reconexão parcial do ActionCable) não
   // pode fazer o `since` retroceder e re-pedir o que já veio.
@@ -47,5 +54,5 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
 
   // Troca de workspace / logout: zera transporte e seqs (o `originId` da aba
   // sobrevive — é identidade da aba, não do workspace).
-  reset: () => set({ transport: 'connecting', lastSeq: {} }),
+  reset: () => set({ transport: 'connecting', lastSeq: {}, synced: true }),
 }))

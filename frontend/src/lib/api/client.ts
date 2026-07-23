@@ -1,6 +1,7 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios'
 import { useWorkspaceStore } from '../../store/workspaceStore'
 import { useAuthStore } from '../../store/authStore'
+import { useRealtimeStore } from '../../store/realtimeStore'
 import { queryClient } from '../queryClient'
 
 export const API_URL = import.meta.env.VITE_API_URL || (() => {
@@ -67,6 +68,11 @@ class ApiClient {
           if (workspaceId) {
             config.headers['X-Workspace-Id'] = workspaceId
           }
+          // realtime-collaboration 6.1 / D6.4 — a ABA que originou a mutação. O
+          // publisher copia para o envelope e o cliente descarta o próprio eco por
+          // ele: quem registrou 40→60 não recebe refetch de si mesmo (a tela fica
+          // em 60 em vez de piscar). Não é fronteira de segurança — é anti-flicker.
+          config.headers['X-RoboTrack-Origin'] = useRealtimeStore.getState().originId
         }
         return config
       },

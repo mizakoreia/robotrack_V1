@@ -105,20 +105,20 @@
 
 ## 6. Convivência com otimista e fila offline
 
-- [ ] 6.1 Injetar `X-RoboTrack-Origin` no axios de `lib/api/client.ts` e descartar no
+- [x] 6.1 Injetar `X-RoboTrack-Origin` no axios de `lib/api/client.ts` e descartar no
   cliente envelope cujo `origin_id` seja o da própria aba.
   (§Req. otimista — quem registrou 40→60 não recebe refetch do próprio eco e a tela
   permanece em 60.)
-- [ ] 6.2 Implementar o gate de represamento: invalidação cuja chave intersecta a
+- [x] 6.2 Implementar o gate de represamento: invalidação cuja chave intersecta a
   `mutationKey` de mutação em voo entra em fila por entidade e drena no `onSettled`
   (sucesso **ou** erro).
   (§Req. otimista — evento de terceiro durante POST em voo não faz a UI piscar 60→40→60; e
   um 409 de `lock_version` (§2.4) drena a fila em vez de deixá-la presa para sempre.)
-- [ ] 6.3 Consumir `hasPendingFor(kind, id)` da fila offline de `offline-pwa` (D7) no mesmo
+- [x] 6.3 Consumir `hasPendingFor(kind, id)` da fila offline de `offline-pwa` (D7) no mesmo
   gate, e aplicar o teto de 30 s de represamento marcando a tela como não-sincronizada.
   (§Req. otimista — avanço parado no IndexedDB represa a invalidação; passados 30 s a tela
   atualiza **e** admite que não está sincronizada, em vez de mentir indefinidamente.)
-- [ ] 6.4 Testes de integração (Vitest + Testing Library) dos 5 cenários de
+- [x] 6.4 Testes de integração (Vitest + Testing Library) dos 5 cenários de
   `Requirement: Evento não reverte interface`, capturando os valores renderizados ao longo
   do tempo.
   (Verificação do grupo 6 — o teste falha se a sequência renderizada contiver 40 depois de

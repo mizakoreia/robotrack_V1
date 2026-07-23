@@ -4,6 +4,7 @@ import { cableTicketsApi } from '../api/endpoints'
 import { useRealtimeStore } from '../../store/realtimeStore'
 import { keysForEvent, type RealtimeEnvelope } from './eventMap'
 import { InvalidationQueue } from './invalidationQueue'
+import { InvalidationGate, type OfflinePendingProbe } from './invalidationGate'
 
 // realtime-collaboration 5.1 / D6.1, D6.8 — o cliente de conexão. Sequência:
 // pega o TICKET (Bearer → ticket de 60s), abre o consumer em `/cable?ticket=`,
@@ -38,6 +39,8 @@ export interface RealtimeClientDeps {
   fetchTicket?: () => Promise<string>
   wsUrl?: string
   intervalMs?: number
+  // D7 (offline-pwa): contrato injetável; default vazio até a fila offline existir.
+  offlineProbe?: OfflinePendingProbe
 }
 
 function cableUrl(base: string, ticket: string): string {
@@ -66,7 +69,15 @@ export class RealtimeClient {
     this.createConsumer = deps.createConsumer ?? ((url) => railsCreateConsumer(url) as unknown as ConsumerLike)
     this.fetchTicket = deps.fetchTicket ?? (() => cableTicketsApi.create().then((r) => r.ticket))
     this.wsUrl = deps.wsUrl ?? WS_URL
-    this.queue = new InvalidationQueue(this.queryClient, deps.intervalMs)
+    // O gate represa invalidações que colidem com mutação em voo / fila offline
+    // (6.2/6.3); o teto de 30s marca a tela como não-sincronizada (6.3).
+    const gate = new InvalidationGate(this.queryClient, deps.offlineProbe)
+    this.queue = new InvalidationQueue(this.queryClient, {
+      intervalMs: deps.intervalMs,
+      gate,
+      onCeilingBreach: () => useRealtimeStore.getState().setSynced(false),
+      onFullyDrained: () => useRealtimeStore.getState().setSynced(true),
+    })
   }
 
   // (Re)assina o workspace `wsId`, descartando qualquer assinatura anterior.
@@ -108,11 +119,18 @@ export class RealtimeClient {
   }
 
   private onEnvelope(env: RealtimeEnvelope): void {
-    // Envelope de outro workspace (assinatura em teardown) é descartado. O
-    // descarte do PRÓPRIO eco por `origin_id` é do G6 (precisa do header no axios).
+    // Envelope de outro workspace (assinatura em teardown) é descartado.
     if (!env || env.workspace_id !== this.wsId) return
 
+    // O `seq` avança MESMO no eco próprio — a reconciliação não pode ficar para
+    // trás só porque fui eu quem mutou.
     useRealtimeStore.getState().noteSeq(env.workspace_id, env.seq)
+
+    // realtime-collaboration 6.1 / D6.4 — descarta o PRÓPRIO eco: quem originou já
+    // aplicou a mutação (otimista) e reconcilia pela resposta HTTP; refetchar aqui
+    // é o flicker auto-infligido 60→40→60. Mata a maioria absoluta dos flickers.
+    if (env.origin_id && env.origin_id === useRealtimeStore.getState().originId) return
+
     this.queue.enqueue(keysForEvent(env.workspace_id, env))
   }
 
