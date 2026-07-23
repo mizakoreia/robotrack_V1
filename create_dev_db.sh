@@ -52,14 +52,19 @@ fi
 # LÊ O ARQUIVO database.yml
 # =============================================
 
+# database.yml agora usa `url:` (DATABASE_URL) em vez de host/database/username/
+# password soltos (delivery-and-observability 1.3). Lê a URL do bloco development
+# (resolvendo o ENV.fetch com o mesmo default) e a decompõe.
 read_yaml() {
-  ruby -ryaml -e "
-cfg = YAML.load_file('$CONFIG_PATH')
-dev = cfg['development']
-host = dev['host'] || 'localhost'
-db = dev['database']
-user = dev['username']
-pass = dev['password']
+  ruby -ryaml -ruri -rerb -e "
+raw = ERB.new(File.read('$CONFIG_PATH')).result
+cfg = YAML.safe_load(raw, aliases: true)
+url = cfg.dig('development', 'url') or abort('development.url ausente em database.yml')
+u = URI.parse(url)
+host = (u.host && !u.host.empty?) ? u.host : 'localhost'
+db = u.path.sub(%r{^/}, '')
+user = u.user
+pass = u.password
 puts [host, db, user, pass].join('|')
 "
 }

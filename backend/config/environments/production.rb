@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative '../env_schema'
+
 Robotrack::Application.configure do
   # Performance
   config.cache_classes = true
@@ -10,7 +12,7 @@ Robotrack::Application.configure do
 
   # Cache (Redis)
   config.cache_store = :redis_cache_store, {
-    url: ENV.fetch('REDIS_URL', 'redis://localhost:6379/1'),
+    url: EnvSchema.fetch('REDIS_URL'),
     namespace: 'cache_prod',
     reconnect_attempts: 1
   }
@@ -31,7 +33,7 @@ Robotrack::Application.configure do
   config.public_file_server.enabled = ENV['RAILS_SERVE_STATIC_FILES'].present?
 
   # SSL e segurança
-  config.force_ssl = ENV.fetch('FORCE_SSL', 'true') == 'true'
+  config.force_ssl = EnvSchema.fetch('FORCE_SSL') == 'true'
   config.action_dispatch.default_headers = {
     'X-Content-Type-Options' => 'nosniff',
     'X-Frame-Options' => 'DENY',
@@ -39,10 +41,9 @@ Robotrack::Application.configure do
   }
 
   # Action Cable (WebSocket)
-  config.action_cable.url = ENV.fetch('ACTION_CABLE_URL', 'wss://example.com/cable')
-  config.action_cable.allowed_request_origins = ENV
-                                                .fetch('CORS_ORIGINS', 'https://example.com')
-                                                .split(',')
+  config.action_cable.url = EnvSchema.fetch('ACTION_CABLE_URL')
+  config.action_cable.allowed_request_origins =
+    (EnvSchema.fetch('CORS_ORIGINS') || 'https://example.com').split(',')
 
   # I18n fallback
   config.i18n.fallbacks = true
@@ -50,5 +51,5 @@ Robotrack::Application.configure do
   # Deprecations
   config.active_support.report_deprecations = false
 
-  config.action_dispatch.cookies_same_site_protection = ENV.fetch('COOKIES_SAME_SITE', 'lax').to_sym
+  config.action_dispatch.cookies_same_site_protection = EnvSchema.fetch('COOKIES_SAME_SITE').to_sym
 end
