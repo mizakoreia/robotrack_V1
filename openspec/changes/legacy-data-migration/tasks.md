@@ -90,23 +90,34 @@
 
 ## 3. Pré-processador estrutural (§4.4)
 
-- [ ] 3.1 Implementar em `Legacy::NormalizeExportService` a promoção de
+- [x] 3.1 Implementar em `Legacy::NormalizeExportService` a promoção de
   `workspace.projects` e `workspace.logs` a coleções de topo com `workspaceId`, removendo
   as chaves aninhadas. (§4.4 — busca por `"projects"`/`"logs"` dentro do objeto
   `workspace` do canônico deve não encontrar nada, e 120 logs aninhados viram 120 de topo,
   não 0 e não 240.)
-- [ ] 3.2 Implementar no-op para entrada já canônica (`schemaVersion: 1`), emissão de
+- [x] 3.2 Implementar no-op para entrada já canônica (`schemaVersion: 1`), emissão de
   `schemaVersion` como primeira chave, atomicidade por temporário+rename, e exigência de
   `ownerUid`. (D-LDM-1 — falha na entrada 2 de 3 não pode deixar arquivo parcial em disco;
   `normalize` duas vezes tem de dar SHA-256 idêntico.)
-- [ ] 3.3 Remover o sentinela `"Não Atribuído"` de `workspace.responsibles`, de todo
+- [x] 3.3 Remover o sentinela `"Não Atribuído"` de `workspace.responsibles`, de todo
   `assignees` e de `resp` na normalização (primeira das três camadas de D-LDM-3), e expor
   `rake legacy:normalize[entrada,saida]` com relatório de `migracoes_aplicadas`. (D11,
   §4.4 — `["Não Atribuído","Ana","Bruno"]` sai como `["Ana","Bruno"]`; export já novo
   reporta `0` migrações em vez de reaplicar.)
-- [ ] 3.4 **Verificação**: spec que normaliza `raw_nested.json`, valida a saída contra o
+      *(ENTREGUE — `Legacy::NormalizeExportService` + `rake legacy:normalize[entrada,saida]`.
+      Idempotência SEM canonicalização profunda: só as chaves de topo e de `workspace` têm
+      ordem fixada; o conteúdo aninhado passa preservando a ordem (`merge` no lugar), então
+      `raw→a→b` dá SHA-256 idêntico. `scrub_task` só toca `assignees`/`resp` que a tarefa
+      DECLARA (não injeta chave nova). Relatório: `migracoes_aplicadas` (promoções
+      estruturais), `sentinela_removido`, `entrada_ja_canonica`.)*
+- [x] 3.4 **Verificação**: spec que normaliza `raw_nested.json`, valida a saída contra o
   schema, normaliza de novo e compara SHA-256. (D-LDM-1 — prova de execução única sem
   nenhum estado mutável de migração.)
+      *(ENTREGUE — `normalize_spec` (9 ex., verde): promoção estrutural 2 migrações,
+      formato-já-de-topo 0 migrações, `schemaVersion` 1ª chave, saída valida no schema,
+      `ownerUid` ausente aborta / propagado, sentinela sai de responsibles+assignees+resp,
+      log sem `ts` aborta SEM deixar saída nem temporário (atomicidade), e SHA-256 de
+      `a.json`==`b.json` com a 2ª rodada reportando `entrada_ja_canonica: true`.)*
 
 ## 4. Núcleo do importador: identidade e idempotência
 
