@@ -170,6 +170,81 @@ describe('quality-and-accessibility (contraste) — regra F: campo nativo tem fu
   })
 })
 
+describe('regra G: botão do SHELL não reusa nome de botão de outra tela', () => {
+  // O shell (AppShell) é co-visível com TODA tela. Um botão novo lá que reuse um
+  // nome já existente cria dois controles de MESMO nome acessível na mesma tela,
+  // com ações diferentes — leitor de tela ouve o mesmo rótulo duas vezes, e o
+  // usuário clica no errado. Foi exatamente o que aconteceu com "Convidar pessoa"
+  // (atalho na topbar + botão do painel de Equipe). Estático e de baixo ruído: só
+  // compara o shell contra o resto, não todos contra todos (botões de mesmo nome
+  // em telas que NUNCA coexistem — "Cancelar", "Fechar" — são legítimos).
+  const SHELL = 'app/AppShell.tsx'
+
+  // Os rótulos vivem em `lib/i18n/*` (D14), então o botão do painel é
+  // `<Button>{inviteText.inviteTitle}</Button>` — comparar só literais não veria
+  // nada. Resolvemos chave→valor para o sweep enxergar o nome REAL.
+  const I18N = new Map<string, string>()
+  for (const f of ALL.filter((x) => x.path.startsWith('lib/i18n/'))) {
+    for (const m of f.src.matchAll(/^\s{2,}([a-zA-Z][\w]*):\s*(['"])(.+?)\2\s*,?\s*$/gm)) {
+      I18N.set(m[1], m[3])
+    }
+  }
+
+  // Nomes acessíveis de botão: aria-label (literal ou `{ns.key}`) e o filho de
+  // <Button> (literal ou `{ns.key}`).
+  function buttonNames(src: string): Set<string> {
+    const names = new Set<string>()
+    const add = (raw: string | undefined) => {
+      if (!raw) return
+      const v = raw.trim()
+      const ref = v.match(/^\{?\s*\w+\.(\w+)\s*\}?$/)
+      const resolved = ref ? I18N.get(ref[1]) : v
+      if (resolved) names.add(resolved)
+    }
+    for (const m of src.matchAll(/aria-label=(?:["']([^"']+)["']|\{\s*([\w.]+)\s*\})/g)) add(m[1] ?? m[2])
+    for (const m of src.matchAll(/<Button[^>]*>\s*(\{[\w.]+\}|[A-ZÀ-Ü][^<>{}\n]{2,40}?)\s*<\/Button>/g)) add(m[1])
+    return names
+  }
+
+  // Exceção DOCUMENTADA: o shell esconde o atalho quando você já está no destino
+  // (`!onTeamScreen`), então os dois botões NUNCA coexistem. A permissão vale
+  // enquanto essa guarda existir — o teste abaixo a verifica.
+  const ALLOW = new Map([['Convidar pessoa', 'atalho da topbar some em /configuracoes/equipe']])
+
+  it('nenhum nome de botão do AppShell aparece como botão em outro arquivo', () => {
+    const shell = ALL.find((f) => f.path === SHELL)
+    expect(shell, `${SHELL} não encontrado`).toBeTruthy()
+    const shellNames = buttonNames(shell!.src)
+
+    const offenders: string[] = []
+    for (const f of ALL) {
+      if (f.path === SHELL || f.path.startsWith('components/campfire/')) continue
+      for (const name of buttonNames(f.src)) {
+        if (shellNames.has(name) && !ALLOW.has(name)) offenders.push(`"${name}" (${f.path})`)
+      }
+    }
+    expect(
+      offenders,
+      `nome de botão do shell reusado (dois controles de mesmo nome na mesma tela): ${offenders.join(', ')}`,
+    ).toEqual([])
+  })
+
+  it('a exceção de "Convidar pessoa" só vale porque o shell a esconde no destino', () => {
+    const shell = ALL.find((f) => f.path === SHELL)!.src
+    // Se alguém remover a guarda de rota, a exceção acima vira mentira.
+    expect(/onTeamScreen\s*=\s*pathname\.startsWith\('\/configuracoes\/equipe'\)/.test(shell)).toBe(true)
+    expect(/canManage\s*&&\s*!onTeamScreen/.test(shell)).toBe(true)
+  })
+
+  it('o sweep MORDE: resolve i18n e pega nome duplicado', () => {
+    // Prova sintética (o repo real está limpo): a chave resolve para o mesmo
+    // rótulo do shell, exatamente o defeito de "Convidar pessoa".
+    const nomes = buttonNames('<Button onClick={x}>{inviteText.inviteTitle}</Button>')
+    expect(nomes.has('Convidar pessoa')).toBe(true) // resolveu via i18n, não literal
+    expect(buttonNames('<button aria-label="Abrir menu" />').has('Abrir menu')).toBe(true)
+  })
+})
+
 describe('quality-and-accessibility 4.1 — regra E: nada de outline-none INCONDICIONAL', () => {
   // `outline-none` cru (sem `focus-visible:`/`focus:`) remove o foco em TODO estado,
   // inclusive teclado — foco invisível sob luz de galpão. O anel do componente deve

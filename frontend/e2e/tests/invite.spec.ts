@@ -18,16 +18,23 @@ test.describe('Fluxo 1 — convite (duas sessões)', () => {
     guestPage,
   }) => {
     // — Dono: cria o convite `edit` pela UI e pega o link —
+    // Ancorado na região "Equipe": o shell tem um ATALHO de mesmo nome na topbar
+    // (que se esconde nesta rota, mas ancorar é a regra depois de 4 rodadas de
+    // locator ambíguo — nome global casa o que a UI ganhar amanhã).
     await ownerPage.goto('/configuracoes/equipe')
-    await ownerPage.getByRole('button', { name: 'Convidar pessoa' }).click()
-    await ownerPage.getByLabel('E-mail').fill(SEED.guest.email)
-    await ownerPage.getByLabel('Papel').selectOption({ label: 'Pode editar' })
-    await ownerPage.getByRole('button', { name: 'Gerar link de convite' }).click()
+    const equipe = ownerPage.getByRole('region', { name: 'Equipe' })
+    await equipe.getByRole('button', { name: 'Convidar pessoa' }).click()
 
-    // `exact: true`: getByLabel casa por SUBSTRING, e a lista de convites pendentes
-    // tem um input "Link do convite: <email>" — dois elementos com o mesmo value,
-    // ambiguidade que aparece quando a lista já renderizou (corrida, não navegador).
-    const inviteUrl = await ownerPage.getByRole('textbox', { name: 'Link do convite', exact: true }).inputValue()
+    // Campos ancorados NO DIÁLOGO: `getByLabel('Papel')` casava por substring o
+    // `aria-label="Alterar papel: <nome>"` das linhas de membro.
+    const dialogo = ownerPage.getByRole('dialog', { name: 'Convidar pessoa' })
+    await dialogo.getByLabel('E-mail').fill(SEED.guest.email)
+    await dialogo.getByLabel('Papel').selectOption({ label: 'Pode editar' })
+    await dialogo.getByRole('button', { name: 'Gerar link de convite' }).click()
+
+    // Ancorado no diálogo + `exact: true`: a lista de pendentes tem um input
+    // "Link do convite: <email>", que casaria por substring numa busca global.
+    const inviteUrl = await dialogo.getByRole('textbox', { name: 'Link do convite', exact: true }).inputValue()
     expect(inviteUrl).toContain('/convite/')
     // Navega pelo CAMINHO (relativo ao front), não pela URL absoluta: o backend
     // monta o link a partir de APP_URL, que no E2E pode não ser a origem do front.

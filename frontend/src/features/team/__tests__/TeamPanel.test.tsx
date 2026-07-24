@@ -84,6 +84,30 @@ describe('TeamPanel', () => {
     expect(screen.getAllByRole('button', { name: 'Revogar' })).toHaveLength(2)
   })
 
+  // O atalho "Convidar pessoa" da topbar leva a `?convidar=1`: o rótulo promete
+  // convidar, então o formulário abre na chegada (um clique, não dois) — e o botão
+  // do painel some enquanto o diálogo está aberto, então nunca há dois controles
+  // de mesmo nome na tela.
+  it('com ?convidar=1 o formulário já abre e o botão do painel some', async () => {
+    comoPapel('owner')
+    // `window.location` é um URL mockado no setup (não há history real); a busca
+    // é escrita direto nele.
+    window.location.search = '?convidar=1'
+    renderPanel()
+
+    expect(await screen.findByRole('dialog', { name: 'Convidar pessoa' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Convidar pessoa' })).toBeNull()
+  })
+
+  it('sem o parâmetro, o formulário fica fechado (só o botão)', async () => {
+    comoPapel('owner')
+    window.location.search = ''
+    renderPanel()
+
+    expect(await screen.findByRole('button', { name: 'Convidar pessoa' })).toBeInTheDocument()
+    expect(screen.queryByRole('dialog', { name: 'Convidar pessoa' })).toBeNull()
+  })
+
   it('o DONO não tem controles: seu papel é imutável e removê-lo é irrecuperável', async () => {
     comoPapel('owner')
     renderPanel()

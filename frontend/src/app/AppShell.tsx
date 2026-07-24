@@ -85,6 +85,7 @@ export function AppShell() {
         <Topbar
           role={role}
           saveState={saveState}
+          pathname={location.pathname}
           onOpenDrawer={() => setDrawerOpen(true)}
           onNavigate={(p) => navigate(p)}
         />
@@ -200,17 +201,20 @@ function Sidebar({
 function Topbar({
   role,
   saveState,
+  pathname,
   onOpenDrawer,
   onNavigate,
 }: {
   role: string | null
   saveState: ReturnType<typeof selectSaveState>
+  pathname: string
   onOpenDrawer: () => void
   onNavigate: (path: string) => void
 }) {
   // As ações de conta (tema/sair) moraram aqui num segundo menu; agora vivem no
   // card de usuário da sidebar (canto inferior esquerdo), menu único de conta.
   const canManage = role === 'owner' || role === 'edit'
+  const onTeamScreen = pathname.startsWith('/configuracoes/equipe')
 
   return (
     <header className="surface-panel z-sticky flex h-14 items-center gap-3 border-b px-3">
@@ -237,14 +241,20 @@ function Topbar({
       {/* Convidar pessoa: AÇÃO de gestão, não item escondido num menu. Só para
           quem gerencia (o servidor recusa os demais de qualquer forma — isto é
           não oferecer o que seria negado). Rótulo some abaixo de md; o
-          `aria-label` mantém o nome acessível no estado só-ícone. */}
-      {canManage && (
+          `aria-label` mantém o nome acessível no estado só-ícone.
+
+          ATALHO, não navegação nua: leva à Equipe com `?convidar=1`, que abre o
+          formulário — o rótulo promete convidar, então convida (um clique, não
+          dois). E o atalho DESAPARECE quando já se está na Equipe: um atalho para
+          a tela em que você está é ruído, e era o que punha DOIS botões de mesmo
+          nome na mesma tela (o do painel e este). */}
+      {canManage && !onTeamScreen && (
         <Button
           type="button"
           variant="outline"
           size="sm"
           aria-label="Convidar pessoa"
-          onClick={() => onNavigate('/configuracoes/equipe')}
+          onClick={() => onNavigate('/configuracoes/equipe?convidar=1')}
         >
           <Icon name="plus" size="sm" />
           <span className="ml-1.5 hidden md:inline">Convidar pessoa</span>

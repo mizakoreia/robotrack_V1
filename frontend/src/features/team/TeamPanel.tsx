@@ -30,7 +30,14 @@ export function TeamPanel() {
   const roleLabel = useWorkspaceStore((s) => s.currentRoleLabel)
   const isOwner = roleLabel === 'owner'
   const queryClient = useQueryClient()
-  const [dialogAberto, setDialogAberto] = useState(false)
+  // `?convidar=1` — o atalho da topbar CUMPRE o que o rótulo promete: cai aqui
+  // com o formulário JÁ ABERTO, em vez de exigir um segundo clique num botão de
+  // mesmo nome. Lido UMA vez do location (não `useSearchParams`): este painel é
+  // montável fora de um Router (`workspace-settings` o embute), e exigir contexto
+  // de rota para um estado inicial acoplaria o componente sem ganho.
+  const [dialogAberto, setDialogAberto] = useState(
+    () => new URLSearchParams(typeof window === 'undefined' ? '' : window.location.search).get('convidar') === '1',
+  )
 
   const members = useQuery({
     queryKey: ['ws', wsId, 'members'],
