@@ -16,6 +16,27 @@ class AuditLog
   module ImmutabilityGuard
     module_function
 
+    # true se ESTE processo ATENDE tráfego de runtime (conecta como robotrack_app),
+    # onde a imutabilidade importa. Migração/console/rake/suite conectam como o DONO
+    # (UPDATE legítimo) e devem devolver false para o boot NÃO abortar.
+    #
+    #   web    → `bundle exec puma`    → basename($0) == 'puma'  ← ramo do BUG 11
+    #   worker → `bundle exec sidekiq` → Sidekiq.server?
+    #   dev    → `rails server`        → defined?(Rails::Server)
+    #
+    # O ramo `puma` é o conserto do BUG 11: em produção o web sobe por `bundle exec
+    # puma`, que NUNCA define `Rails::Server` (só `rails server` o faz). Sem ele o
+    # guard ficava inerte justo no processo que atende TODAS as escritas. Argumentos
+    # injetáveis só para o teste; em runtime lê os sinais reais do processo.
+    def runtime_server_process?(program_name: $PROGRAM_NAME,
+                                sidekiq_server: (defined?(Sidekiq) && Sidekiq.server?),
+                                rails_server: defined?(Rails::Server))
+      return true if rails_server
+      return true if sidekiq_server
+
+      File.basename(program_name.to_s) == 'puma'
+    end
+
     # true se o papel corrente enxerga UPDATE sobre audit_logs (= subiu como dono).
     def violated?(connection = ActiveRecord::Base.connection)
       return false if connection.select_value("SELECT to_regclass('public.audit_logs')::text").nil?

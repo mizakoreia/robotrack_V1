@@ -45,6 +45,34 @@ RSpec.describe 'audit_logs — esquema e imutabilidade', :tenancy, type: :reques
     end
   end
 
+  # REGRESSÃO do BUG 11: o guard só chama enforce! num processo de RUNTIME. A
+  # detecção antiga (`defined?(Rails::Server)`) NÃO casava o web de produção, que
+  # sobe por `bundle exec puma` — então o guard ficava inerte justo no processo que
+  # atende TODAS as escritas. Nenhum dos 1443 exemplos bootava puma em produção, por
+  # isso escapou. Aqui a detecção é injetável e provamos os quatro caminhos.
+  describe 'ImmutabilityGuard.runtime_server_process? (BUG 11 — detecção de processo)' do
+    def detect(program:, sidekiq: false, rails_server: false)
+      AuditLog::ImmutabilityGuard.runtime_server_process?(
+        program_name: program, sidekiq_server: sidekiq, rails_server: rails_server
+      )
+    end
+
+    it 'RECONHECE o web de produção (bundle exec puma) — o caminho que o BUG 11 ignorava' do
+      expect(detect(program: '/app/vendor/bundle/ruby/3.2.0/bin/puma')).to be(true)
+    end
+
+    it 'reconhece o worker (Sidekiq.server?) e o dev (rails server)' do
+      expect(detect(program: 'sidekiq', sidekiq: true)).to be(true)
+      expect(detect(program: 'bin/rails', rails_server: true)).to be(true)
+    end
+
+    it 'IGNORA migração/console/rake (conectam como o dono, com UPDATE legítimo)' do
+      expect(detect(program: 'bin/rails')).to be(false) # console/db:migrate
+      expect(detect(program: 'rake')).to be(false)
+      expect(detect(program: 'rspec')).to be(false)
+    end
+  end
+
   describe 'INSERT legítimo, NOT NULL e roteamento de partição (2.1/2.2)' do
     it 'workspace_id é NOT NULL no esquema e um INSERT sem ele é recusado' do
       not_nullable = conn.select_value(<<~SQL)
