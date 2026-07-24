@@ -29,6 +29,19 @@ export function useWorkspaceIndex() {
       .getState()
       .setWorkspaces(data.map((w) => ({ id: w.id, name: w.name, role: w.role })))
 
+    // PRIMEIRA CARGA (localStorage vazio, D9 só persiste o id): sem corrente, nada
+    // seleciona o workspace e o cliente fica SEM tenant — o `X-Workspace-Id` não vai
+    // em request nenhuma (client.ts só o envia se houver id), a RLS não abre e o dono
+    // aparece "Somente leitura" (badge sem fallback). Auto-seleciona o PRÓPRIO
+    // (role === 'owner'), caindo para o primeiro — o mesmo idioma de accessRevoked
+    // ("volta ao próprio"). BUG 13, exposto pelo fix do BUG 6 (o usuário novo agora
+    // ganha um workspace e chega a esta tela).
+    if (!currentId && data.length > 0) {
+      const proprio = data.find((w) => w.role === 'owner') ?? data[0]
+      useWorkspaceStore.getState().selectWorkspace(proprio.id)
+      return
+    }
+
     // 5.7 — o corrente não está mais no índice: descarte + volta ao próprio.
     if (currentId && !data.some((w) => w.id === currentId)) {
       handleAccessRevoked(currentId)
