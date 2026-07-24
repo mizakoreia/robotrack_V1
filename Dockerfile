@@ -38,7 +38,13 @@ FROM backend-base AS backend-prod
 
 # delivery-and-observability 2.1: app é API-only (sem pipeline de assets), roda
 # como usuário NÃO-root e expõe um HEALTHCHECK de liveness. `curl` para a sonda.
-RUN apk add --no-cache curl && \
+# `bash` é OBRIGATÓRIO: o Procfile de produção declara `release: bin/release`, e
+# `bin/release` (como `bin/backup_users`) tem shebang `#!/usr/bin/env bash` e usa
+# `set -euo pipefail` — sem bash a fase de release do deploy morre em `exit 127`
+# (`env: can't execute 'bash'`), pego pelo smoke de staging (§4.1). O `ash`/busybox
+# do Alpine não serve: seu suporte a `pipefail` é frágil entre versões. Alinha com
+# o estágio backend-dev, que já instala bash.
+RUN apk add --no-cache bash curl && \
     addgroup -S app && adduser -S app -G app
 
 COPY backend/ .
