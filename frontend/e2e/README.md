@@ -16,6 +16,27 @@ sempre do backend (`rt:seed:e2e[cenario]`, UUIDs fixos), nunca da UI.
   interações antes do 1º `expect` (6.3). Roda com `npm run e2e:lint`.
 - `tests/smoke.spec.ts` — smoke do harness (build carrega, SW registra, duas
   sessões distintas).
+- `tests/invite.spec.ts` — Fluxo 1 slice 1 (convite ponta a ponta, duas sessões).
+- `tests/advance.spec.ts` — Fluxo 1 slice 2 (membro `edit` registra avanço 40→50).
+
+## Uma semente para a suíte INTEIRA
+
+`rt:seed:e2e[convite]` semeia TRÊS usuários de propósito:
+
+| Usuário | Papel no WS-E2E | Serve a |
+|---|---|---|
+| `owner@e2e…` | dono | quem convida |
+| `guest@e2e…` | **NÃO-membro** | o spec do convite (ele é convidado no teste) |
+| `member@e2e…` | membro `edit` | o spec do avanço (já pode escrever) |
+
+Com um usuário só, um dos dois specs teria de rodar contra outro estado de banco —
+ou depender da ORDEM de execução, que é acoplamento. A fixture expõe
+`ownerPage`/`guestPage`/`memberPage`.
+
+**Quem é convidado/membro precisa ENTRAR no workspace do dono**: a primeira carga
+auto-seleciona o workspace PRÓPRIO (`role === 'owner'`). Use
+`entrarNoWorkspace(page, SEED.workspace.id)` — é o que o aceite do convite faz em
+produção.
 
 ## Como rodar (na WSL, com Docker + navegador)
 
@@ -34,7 +55,7 @@ npm run build && npx vite preview --port 4173 &   # front prod em :4173
 #     nenhuma chamada do app passa: o WorkspaceContext cai em "Recarregar".)
 
 # 3. semear o estado E2E determinístico (contra o robotrack_e2e)
-cd ../backend && bundle exec rails 'rt:seed:e2e[base]'      # ou [convite]
+cd ../backend && bundle exec rails 'rt:seed:e2e[convite]'   # serve a suíte inteira
 
 # 4. rodar
 cd ../frontend
@@ -72,6 +93,32 @@ Para CI determinístico / demo+E2E lado a lado (follow-up): buildar o bundle E2E
 `VITE_API_URL` apontando para outra porta (ex.: `:3001`) + um segundo backend
 dedicado ao `robotrack_e2e`, e setar `E2E_API_URL` para a mesma origem. Aí não há
 troca manual nem colisão na `:3000`. Decisão do operador — hoje a troca manual serve.
+
+## Recriar o banco entre rodadas
+
+Os fluxos MUTAM estado (convite consumido, avanço registrado), então cada rodada
+começa de um banco novo. **Se um backend estiver rodando contra ele, `DROP DATABASE`
+falha em silêncio** (conexões abertas) e a rodada seguinte parte do estado antigo —
+o teste então reprova por um motivo que não é o dele. Termine as conexões primeiro:
+
+```bash
+psql -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname='robotrack_e2e';"
+psql -c "DROP DATABASE IF EXISTS robotrack_e2e;"
+psql -c "CREATE DATABASE robotrack_e2e OWNER robotrack_migrator;"
+PGTZ=UTC RAILS_ENV=test DATABASE_URL=<migrator@robotrack_e2e> bundle exec rails db:schema:load
+psql -d robotrack_e2e -f backend/db/roles.sql
+```
+
+## Chromium pré-instalado (container de dev)
+
+Onde o Chromium é gerenciado fora do Playwright (`PLAYWRIGHT_BROWSERS_PATH`) e a
+revisão não bate com a que esta versão baixaria, aponte o binário:
+
+```bash
+E2E_CHROMIUM_PATH=/opt/pw-browsers/chromium-<rev>/chrome-linux/chrome E2E_BASE_URL=http://localhost:4173 npx playwright test --project=chromium
+```
+
+Sem a variável o comportamento é o padrão (WSL/CI usam o browser do Playwright).
 
 ## Handoff (WSL) — o que só o navegador fecha
 

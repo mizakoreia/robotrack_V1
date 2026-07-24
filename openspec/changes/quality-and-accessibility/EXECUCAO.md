@@ -302,3 +302,39 @@ para "Recarregar"). Default passou a incluir `:4173`; procedimento no `e2e/READM
 
 **As 4 correções de UI (sino, dashboard→/, card clicável, slider do modal) o par
 CONFIRMOU no app vivo** (Chromium real). Só o harness estava quebrado, não o produto.
+
+### Fluxo 1 slice 2 + o E2E rodando NO CONTAINER (Chromium)
+
+**Descoberta que destravou a frente:** a WSL só é necessária para **Docker e
+WebKit**. Chromium está pré-instalado aqui, então o loop E2E inteiro (build de
+produção + `vite preview` + backend contra `robotrack_e2e` + Playwright) roda no
+container. Único ajuste: `E2E_CHROMIUM_PATH` no `playwright.config.ts`, porque a
+revisão gerenciada em `PLAYWRIGHT_BROWSERS_PATH` não é a que esta versão baixaria
+(sem a variável, o comportamento é o padrão — WSL/CI intocados).
+
+**Slice 1 (convite) VALIDADA aqui**, em Chromium: os consertos de locator ambíguo
+(região `Equipe` + diálogo) e o atalho da topbar estão verdes sem depender do par.
+
+**Slice 2 ENTREGUE** (`e2e/tests/advance.spec.ts`): o membro `edit` leva a tarefa de
+40% a 50% pela UI nova (arrasta o slider, **solta** → a observação abre com o valor
+solto), comenta, registra, e o valor **sobrevive ao reload** (é servidor, não estado
+de tela). O reload mora no MESMO teste de propósito: um teste separado dependeria da
+ordem de execução para o avanço existir, e ordem entre testes é acoplamento.
+
+**Uma semente para a suíte inteira.** `rt:seed:e2e[convite]` passou a semear TRÊS
+usuários: `owner` (convida), `guest` **não-membro** (é quem o spec do convite
+convida) e `member` (já `edit`, é quem o spec do avanço usa). Com um usuário só, um
+dos dois specs teria de rodar contra outro estado de banco — ou depender da ordem.
+`[avanco]` fica como alias. Fixture ganhou `memberPage` e o helper
+`entrarNoWorkspace` (quem é membro do workspace de OUTRO precisa chegar com ele
+selecionado — a primeira carga escolhe o PRÓPRIO, fix do BUG 13).
+
+**Armadilha registrada:** com um backend conectado, `DROP DATABASE` falha em
+SILÊNCIO e a rodada seguinte parte do estado antigo — o teste reprova por um motivo
+que não é o dele. Termine as conexões (`pg_terminate_backend`) antes. Está no
+`frontend/e2e/README.md`.
+
+**Estado:** suíte E2E **4/4 em Chromium** (smoke 2 + convite 1 + avanço 1), em
+paralelo, contra banco recriado. **7.1 segue `[ ]`**: faltam o convite `view` com
+controle desabilitado + `PATCH` forjado 403, e o token no redirect do Google; e o
+WebKit é confirmação do par.

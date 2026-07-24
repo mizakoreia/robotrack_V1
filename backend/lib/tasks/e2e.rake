@@ -19,6 +19,7 @@ namespace :rt do
       case scenario
       when 'base' then E2eSeed.base!
       when 'convite' then E2eSeed.convite!
+      when 'avanco' then E2eSeed.convite! # alias: a semente do fluxo 1 serve os dois specs
       else abort("[rt:seed:e2e] cenário desconhecido: '#{scenario}' (conhecidos: base, convite)")
       end
       puts "[rt:seed:e2e] cenário '#{scenario}' pronto."
@@ -37,6 +38,14 @@ module E2eSeed
     id: '0e2e0000-0000-4000-8000-000000000002',
     name: 'Convidado E2E', email: 'guest@e2e.robotrack.local', password: 'e2e-guest-pw-2026'
   }.freeze
+  # Terceiro usuário: JÁ é membro `edit`. Existe para a suíte rodar INTEIRA com UMA
+  # semente — o spec do convite exige um convidado NÃO-membro, e o spec do avanço
+  # exige alguém que já possa escrever. Com um usuário só, um dos dois teria de
+  # rodar contra outro estado de banco (ou depender da ordem, que é acoplamento).
+  MEMBER = {
+    id: '0e2e0000-0000-4000-8000-000000000003',
+    name: 'Membro E2E', email: 'member@e2e.robotrack.local', password: 'e2e-member-pw-2026'
+  }.freeze
   WORKSPACE = { id: '0e2e0000-0000-4000-8000-0000000000a1', name: 'WS-E2E' }.freeze
 
   # Hierarquia mínima do cenário [convite]: 1 projeto → 1 célula → 1 robô → 1 tarefa
@@ -52,10 +61,13 @@ module E2eSeed
   # para o dono convidar o convidado (edit) e o convidado registrar um avanço.
   def convite!
     owner = ensure_user(OWNER)
-    ensure_user(GUEST)
+    ensure_user(GUEST) # NÃO vira membro: é quem o spec do convite convida
+    member = ensure_user(MEMBER)
     ensure_workspace(owner)
     ensure_hierarchy(owner)
-    puts "[rt:seed:e2e] convite: task=#{TASK[:id]} @#{TASK[:progress]}% em #{ROBOT[:name]}/#{CELL[:name]}/#{PROJECT[:name]}"
+    ensure_membership(owner, member, 'edit') # já membro: é quem o spec do avanço usa
+    puts "[rt:seed:e2e] fluxo1: task=#{TASK[:id]} @#{TASK[:progress]}% em #{ROBOT[:name]}; " \
+         "#{GUEST[:email]} NÃO-membro (convite), #{MEMBER[:email]} membro edit (avanço)"
   end
 
   # RECUSA cair num banco que não seja dedicado a E2E. O par rodou `rt:seed:e2e`
@@ -119,6 +131,28 @@ module E2eSeed
         'INSERT INTO people (id, workspace_id, name, email, user_id) ' \
         "VALUES (gen_random_uuid(), #{q(WORKSPACE[:id])}, #{q(OWNER[:name])}, " \
         "#{q(OWNER[:email])}, #{q(owner.id)}) ON CONFLICT DO NOTHING"
+      )
+    end
+  end
+
+  # Membership + Person do convidado, idempotente. `ON CONFLICT DO NOTHING` sem
+  # alvo: `people` tem TRÊS índices únicos por workspace (e-mail, user_id, nome) e
+  # um alvo nomeado cobriria só um — qualquer colisão significa "já existe".
+  def ensure_membership(owner, member, role)
+    ::Tenant.with(workspace_id: WORKSPACE[:id], user_id: owner.id) do
+      conn = ::ActiveRecord::Base.connection
+      conn.exec_update(
+        'INSERT INTO people (id, workspace_id, name, email, user_id) ' \
+        "VALUES (gen_random_uuid(), #{q(WORKSPACE[:id])}, #{q(member.name)}, " \
+        "#{q(member.email)}, #{q(member.id)}) ON CONFLICT DO NOTHING"
+      )
+      person_id = conn.select_value(
+        "SELECT id FROM people WHERE workspace_id = #{q(WORKSPACE[:id])} AND user_id = #{q(member.id)}"
+      )
+      conn.exec_update(
+        'INSERT INTO memberships (id, workspace_id, user_id, person_id, role, created_at, updated_at) ' \
+        "VALUES (gen_random_uuid(), #{q(WORKSPACE[:id])}, #{q(member.id)}, #{q(person_id)}, " \
+        "#{q(role)}, now(), now()) ON CONFLICT DO NOTHING"
       )
     end
   end

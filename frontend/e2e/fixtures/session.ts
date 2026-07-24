@@ -81,6 +81,19 @@ export async function authenticatedContext(
   return context
 }
 
+// Entra num workspace específico SEM clicar no seletor (D-QA-2: estado vem do
+// seed/fixture, não da UI). Necessário para quem é CONVIDADO: a primeira carga
+// auto-seleciona o workspace PRÓPRIO (`role === 'owner'`), então um membro que vai
+// trabalhar no workspace de outro precisa chegar com ele já escolhido — que é o que
+// o aceite do convite faz em produção. Formato = o do `persist` do workspaceStore.
+export async function entrarNoWorkspace(page: Page, workspaceId: string): Promise<void> {
+  await page.goto('/')
+  await page.evaluate(
+    (id) => localStorage.setItem('workspace', JSON.stringify({ state: { currentWorkspaceId: id }, version: 0 })),
+    workspaceId,
+  )
+}
+
 // 6.1 — falha IMEDIATA se o service worker não registrar. Afirma pela PÁGINA
 // (`navigator.serviceWorker.ready`), NÃO por `browserContext.serviceWorkers()`:
 // esta última é documentada como Chromium-only e devolve lista vazia no WebKit
@@ -108,8 +121,10 @@ export async function assertServiceWorkerRegistered(page: Page): Promise<void> {
 export const test = base.extend<{
   ownerContext: BrowserContext
   guestContext: BrowserContext
+  memberContext: BrowserContext
   ownerPage: import('@playwright/test').Page
   guestPage: import('@playwright/test').Page
+  memberPage: import('@playwright/test').Page
 }>({
   ownerContext: async ({ browser, baseURL }, use) => {
     const ctx = await authenticatedContext(browser, SEED.owner, baseURL)
@@ -120,6 +135,14 @@ export const test = base.extend<{
     const ctx = await authenticatedContext(browser, SEED.guest, baseURL)
     await use(ctx)
     await ctx.close()
+  },
+  memberContext: async ({ browser, baseURL }, use) => {
+    const ctx = await authenticatedContext(browser, SEED.member, baseURL)
+    await use(ctx)
+    await ctx.close()
+  },
+  memberPage: async ({ memberContext }, use) => {
+    await use(await memberContext.newPage())
   },
   ownerPage: async ({ ownerContext }, use) => {
     await use(await ownerContext.newPage())

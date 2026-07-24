@@ -109,7 +109,7 @@ está em `/opt/rbenv/versions/3.2.3` COM as gems instaladas (`bundle check` ok, 
 |---|---|
 | Backend `rspec` (INTEIRA, como `robotrack_app`) | **1382 / 0** na onda anterior; a migração legada somou **+56 specs** (`spec/legacy` **53/0** + guards de audit/tenancy re-rodados) → ~**1438**. A suíte INTEIRA não foi re-rodada nesta sessão (Postgres instável); o raio das mudanças de banco — `spec/{tenancy,audit,progress,db}` — passou **337/0** |
 | Frontend `vitest run` | **555 / 0** (96 arquivos) — a rodada de UI/UX somou os testes de sino, primeira carga de workspace, card clicável, atalho de convite e as regras F/G do sweep. `e2e/**` é EXCLUÍDO do vitest (roda sob `@playwright/test`) |
-| E2E `@playwright/test` (Chromium + WebKit, na WSL) | `smoke.spec` **4/4**; `invite.spec` (Fluxo 1, slice 1) em validação — ver `frontend/e2e/README.md` |
+| E2E `@playwright/test` | **4/4 em Chromium RODANDO NO CONTAINER** (smoke 2 + convite 1 + avanço 1), contra banco `robotrack_e2e` recriado. A WSL só é necessária para **Docker e WebKit** — Chromium está pré-instalado aqui (`E2E_CHROMIUM_PATH`). Runbook: `frontend/e2e/README.md` |
 | Frontend `tsc --noEmit` (build) / `npm run lint` | limpos |
 | Guarda de import em teste (`typecheck:test-imports`) | limpo (reprova `TS2307`) |
 
@@ -464,10 +464,12 @@ suíte rodar como root). `validate --strict` OK. Tudo na `main` (`4e9a3f5`).
   devDependency do frontend; o seed determinístico é `rt:seed:e2e[base|convite]`
   (`backend/lib/tasks/e2e.rake`, UUIDs fixos, com guarda que RECUSA banco sem
   `e2e`/`test` no nome). Runbook: **`frontend/e2e/README.md`**.
-  As **11 abertas**: os 5 fluxos (7.1-7.7 — **7.1 está na slice 1**, o núcleo do
-  convite; faltam +10 do convidado, convite `view` + PATCH forjado 403, e o token no
-  redirect do Google), gate `@axe-core/playwright` (5.6), E2E de teclado (4.4),
-  auditor de alvo de toque (5.5), INP com 24 cards (8.5).
+  As **11 abertas**: os 5 fluxos (7.1-7.7 — **7.1 nas slices 1 e 2**: convite ponta a
+  ponta + o membro registrando avanço, ambas VERDES em Chromium; faltam o convite
+  `view` com controle desabilitado + `PATCH` forjado 403 e o token no redirect do
+  Google), gate `@axe-core/playwright` (5.6), E2E de teclado (4.4), auditor de alvo de
+  toque (5.5), INP com 24 cards (8.5). **Tudo isso roda em Chromium AQUI** — só o
+  WebKit e o pipeline de CI dependem de fora.
   **Handoff que resta:** pipeline de CI. E a topologia: demo e E2E **não coexistem**
   hoje (o bundle embute a origem da API em build time) — caminho para CI
   determinístico anotado no `e2e/README.md`.

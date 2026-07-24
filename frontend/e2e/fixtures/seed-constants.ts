@@ -29,6 +29,15 @@ export const SEED = {
     email: 'guest@e2e.robotrack.local',
     password: 'e2e-guest-pw-2026',
   },
+  // Terceiro usuário: JÁ é membro `edit` do workspace do dono. A suíte roda
+  // INTEIRA com UMA semente — o spec do convite precisa de um convidado
+  // NÃO-membro, o do avanço de alguém que já escreve.
+  member: {
+    id: '0e2e0000-0000-4000-8000-000000000003',
+    name: 'Membro E2E',
+    email: 'member@e2e.robotrack.local',
+    password: 'e2e-member-pw-2026',
+  },
   // Workspace do dono (id do cliente — D1 — para o bootstrap abrir o próprio
   // contexto de RLS ao criá-lo).
   workspace: {
@@ -43,6 +52,7 @@ export const SEED = {
 } as const satisfies {
   owner: SeededUser
   guest: SeededUser
+  member: SeededUser
   workspace: { id: string; name: string }
   project: { id: string; name: string }
   cell: { id: string; name: string }
