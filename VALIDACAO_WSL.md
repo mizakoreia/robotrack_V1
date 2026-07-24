@@ -53,8 +53,11 @@ psql -U postgres -f db/roles.sql            # cria papéis + grants (idempotente
 MIG_DEV="postgres://robotrack_migrator:mig_dev_pw@localhost/robotrack_dev"
 MIG_TEST="postgres://robotrack_migrator:mig_dev_pw@localhost/robotrack_test"
 bundle install
-RAILS_ENV=development DATABASE_URL=$MIG_DEV  bundle exec rails db:migrate
-RAILS_ENV=test        DATABASE_URL=$MIG_TEST bundle exec rails db:migrate
+# PGTZ=UTC é OBRIGATÓRIO numa WSL com timezone local: sem ele o db:migrate re-dumpa o
+# structure.sql com os bounds das partições de audit_logs renderizados no offset local
+# (ex.: -03) em vez de +00, sujando ~4 linhas da árvore (falso "dirty" no git status).
+PGTZ=UTC RAILS_ENV=development DATABASE_URL=$MIG_DEV  bundle exec rails db:migrate
+PGTZ=UTC RAILS_ENV=test        DATABASE_URL=$MIG_TEST bundle exec rails db:migrate
 # Se recriar papéis depois, REAPLIQUE db/roles.sql (a recriação apaga grants).
 ```
 
@@ -115,6 +118,18 @@ bash scripts/staging_smoke.sh
 
 Se o smoke reprovar, os logs saem no fim (`docker compose logs web release`).
 
+> **Nota de fidelidade (o que este smoke NÃO prova).** O `docker-compose.staging.yml` sobe o
+> Postgres com `POSTGRES_USER: robotrack_app`, e a imagem oficial cria esse usuário como
+> **SUPERUSER**. Logo, no smoke o `robotrack_app` é superusuário, o `bin/release` migra como
+> ele (não como `robotrack_migrator`) e a **RLS forçada + separação de papéis NÃO é
+> exercitada** (superuser bypassa RLS). O smoke prova LIVENESS (imagem builda/roda não-root,
+> release migra sob lock, `/health/ready = 200`) — a postura de segurança (RLS, papel
+> não-superuser) é provada pela suíte `rspec` (que roda como `robotrack_app` sob RLS), não
+> aqui. **Decisão em aberto:** aceitar o staging como smoke de liveness (atual) OU fazê-lo
+> espelhar prod (init com `db/roles.sql`: `robotrack_migrator` dono + `robotrack_app`
+> não-superuser, release migrando como migrator). A 2ª opção é uma tarefa própria, não um
+> ajuste de uma linha — decidir com o dono antes de mexer.
+
 ### 4.2 Service worker num navegador REAL (offline-pwa G2)
 
 O SW só registra em produção. Aqui você vê o network-first, a purga de cache e o
@@ -135,17 +150,31 @@ No Chrome, abra `http://localhost:4173`:
 
 ### 4.3 Headers de cache do nginx (delivery-and-observability 3.3)
 
-O `frontend/nginx.conf` é a config do bundle no CDN. Rode um nginx local com ela:
+O `frontend/nginx.conf` é a config do bundle no CDN. Rode um nginx local com ela.
+
+⚠️ **`--add-host backend:127.0.0.1` é OBRIGATÓRIO** e **NÃO use `--rm`.** O `nginx.conf:25`
+tem `upstream backend { server backend:3000; }` e o nginx resolve host de upstream **no
+parse do config** (não sob demanda). No `docker-compose` existe o host `backend`; num
+`docker run` avulso NÃO — sem o `--add-host` o nginx aborta no boot
+(`[emerg] host not found in upstream "backend:3000"`), o `curl` só dá *connection refused*,
+e com `--rm` o container some antes de você ler o log. O `nginx.conf` está CORRETO; é só o
+procedimento standalone que precisa do apelido de host.
 
 ```bash
-docker run --rm -p 8080:80 \
+docker run -d --name rt-nginx-smoke -p 8080:80 \
+  --add-host backend:127.0.0.1 \
   -v "$PWD/frontend/nginx.conf:/etc/nginx/nginx.conf:ro" \
   -v "$PWD/frontend/dist:/usr/share/nginx/html:ro" \
   nginx:alpine
+# se algum curl der "connection refused", o nginx morreu no parse — leia o motivo:
+#   docker logs rt-nginx-smoke
 
 curl -sI http://localhost:8080/sw.js        | grep -i cache-control   # no-store
 curl -sI http://localhost:8080/index.html   | grep -i cache-control   # no-store
 curl -sI http://localhost:8080/assets/<algum-hash>.js | grep -i cache-control  # immutable, 1 ano
+curl -sI http://localhost:8080/api/v1/health | grep -i cache-control  # no-store (mesmo no 502, via `always`)
+
+docker rm -f rt-nginx-smoke   # limpeza
 ```
 
 ### 4.4 Isolamento de Redis por função + guarda de topologia (delivery-and-observability 3.x)
@@ -153,17 +182,31 @@ curl -sI http://localhost:8080/assets/<algum-hash>.js | grep -i cache-control  #
 Suba 3 instâncias/dbs de Redis e prove que o guarda de boot aborta quando duas
 funções colidem:
 
+`APP_URL` é OBRIGATÓRIO nos dois casos: sem ela o boot morre ANTES, em
+`AppUrl::MissingConfiguration` (`app/lib/app_url.rb`), e o caso positivo nem chega a provar
+que a topologia separada é aceita (o negativo passaria "por sorte", só porque o guarda de
+Redis dispara antes do de APP_URL).
+
 ```bash
-# guarda deve ABORTAR o boot em produção quando cache e fila apontam para o mesmo lugar:
 cd backend
-RAILS_ENV=production \
-  DATABASE_URL=$MIG_DEV SECRET_KEY_BASE=x ACTION_CABLE_URL=ws://x CORS_ORIGINS=http://x \
+BASE_ENV='RAILS_ENV=production DATABASE_URL='"$MIG_DEV"' SECRET_KEY_BASE=x
+  ACTION_CABLE_URL=ws://x CORS_ORIGINS=http://x APP_URL=https://app.example.com METRICS_TOKEN=x'
+
+# CASO NEGATIVO — cache e fila no MESMO (host,porta,db): o guarda ABORTA o boot.
+env $BASE_ENV \
   REDIS_CACHE_URL=redis://localhost:6379/1 \
   REDIS_QUEUE_URL=redis://localhost:6379/1 \
   REDIS_CABLE_URL=redis://localhost:6379/3 \
-  METRICS_TOKEN=x \
   bundle exec rails runner 'puts "NÃO deveria chegar aqui"'
-# esperado: "[boot abortado] topologia de Redis insegura ... resolvem para o mesmo (host, porta, db)"
+# esperado: "[boot abortado] topologia de Redis insegura ... resolvem para o mesmo (host, porta, db)" (exit 1)
+
+# CONTROLE POSITIVO — 3 dbs distintos: o boot é ACEITO.
+env $BASE_ENV \
+  REDIS_CACHE_URL=redis://localhost:6379/1 \
+  REDIS_QUEUE_URL=redis://localhost:6379/2 \
+  REDIS_CABLE_URL=redis://localhost:6379/3 \
+  bundle exec rails runner 'puts "BOOT OK"'
+# esperado: "BOOT OK" (exit 0) — sem o controle positivo, você não provou que a separação é aceita.
 ```
 
 ### 4.5 Broadcast multi-processo do ActionCable (realtime 3.4 / delivery 3.4)
