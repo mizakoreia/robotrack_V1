@@ -89,6 +89,22 @@ describe('a regra dura do comentário', () => {
     expect(api.create.mock.calls[0][1].comment).toBeUndefined()
   })
 
+  it('mover o SLIDER do modal define o valor enviado no Registrar (slider respeitado)', async () => {
+    const client = newClient()
+    seed(client, task({ progress: 45, lock_version: 0 }))
+    api.create.mockResolvedValue({ advance: {}, task: task({ progress: 60 }), replay: false })
+    renderControls(client)
+
+    fireEvent.click(screen.getByLabelText('+10%')) // abre o modal (para 55)
+    // arrasta o slider DENTRO do modal (não o campo numérico) para 60
+    fireEvent.change(screen.getByLabelText('Ajustar progresso alvo'), { target: { value: '60' } })
+    fireEvent.change(screen.getByLabelText(/Comentário/), { target: { value: 'faltou aterrar' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Registrar' }))
+
+    await waitFor(() => expect(api.create).toHaveBeenCalledTimes(1))
+    expect(api.create.mock.calls[0][1]).toMatchObject({ progress: 60 }) // o valor do slider, não os 55 iniciais
+  })
+
   it('45 → 60 sem comentário: confirmar BLOQUEADO e nada é enviado', () => {
     const client = newClient()
     seed(client, task({ progress: 45 }))

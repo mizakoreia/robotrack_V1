@@ -154,15 +154,39 @@ export function AdvanceModal({
               <label className="mt-3 block text-sm" htmlFor="avanco-para">
                 {advanceText.toFieldLabel}
               </label>
-              <input
-                id="avanco-para"
-                type="number"
-                min={0}
-                max={100}
-                value={to}
-                onChange={(e) => setTo(clampProgress(Number(e.target.value)))}
-                className="mt-1 w-24 rounded-md border bg-background px-3 py-2 text-sm"
-              />
+              {/* Slider DENTRO do modal: ajusta o mesmo `to` que o Registrar envia,
+                  então o valor arrastado aqui é o que vale. O campo numérico
+                  continua para valor exato; ambos escrevem em `to`. */}
+              <div className="mt-1 flex items-center gap-3">
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  step={5}
+                  value={to}
+                  aria-label={advanceText.toSliderLabel}
+                  onChange={(e) => setTo(clampProgress(Number(e.target.value)))}
+                  className="flex-1 touch-pan-y"
+                />
+                <input
+                  id="avanco-para"
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={to}
+                  onChange={(e) => setTo(clampProgress(Number(e.target.value)))}
+                  className="w-20 rounded-md border border-input bg-bg-main px-3 py-2 text-sm text-text-main"
+                />
+                <span
+                  className="w-10 text-sm tabular-nums text-text-muted"
+                  role="progressbar"
+                  aria-valuenow={to}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                >
+                  {to}%
+                </span>
+              </div>
             </>
           )}
 
