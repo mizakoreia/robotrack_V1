@@ -266,8 +266,9 @@ pipeline de CI nem o harness Playwright. Os E2E de offline/realtime foram entreg
 como INTEGRAÇÃO (RTL/`fake-indexeddb`); a versão Chromium+WebKit precisa do harness
 Playwright, que é justamente o que essa wave CONSTRÓI. Ou seja: rodar na WSL não a
 completa — ela é trabalho de implementação (com o Playwright que a WSL viabiliza),
-não uma validação. `legacy-data-migration` segue BLOQUEADA até o
-`RoboTrack_Database.json` ser fornecido.
+não uma validação. `legacy-data-migration` foi construída (36/38) e FECHADA COMO
+DORMENTE (o sistema começa do zero, sem dado legado a migrar) — não há corte a rodar
+e o `RoboTrack_Database.json` não será fornecido; nada a validar na WSL.
 
 ---
 

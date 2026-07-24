@@ -1,4 +1,4 @@
-# Continuidade — estado em 23/07/2026 (atualizado ao fim da sessão de validação+q&a)
+# Continuidade — estado em 24/07/2026 (atualizado ao fim da sessão da migração legada)
 
 Ponto de retomada do porte. Para uma sessão nova de agente, o prompt de partida
 está em [PROMPT DE RETOMADA](#prompt-de-retomada), no fim.
@@ -7,7 +7,7 @@ está em [PROMPT DE RETOMADA](#prompt-de-retomada), no fim.
 
 **Mudou desde as ondas iniciais: não é mais empilhamento de branches.** Agora:
 
-- Todo o trabalho vive em `main` — **`main` é a versão mais atual** (tip `72f0847`).
+- Todo o trabalho vive em `main` — **`main` é a versão mais atual** (tip `4e9a3f5`).
 - O desenvolvimento acontece na branch de feature
   `claude/robotrack-task-catalog-tc-g3-6os4vm`, que é **fast-forwarded para `main`
   a cada grupo** e empurrada. No momento a feature e `main` apontam para o MESMO
@@ -19,14 +19,21 @@ está em [PROMPT DE RETOMADA](#prompt-de-retomada), no fim.
   apagadas, MAS o `git push origin --delete` está bloqueado pelo classificador de
   permissão do ambiente — apagar pela UI do GitHub ou liberar a permissão Bash.
 
-> **23 de 24 changes 100% COMPLETAS** (0 tarefas abertas). Em andamento:
+> **24 de 25 changes COMPLETAS.** A única em andamento é
 > `quality-and-accessibility` — **25/39 tarefas fechadas** (todo o delta que fecha
 > SEM navegador: G0 reconciliação, G1 fundação de teste, G2 i18n, G3 contraste,
 > G4 foco, G5 leitor de tela, e G8 perf 8.2/8.4 + 8.1/8.3/8.6 reconciliadas). As
 > **14 restantes são G-B — o harness Playwright + os 5 fluxos E2E + gate axe-core +
 > INP + E2E de teclado + auditor de toque** (browser-gated). Chromium roda AQUI, mas
 > WebKit + pipeline de CI são handoff — ver a seção "quality-and-accessibility".
-> `legacy-data-migration` segue **BLOQUEADA** (falta `RoboTrack_Database.json`).
+>
+> `legacy-data-migration` foi **CONSTRUÍDA (36/38) e FECHADA COMO DORMENTE** nesta
+> sessão: o dono confirmou que o sistema novo **começa do zero, sem dado legado a
+> migrar** — então 8.6/8.7 (o corte real) são **NÃO-APLICÁVEL** e nunca rodam. O código
+> fica isolado em `Legacy::*` (dead-code testado contra fixtures, custo zero); reabrir só
+> se surgir uma fonte de dados a importar. Duas peças ficaram no schema compartilhado
+> (harmless): as tabelas `legacy_import_runs`/`legacy_id_map` e o `event_type`
+> `legacy_rollback` em `audit_logs`.
 
 ## Suítes (estado atual, na `main` — RODADAS INTEIRAS, não mais dirigidas)
 
@@ -36,7 +43,7 @@ está em `/opt/rbenv/versions/3.2.3` COM as gems instaladas (`bundle check` ok, 
 
 | Suíte | Resultado |
 |---|---|
-| Backend `rspec` (INTEIRA, como `robotrack_app`) | **1382 / 0** (8 pending; com `raise_on_missing_translations` ligado) |
+| Backend `rspec` (INTEIRA, como `robotrack_app`) | **1382 / 0** na onda anterior; a migração legada somou **+56 specs** (`spec/legacy` **53/0** + guards de audit/tenancy re-rodados) → ~**1438**. A suíte INTEIRA não foi re-rodada nesta sessão (Postgres instável); o raio das mudanças de banco — `spec/{tenancy,audit,progress,db}` — passou **337/0** |
 | Frontend `vitest run` | **537 / 0** (93 arquivos) |
 | Frontend `tsc --noEmit` (build) / `npm run lint` | limpos |
 | Guarda de import em teste (`typecheck:test-imports`) | limpo (reprova `TS2307`) |
@@ -71,7 +78,7 @@ está em `/opt/rbenv/versions/3.2.3` COM as gems instaladas (`bundle check` ok, 
 >   "Unverified". O e-mail JÁ é `noreply@anthropic.com` — limitação de ambiente. O
 >   stop-hook avisa toda vez; não há ação a tomar.
 
-## Changes concluídas (22 de 24)
+## Changes concluídas (24 de 25; a 25ª, `quality-and-accessibility`, está 25/39)
 
 `seal-template-baseline`, `workspace-tenancy`, `identity-and-auth`,
 `workspace-invitations` (anteriores) e:
@@ -332,41 +339,49 @@ está em `/opt/rbenv/versions/3.2.3` COM as gems instaladas (`bundle check` ok, 
   com pendências antigas → 0 alertas — o modo de falha desta capacidade) + regra de lint
   proibindo `new Notification(` fora do hook único. Retenção `Notification.purgeable` (o
   cron mora em D11).
+- **`legacy-data-migration`** (G0..G8, **36/38 — DORMENTE/não-aplicável**) — o porte do
+  legado (PWA+Firestore) para o Postgres, construído e testado contra fixtures sintéticas,
+  depois **fechado como não-aplicável** (o dono confirmou: começa do zero, sem dado a
+  migrar). Tudo isolado em `Legacy::*`: `NormalizeExportService` (pré-processador §4.4
+  idempotente, SHA-256 estável), `IdDerivation` (UUIDv5 do caminho legado — idempotência na
+  PK, `ON CONFLICT (id) DO NOTHING`, nunca `DO UPDATE`), `ImportService` (orquestrador das ~8
+  entidades + as 3 regras de §1.4: cascata de responsáveis com `assignees:[]` parando,
+  `obs`→avanço legado com `recorded_at` do arquivo, coerência status↔progresso), quarentena
+  sem afrouxar constraint, `AssigneeResolver` (ponto único de `Person`, sentinela morto em 3
+  camadas, homônimo por caixa colapsa/por acento avisa), `SampleValidator` (oráculo §2.1 em
+  Ruby puro vs `progress_cache`, tolerância zero, amostra adversarial ≥20), `BackupService`
+  (`pg_dump -Fc`), `RollbackService` (desfaz só o run — ARQUIVA a hierarquia porque
+  `task_advances`/`audit_logs` são imutáveis) + os rakes `legacy:{normalize,import,validate_
+  sample,rollback}` e o runbook `backend/docs/runbooks/legacy-cutover.md`. **Reconciliações
+  no EXECUCAO §G5:** membership não é criada (falta o mapa Firebase→user Rails); homônimos na
+  mesma célula são DESAMBIGUADOS (`R05`→`R05 (2)`) por causa do índice único D-H8; exportador
+  de §3.11 emite v2 e o importador só aceita v1 (divergência anotada). **Deixou no schema**
+  (harmless): `legacy_import_runs`/`legacy_id_map` + `event_type` `legacy_rollback`. **8.6/8.7
+  = NÃO-APLICÁVEL** (não há `RoboTrack_Database.json`; nunca haverá).
 
 Cada change tem seu `openspec/changes/<nome>/EXECUCAO.md` com o mapa de grupos, as
 decisões tomadas na execução, as armadilhas encontradas e a CONCLUSÃO com o relatório
 final. **Leia o EXECUCAO.md antes de tocar no código de uma change.**
 
-## Onde parou: validação na WSL + 8 defeitos corrigidos + q&a até 25/39
+## Onde parou: `legacy-data-migration` construída G0..G8 e fechada como dormente
 
-Esta sessão fez três coisas, nesta ordem:
+Esta sessão construiu a `legacy-data-migration` inteira **grupo a grupo** (G0 reconciliação
+→ G1 contrato de arquivo → G2 infra/backup/rollback → G3 normalize → G4 identidade+
+idempotência → G5 importadores+fim-a-fim → G6 provas das 3 regras → G7 provas do sentinela →
+G8 dry-run/sha256/schemaVersion/validador §2.1/runbook), cada grupo com specs verdes, um
+commit `G<n>:` e ff para `main`. Chegou a **36/38** (só 8.6/8.7 dependiam do export real).
 
-**1. Validou as 5 waves da sessão anterior na WSL** (o ambiente com Docker/navegador
-que fecha os handoffs). A WSL rodou a suíte INTEIRA e expôs 8 defeitos reais que os
-runs dirigidos-por-capacidade não pegavam — todos corrigidos e verificados AQUI
-(agora que a suíte inteira roda no container):
-  - Dockerfile base `ruby:3.2.0`→`3.2.3` (o build prod abortava, exit 18);
-  - policy de notificação (doubles `person_id`→`recipient_person_id`);
-  - tripwire de realtime (`Notification` sem `RealtimePublishable` → `realtime_publishes`);
-  - contrato D-H6 (dropou FKs de hierarquia de `notifications`, migration `20260724100003`);
-  - cobertura cross-tenant (`/workspaces/:id/sync` + `/notifications/:id/read`);
-  - partição de audit (teste 8.1 acoplado ao relógio → deriva de `Time.current`);
-  - superfície swagger (notifications + health).
+**Depois, com o dono, foi FECHADA COMO DORMENTE:** o sistema novo começa do zero, sem dado
+legado a migrar — 8.6/8.7 viraram **NÃO-APLICÁVEL** e o corte nunca roda. Optamos por
+**manter o código** (isolado em `Legacy::*`, testado, custo zero) em vez de remover — remover
+seria reverter migrations + o model de audit + `structure.sql`, mais risco que valor. Ver a
+seção da change acima e o `EXECUCAO.md`/`tasks.md` dela (status DORMENTE no topo dos dois).
 
-**2. Diagnosticou e corrigiu o #6 — `BulkRecompute` de 15 min** (rodei EXPLAIN sobre
-93k tasks EU MESMO): **não era RLS nem work_mem, era estatística fria** — após
-`insert_all` massivo o otimizador via `rows≈1` e escolhia nested-loop em cascata
-(~3k×93k). Fix: **`SET LOCAL enable_nestloop = off`** nos 3 roll-ups de
-`Progress::BulkRecompute` (mesmo remédio já usado em `my-tasks-view`). **15 min → ~0,1s**;
-os 3 benchmarks `:slow` passam; `query_budget` mantém 3 UPDATEs.
+Regressão final desta sessão (raio das mudanças de banco): `spec/{tenancy,audit,progress,db}`
+**337/0**; `spec/legacy` **53/0** (1 pending — o teste de dir não-gravável fica pending por a
+suíte rodar como root). `validate --strict` OK. Tudo na `main` (`4e9a3f5`).
 
-**3. Onda `quality-and-accessibility` até 25/39** (grupo a grupo, com EXECUCAO G0 que
-mostrou a onda ~70% JÁ satisfeita pelas ondas 1-9). Fechado tudo que não precisa de
-navegador — ver a seção da change abaixo. Também fechou os últimos itens soltos de
-`task-catalog` (1.1-1.3 reconciliados) e `workspace-settings` (5.10, alerta de reset).
-
-Tudo na `main` (`72f0847`). **VALIDACAO_WSL.md** na raiz tem o runbook dos handoffs
-que só a WSL/deploy fecham (incl. §4.6 EXPLAIN e §4.1 smoke Docker).
+**VALIDACAO_WSL.md** na raiz segue com o runbook dos handoffs que só a WSL/deploy fecham.
 
 ## O que resta
 
@@ -381,10 +396,10 @@ que só a WSL/deploy fecham (incl. §4.6 EXPLAIN e §4.1 smoke Docker).
   limpo. Se for construir aqui: `npm i -D @playwright/test`, `e2e/playwright.config.ts`
   apontando pro build de produção servido, fixture de 2 `BrowserContext`, seed
   `rt:seed:e2e` de UUID fixo.
-- **`legacy-data-migration`** — **BLOQUEADA**: falta `RoboTrack_Database.json` (export
-  legado). **Peça o arquivo ao cliente** — destrava 38 tarefas de uma vez. Dá para
-  adiantar esquema do importador + validadores contra fixtures sintéticas, mas a
-  execução fim-a-fim precisa do arquivo.
+- **`legacy-data-migration`** — **NADA A FAZER (dormente).** Construída 36/38 e fechada
+  como não-aplicável (começa do zero). Só reabrir se surgir uma fonte de dados a importar —
+  aí 8.6/8.7 rodam o corte pelo runbook `backend/docs/runbooks/legacy-cutover.md`. Não peça
+  o `RoboTrack_Database.json`: não existe e não vai existir.
 
 **SEAMS/handoffs abertos que valem lembrar:**
 - **offline-pwa:** flipar `useRecordAdvance`/`useHierarchy` para ENFILEIRAR quando
@@ -470,26 +485,29 @@ OpenSpec: `npx --yes @fission-ai/openspec@1.6.0 validate <change> --strict`.
 
 > Estou continuando o desenvolvimento do RoboTrack (github.com/mizakoreia/robotrack_V1):
 > reimplementação de um sistema legado (PWA + Firestore) sobre um template Rails 8
-> API-only + React 18/TS, organizada com OpenSpec — 24 changes em `openspec/changes/`.
+> API-only + React 18/TS, organizada com OpenSpec — 25 changes em `openspec/changes/`.
 >
 > Leia `CONTINUIDADE.md` na raiz: tem o estado atual, o modelo de git, o que já foi
-> entregue e o método. **23 das 24 changes estão 100% COMPLETAS** — todo o backend do
+> entregue e o método. **24 das 25 changes estão COMPLETAS** — todo o backend do
 > núcleo, a base visual, a moldura, as telas, a auditoria imutável, o **tempo real**
-> (ActionCable), a **fila offline** (PWA), a **infra/observabilidade** e as
-> **notificações**. A 24ª, `quality-and-accessibility`, está em **25/39** (só falta o
-> G-B de navegador). Tudo na `main` (`72f0847`); a branch de trabalho
+> (ActionCable), a **fila offline** (PWA), a **infra/observabilidade**, as
+> **notificações** e a **migração legada** (esta última construída 36/38 e FECHADA COMO
+> DORMENTE — o sistema começa do zero, sem dado a migrar; código isolado em `Legacy::*`,
+> não roda). A 25ª, `quality-and-accessibility`, está em **25/39** (só falta o G-B de
+> navegador). Tudo na `main` (`4e9a3f5`); a branch de trabalho
 > `claude/robotrack-task-catalog-tc-g3-6os4vm` aponta para o mesmo commit da `main`.
 >
 > **O toolchain RODA por completo neste ambiente** (correção sobre notas antigas): ruby
-> 3.2.3 em `/opt/rbenv` COM gems, suíte backend inteira **1382/0**, frontend **537/0**,
-> e Chromium+Playwright dirigem o browser real. O que ainda é handoff: WebKit, pipeline
-> de CI e smokes de deploy Docker (WSL).
+> 3.2.3 em `/opt/rbenv` COM gems, suíte backend ~**1438** (era 1382 + ~56 da migração
+> legada; `spec/legacy` 53/0 verificado — a suíte INTEIRA não foi re-rodada na última
+> sessão por Postgres instável), frontend **537/0**, e Chromium+Playwright dirigem o
+> browser real. O que ainda é handoff: WebKit, pipeline de CI e smokes de deploy Docker (WSL).
 >
-> **Restam:** `quality-and-accessibility` (as 14 tarefas abertas são o G-B: harness
-> Playwright + 5 fluxos E2E + axe + INP + E2E teclado + auditor de toque — Chromium roda
-> aqui, WebKit/CI são handoff; a lógica já tem cobertura de integração RTL) e
-> `legacy-data-migration` (**BLOQUEADA** — falta `RoboTrack_Database.json`; peça o
-> arquivo ao cliente antes de começar).
+> **Resta UMA change:** `quality-and-accessibility` (as 14 tarefas abertas são o G-B:
+> harness Playwright + 5 fluxos E2E + axe + INP + E2E teclado + auditor de toque —
+> Chromium roda aqui, WebKit/CI são handoff; a lógica já tem cobertura de integração RTL).
+> `legacy-data-migration` está DORMENTE (não-aplicável, começa do zero) — nada a fazer, não
+> peça o export.
 >
 > **Método (mantido):** uma change por vez; ANTES de qualquer código escreva
 > `openspec/changes/<change>/EXECUCAO.md` reconciliando o design com a REALIDADE do repo
