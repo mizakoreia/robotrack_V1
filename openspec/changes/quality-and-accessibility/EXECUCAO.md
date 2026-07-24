@@ -204,3 +204,26 @@ marcado falso). O seed e o lint estão verdes no container; o navegador é o que
 **Próximo (após o smoke verde):** os 5 fluxos (7.x) estendem `rt:seed:e2e` com um
 cenário por fluxo (`[convite]`/`[offline]`/`[troca]`/`[revogacao]`/`[relatorio]`),
 mais 4.4 (E2E teclado), 5.5 (auditor de toque), 5.6 (axe-core), 8.5 (INP).
+
+### G6 — correções do smoke em navegador real (par WSL)
+
+O par rodou o smoke: Chromium 2/2, WebKit 1/2. A única falha era do HARNESS, não
+do produto.
+
+- **BUG 14 — `context.serviceWorkers()` é Chromium-only.** Devolve lista vazia no
+  WebKit mesmo com o SW registrado e ativo (o par mediu: `navigator.serviceWorker.
+  ready` resolve `/sw.js` nos dois). `assertServiceWorkerRegistered` passou a
+  afirmar pela PÁGINA (`navigator.serviceWorker.ready`), cross-browser, e recebe
+  `page` em vez do contexto. Mensagem de erro corrigida (a antiga mandava caçar a
+  topologia, que estava certa).
+- **Guarda de banco no seed.** O par rodou `rt:seed:e2e` contra `robotrack_dev` (era
+  o que estava no ar) e plantou os usuários E2E junto da demo. `E2eSeed.guard_database!`
+  agora RECUSA banco cujo nome não contenha `e2e`/`test` (ou `E2E_SEED_FORCE=1`), e
+  nunca roda em produção. Verificado: bloqueia `robotrack_dev`, libera `robotrack_test`.
+
+**Decisões operacionais (do par, registradas):** serviço = `vite preview` + backend
+:3000 (sem CORS, sem nginx); banco = `robotrack_e2e` dedicado, recriado por rodada
+(idempotência resolve re-execução, não contaminação entre rodadas de convite/
+revogação). Ambas no `frontend/e2e/README.md`.
+
+Após o par re-rodar Chromium+WebKit verdes, 6.1/6.2/6.3 fecham e seguem os 5 fluxos.

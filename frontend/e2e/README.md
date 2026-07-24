@@ -42,12 +42,21 @@ E2E_BASE_URL=http://localhost:4173 npm run e2e
   workspace de id fixo + catálogo de 31, e o login de ambos autentica.
 - `npm run e2e:lint` passa no smoke.
 
+## Topologia confirmada (validada na WSL)
+
+- **Serviço:** `vite preview` (bundle prod em :4173) + backend solto na `:3000`.
+  O app chama a `:3000` direto (`client.ts` força a porta), então `E2E_API_URL`
+  NÃO é preciso — o default derivado (`u.port = '3000'`) acerta e não há preflight
+  CORS bloqueado. Preferido ao nginx (que exigiria `upstream backend` resolvível e
+  amarraria o E2E ao build da imagem de ~15 min).
+- **Banco:** DEDICADO (`robotrack_e2e`), **recriado por rodada**. A idempotência do
+  seed resolve RE-EXECUÇÃO, não CONTAMINAÇÃO: convite/revogação MUTAM estado, então
+  rodadas não podem partilhar banco. O `rt:seed:e2e` RECUSA rodar contra um banco
+  cujo nome não contenha `e2e`/`test` (guarda contra cair no `robotrack_dev`).
+
 ## Handoff (WSL) — o que só o navegador fecha
 
-- Rodar `smoke.spec.ts` verde em **Chromium E WebKit**.
-- Confirmar a **topologia de serviço** do E2E: o app chama o backend na `:3000`
-  direto (não pela proxy `/api` do nginx). Contra a stack de staging, isso exige
-  CORS liberado para a origem do front — vale confirmar como servir os dois no
-  mesmo teste (nginx servindo o bundle + backend em :3000, ou `vite preview`).
-- Se o banco E2E for persistente entre rodadas, o seed é idempotente; se for
-  recriado por rodada, `rt:seed:e2e` roda do zero.
+- Rodar `smoke.spec.ts` verde em **Chromium E WebKit** (Chromium 149 + WebKit 26.5
+  já instalados na WSL).
+- O service worker é afirmado por `navigator.serviceWorker.ready` (cross-browser),
+  NÃO por `context.serviceWorkers()` (Chromium-only — BUG 14).

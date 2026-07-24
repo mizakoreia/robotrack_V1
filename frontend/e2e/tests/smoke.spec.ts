@@ -6,12 +6,12 @@ import { assertServiceWorkerRegistered } from '../fixtures/session'
 // o service worker de D7 REGISTRA (6.1), e uma sessão semeada (rt:seed:e2e[base])
 // entra autenticada sem clicar no login. Se ISTO falha, nenhum dos 5 fluxos vale.
 test.describe('harness E2E — smoke', () => {
-  test('o build de produção carrega e registra o service worker', async ({ ownerContext }) => {
-    const page = await ownerContext.newPage()
-    await page.goto('/')
+  test('o build de produção carrega e registra o service worker', async ({ ownerPage }) => {
+    await ownerPage.goto('/')
     // O shell autenticado renderiza (não a tela de login) — a sessão semeada valeu.
-    await expect(page.locator('#root')).toBeVisible()
-    await assertServiceWorkerRegistered(ownerContext)
+    await expect(ownerPage.locator('#root')).toBeVisible()
+    // Afirma pela página (cross-browser), não por ctx.serviceWorkers() (BUG 14).
+    await assertServiceWorkerRegistered(ownerPage)
   })
 
   test('as duas sessões têm identidades DISTINTAS (contextos isolados)', async ({ ownerPage, guestPage }) => {

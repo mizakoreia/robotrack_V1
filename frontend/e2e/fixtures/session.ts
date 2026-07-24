@@ -1,4 +1,4 @@
-import { test as base, expect, type BrowserContext, type APIRequestContext } from '@playwright/test'
+import { test as base, expect, type BrowserContext, type APIRequestContext, type Page } from '@playwright/test'
 import { SEED, type SeededUser } from './seed-constants'
 
 // quality-and-accessibility 6.2 (D-QA-1) — a fixture de DUAS sessões simultâneas.
@@ -76,17 +76,26 @@ export async function authenticatedContext(
   return context
 }
 
-// 6.1 — falha IMEDIATA se o service worker não registrar. Contra `vite dev` ou um
-// build sem SW, `serviceWorkers()` volta vazio e o fluxo offline mentiria; o teste
-// tem que dizer isso, não morrer obscuro dez passos depois.
-export async function assertServiceWorkerRegistered(context: BrowserContext): Promise<void> {
-  if (context.serviceWorkers().length > 0) return
-  await context.waitForEvent('serviceworker', { timeout: 15_000 }).catch(() => {
-    throw new Error(
-      '[e2e] nenhum service worker registrado — E2E_BASE_URL aponta pro build de ' +
-        'produção? Contra `vite dev` o SW de D7 não registra (6.1).',
-    )
+// 6.1 — falha IMEDIATA se o service worker não registrar. Afirma pela PÁGINA
+// (`navigator.serviceWorker.ready`), NÃO por `browserContext.serviceWorkers()`:
+// esta última é documentada como Chromium-only e devolve lista vazia no WebKit
+// mesmo com o SW registrado e ativo (BUG 14 — o produto está certo nos dois; a API
+// do harness é que mentia). `ready` resolve nos dois navegadores e afirma a MESMA
+// coisa que o produto promete: um SW ativo servindo o app.
+export async function assertServiceWorkerRegistered(page: Page): Promise<void> {
+  const scriptURL = await page.evaluate(async () => {
+    if (!('serviceWorker' in navigator)) return null
+    return Promise.race([
+      navigator.serviceWorker.ready.then((r) => r.active?.scriptURL ?? null),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 15_000)),
+    ])
   })
+  if (!scriptURL) {
+    throw new Error(
+      '[e2e] service worker não registrou (navigator.serviceWorker.ready não resolveu ' +
+        'em 15s). O SW de D7 só registra no build de PRODUÇÃO servido.',
+    )
+  }
 }
 
 // A fixture: dois contextos autenticados + suas páginas. Cada spec que precise das

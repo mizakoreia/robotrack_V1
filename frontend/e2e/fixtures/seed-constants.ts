@@ -5,6 +5,15 @@
 // — se divergir do `backend/lib/tasks/e2e.rake`, o teste de contrato `seed
 // -constants.spec.ts` reprova.
 
+// Tipo largo (não `typeof SEED.owner`, que fixaria os literais do owner e
+// rejeitaria o guest ao passá-lo à mesma função).
+export interface SeededUser {
+  id: string
+  name: string
+  email: string
+  password: string
+}
+
 export const SEED = {
   // Cenário BASE — o dono do workspace e um convidado, para o smoke do harness e
   // como alicerce dos fluxos que precisam de duas sessões (1 convite, 4 revogação).
@@ -26,6 +35,4 @@ export const SEED = {
     id: '0e2e0000-0000-4000-8000-0000000000a1',
     name: 'WS-E2E',
   },
-} as const
-
-export type SeededUser = typeof SEED.owner
+} as const satisfies { owner: SeededUser; guest: SeededUser; workspace: { id: string; name: string } }

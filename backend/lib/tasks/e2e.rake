@@ -14,6 +14,7 @@ namespace :rt do
   namespace :seed do
     desc 'Semeia o estado E2E determinístico (UUIDs fixos). Cenários: base'
     task :e2e, [:scenario] => :environment do |_t, args|
+      E2eSeed.guard_database!
       scenario = (args[:scenario] || 'base').to_s
       case scenario
       when 'base' then E2eSeed.base!
@@ -38,6 +39,24 @@ module E2eSeed
   WORKSPACE = { id: '0e2e0000-0000-4000-8000-0000000000a1', name: 'WS-E2E' }.freeze
 
   module_function
+
+  # RECUSA cair num banco que não seja dedicado a E2E. O par rodou `rt:seed:e2e`
+  # contra `robotrack_dev` (era o que estava no ar) e plantou os usuários E2E junto
+  # da demo. Pior: os cenários de convite/revogação MUTAM estado, então o banco E2E
+  # tem de ser recriado por rodada (idempotência resolve RE-EXECUÇÃO, não
+  # CONTAMINAÇÃO entre rodadas). Guarda: nunca em produção; e o nome do banco tem de
+  # conter `e2e`/`test` (ou `E2E_SEED_FORCE=1` para um nome fora do padrão).
+  def guard_database!
+    abort('[rt:seed:e2e] RECUSADO em produção.') if ::Rails.env.production?
+    db = ::ActiveRecord::Base.connection.current_database
+    return if db =~ /e2e|test/i || ENV['E2E_SEED_FORCE'] == '1'
+
+    abort(
+      "[rt:seed:e2e] banco '#{db}' não parece dedicado a E2E (esperado nome com " \
+      "'e2e' ou 'test'). Aponte DATABASE_URL para um banco próprio (ex.: robotrack_e2e, " \
+      'recriado por rodada) ou passe E2E_SEED_FORCE=1 se souber o que está fazendo.'
+    )
+  end
 
   # Cenário BASE: dono + convidado (usuários globais) e o workspace do dono já
   # bootstrapado com o catálogo de 31 tarefas. Alicerce do smoke do harness e dos
