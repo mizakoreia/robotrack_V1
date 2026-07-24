@@ -15,8 +15,12 @@ Você vai fazer o deploy do RoboTrack a partir da WSL (github.com/mizakoreia/rob
   (§3) e, o principal pra você, os HANDOFFS que só a WSL valida (§4) e o que nem a WSL
   fecha (§5).
 
-**Estado (não re-descobrir):** `main` é a versão mais atual (`git fetch origin main` → tip
-`9621e41`). **24 de 25 changes COMPLETAS.** Suítes verdes no container: **backend 1443/0**
+**Pegue a versão ATUAL do GitHub (não confie no clone antigo):**
+`git fetch origin && git checkout main && git pull --ff-only origin main` — o
+`git rev-parse --short HEAD` TEM de imprimir **`8b8b41c`**. `git fetch`+`checkout` sozinhos
+NÃO atualizam um clone existente; rodar código velho já causou falha fantasma antes.
+
+**Estado (não re-descobrir):** **24 de 25 changes COMPLETAS.** Suítes verdes no container: **backend 1443/0**
 (9 pending esperados), **frontend 539/0**, `tsc`/`eslint`/guarda-de-imports limpos.
 `legacy-data-migration` está **DORMENTE/não-aplicável** (o sistema começa do zero, sem dado
 a migrar) — **não toque nela e não peça o `RoboTrack_Database.json`; não existe.**
