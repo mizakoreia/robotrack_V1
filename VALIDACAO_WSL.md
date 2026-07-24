@@ -125,10 +125,12 @@ Se o smoke reprovar, os logs saem no fim (`docker compose logs web release`).
 > exercitada** (superuser bypassa RLS). O smoke prova LIVENESS (imagem builda/roda não-root,
 > release migra sob lock, `/health/ready = 200`) — a postura de segurança (RLS, papel
 > não-superuser) é provada pela suíte `rspec` (que roda como `robotrack_app` sob RLS), não
-> aqui. **Decisão em aberto:** aceitar o staging como smoke de liveness (atual) OU fazê-lo
-> espelhar prod (init com `db/roles.sql`: `robotrack_migrator` dono + `robotrack_app`
-> não-superuser, release migrando como migrator). A 2ª opção é uma tarefa própria, não um
-> ajuste de uma linha — decidir com o dono antes de mexer.
+> aqui. **Decidido com o dono: ACEITAR** o staging como smoke de LIVENESS (o atual) — a RLS
+> forçada e a separação de papéis já são provadas pela suíte `rspec` (roda como `robotrack_app`
+> sob RLS), então o smoke de superuser não é regressão, é escopo. Fazer o staging espelhar
+> prod (init com `db/roles.sql`: `robotrack_migrator` dono + `robotrack_app` não-superuser,
+> release migrando como migrator) fica como **follow-up OPCIONAL** — tarefa própria, só se o
+> dono quiser um smoke que também exercite o caminho de papéis do deploy. **Não é bloqueio.**
 
 ### 4.2 Service worker num navegador REAL (offline-pwa G2)
 
