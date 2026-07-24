@@ -7,8 +7,9 @@ está em [PROMPT DE RETOMADA](#prompt-de-retomada), no fim.
 
 **Mudou desde as ondas iniciais: não é mais empilhamento de branches.** Agora:
 
-- Todo o trabalho vive em `main` — **`main` é a versão mais atual** (tip `49b43d4`,
-  após a campanha de deploy + a rodada de UI/UX — ver as seções abaixo).
+- Todo o trabalho vive em `main` — **`main` é a versão mais atual** (tip `5dd2e63`,
+  após a campanha de deploy + a rodada de UI/UX + as slices 1-2 do Fluxo 1 E2E —
+  ver as seções abaixo).
 - O desenvolvimento acontece na branch de feature
   `claude/robotrack-task-catalog-tc-g3-6os4vm`, que é **fast-forwarded para `main`
   a cada grupo** e empurrada. No momento a feature e `main` apontam para o MESMO
@@ -25,9 +26,9 @@ está em [PROMPT DE RETOMADA](#prompt-de-retomada), no fim.
 > reconciliação, G1 fundação de teste, G2 i18n, G3 contraste, G4 foco, G5 leitor de
 > tela, G8 perf) **e o G6, o harness E2E, que FECHOU** (6.1/6.2/6.3, smoke 4/4 em
 > Chromium **e WebKit** na WSL do par — runbook em `frontend/e2e/README.md`). As **11
-> restantes**: os 5 fluxos (7.1 na slice 1), gate axe-core, E2E de teclado, auditor de
-> toque, INP. O único handoff que sobra é o **pipeline de CI** — ver a seção
-> "quality-and-accessibility".
+> restantes**: os 5 fluxos (**7.1 nas slices 1-2**, verdes em Chromium), gate axe-core,
+> E2E de teclado, auditor de toque, INP — e o E2E **roda no container** (só WebKit e o
+> **pipeline de CI** dependem de fora). Ver a seção "quality-and-accessibility".
 >
 > `legacy-data-migration` foi **CONSTRUÍDA (36/38) e FECHADA COMO DORMENTE** nesta
 > sessão: o dono confirmou que o sistema novo **começa do zero, sem dado legado a
