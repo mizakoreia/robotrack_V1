@@ -93,7 +93,6 @@ config/credentials
 
 ## Arquivos diversos não versionáveis
 deploy_production.sh
-CLAUDE.md
 claude.md
 image (1).png
 image (2).png
