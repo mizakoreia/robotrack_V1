@@ -128,3 +128,64 @@ preciso) → marcar tasks → `npx --yes @fission-ai/openspec@1.6.0 validate
 delivery-and-observability --strict` → UM commit `G<n>:` → fast-forward `main` +
 push → resumo pt-BR client-friendly → seguir. Verificações de deploy real viram
 HANDOFF documentado no fim (como Playwright do realtime).
+
+## VALIDAÇÃO EM AMBIENTE REAL — WSL (24/07/2026, campanha de deploy)
+
+Os HANDOFFS acima que exigiam **daemon Docker + navegador real** foram EXECUTADOS
+na WSL (par: a WSL opera Docker/browser, o container corrige código e empurra pra
+`main`). Todos verdes. Saída medida, não presumida.
+
+**Decisão registrada (fidelidade do staging).** O `docker-compose.staging.yml` subia
+o Postgres com `POSTGRES_USER: robotrack_app`, que a imagem oficial cria SUPERUSER —
+o runtime conectava como dono, a camada 1 (REVOKE) ficava inerte e a RLS não era
+exercitada (era um smoke de LIVENESS). O que estava marcado como **follow-up
+OPCIONAL** virou **obrigatório**: o guard de imutabilidade do `audit-log` (que agora
+roda no web `puma` — BUG 11) RECUSA subir com credencial de dono, então o próprio app
+passou a exigir os papéis reais. Entregue: `docker/staging/init-roles.sql` (cria
+`robotrack_migrator` dono + `robotrack_app`, ambos NOSUPERUSER/NOBYPASSRLS, default
+privileges migrator→app), `docker/staging/append_only_revokes.sql` (app perde
+UPDATE/DELETE nas tabelas append-only, aplicado pós-migrate) e `docker/staging/
+release.sh` (release migra como migrator + aplica os REVOKE). O smoke agora prova a
+POSTURA DE SEGURANÇA do deploy, não só que sobe.
+
+**§2.4 — smoke de staging sobre a imagem de produção:** VERDE.
+- imagem prod: `whoami=app` (não-root), HEALTHCHECK presente, ~1.48 GB.
+- `release` Exited(0) (migrou como migrator sob lock); `web` healthy; `worker` running.
+- `/health/ready = 200` afirmado de DENTRO da rede (`compose exec web curl`), corpo
+  `{"status":"ok","checks":{"database":true,"redis_queue":true,"migrations":true}}`.
+- postura medida no banco: `robotrack_app` super=false bypassrls=false; app SEM
+  UPDATE/DELETE em `audit_logs` e SEM UPDATE em `task_advances`; runtime conecta como
+  `robotrack_app`; **21 tabelas com FORCE RLS**; dono de `citext` = `robotrack_migrator`.
+
+**§3.2/§3.3 — Redis por função + contrato de cache do nginx:** VERDE.
+- topologia: colisão cache↔queue ABORTA o boot; colisão queue↔cable ABORTA; dbs 1/2/3
+  distintos → BOOT OK (exit 0).
+- headers: `sw.js`/`index.html`/`/` → `no-store, must-revalidate`; assets com hash →
+  `public, max-age=31536000, immutable`; `/api` → `no-store` (inclusive no 502, via `always`).
+
+**§3.4 — broadcast multi-processo do ActionCable:** VERDE. Dois `puma` (:3000/:3001),
+Redis cable em db distinto, adapter redis. Cliente pendurado no processo A; **mutação
+HTTP real** (`POST /api/v1/projects`) no processo B; o envelope-ponteiro chegou em A:
+`{"v":1,"seq":..,"type":"project.created","entity":{"kind":"project","id":".."}}` — só
+`kind`+`id`, zero conteúdo (confirma de brinde o envelope de ponteiro do D6.2).
+
+**Fora desta change, validados na mesma sessão** (registro cruzado): `offline-pwa` §4.2
+(service worker real no Chromium 149 — SW activated, Cache Storage populado, navegação
+offline em rota profunda servida pelo shell = 200, `/api` offline rejeitado nativamente
+pela guarda de não-interceptação D7-1).
+
+**Bugs de produção corrigidos nesta campanha** (a suíte de 1443 specs passava com todos
+vivos — nenhum boota `RAILS_ENV=production` nem roda o Sidekiq server): `connection_pool.
+migration_context` do Rails 8 na sonda `/ready` (BUGS 4/5); `json-schema` como dep direta
+(BUG 7); `tmp/pids` no Dockerfile (BUG 8); middleware Sidekiq por string (BUG 9); guard de
+imutabilidade rodando no web `puma` (BUG 11, segurança); papéis reais de staging (BUG 10);
+dono das extensões (BUG 12); mais `bash` no Dockerfile e env por função no compose. Tabela
+completa em `CONTINUIDADE.md` → "Campanha de deploy".
+
+**Follow-up estrutural (aberto):** um **job de CI de boot em produção** que sobe web+worker
+em `RAILS_ENV=production` e afirma que ficam de pé — SETE dos bugs acima (4,5,7,8,9,10,11)
+só aparecem no processo real e a suíte não os pega. É o buraco da suíte; registrado aqui.
+
+**Ainda handoff (nem a WSL fecha — §5):** ingestão real do Sentry (DSN), header no CDN
+publicado, ensaio de rollback datado em staging na nuvem (§8.4). Seguem como pré-requisitos
+do primeiro deploy de produção.
