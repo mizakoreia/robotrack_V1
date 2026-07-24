@@ -1,5 +1,14 @@
 # EXECUCAO — legacy-data-migration (G0: reconciliação com a realidade)
 
+> **STATUS FINAL: DORMENTE (não-aplicável).** Decidido com o dono após G8: o sistema novo
+> **começa do zero**, sem dado legado a migrar. Não há Firebase antigo com dado real, logo
+> não há `RoboTrack_Database.json` e o corte (8.6/8.7) nunca será executado. A capacidade
+> ficou 36/38 construída e testada contra fixtures sintéticas; o código vive isolado em
+> `Legacy::*` (dead-code inofensivo). Mantido dormente (custo zero) em vez de removido —
+> reabrir só se surgir uma fonte de dados a importar. O resto deste doc é o registro da
+> construção.
+
+
 A migração do sistema legado (PWA + Firestore) para o Postgres relacional. O trabalho
 NÃO é "copiar JSON": é transformar as 5 regras de leitura tolerante do legado em 5 regras
 de escrita, uma vez só, idempotente e com prova de equivalência (design D-LDM-1..8).

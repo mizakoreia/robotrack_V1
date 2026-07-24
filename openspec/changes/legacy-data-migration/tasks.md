@@ -1,8 +1,15 @@
 # Tarefas — legacy-data-migration
 
-> `[BLOQUEADO: export]` marca tarefa que **não é executável** sem o arquivo real
-> `RoboTrack_Database.json`, que não está no repositório. As demais rodam contra a
-> fixture sintética da tarefa 1.2.
+> **STATUS: DORMENTE (não-aplicável).** Decidido com o dono: o sistema novo **começa do
+> zero**, sem dado legado a migrar. A capacidade foi construída e testada contra fixtures
+> sintéticas (36/38), mas o corte real (8.6/8.7) **nunca será executado** — não há
+> `RoboTrack_Database.json` porque não há Firebase legado com dado. O código fica isolado em
+> `Legacy::*` (dead-code inofensivo, testado); se um dia surgir a necessidade de importar de
+> qualquer fonte, está pronto. As tabelas `legacy_import_runs`/`legacy_id_map` e o evento de
+> auditoria `legacy_rollback` permanecem no schema (custo zero).
+
+> `[BLOQUEADO: export]` marcava tarefa não executável sem o arquivo real; agora é
+> `[NÃO-APLICÁVEL]` (começa do zero). As demais rodam contra a fixture sintética da 1.2.
 
 ## 1. Contrato de arquivo e insumo
 
@@ -324,11 +331,10 @@
       `validate_schema!`): schemaVersion 1 aceito, 2 recusado citando a versão suportada,
       ausente → manda normalizar; `application: 42` rejeitado citando o caminho — o round-trip
       "v1 importa sem normalize" é o caminho positivo (o end-to-end importa um v1 direto).)*
-- [ ] 8.6 **[BLOQUEADO: export]** Rodar `normalize` + validação de schema + dry-run sobre o
-  `RoboTrack_Database.json` real e registrar contagens e quarentena prevista. (§1.4 — o
-  volume e a sujeira reais são desconhecidos; é esta tarefa que dimensiona a janela de
-  manutenção e revela quantos workspaces o arquivo contém.)
-- [ ] 8.7 **[BLOQUEADO: export]** **Verificação de corte**: import real com backup,
-  `validate_sample` com diferença zero em ≥20 robôs, e segunda execução provando
-  `criados: 0`. (D-LDM-2, D-LDM-5 — é o critério de aceite do corte; qualquer divergência
-  dispara `rake legacy:rollback[run_id]` e volta ao passo 8.6.)
+- [~] 8.6 **[NÃO-APLICÁVEL — começa do zero]** ~~Rodar `normalize` + validação de schema +
+  dry-run sobre o `RoboTrack_Database.json` real~~. Fechada com o dono: não há dado legado a
+  migrar (sistema novo começa do zero), então não existe arquivo real e o corte nunca roda.
+- [~] 8.7 **[NÃO-APLICÁVEL — começa do zero]** ~~**Verificação de corte**: import real com
+  backup, `validate_sample`, 2ª execução~~. Sem corte real, não há critério de aceite a
+  exercer. A capacidade fica dormente (testada contra fixtures); reabrir só se surgir uma
+  fonte de dados a importar.
