@@ -42,6 +42,12 @@ gem 'faraday-multipart'
 # Utilitários
 gem 'aasm'
 gem 'dotenv-rails'
+# Runtime de legacy-data-migration (Legacy::ImportGuards valida o export contra o
+# JSON Schema). É `require`d por app/, e o eager_load de PRODUÇÃO instancia a classe
+# mesmo com a capacidade DORMENTE — código morto boota igual. Antes chegava só
+# transitivamente pelo rubocop (grupo :development), então a imagem prod (bundle
+# --without development test) não o tinha e o boot morria (BUG 7).
+gem 'json-schema'
 gem 'paper_trail'
 
 # Documentação
