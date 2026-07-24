@@ -101,3 +101,10 @@ DEV.session.sql
 
 .figma/*
 backend/config/database.yml
+
+# Artefatos de execução do Playwright (traces, vídeos e screenshots de falha).
+# São saída de rodada, não fonte — e um trace.zip tem megabytes.
+frontend/test-results/
+frontend/playwright-report/
+frontend/blob-report/
+frontend/.playwright/
