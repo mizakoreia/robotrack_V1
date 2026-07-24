@@ -41,7 +41,19 @@ export default defineConfig({
   projects: [
     // PWA de chão de fábrica: Chromium (Android/desktop) + WebKit (iOS). Firefox
     // fica de fora de propósito (D-QA-1 — triplicaria o CI sem cobrir parque novo).
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    {
+      name: 'chromium',
+      use: {
+        ...devices['Desktop Chrome'],
+        // `E2E_CHROMIUM_PATH`: ambiente com um Chromium PRÉ-INSTALADO cuja revisão
+        // não é a que esta versão do Playwright baixaria (container de dev com
+        // `PLAYWRIGHT_BROWSERS_PATH` gerenciado). Sem a variável, o comportamento
+        // é o padrão — a WSL/CI seguem usando o browser que o Playwright instala.
+        ...(process.env.E2E_CHROMIUM_PATH
+          ? { launchOptions: { executablePath: process.env.E2E_CHROMIUM_PATH } }
+          : {}),
+      },
+    },
     { name: 'webkit', use: { ...devices['Desktop Safari'] } },
   ],
 })
