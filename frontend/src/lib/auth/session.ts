@@ -1,6 +1,7 @@
 import { toast } from 'sonner'
 import { authApi, invitationsApi } from '../api/endpoints'
 import { useAuthStore } from '../../store/authStore'
+import { useWorkspaceStore } from '../../store/workspaceStore'
 import { queryClient } from '../queryClient'
 import { inviteStore } from './invite'
 import { oauthState } from './oauthState'
@@ -42,7 +43,16 @@ export async function consumeInvite(token: string): Promise<void> {
   }
 
   try {
-    await invitationsApi.accept(token)
+    const result = await invitationsApi.accept(token)
+    // SELECIONA o workspace recém-aceito antes da navegação: aceitar é uma intenção
+    // explícita ("entrar NESTE workspace"), mais forte que o default de primeira
+    // carga (BUG 13), que preferiria o workspace PRÓPRIO do convidado e o deixaria
+    // sem ver aquele que acabou de entrar. Como isto grava `currentWorkspaceId`, o
+    // ramo `if (!currentId …)` do useWorkspaceIndex não sobrescreve — a política de
+    // primeira carga do BUG 13 continua valendo para quem abre o app sem contexto.
+    if (result?.workspace_id) {
+      useWorkspaceStore.getState().selectWorkspace(result.workspace_id)
+    }
     toast.success(inviteText.accepted(null))
   } catch (e) {
     const resposta = (e as { response?: { status?: number; data?: { error?: string } } })?.response

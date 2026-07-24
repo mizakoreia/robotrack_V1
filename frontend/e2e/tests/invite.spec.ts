@@ -24,7 +24,10 @@ test.describe('Fluxo 1 — convite (duas sessões)', () => {
     await ownerPage.getByLabel('Papel').selectOption({ label: 'Pode editar' })
     await ownerPage.getByRole('button', { name: 'Gerar link de convite' }).click()
 
-    const inviteUrl = await ownerPage.getByLabel('Link do convite').inputValue()
+    // `exact: true`: getByLabel casa por SUBSTRING, e a lista de convites pendentes
+    // tem um input "Link do convite: <email>" — dois elementos com o mesmo value,
+    // ambiguidade que aparece quando a lista já renderizou (corrida, não navegador).
+    const inviteUrl = await ownerPage.getByRole('textbox', { name: 'Link do convite', exact: true }).inputValue()
     expect(inviteUrl).toContain('/convite/')
     // Navega pelo CAMINHO (relativo ao front), não pela URL absoluta: o backend
     // monta o link a partir de APP_URL, que no E2E pode não ser a origem do front.
