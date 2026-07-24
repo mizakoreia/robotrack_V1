@@ -16,6 +16,7 @@ import { useTheme } from '@/hooks/useTheme'
 import { useRealtime } from '@/hooks/useRealtime'
 import { useOfflineSync } from '@/hooks/useOfflineSync'
 import { useOsNotificationAlerts } from '@/features/notifications/useOsNotificationAlerts'
+import { NotificationBell } from '@/features/notifications/NotificationBell'
 import { performLogout } from '@/lib/auth/session'
 import { registerRevocationNavigator } from '@/lib/workspace/accessRevoked'
 import { ConnectionIndicator } from '@/components/realtime/ConnectionIndicator'
@@ -223,8 +224,10 @@ function Topbar({
       {/* indicador de transporte (7.3): só aparece em degraded/offline */}
       <ConnectionIndicator />
 
-      {/* slot nomeado de notificações — vazio não desloca o layout */}
-      <div data-slot="notifications" className="flex h-9 w-9 items-center justify-center" />
+      {/* slot nomeado de notificações — o sino abre o NotificationCenter (6.2) */}
+      <div data-slot="notifications" className="flex h-9 w-9 items-center justify-center">
+        <NotificationBell />
+      </div>
 
       <button {...menu.triggerProps} aria-label="Conta" className="grid h-9 w-9 place-content-center rounded-full bg-accent/15 text-accent-ink">
         <Icon name="chevron-down" size="sm" />
