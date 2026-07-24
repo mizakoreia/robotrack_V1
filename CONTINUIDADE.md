@@ -311,10 +311,13 @@ está em `/opt/rbenv/versions/3.2.3` COM as gems instaladas (`bundle check` ok, 
   404=sucesso) + backoff + cascata de bloqueio + reconciliação; líder por `navigator.locks`
   + fallback IndexedDB + `BroadcastChannel`; **overlay** otimista DERIVADO DA FILA (vence
   evento ao vivo, sobrevive a remount) + indicador honesto (pendente/bloqueado) + probe
-  `hasPendingFor` ligado ao gate de D6; export/migração versionada. **SEAM aberto:** os
-  hooks de mutação (`useRecordAdvance`/`useHierarchy`) ainda NÃO enfileiram offline nem
-  saiu o `setQueryData` — a máquina está pronta e provada (E2E de honestidade temporal),
-  falta flipar os hooks. Backend: só `HEAD /api/v1/health`.
+  `hasPendingFor` ligado ao gate de D6; export/migração versionada. **SEAM — fluxo-núcleo
+  FIADO:** `useRecordAdvance` agora ENFILEIRA quando `navigator.onLine === false`
+  (`enqueueAdvance` + `refresh()` do store → overlay reativo mostra o otimista; caminho
+  online intocado, o 409 do modal só existe nele) — testado em
+  `useRecordAdvance.offline.test.tsx`. **Resta** a mesma fiação para a criação de robô
+  offline (`useCreateRobot` → `enqueueRobotCreate`, produtor e overlay já existem) — mesmo
+  padrão, escopo menor. Backend: só `HEAD /api/v1/health`.
 - **`delivery-and-observability`** (G0..G8, COMPLETA, backend+config, Onda D11) — a infra
   que todo o domínio assume. Registro único de env (`config/env_schema.rb`) + guarda de
   boot; Dockerfile prod (não-root, HEALTHCHECK, sem assets), Procfile/bin/release (migrate
