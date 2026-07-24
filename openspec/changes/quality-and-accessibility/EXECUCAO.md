@@ -255,3 +255,26 @@ frontend 543/0 (95 arquivos), incluindo a regra F verde no código atual.
 **vitest.config:** exclui `e2e/**` da coleta — os specs de Playwright rodam sob
 `@playwright/test`, não vitest (senão o `npm test`/CI falha no import). Os testes de
 INTEGRAÇÃO `*.e2e.test.tsx` em `src/` seguem vitest, intocados.
+
+### Fluxo 1 (convite) — slice 1 (núcleo do plumbing)
+
+7.1 é grande e browser-gated; construído em slices. **Slice 1 entregue:**
+- `rt:seed:e2e[convite]`: base + hierarquia mínima (projeto→célula→robô→1 tarefa a
+  40%, ids fixos) para o convidado registrar +10 depois. VERIFICADO no container
+  (idempotente 2×; `unique_by: :id` no insert_all por causa do índice de position
+  DEFERRABLE). Constantes espelhadas em `fixtures/seed-constants.ts`.
+- `e2e/tests/invite.spec.ts` (slice 1): dono cria convite `edit` pela UI, pega o
+  link, o convidado (já autenticado) abre → aceite automático → o membro aparece no
+  painel do dono (asserção web-first, sem reload manual — testa o realtime da lista
+  de membros). Navega pelo CAMINHO do link (não a URL absoluta) para desacoplar de
+  APP_URL. e2e-lint verde (≤6 interações antes do 1º expect).
+
+**Próximas slices de 7.1 (depois do núcleo verde no par):** convidado troca para o
+workspace do dono e registra +10 (40→50); convite `view` com controle desabilitado +
+PATCH forjado → 403; sobrevivência do token ao redirect do Google (precisa de stub de
+OAuth — candidato a ficar como integração, não E2E). 7.1 fica `[ ]` até tudo verde.
+
+**Achado a confirmar no par:** ao aceitar um convite, o BUG-13-fix auto-seleciona o
+workspace PRÓPRIO (role owner) — então o convidado cai no workspace dele, não no que
+acabou de entrar. Provável ajuste de UX (aceite → abrir o workspace convidado), a
+decidir quando a slice 2 rodar.

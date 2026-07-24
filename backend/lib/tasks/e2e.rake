@@ -18,7 +18,8 @@ namespace :rt do
       scenario = (args[:scenario] || 'base').to_s
       case scenario
       when 'base' then E2eSeed.base!
-      else abort("[rt:seed:e2e] cenário desconhecido: '#{scenario}' (conhecidos: base)")
+      when 'convite' then E2eSeed.convite!
+      else abort("[rt:seed:e2e] cenário desconhecido: '#{scenario}' (conhecidos: base, convite)")
       end
       puts "[rt:seed:e2e] cenário '#{scenario}' pronto."
     end
@@ -38,7 +39,24 @@ module E2eSeed
   }.freeze
   WORKSPACE = { id: '0e2e0000-0000-4000-8000-0000000000a1', name: 'WS-E2E' }.freeze
 
+  # Hierarquia mínima do cenário [convite]: 1 projeto → 1 célula → 1 robô → 1 tarefa
+  # a 40% (o convidado registra +10 → 50). Ids fixos para o assert citar.
+  PROJECT = { id: '0e2e0000-0000-4000-8000-0000000000b1', name: 'Linha E2E' }.freeze
+  CELL    = { id: '0e2e0000-0000-4000-8000-0000000000c1', name: 'Célula E2E' }.freeze
+  ROBOT   = { id: '0e2e0000-0000-4000-8000-0000000000d1', name: 'R01 E2E' }.freeze
+  TASK    = { id: '0e2e0000-0000-4000-8000-0000000000e1', desc: 'Soldar ponto A', progress: 40 }.freeze
+
   module_function
+
+  # Cenário CONVITE (fluxo 1): base + uma hierarquia mínima com UMA tarefa a 40%,
+  # para o dono convidar o convidado (edit) e o convidado registrar um avanço.
+  def convite!
+    owner = ensure_user(OWNER)
+    ensure_user(GUEST)
+    ensure_workspace(owner)
+    ensure_hierarchy(owner)
+    puts "[rt:seed:e2e] convite: task=#{TASK[:id]} @#{TASK[:progress]}% em #{ROBOT[:name]}/#{CELL[:name]}/#{PROJECT[:name]}"
+  end
 
   # RECUSA cair num banco que não seja dedicado a E2E. O par rodou `rt:seed:e2e`
   # contra `robotrack_dev` (era o que estava no ar) e plantou os usuários E2E junto
@@ -102,6 +120,27 @@ module E2eSeed
         "VALUES (gen_random_uuid(), #{q(WORKSPACE[:id])}, #{q(OWNER[:name])}, " \
         "#{q(OWNER[:email])}, #{q(owner.id)}) ON CONFLICT DO NOTHING"
       )
+    end
+  end
+
+  # Projeto→célula→robô→tarefa com ids fixos, idempotente (ON CONFLICT (id) DO
+  # NOTHING). Sob o contexto de tenant do workspace, como o app escreve.
+  def ensure_hierarchy(owner)
+    ::Tenant.with(workspace_id: WORKSPACE[:id], user_id: owner.id) do
+      now = ::Time.current
+      # `unique_by: :id`: as tabelas têm índice de `position` DEFERRABLE, e o
+      # ON CONFLICT implícito não aceita constraint deferrable como arbitro —
+      # fixamos o arbitro na PK (idempotência por id).
+      ::Project.insert_all([{ id: PROJECT[:id], workspace_id: WORKSPACE[:id], name: PROJECT[:name],
+                              position: 0, progress_cache: 0, created_at: now, updated_at: now }], unique_by: :id)
+      ::Cell.insert_all([{ id: CELL[:id], workspace_id: WORKSPACE[:id], project_id: PROJECT[:id], name: CELL[:name],
+                           position: 0, progress_cache: 0, created_at: now, updated_at: now }], unique_by: :id)
+      ::Robot.insert_all([{ id: ROBOT[:id], workspace_id: WORKSPACE[:id], cell_id: CELL[:id], name: ROBOT[:name],
+                            application: 'Misto / Geral', position: 0, progress_cache: 0, created_at: now, updated_at: now }], unique_by: :id)
+      ::Task.insert_all([{ id: TASK[:id], workspace_id: WORKSPACE[:id], robot_id: ROBOT[:id], cat: 'A. Hardware',
+                           desc: TASK[:desc], weight: 1, progress: TASK[:progress], status: 'Em Andamento',
+                           position: 0, created_at: now, updated_at: now }], unique_by: :id)
+      ::Progress::BulkRecompute.call(workspace_id: WORKSPACE[:id])
     end
   end
 

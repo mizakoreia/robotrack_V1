@@ -35,4 +35,17 @@ export const SEED = {
     id: '0e2e0000-0000-4000-8000-0000000000a1',
     name: 'WS-E2E',
   },
-} as const satisfies { owner: SeededUser; guest: SeededUser; workspace: { id: string; name: string } }
+  // Hierarquia do cenário [convite]: 1 tarefa a 40% (o convidado registra +10 → 50).
+  project: { id: '0e2e0000-0000-4000-8000-0000000000b1', name: 'Linha E2E' },
+  cell: { id: '0e2e0000-0000-4000-8000-0000000000c1', name: 'Célula E2E' },
+  robot: { id: '0e2e0000-0000-4000-8000-0000000000d1', name: 'R01 E2E' },
+  task: { id: '0e2e0000-0000-4000-8000-0000000000e1', desc: 'Soldar ponto A', progress: 40 },
+} as const satisfies {
+  owner: SeededUser
+  guest: SeededUser
+  workspace: { id: string; name: string }
+  project: { id: string; name: string }
+  cell: { id: string; name: string }
+  robot: { id: string; name: string }
+  task: { id: string; desc: string; progress: number }
+}
