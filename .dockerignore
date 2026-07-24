@@ -1,0 +1,33 @@
+# .dockerignore — reduz o contexto de build e impede que artefatos de DEV do host
+# vazem para a imagem (delivery-and-observability 2.x). Sem ele, `COPY backend/ .` e
+# `COPY frontend/ .` arrastam log/tmp/coverage/.git/node_modules pra dentro da imagem,
+# inflando-a e forçando o `chown -R` a reescrever centenas de MB desnecessários.
+#
+# NÃO exclui `backend/bin`: o Procfile de produção declara `release: bin/release`, e a
+# imagem PRECISA dos binstubs. Os binstubs COMMITADOS são portáveis (`#!/usr/bin/env
+# ruby`|`bash`) — se um checkout local os regenerou com path fixo (ex.: `ruby3.2` da
+# WSL), o conserto é `git checkout -- backend/bin/`, não excluir `bin/` (que quebraria o
+# release). Também NÃO exclui `.ruby-version`/Gemfile* (o build depende deles).
+
+# Git e CI
+.git
+.gitignore
+.github
+
+# Backend — runtime/dev, regenerado ou irrelevante na imagem
+backend/tmp
+backend/log
+backend/coverage
+backend/.bundle
+backend/vendor/bundle
+backend/storage
+
+# Frontend — deps e build são REFEITOS na imagem (`npm ci` + `npm run build`)
+**/node_modules
+frontend/dist
+frontend/coverage
+
+# Editor / OS / logs soltos
+**/.DS_Store
+**/*.swp
+**/*.log
