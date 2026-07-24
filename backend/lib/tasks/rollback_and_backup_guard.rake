@@ -13,7 +13,7 @@ end
 namespace :ops do
   desc 'Recusa db:rollback de uma migration contract (8.1)'
   task refuse_contract_rollback: :environment do
-    versions = ActiveRecord::Base.connection.migration_context.get_all_versions
+    versions = ActiveRecord::Base.connection_pool.migration_context.get_all_versions
     unless versions.empty?
       path = migration_path_for(versions.max)
       if path && Ops::ContractMigrationGuard.contract?(path)
@@ -29,7 +29,7 @@ namespace :ops do
 
   desc 'Aborta migração contract quando o backup não é seguro (8.3)'
   task guard_contract_backup: :environment do
-    ctx = ActiveRecord::Base.connection.migration_context
+    ctx = ActiveRecord::Base.connection_pool.migration_context
     pending = ctx.migrations.map(&:version) - ctx.get_all_versions
     pending_contract = pending.map { |v| migration_path_for(v) }.compact.select { |p| Ops::ContractMigrationGuard.contract?(p) }
     next if pending_contract.empty?

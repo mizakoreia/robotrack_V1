@@ -43,7 +43,11 @@ class HealthController < ActionController::API
   end
 
   def migrations_current?
-    !ActiveRecord::Base.connection.migration_context.needs_migration?
+    # Rails 8.0 moveu `migration_context` do connection para o connection_pool;
+    # `connection.migration_context` levanta NoMethodError (engolido pelo rescue),
+    # o que fazia /health/ready reportar migrations desatualizadas PARA SEMPRE e o
+    # deploy nunca ficar ready (BUG 4).
+    !ActiveRecord::Base.connection_pool.migration_context.needs_migration?
   rescue StandardError
     false
   end
