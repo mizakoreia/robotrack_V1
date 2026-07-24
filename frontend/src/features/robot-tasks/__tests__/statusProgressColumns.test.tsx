@@ -152,7 +152,7 @@ describe('coluna Status (2.1 — §2.2)', () => {
 })
 
 describe('coluna Progresso (2.2/2.3 — §2.4, D-RTT-5)', () => {
-  it('dois + sem recarregar somam +20: o segundo modal abre 30→40 e persiste 40', async () => {
+  it('dois arrastes sucessivos: 20→30 persiste, depois 30→40 abre e persiste 40', async () => {
     serverTasks = [task({ status: 'Em Andamento', progress: 20, lock_version: 0 })]
     const create = vi.spyOn(taskAdvancesApi, 'create').mockImplementation((_id, body) => {
       const b = body as { progress: number }
@@ -161,7 +161,10 @@ describe('coluna Progresso (2.2/2.3 — §2.4, D-RTT-5)', () => {
     })
     renderPage()
 
-    fireEvent.click(await screen.findByLabelText('+10%'))
+    // arrasta a 30 e solta (20→30) → abre a observação
+    const slider1 = await screen.findByLabelText('Progresso da tarefa')
+    fireEvent.change(slider1, { target: { value: '30' } })
+    fireEvent.pointerUp(slider1)
     expect(screen.getByRole('dialog')).toHaveTextContent('De 20% → Para 30%')
     fireEvent.change(screen.getByLabelText(/Comentário/), { target: { value: 'primeiro passo' } })
     fireEvent.click(screen.getByRole('button', { name: 'Registrar' }))
@@ -171,7 +174,10 @@ describe('coluna Progresso (2.2/2.3 — §2.4, D-RTT-5)', () => {
       expect((screen.getByLabelText('Progresso da tarefa') as HTMLInputElement).value).toBe('30'),
     )
 
-    fireEvent.click(screen.getByLabelText('+10%'))
+    // arrasta a 40 e solta (30→40) → abre de novo
+    const slider2 = screen.getByLabelText('Progresso da tarefa')
+    fireEvent.change(slider2, { target: { value: '40' } })
+    fireEvent.pointerUp(slider2)
     expect(screen.getByRole('dialog')).toHaveTextContent('De 30% → Para 40%')
     fireEvent.change(screen.getByLabelText(/Comentário/), { target: { value: 'segundo passo' } })
     fireEvent.click(screen.getByRole('button', { name: 'Registrar' }))
@@ -191,6 +197,7 @@ describe('coluna Progresso (2.2/2.3 — §2.4, D-RTT-5)', () => {
     const slider = (await screen.findByLabelText('Progresso da tarefa')) as HTMLInputElement
     fireEvent.change(slider, { target: { value: '70' } })
     expect(slider.value).toBe('70')
+    fireEvent.pointerUp(slider) // solta → abre a observação
     expect(screen.getByRole('dialog')).toHaveTextContent('De 30% → Para 70%')
 
     fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))

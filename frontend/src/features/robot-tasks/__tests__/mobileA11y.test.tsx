@@ -120,11 +120,8 @@ describe('refluxo em cartões e alvos de toque (6.1/6.2)', () => {
     expect(c.getByLabelText('Editar a descrição de Fixar base')).toBeInTheDocument()
   })
 
-  it('os alvos ± e editar/excluir têm min ≥40px', async () => {
+  it('os alvos editar/excluir têm min ≥40px (sem mais botões ±)', async () => {
     await renderPage()
-    for (const label of ['+10%', '−10%']) {
-      expect(screen.getAllByLabelText(label)[0].className).toMatch(/min-h-\[40px\]/)
-    }
     expect(screen.getAllByLabelText('Editar a descrição de Fixar base')[0].className).toMatch(/min-h-\[40px\]/)
     expect(screen.getAllByLabelText('Excluir Fixar base')[0].className).toMatch(/min-h-\[40px\]/)
   })

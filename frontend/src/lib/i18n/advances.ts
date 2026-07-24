@@ -20,9 +20,6 @@ export const advanceText = {
   from: 'De',
   to: 'Para',
   toFieldLabel: 'Progresso alvo (%)',
-  // Slider DENTRO do modal (label distinto do slider da linha e do campo numérico,
-  // para não colidir nas buscas por rótulo — os três coexistem no DOM).
-  toSliderLabel: 'Ajustar progresso alvo',
   // Modo status (robot-task-table 2.1, §2.2) — o modal aberto pelo StatusSelect
   // nomeia o status escolhido; o `para%` exibido é o derivado da tabela-verdade.
   statusChange: (status: string) => `Novo status: ${status}`,

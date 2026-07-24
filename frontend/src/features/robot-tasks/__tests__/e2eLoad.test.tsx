@@ -118,6 +118,7 @@ describe('E2E — cenários operacionais (7.2)', () => {
     const slider = await screen.findByLabelText('Progresso da tarefa')
     fireEvent.change(slider, { target: { value: '70' } })
     expect((slider as HTMLInputElement).value).toBe('70')
+    fireEvent.pointerUp(slider) // solta → abre a observação
     fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
     expect((screen.getByLabelText('Progresso da tarefa') as HTMLInputElement).value).toBe('30')
     expect(create).not.toHaveBeenCalled()

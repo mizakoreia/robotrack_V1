@@ -75,8 +75,10 @@ it('avançar a linha A não re-renderiza a linha B (§7.1)', async () => {
   expect(renders.B).toBe(1)
   const bBefore = renders.B
 
-  // avança a linha A: +10 (40→50), comentário obrigatório (<100), confirma
-  fireEvent.click(screen.getAllByLabelText('+10%')[0])
+  // avança a linha A: arrasta o slider a 50 e solta (40→50) → abre a observação
+  const sliderA = screen.getAllByLabelText('Progresso da tarefa')[0]
+  fireEvent.change(sliderA, { target: { value: '50' } })
+  fireEvent.pointerUp(sliderA)
   fireEvent.change(screen.getByLabelText(/Comentário/), { target: { value: 'passo A' } })
   fireEvent.click(screen.getByRole('button', { name: 'Registrar' }))
 

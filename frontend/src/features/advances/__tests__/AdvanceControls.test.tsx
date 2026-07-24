@@ -64,6 +64,14 @@ function renderControls(client: QueryClient) {
   return render(<AdvanceControls robotId="r1" taskId="t1" />, { wrapper })
 }
 
+// SEM botões ±10: a observação abre quando o ARRASTE TERMINA. Arrastar (change) só
+// atualiza o readout ao vivo; soltar (pointerUp) é o que abre o modal com o valor.
+function openModalAt(value: string) {
+  const slider = screen.getByLabelText('Progresso da tarefa')
+  fireEvent.change(slider, { target: { value } })
+  fireEvent.pointerUp(slider)
+}
+
 beforeEach(() => {
   ROLE = 'edit'
   api.create.mockReset()
@@ -76,9 +84,7 @@ describe('a regra dura do comentário', () => {
     api.create.mockResolvedValue({ advance: {}, task: task({ progress: 100 }), replay: false })
     renderControls(client)
 
-    fireEvent.click(screen.getByLabelText('+10%')) // abre o modal (para 55)
-    const para = screen.getByLabelText('Progresso alvo (%)')
-    fireEvent.change(para, { target: { value: '100' } })
+    openModalAt('100') // arrasta o slider a 100 e solta → abre a observação em 100
 
     const confirmar = screen.getByRole('button', { name: 'Registrar' })
     expect(confirmar).not.toBeDisabled() // a 100 o comentário é opcional
@@ -89,20 +95,22 @@ describe('a regra dura do comentário', () => {
     expect(api.create.mock.calls[0][1].comment).toBeUndefined()
   })
 
-  it('mover o SLIDER do modal define o valor enviado no Registrar (slider respeitado)', async () => {
+  it('o valor SOLTO no slider é o que o Registrar envia (a observação abre no release)', async () => {
     const client = newClient()
     seed(client, task({ progress: 45, lock_version: 0 }))
     api.create.mockResolvedValue({ advance: {}, task: task({ progress: 60 }), replay: false })
     renderControls(client)
 
-    fireEvent.click(screen.getByLabelText('+10%')) // abre o modal (para 55)
-    // arrasta o slider DENTRO do modal (não o campo numérico) para 60
-    fireEvent.change(screen.getByLabelText('Ajustar progresso alvo'), { target: { value: '60' } })
+    // só arrastar NÃO abre a observação…
+    fireEvent.change(screen.getByLabelText('Progresso da tarefa'), { target: { value: '60' } })
+    expect(screen.queryByRole('button', { name: 'Registrar' })).toBeNull()
+    // …soltar abre, em 60.
+    fireEvent.pointerUp(screen.getByLabelText('Progresso da tarefa'))
     fireEvent.change(screen.getByLabelText(/Comentário/), { target: { value: 'faltou aterrar' } })
     fireEvent.click(screen.getByRole('button', { name: 'Registrar' }))
 
     await waitFor(() => expect(api.create).toHaveBeenCalledTimes(1))
-    expect(api.create.mock.calls[0][1]).toMatchObject({ progress: 60 }) // o valor do slider, não os 55 iniciais
+    expect(api.create.mock.calls[0][1]).toMatchObject({ progress: 60 })
   })
 
   it('45 → 60 sem comentário: confirmar BLOQUEADO e nada é enviado', () => {
@@ -110,8 +118,7 @@ describe('a regra dura do comentário', () => {
     seed(client, task({ progress: 45 }))
     renderControls(client)
 
-    fireEvent.click(screen.getByLabelText('+10%'))
-    fireEvent.change(screen.getByLabelText('Progresso alvo (%)'), { target: { value: '60' } })
+    openModalAt('60')
 
     expect(screen.getByRole('button', { name: 'Registrar' })).toBeDisabled()
     // três espaços não habilitam (mesmo btrim do banco)
@@ -162,7 +169,8 @@ describe('arrastar e cancelar (§2.4 item 5)', () => {
 
     const slider = screen.getByLabelText('Progresso da tarefa')
     fireEvent.change(slider, { target: { value: '60' } })
-    expect((slider as HTMLInputElement).value).toBe('60')
+    expect((slider as HTMLInputElement).value).toBe('60') // readout ao vivo, modal ainda fechado
+    fireEvent.pointerUp(slider) // solta → abre a observação
 
     fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
     expect((screen.getByLabelText('Progresso da tarefa') as HTMLInputElement).value).toBe('45')
@@ -189,8 +197,7 @@ describe('conflito 409 (D-409)', () => {
       .mockResolvedValueOnce({ advance: {}, task: task({ progress: 85 }), replay: false })
     renderControls(client)
 
-    fireEvent.click(screen.getByLabelText('+10%'))
-    fireEvent.change(screen.getByLabelText('Progresso alvo (%)'), { target: { value: '60' } })
+    openModalAt('60')
     fireEvent.change(screen.getByLabelText(/Comentário/), { target: { value: 'faltou aterrar' } })
     fireEvent.click(screen.getByRole('button', { name: 'Registrar' }))
 
@@ -213,15 +220,17 @@ describe('conflito 409 (D-409)', () => {
 })
 
 describe('somente-leitura para view (5.6)', () => {
-  it('view não vê os botões e o slider é aria-disabled', () => {
+  it('view: slider aria-disabled e arrastar/soltar NÃO abre a observação', () => {
     ROLE = 'view'
     const client = newClient()
     seed(client, task({ progress: 45 }))
     renderControls(client)
 
-    expect(screen.queryByLabelText('+10%')).toBeNull()
-    expect(screen.queryByLabelText('−10%')).toBeNull()
     const slider = screen.getByLabelText('Progresso da tarefa')
     expect(slider).toHaveAttribute('aria-disabled', 'true')
+    // mesmo forçando o gesto, o modal não abre (o servidor ainda devolveria 403)
+    fireEvent.change(slider, { target: { value: '60' } })
+    fireEvent.pointerUp(slider)
+    expect(screen.queryByRole('button', { name: 'Registrar' })).toBeNull()
   })
 })

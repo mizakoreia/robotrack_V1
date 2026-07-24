@@ -1,20 +1,23 @@
-import { useRef } from 'react'
-import { Button } from '../../components/ui/Button'
+import { useRef, useState } from 'react'
 import { advanceText } from '../../lib/i18n/advances'
 import { useWorkspaceStore } from '../../store/workspaceStore'
 import { useAdvanceDraft } from './useAdvanceDraft'
 import { AdvanceModal } from './AdvanceModal'
 
 // progress-advances 5.2/5.6 (§2.4 itens 1 e 5, §4.1, D-UI) — os controles de
-// avanço de UMA linha da tabela: os botões `−10`/`+10`, o slider e o modal.
+// avanço de UMA linha da tabela: o slider e o modal.
 //
-// `view` é SÓ-LEITURA (5.6): os botões somem, o slider é `aria-disabled` e o
-// modal não abre. Não é segurança (o servidor devolve 403 a um `view` que forçar
-// o envio) — é não oferecer uma ação que seria negada. O rótulo `role` do store
-// é rótulo, não autoridade.
+// FLUXO (pedido do dono): SEM botões ±10. Arrastar o slider mostra o valor ao
+// vivo, mas a caixa de observação SÓ abre quando o arraste TERMINA (soltar o
+// ponteiro / soltar a tecla) — não a cada pixel arrastado. O valor solto é o que
+// o modal leva e o Registrar envia.
 //
-// O slider é controlado por `value = draft ?? serverProgress` (D-UI): arrastar
-// define o rascunho; cancelar/`Esc` o zera e o slider VOLTA ao servidor, sem
+// `view` é SÓ-LEITURA (5.6): o slider é `aria-disabled` e o modal não abre. Não é
+// segurança (o servidor devolve 403 a um `view` que forçar o envio) — é não
+// oferecer uma ação que seria negada.
+//
+// Enquanto o modal não abriu, o slider é controlado por `pending ?? serverProgress`
+// (arraste ao vivo); cancelar/`Esc` zera tudo e o slider VOLTA ao servidor sem
 // requisição nenhuma — e o foco retorna ao controle de origem.
 
 export function AdvanceControls({ robotId, taskId }: { robotId: string; taskId: string }) {
@@ -22,15 +25,28 @@ export function AdvanceControls({ robotId, taskId }: { robotId: string; taskId: 
   const canEdit = role === 'owner' || role === 'edit'
   const draft = useAdvanceDraft(robotId, taskId)
   const originRef = useRef<HTMLElement | null>(null)
+  // Valor ao vivo do arraste ANTES de o modal abrir (null = slider mostra o servidor).
+  const [pending, setPending] = useState<number | null>(null)
 
-  // Guarda o controle que abriu o rascunho, para devolver o foco no cancelar.
+  // Enquanto o modal está aberto o valor mora no draft; antes, no `pending`.
+  const sliderValue = draft.isOpen ? draft.value : pending ?? draft.serverProgress()
+
   function remember(e: React.SyntheticEvent) {
     originRef.current = e.currentTarget as HTMLElement
   }
 
   function close() {
     draft.reset()
+    setPending(null)
     originRef.current?.focus()
+  }
+
+  // Fim do arraste: se o valor mudou em relação ao servidor, ABRE o modal com ele.
+  // Se o modal já estava aberto (arrastar de novo), mantém o draft sincronizado.
+  function commit(e: React.SyntheticEvent) {
+    if (!canEdit || pending === null) return
+    remember(e)
+    if (pending !== draft.serverProgress()) draft.setDraft(pending)
   }
 
   function onSliderKeyDown(e: React.KeyboardEvent) {
@@ -41,28 +57,12 @@ export function AdvanceControls({ robotId, taskId }: { robotId: string; taskId: 
     // robot-task-table 6.1 — `flex-wrap`: em 375px (cartão mobile) os controles
     // quebram linha em vez de estourar a borda e rolar a página na horizontal.
     <div className="flex flex-wrap items-center gap-2">
-      {canEdit && (
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          className="min-h-[40px] min-w-[40px]" // robot-task-table 6.2 — alvo de toque ≥40px
-          aria-label={advanceText.decrease}
-          onClick={(e) => {
-            remember(e)
-            draft.step(-10)
-          }}
-        >
-          {advanceText.decrease}
-        </Button>
-      )}
-
       <input
         type="range"
         min={0}
         max={100}
         step={5} // robot-task-table 2.2 (§3.5) — arrastar uma posição a partir de 30 propõe 35
-        value={draft.value}
+        value={sliderValue}
         aria-label={advanceText.progressLabel}
         aria-disabled={!canEdit}
         disabled={!canEdit}
@@ -70,38 +70,27 @@ export function AdvanceControls({ robotId, taskId }: { robotId: string; taskId: 
         // em vez de mudar o progresso; só o gesto horizontal move o slider.
         className="touch-pan-y"
         onKeyDown={onSliderKeyDown}
+        // Arrastar: atualiza o valor ao vivo (readout), mas NÃO abre o modal.
         onChange={(e) => {
           if (!canEdit) return
-          remember(e)
-          draft.setDraft(Number(e.target.value))
+          const next = Number(e.target.value)
+          setPending(next)
+          if (draft.isOpen) draft.setDraft(next) // já aberto: segue sincronizado
         }}
+        // Fim do arraste (ponteiro/toque) ou da tecla: aí sim abre a observação.
+        onPointerUp={commit}
+        onKeyUp={commit}
       />
       {/* robot-task-table 6.4 — leitura com role=progressbar para o leitor de tela */}
       <span
         className="w-10 text-sm tabular-nums"
         role="progressbar"
-        aria-valuenow={draft.value}
+        aria-valuenow={sliderValue}
         aria-valuemin={0}
         aria-valuemax={100}
       >
-        {draft.value}%
+        {sliderValue}%
       </span>
-
-      {canEdit && (
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          className="min-h-[40px] min-w-[40px]" // robot-task-table 6.2 — alvo de toque ≥40px
-          aria-label={advanceText.increase}
-          onClick={(e) => {
-            remember(e)
-            draft.step(10)
-          }}
-        >
-          {advanceText.increase}
-        </Button>
-      )}
 
       {!canEdit && <span className="sr-only">{advanceText.readOnlyHint}</span>}
 
