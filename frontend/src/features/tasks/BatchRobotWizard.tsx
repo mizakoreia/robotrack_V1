@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { newId } from '../../lib/ids'
+import { Button } from '@/components/ui/Button'
 import { useRobotApplications } from '../catalog/useTaskTemplates'
 import { useBatchCreateRobots, clampQuantity } from './useBatchRobots'
 
@@ -8,7 +9,8 @@ import { useBatchCreateRobots, clampQuantity } from './useBatchRobots'
 // branco sobre branco. Mesmos tokens do fix de contraste do login (bg-bg-main /
 // text-text-main / border-input / placeholder text-text-muted).
 const FIELD_CLASS =
-  'mt-1 w-full rounded border border-input bg-bg-main px-3 py-2 text-text-main placeholder:text-text-muted'
+  'mt-1 w-full rounded-md border border-input bg-bg-main px-3 py-2 text-text-main placeholder:text-text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+const LABEL_CLASS = 'block text-sm font-medium text-text-main'
 
 // robot-tasks 5.6 (§2.5) — assistente de DOIS passos, UMA requisição.
 //
@@ -55,8 +57,8 @@ export function BatchRobotWizard({ cellId, onDone }: { cellId: string; onDone?: 
 
   if (step === 1) {
     return (
-      <div data-testid="batch-step-1">
-        <label>
+      <div data-testid="batch-step-1" className="space-y-4">
+        <label className={LABEL_CLASS}>
           Quantidade
           <input
             type="number"
@@ -68,7 +70,7 @@ export function BatchRobotWizard({ cellId, onDone }: { cellId: string; onDone?: 
             onChange={(e) => setQuantity(clampQuantity(Number(e.target.value)))}
           />
         </label>
-        <label>
+        <label className={LABEL_CLASS}>
           Aplicação
           <select
             aria-label="Aplicação"
@@ -83,37 +85,46 @@ export function BatchRobotWizard({ cellId, onDone }: { cellId: string; onDone?: 
             ))}
           </select>
         </label>
-        <button type="button" onClick={goToStep2}>
-          Avançar
-        </button>
+        <div className="flex justify-end pt-2">
+          <Button type="button" onClick={goToStep2}>
+            Avançar
+          </Button>
+        </div>
       </div>
     )
   }
 
   return (
-    <div data-testid="batch-step-2">
-      {names.map((name, i) => (
-        <input
-          key={i}
-          aria-label={`Nome do robô ${i + 1}`}
-          className={FIELD_CLASS}
-          placeholder="R01 - Solda"
-          value={name}
-          onChange={(e) =>
-            setNames((prev) => {
-              const next = [...prev]
-              next[i] = e.target.value
-              return next
-            })
-          }
-        />
-      ))}
-      <button type="button" onClick={() => setStep(1)}>
-        Voltar
-      </button>
-      <button type="button" onClick={submit} disabled={robots.length === 0 || batch.isPending}>
-        Criar {robots.length} robô(s)
-      </button>
+    <div data-testid="batch-step-2" className="space-y-4">
+      <p className="text-sm text-text-muted">
+        Dê um nome a cada robô. Os campos em branco são ignorados.
+      </p>
+      <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
+        {names.map((name, i) => (
+          <input
+            key={i}
+            aria-label={`Nome do robô ${i + 1}`}
+            className={FIELD_CLASS}
+            placeholder="R01 - Solda"
+            value={name}
+            onChange={(e) =>
+              setNames((prev) => {
+                const next = [...prev]
+                next[i] = e.target.value
+                return next
+              })
+            }
+          />
+        ))}
+      </div>
+      <div className="flex items-center justify-between gap-2 pt-2">
+        <Button type="button" variant="outline" onClick={() => setStep(1)}>
+          Voltar
+        </Button>
+        <Button type="button" onClick={submit} disabled={robots.length === 0 || batch.isPending}>
+          Criar {robots.length} robô(s)
+        </Button>
+      </div>
     </div>
   )
 }
