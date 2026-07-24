@@ -156,3 +156,51 @@ como os handoffs de `delivery-and-observability` (§5 do VALIDACAO_WSL).
 As tarefas RECONCILIADAS/SATISFEITAS são marcadas `[x]` com a nota do porquê; os DELTAS
 `[x]` só quando entregues e verdes; o que fica em handoff é anotado como tal (não vira
 `[x]` falso).
+
+---
+
+## G6 — Harness E2E CONSTRUÍDO (24/07/2026, campanha de deploy)
+
+A frente escolhida pelo dono. O harness (grupo 6) é o keystone das 14 tarefas
+G-B — 4.4/5.5/5.6/7.x/8.5 todas dependem dele. Construído e verificado até onde
+o container alcança (sem navegador); a execução em Chromium+WebKit é o handoff WSL,
+como os demais handoffs de deploy da onda `delivery-and-observability`.
+
+**Decisão — `@playwright/test` no toolchain do frontend.** O par confirmou que a
+adoção da dep é decisão do container. Adotada em `frontend/package.json`
+(devDependency) com o harness em `frontend/e2e/` e `frontend/playwright.config.ts`.
+Um toolchain node só (não um projeto `e2e/` na raiz com `node_modules` próprio):
+o `@playwright/test` divide o mesmo `node_modules` do vitest. Reconcilia o `e2e/`
+da raiz que o design cita → `frontend/e2e/`.
+
+**6.1 config — ENTREGUE (browser=handoff).** `playwright.config.ts`: Chromium+WebKit
+(sem Firefox, D-QA-1), `retries: 1` só sob CI, trace/vídeo/screenshot só em falha,
+`baseURL` de `E2E_BASE_URL` com ABORT se ausente (força o build de produção, não
+`vite dev`), `globalTimeout` de 8 min (7.7), `workers` de `PLAYWRIGHT_WORKERS`. A
+guarda de service worker (`serviceWorkers()==0` → falha imediata) vive em
+`fixtures/session.ts::assertServiceWorkerRegistered`.
+
+**6.2 fixture de 2 contextos + seed determinístico — ENTREGUE + VERIFICADO (seed).**
+`fixtures/session.ts`: `apiLogin` (POST `/auth/v1/session` no backend :3000 — o app
+chama a porta direto, client.ts) + `authenticatedContext` que injeta a sessão no
+`localStorage['robotrack.session']` (o meio que o authStore hidrata) → dois
+`BrowserContext` com JWTs distintos (`ownerPage`/`guestPage`). `backend/lib/tasks/
+e2e.rake` (`rt:seed:e2e[base]`): UUIDs LITERAIS FIXOS (D-QA-2, sem Faker), owner+guest
+com senha conhecida, workspace de id fixo bootstrapado com catálogo de 31. Fonte
+única dos ids compartilhada com `fixtures/seed-constants.ts`. **Verificado no
+container:** seed idempotente (2×), login de owner+guest autentica, ws owner-ok,
+catálogo 31, person do dono. Fora de `app/` de propósito (não eager-load em prod).
+
+**6.3 lint da suíte + smoke — ENTREGUE (smoke=handoff).** `scripts/lint-e2e.mjs`
+(reprova `waitForTimeout`/`sleep`/`setTimeout` + >6 interações antes do 1º `expect`)
+— **passa** no smoke aqui (`npm run e2e:lint`). `tests/smoke.spec.ts` prova o harness
+(build carrega, SW registra, duas sessões distintas) — roda na WSL em Chromium+WebKit.
+
+**Status:** 6.1/6.2/6.3 ficam `[ ]` até o par rodar o smoke verde em Chromium E
+WebKit (regra do G0: DELTA vira `[x]` só quando VERDE; o que é handoff é anotado, não
+marcado falso). O seed e o lint estão verdes no container; o navegador é o que falta.
+`frontend/e2e/README.md` tem o runbook.
+
+**Próximo (após o smoke verde):** os 5 fluxos (7.x) estendem `rt:seed:e2e` com um
+cenário por fluxo (`[convite]`/`[offline]`/`[troca]`/`[revogacao]`/`[relatorio]`),
+mais 4.4 (E2E teclado), 5.5 (auditor de toque), 5.6 (axe-core), 8.5 (INP).

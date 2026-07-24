@@ -12,7 +12,10 @@
     "typecheck:test-imports": "node scripts/check-test-imports.mjs",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
-    "test:print": "node scripts/print-report.mjs"
+    "test:print": "node scripts/print-report.mjs",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui",
+    "e2e:lint": "node e2e/scripts/lint-e2e.mjs"
   },
   "dependencies": {
     "@rails/actioncable": "^7.1.2",
@@ -33,6 +36,7 @@
     "zustand": "^4.4.7"
   },
   "devDependencies": {
+    "@playwright/test": "^1.49.0",
     "@testing-library/jest-dom": "^6.1.5",
     "@testing-library/react": "^14.1.2",
     "@types/node": "^26.1.1",
