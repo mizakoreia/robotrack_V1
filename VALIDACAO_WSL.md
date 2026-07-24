@@ -71,7 +71,8 @@ npm install
 
 ```bash
 # BACKEND: a suíte INTEIRA num run só. ATUALIZAÇÃO: o container remoto AGORA roda a
-# suíte inteira (ruby 3.2.3 + gems prontos) — resultado de referência 1382/0, 8 pending,
+# suíte inteira (ruby 3.2.3 + gems prontos) — resultado de referência ATUAL 1443/0,
+# 9 pending (era 1382/0 antes da migração legada, que somou +56 specs em spec/legacy),
 # com raise_on_missing_translations ligado e Redis no ar. Rode aqui pra confirmar paridade.
 cd backend
 export PATH="$(rbenv root)/versions/3.2.3/bin:$PATH"   # ou rbenv shims
