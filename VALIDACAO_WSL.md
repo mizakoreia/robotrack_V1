@@ -74,9 +74,16 @@ npm install
 
 ```bash
 # BACKEND: a suíte INTEIRA num run só. ATUALIZAÇÃO: o container remoto AGORA roda a
-# suíte inteira (ruby 3.2.3 + gems prontos) — resultado de referência ATUAL 1443/0,
-# 9 pending (era 1382/0 antes da migração legada, que somou +56 specs em spec/legacy),
+# suíte inteira (ruby 3.2.3 + gems prontos) — resultado de referência ATUAL 1443/0
+# (era 1382/0 antes da migração legada, que somou +56 specs em spec/legacy),
 # com raise_on_missing_translations ligado e Redis no ar. Rode aqui pra confirmar paridade.
+#
+# PENDING depende de QUEM roda (não é divergência — o que importa é 1443 exemplos, 0 falhas):
+#   - como ROOT (container remoto): 9 pending. `su - postgres` funciona (2 specs de audit
+#     rodam) e `backup_spec` PULA (skip if Process.uid.zero?).
+#   - como USUÁRIO comum (WSL típica): 10 pending. `su - postgres` sem senha FALHA → os 2
+#     specs de audit (immutability_bypass:89, schema:131) pulam (+2); em compensação o
+#     `legacy/backup_spec:29` RODA (−1). Conta: 9 + 2 − 1 = 10. É esperado, nada a consertar.
 cd backend
 export PATH="$(rbenv root)/versions/3.2.3/bin:$PATH"   # ou rbenv shims
 RAILS_ENV=test bundle exec rspec        # roda como robotrack_app; esperado: verde
