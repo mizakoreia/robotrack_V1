@@ -39,7 +39,9 @@ healthy=false
 for _ in $(seq 1 40); do
   # Se o container já MORREU (exited), não adianta esperar o timeout inteiro —
   # o release falhou ou o boot do web abortou. Reprova na hora com os logs.
-  state=$($COMPOSE ps web --format '{{.State}}' 2>/dev/null || echo '')
+  # `ps` sem `-a` NÃO lista container parado (devolvia string vazia e a
+  # detecção precoce nunca disparava — feedback do par); `-a` inclui os mortos.
+  state=$($COMPOSE ps -a web --format '{{.State}}' 2>/dev/null || echo '')
   if [ "$state" = "exited" ]; then
     dump_and_fail "o container web morreu (state=exited) antes de ficar healthy"
   fi

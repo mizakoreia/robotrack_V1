@@ -48,6 +48,12 @@ RUN apk add --no-cache bash curl && \
     addgroup -S app && adduser -S app -G app
 
 COPY backend/ .
+# O Puma grava tmp/pids/server.pid no boot (config/puma.rb) e aborta com
+# Errno::ENOENT se o diretório não existir. O .dockerignore exclui backend/tmp
+# (lixo de dev, corretamente) — mas isso apaga tmp/pids junto, então recriamos
+# aqui. tmp/cache e tmp/sockets entram na mesma leva por serem exigidos por
+# outros componentes em produção (BUG 8).
+RUN mkdir -p tmp/pids tmp/cache tmp/sockets
 RUN chown -R app:app /app
 USER app
 
