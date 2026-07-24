@@ -315,9 +315,14 @@ está em `/opt/rbenv/versions/3.2.3` COM as gems instaladas (`bundle check` ok, 
   FIADO:** `useRecordAdvance` agora ENFILEIRA quando `navigator.onLine === false`
   (`enqueueAdvance` + `refresh()` do store → overlay reativo mostra o otimista; caminho
   online intocado, o 409 do modal só existe nele) — testado em
-  `useRecordAdvance.offline.test.tsx`. **Resta** a mesma fiação para a criação de robô
-  offline (`useCreateRobot` → `enqueueRobotCreate`, produtor e overlay já existem) — mesmo
-  padrão, escopo menor. Backend: só `HEAD /api/v1/health`.
+  `useRecordAdvance.offline.test.tsx`. Cobre o fluxo DIÁRIO (o operário registrando avanço
+  no galpão), que é o que importa offline. **Resta (rodada própria, NÃO trivial):** criar
+  robô offline. O caminho real da UI é o `BatchRobotWizard` (criação em LOTE, robot-tasks
+  2.5) — que NÃO tem produtor de fila nem overlay; `useCreateRobot` (robô único) está SEM
+  USO, e o `enqueueRobotCreate`/`overlayRobots` de robô único não estão no caminho da tela.
+  Fechar isto = produtor de lote + overlay de lote (card D15 `OverviewRobotCard` com
+  envelopes zerados) + fiação do assistente. Cenário raro (setup, feito na mesa com sinal),
+  por isso deferido. Backend: só `HEAD /api/v1/health`.
 - **`delivery-and-observability`** (G0..G8, COMPLETA, backend+config, Onda D11) — a infra
   que todo o domínio assume. Registro único de env (`config/env_schema.rb`) + guarda de
   boot; Dockerfile prod (não-root, HEALTHCHECK, sem assets), Procfile/bin/release (migrate
