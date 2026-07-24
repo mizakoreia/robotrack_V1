@@ -5,7 +5,12 @@ foram entregues como **código + config + spec de integração**, com a execuç�
 marcada como HANDOFF. A WSL (com Docker Desktop + navegador) é onde esses handoffs
 se fecham. Este arquivo é o roteiro.
 
-> Estado de referência: `main` = `ff79cd5` (24/07/2026), após a **campanha de deploy**
+> Estado de referência: `main` = `49b43d4` (24/07/2026), após a campanha de deploy
+> **e** a rodada de UI/UX + harness E2E (ver `CONTINUIDADE.md`). O harness E2E tem
+> runbook próprio em **`frontend/e2e/README.md`** — §4.2/§4.3/§4.4/§4.5 abaixo
+> seguem válidos, e o §6 deixou de ser "não é só rodar" para o G6 (fechado).
+>
+> Estado anterior: `ff79cd5`, após a **campanha de deploy**
 > (o par WSL operando Docker/navegador; o container corrigindo código e empurrando pra
 > `main`). Assinatura de commit é impossível no container (sem chave) — os commits saem
 > "Unverified"; é ambiental, não é problema de conteúdo.
@@ -330,16 +335,44 @@ o dataset e sem daemon).
 
 ---
 
-## 6. `quality-and-accessibility` (a wave restante) — NÃO é só rodar
+## 6. `quality-and-accessibility` — o harness E2E (G6) está FECHADO
 
-Esta capacidade é o gate de release e o proposal dela declara que NÃO entrega o
-pipeline de CI nem o harness Playwright. Os E2E de offline/realtime foram entregues
-como INTEGRAÇÃO (RTL/`fake-indexeddb`); a versão Chromium+WebKit precisa do harness
-Playwright, que é justamente o que essa wave CONSTRÓI. Ou seja: rodar na WSL não a
-completa — ela é trabalho de implementação (com o Playwright que a WSL viabiliza),
-não uma validação. `legacy-data-migration` foi construída (36/38) e FECHADA COMO
-DORMENTE (o sistema começa do zero, sem dado legado a migrar) — não há corte a rodar
-e o `RoboTrack_Database.json` não será fornecido; nada a validar na WSL.
+**Atualização:** o harness Playwright que esta seção dizia não existir foi
+CONSTRUÍDO e está verde (smoke 4/4 em Chromium+WebKit). `@playwright/test` é
+devDependency do frontend; o harness vive em `frontend/e2e/`.
+
+**O runbook do E2E é `frontend/e2e/README.md`** (setup, topologia confirmada, o que
+é handoff). Resumo operacional:
+
+```bash
+# 1. build de PRODUÇÃO servido (o SW de D7 só registra nele)
+cd frontend && npm run build && npx vite preview --port 4173 &
+
+# 2. backend na :3000 apontando para o banco E2E DEDICADO, recriado por rodada
+#    (o seed é idempotente, mas os FLUXOS mutam estado — convite/revogação —
+#     então rodadas não podem partilhar banco)
+cd ../backend && bundle exec rails 'rt:seed:e2e[convite]'   # ou [base]
+
+# 3. rodar
+cd ../frontend && E2E_BASE_URL=http://localhost:4173 npx playwright test
+```
+
+- `rt:seed:e2e` **RECUSA** banco cujo nome não contenha `e2e`/`test` (guarda contra
+  plantar usuários de teste no `robotrack_dev`).
+- CORS: o default do `cors.rb` já inclui `:4173`. Se você sobrepor `CORS_ORIGINS`,
+  inclua a origem do preview — senão o preflight volta sem
+  `access-control-allow-origin` e nenhuma chamada do app passa.
+- **Locators:** ancore por região/diálogo e use `{ exact: true }`. Quatro rodadas
+  foram perdidas com casamento por substring numa tela que ganha elementos conforme
+  o fluxo avança.
+- **Nunca** `context.serviceWorkers()` (Chromium-only): afirme pela página com
+  `navigator.serviceWorker.ready`.
+
+**O que resta desta change (11 tarefas):** os 5 fluxos (7.1 na slice 1), gate
+`axe-core` (5.6), E2E de teclado (4.4), auditor de alvo de toque (5.5), INP (8.5), e
+o **pipeline de CI** (handoff). `legacy-data-migration` foi construída (36/38) e
+FECHADA COMO DORMENTE (o sistema começa do zero) — não há corte a rodar e o
+`RoboTrack_Database.json` não será fornecido; nada a validar na WSL.
 
 ---
 

@@ -23,7 +23,7 @@ NÃO atualizam um clone existente; rodar código velho já causou falha fantasma
 certa é `git status` limpo + a paridade do Passo 0 verde.)
 
 **Estado (não re-descobrir):** **24 de 25 changes COMPLETAS.** Suítes verdes no container: **backend 1443/0**
-(9 pending esperados), **frontend 539/0**, `tsc`/`eslint`/guarda-de-imports limpos.
+(9 pending esperados), **frontend 555/0**, `tsc`/`eslint`/guarda-de-imports limpos.
 `legacy-data-migration` está **DORMENTE/não-aplicável** (o sistema começa do zero, sem dado
 a migrar) — **não toque nela e não peça o `RoboTrack_Database.json`; não existe.**
 
@@ -48,13 +48,19 @@ Os handoffs de `delivery-and-observability` (código+config+spec entregues; a ex
 - **§5** — o que **nem a WSL** fecha (CDN real, ingestão Sentry real, ensaio de rollback em
   staging na nuvem): documente como pendência, não force.
 
-### B) `quality-and-accessibility` (a 25ª change, 25/39)
-As 14 tarefas abertas são TODAS browser-gated e é a WSL que as viabiliza: harness
-`@playwright/test` (Chromium **+ WebKit**, build de produção servido) [6.1-6.3], os 5 fluxos
-E2E [7.1-7.7], gate `@axe-core/playwright` [5.6], E2E só-teclado [4.4], auditor de alvo de
-toque [5.5], INP com 24 cards [8.5]. A lógica já tem cobertura de integração RTL; aqui é a
-versão de browser real. **Se for construir isto: comece pelo `EXECUCAO.md` da change**
-(reconcilie o que já existe vs o delta) e siga grupo a grupo.
+### B) `quality-and-accessibility` (a 25ª change, 28/39)
+**O harness [6.1-6.3] JÁ EXISTE e está verde** (smoke 4/4 em Chromium+WebKit): vive em
+`frontend/e2e/`, com `@playwright/test` como devDependency do frontend e o seed
+determinístico `rt:seed:e2e[base|convite]`. **Runbook: `frontend/e2e/README.md`** — leia-o
+antes de rodar (topologia, banco dedicado por rodada, CORS do preview).
+
+As **11 tarefas abertas** seguem browser-gated: os 5 fluxos E2E [7.1-7.7] (**7.1 está na
+slice 1** — o núcleo do convite), gate `@axe-core/playwright` [5.6], E2E só-teclado [4.4],
+auditor de alvo de toque [5.5], INP com 24 cards [8.5]. A lógica já tem cobertura de
+integração RTL; aqui é a versão de browser real. **Comece pelo `EXECUCAO.md` da change** e
+siga grupo a grupo. Duas regras aprendidas a custo de rodada: **ancore locators por
+região/diálogo com `{exact:true}`**, e **nunca** use `context.serviceWorkers()`
+(Chromium-only) — afirme por `navigator.serviceWorker.ready`.
 
 **Método (mantido, não abrir mão):**
 1. Trabalhe na branch `claude/robotrack-task-catalog-tc-g3-6os4vm` (crie de `origin/main`
