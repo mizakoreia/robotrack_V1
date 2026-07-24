@@ -16,9 +16,11 @@ Você vai fazer o deploy do RoboTrack a partir da WSL (github.com/mizakoreia/rob
   fecha (§5).
 
 **Pegue a versão ATUAL do GitHub (não confie no clone antigo):**
-`git fetch origin && git checkout main && git pull --ff-only origin main` — o
-`git rev-parse --short HEAD` TEM de imprimir **`8b8b41c`**. `git fetch`+`checkout` sozinhos
+`git fetch origin && git checkout main && git pull --ff-only origin main`. Depois
+`git status` DEVE dizer "up to date with 'origin/main'". `git fetch`+`checkout` sozinhos
 NÃO atualizam um clone existente; rodar código velho já causou falha fantasma antes.
+(Não confie num SHA fixo aqui — ele muda a cada commit; a prova de que você está na versão
+certa é `git status` limpo + a paridade do Passo 0 verde.)
 
 **Estado (não re-descobrir):** **24 de 25 changes COMPLETAS.** Suítes verdes no container: **backend 1443/0**
 (9 pending esperados), **frontend 539/0**, `tsc`/`eslint`/guarda-de-imports limpos.
