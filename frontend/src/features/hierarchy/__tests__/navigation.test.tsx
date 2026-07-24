@@ -59,14 +59,14 @@ describe('navegação da hierarquia (5.6)', () => {
   it('Visão Geral → Projeto → Célula, e voltar da célula retorna ao PROJETO', async () => {
     mountApp()
 
-    // Visão Geral: o card do projeto
+    // Visão Geral: o card do projeto — o CARD INTEIRO navega (não só um botão)
     expect(await screen.findByText('Linha 300')).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Acessar' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir Linha 300' }))
 
     // Projeto: título + card da célula
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Linha 300' })).toBeInTheDocument())
     expect(await screen.findByText('Célula 01')).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Acessar' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir Célula 01' }))
 
     // Célula: título + card do robô
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Célula 01' })).toBeInTheDocument())

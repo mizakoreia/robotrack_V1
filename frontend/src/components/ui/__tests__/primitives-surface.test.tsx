@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { EntityCard } from '../EntityCard'
 import { ProgressRing } from '../ProgressRing'
 import { Hub } from '../Hub'
@@ -26,6 +26,45 @@ describe('EntityCard — badge é irmão do título (5.1)', () => {
     const card = container.firstElementChild as HTMLElement
     expect(card.className).toContain('h-full')
     expect(container.querySelector('.mt-auto')).toBeTruthy()
+  })
+
+  // O card inteiro é clicável para entrar (não só um botão), MAS um clique num
+  // controle interno (editar/excluir no rodapé) não navega — senão excluir levaria
+  // para dentro. Sem onClick, o card não vira button (nem tabbable).
+  it('com onClick: o card inteiro navega, mas botões internos não disparam a navegação', () => {
+    const onClick = vi.fn()
+    const onEdit = vi.fn()
+    render(
+      <EntityCard
+        title="Célula 01"
+        onClick={onClick}
+        footer={
+          <button type="button" onClick={onEdit}>
+            Excluir
+          </button>
+        }
+      />,
+    )
+    const card = screen.getByRole('button', { name: 'Abrir Célula 01' })
+    expect(card).toHaveAttribute('tabindex', '0')
+
+    // clicar o corpo do card (o título) navega
+    fireEvent.click(screen.getByRole('heading', { level: 3 }))
+    expect(onClick).toHaveBeenCalledTimes(1)
+
+    // clicar o botão interno NÃO navega (só a ação do botão)
+    fireEvent.click(screen.getByRole('button', { name: 'Excluir' }))
+    expect(onEdit).toHaveBeenCalledTimes(1)
+    expect(onClick).toHaveBeenCalledTimes(1) // continua 1
+
+    // Enter no card navega
+    fireEvent.keyDown(card, { key: 'Enter' })
+    expect(onClick).toHaveBeenCalledTimes(2)
+  })
+
+  it('sem onClick: o card não é interativo (sem role=button, sem tabindex)', () => {
+    render(<EntityCard title="Estático" />)
+    expect(screen.queryByRole('button')).toBeNull()
   })
 })
 

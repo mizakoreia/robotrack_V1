@@ -55,11 +55,12 @@ describe('OverviewPage — as duas métricas (D15)', () => {
     expect(screen.queryByText('40% de progresso físico global')).toBeNull()
   })
 
-  it('o card mostra o badge de contagem de células e o rodapé Acessar', async () => {
+  it('o card mostra o badge de contagem de células e é navegável (card inteiro)', async () => {
     vi.spyOn(overviewApi, 'workspace').mockResolvedValue(DIVERGENT)
     renderPage()
     expect(await screen.findByText('4 células')).toBeInTheDocument()
-    expect(screen.getByText('Acessar')).toBeInTheDocument()
+    // O card INTEIRO navega (role=button "Abrir <projeto>"), não só um botão no rodapé.
+    expect(screen.getByRole('button', { name: 'Abrir Linha 300' })).toBeInTheDocument()
     expect(screen.getByText('Linha 300')).toBeInTheDocument()
   })
 })

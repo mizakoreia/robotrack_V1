@@ -79,20 +79,11 @@ export function CellPage() {
                 key={robot.id}
                 title={robot.name}
                 icon="file"
+                onClick={() => navigate(`/robo/${robot.id}`)}
                 // badge = APLICAÇÃO (não a contagem de tarefas), §3.4
                 badge={<Badge status="accent">{robot.application}</Badge>}
                 ring={<ProgressRing value={robot.weighted_progress.value} metric="weighted" size={56} />}
-                footer={
-                  <div className="flex w-full items-center justify-between">
-                    <span className="label-sm text-text-muted">{hierarchyText.tasksFooter(robot.tasks_count)}</span>
-                    <button
-                      className="label-md inline-flex min-h-[2rem] items-center font-medium text-accent-ink hover:underline"
-                      onClick={() => navigate(`/robo/${robot.id}`)}
-                    >
-                      {t.robotOpen}
-                    </button>
-                  </div>
-                }
+                footer={<span className="label-sm text-text-muted">{hierarchyText.tasksFooter(robot.tasks_count)}</span>}
               />
             ))}
           </div>

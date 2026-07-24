@@ -21,11 +21,47 @@ export interface EntityCardProps {
   onClick?: () => void
 }
 
+// Controles internos (Abrir/editar/excluir) que NÃO devem disparar a navegação do
+// card ao serem clicados/ativados por teclado.
+const INNER_CONTROL = 'button, a, input, select, textarea, [role="button"], label'
+
 export function EntityCard({ title, icon, badge, ring, footer, children, className, onClick }: EntityCardProps) {
+  const interactive = !!onClick
+
+  // O card inteiro navega, mas um clique que nasce num controle interno (os botões
+  // de editar/excluir do rodapé) NÃO deve navegar — senão excluir uma célula te
+  // levaria pra dentro dela. `closest` sobe do alvo até um controle; o `!== card`
+  // exclui o PRÓPRIO card (que é `role="button"`) de se auto-detectar como interno.
+  const fromInnerControl = (target: EventTarget | null, card: EventTarget) => {
+    if (!(target instanceof HTMLElement)) return false
+    const el = target.closest(INNER_CONTROL)
+    return !!el && el !== card
+  }
+
+  const activate = (e: React.MouseEvent) => {
+    if (fromInnerControl(e.target, e.currentTarget)) return
+    onClick?.()
+  }
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if ((e.key === 'Enter' || e.key === ' ') && !fromInnerControl(e.target, e.currentTarget)) {
+      e.preventDefault()
+      onClick?.()
+    }
+  }
+
   return (
     <div
-      className={cn('surface-panel flex h-full flex-col gap-3 rounded-lg border p-4 shadow-sh-1', className)}
-      onClick={onClick}
+      className={cn(
+        'surface-panel flex h-full flex-col gap-3 rounded-lg border p-4 shadow-sh-1',
+        interactive &&
+          'cursor-pointer transition-colors hover:border-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
+        className,
+      )}
+      onClick={interactive ? activate : undefined}
+      onKeyDown={interactive ? onKeyDown : undefined}
+      role={interactive ? 'button' : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      aria-label={interactive ? `Abrir ${title}` : undefined}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="card-meta flex min-w-0 items-center gap-2">

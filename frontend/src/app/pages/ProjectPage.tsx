@@ -77,25 +77,18 @@ export function ProjectPage() {
                 key={cell.id}
                 title={cell.name}
                 icon="list"
+                onClick={() => navigate(`/celula/${cell.id}`)}
                 badge={<Badge status="na">{hierarchyText.robotsBadge(cell.robots_count)}</Badge>}
                 ring={<ProgressRing value={cell.weighted_progress.value} metric="weighted" size={56} />}
                 footer={
                   <div className="flex w-full items-center justify-between">
                     <span className="label-sm text-text-muted">{t.cellFooter}</span>
-                    <div className="flex items-center gap-1">
-                      {canEdit && (
-                        <>
-                          <IconButton icon="edit" label={`Renomear ${cell.name}`} size="sm" onClick={() => setRenaming(cell)} />
-                          <IconButton icon="trash" label={`Excluir ${cell.name}`} size="sm" onClick={() => setRemoving(cell)} />
-                        </>
-                      )}
-                      <button
-                        className="label-md inline-flex min-h-[2rem] items-center font-medium text-accent-ink hover:underline"
-                        onClick={() => navigate(`/celula/${cell.id}`)}
-                      >
-                        {hierarchyText.overview.cardFooterOpen}
-                      </button>
-                    </div>
+                    {canEdit && (
+                      <div className="flex items-center gap-1">
+                        <IconButton icon="edit" label={`Renomear ${cell.name}`} size="sm" onClick={() => setRenaming(cell)} />
+                        <IconButton icon="trash" label={`Excluir ${cell.name}`} size="sm" onClick={() => setRemoving(cell)} />
+                      </div>
+                    )}
                   </div>
                 }
               />
