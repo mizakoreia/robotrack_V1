@@ -125,11 +125,25 @@ describe('AppShell (§3.10, D-F)', () => {
     expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ top: 0 }))
   })
 
-  it('a topbar renderiza a 375px com o gatilho da gaveta e o menu da conta', () => {
+  it('a topbar renderiza a 375px com o gatilho da gaveta', () => {
     window.innerWidth = 375
     render(<Shell />)
     expect(screen.getByRole('button', { name: 'Abrir menu' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Conta' })).toBeInTheDocument()
+    // As ações de conta NÃO moram mais num segundo menu na topbar: o card de
+    // usuário da sidebar é o menu único de conta (ver o teste abaixo).
+    expect(screen.queryByRole('button', { name: 'Conta' })).toBeNull()
+  })
+
+  // O menu de conta consolidado: tema e sair moraram na topbar; agora estão no
+  // card de usuário (canto inferior esquerdo), junto dos destinos de gestão.
+  it('o card de usuário abre o menu de conta com tema e sair', () => {
+    render(<Shell />)
+    const card = screen.getByRole('button', { name: /^Conta:/ })
+    act(() => card.click())
+    const menu = screen.getByRole('menu', { name: 'Conta' })
+    for (const label of ['Configurações do workspace', 'Equipe e convites', 'Alternar tema', 'Sair']) {
+      expect(within(menu).getByRole('menuitem', { name: label })).toBeInTheDocument()
+    }
   })
 
   it('o card de usuário usa o e-mail como fallback quando o nome é vazio', () => {

@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { Icon } from '@/components/icons/Icon'
 import { IconButton } from '@/components/ui/IconButton'
+import { Button } from '@/components/ui/Button'
 import { SaveIndicator } from '@/components/ui/SaveIndicator'
 import { PortalMenu } from '@/components/menu/PortalMenu'
 import { useMenu } from '@/components/menu/useMenu'
@@ -112,6 +113,7 @@ function Sidebar({
 }) {
   const menu = useMenu()
   const navigate = useNavigate()
+  const { toggleTheme } = useTheme()
   const name = user?.name?.trim()
   const email = user?.email ?? ''
   const primary = name || email // fallback ao e-mail quando o nome é vazio
@@ -154,8 +156,12 @@ function Sidebar({
           <div className="mb-2">
             <SaveIndicator state={saveState} />
           </div>
+          {/* O nome sozinho não diz o que o botão FAZ (leitor de tela ouviria só
+              "Ana Silva, botão"). O rótulo nomeia a ação; o conteúdo visual segue
+              sendo o card. */}
           <button
             {...menu.triggerProps}
+            aria-label={`Conta: ${primary}`}
             className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left hover:bg-accent/10"
           >
             <span className="grid h-8 w-8 shrink-0 place-content-center rounded-full bg-accent/15 text-accent-ink">
@@ -167,16 +173,22 @@ function Sidebar({
             </span>
             <Icon name="chevron-down" size="sm" className="text-text-muted" />
           </button>
+          {/* O card de usuário é O menu de conta (padrão de produto: canto inferior
+              esquerdo). Antes as ações de conta viviam num SEGUNDO menu, o chevron
+              da topbar — dois vocabulários para a mesma coisa. Consolidado aqui:
+              destinos de gestão primeiro, preferência, e `Sair` por último. */}
           <PortalMenu
             anchorRef={menu.anchorRef}
             open={menu.open}
             onClose={menu.close}
-            label="Edição e visualização"
+            label="Conta"
             items={[
               // workspace-settings 6.x — a tela existe; os destinos fantasma
               // (/logs, /backup) viraram a própria tela de Configurações.
               { label: 'Configurações do workspace', onSelect: () => navigate('/configuracoes') },
               { label: 'Equipe e convites', onSelect: () => navigate('/configuracoes/equipe') },
+              { label: 'Alternar tema', onSelect: () => toggleTheme() },
+              { label: 'Sair', onSelect: () => void performLogout((p) => navigate(p)) },
             ]}
           />
         </div>
@@ -196,16 +208,9 @@ function Topbar({
   onOpenDrawer: () => void
   onNavigate: (path: string) => void
 }) {
-  const menu = useMenu()
-  const { toggleTheme } = useTheme()
-  const navigate = useNavigate()
+  // As ações de conta (tema/sair) moraram aqui num segundo menu; agora vivem no
+  // card de usuário da sidebar (canto inferior esquerdo), menu único de conta.
   const canManage = role === 'owner' || role === 'edit'
-
-  const accountItems = [
-    ...(canManage ? [{ label: 'Adicionar usuário', onSelect: () => onNavigate('/configuracoes/equipe') }] : []),
-    { label: 'Alternar tema', onSelect: () => toggleTheme() },
-    { label: 'Sair', onSelect: () => void performLogout((p) => navigate(p)) },
-  ]
 
   return (
     <header className="surface-panel z-sticky flex h-14 items-center gap-3 border-b px-3">
@@ -229,10 +234,22 @@ function Topbar({
         <NotificationBell />
       </div>
 
-      <button {...menu.triggerProps} aria-label="Conta" className="grid h-9 w-9 place-content-center rounded-full bg-accent/15 text-accent-ink">
-        <Icon name="chevron-down" size="sm" />
-      </button>
-      <PortalMenu anchorRef={menu.anchorRef} open={menu.open} onClose={menu.close} label="Conta" items={accountItems} />
+      {/* Convidar pessoa: AÇÃO de gestão, não item escondido num menu. Só para
+          quem gerencia (o servidor recusa os demais de qualquer forma — isto é
+          não oferecer o que seria negado). Rótulo some abaixo de md; o
+          `aria-label` mantém o nome acessível no estado só-ícone. */}
+      {canManage && (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          aria-label="Convidar pessoa"
+          onClick={() => onNavigate('/configuracoes/equipe')}
+        >
+          <Icon name="plus" size="sm" />
+          <span className="ml-1.5 hidden md:inline">Convidar pessoa</span>
+        </Button>
+      )}
     </header>
   )
 }
