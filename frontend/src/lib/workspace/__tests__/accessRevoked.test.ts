@@ -56,7 +56,7 @@ describe('handleAccessRevoked', () => {
     const store = useWorkspaceStore.getState()
     expect(store.workspaces.map((w) => w.id)).toEqual([WS_PROPRIO])
     expect(store.currentWorkspaceId).toBe(WS_PROPRIO)
-    expect(navegou).toEqual(['/dashboard'])
+    expect(navegou).toEqual(['/'])
   })
 
   it('descarta TODO o cache com prefixo [ws, wsId] e preserva o dos outros', () => {
@@ -89,7 +89,7 @@ describe('handleAccessRevoked', () => {
     handleAccessRevoked(WS_A)
 
     expect(useWorkspaceStore.getState().currentWorkspaceId).toBeNull()
-    expect(navegou).toEqual(['/dashboard'])
+    expect(navegou).toEqual(['/'])
   })
 
   it('reinserir o workspace no índice local não devolve acesso: é cache de UI', () => {

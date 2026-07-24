@@ -70,7 +70,7 @@ export function OAuthCallbackPage() {
       }
 
       await handleInviteAfterAuth()
-      navigate('/dashboard')
+      navigate('/') // Visão Geral (o /dashboard é stub legado do template)
     }
 
     void run()

@@ -43,7 +43,7 @@ export function InviteRoute() {
     replaceUrl()
 
     if (autenticado) {
-      void consumeInvite(token).finally(() => navigate('/dashboard'))
+      void consumeInvite(token).finally(() => navigate('/')) // Visão Geral (não o stub /dashboard)
       return
     }
 

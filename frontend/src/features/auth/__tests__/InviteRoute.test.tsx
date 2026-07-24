@@ -115,7 +115,7 @@ describe('InviteRoute', () => {
 
     await waitFor(() => expect(acceptMock).toHaveBeenCalledWith(TOKEN))
     expect(previewMock).not.toHaveBeenCalled()
-    await waitFor(() => expect(navigateMock).toHaveBeenCalledWith('/dashboard'))
+    await waitFor(() => expect(navigateMock).toHaveBeenCalledWith('/'))
     // Limpo em QUALQUER desfecho: uma navegação seguinte não reemite o aceite.
     expect(inviteStore.read()).toBeNull()
   })

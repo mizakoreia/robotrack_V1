@@ -69,7 +69,7 @@ export function handleAccessRevoked(workspaceId: string, options: { workspaceNam
     toast.warning(inviteText.accessRevoked(nome), { duration: Infinity })
   }
 
-  go('/dashboard')
+  go('/') // Visão Geral do próprio workspace (o /dashboard é stub legado do template)
 }
 
 /** Só para os testes: zera a memória de deduplicação entre exemplos. */
