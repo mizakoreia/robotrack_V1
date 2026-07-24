@@ -25,10 +25,16 @@ cd frontend && npm install && npx playwright install chromium webkit
 
 # 2. servir o BUILD DE PRODUÇÃO + backend (ex.: via a stack de staging, ou:)
 npm run build && npx vite preview --port 4173 &   # front prod em :4173
-#    backend em :3000 (o app chama a :3000 direto — client.ts força a porta)
+#    backend em :3000 (o app chama a :3000 direto — client.ts força a porta),
+#    apontando para o banco robotrack_e2e e liberando CORS para a origem :4173:
+#      DATABASE_URL=postgres://robotrack_app:...@localhost/robotrack_e2e \
+#      CORS_ORIGINS="http://localhost:4173,http://localhost:3000" bin/rails s -p 3000
+#    (o default do cors.rb já inclui :4173, mas se você sobrepõe CORS_ORIGINS,
+#     inclua :4173 — senão o preflight volta sem access-control-allow-origin e
+#     nenhuma chamada do app passa: o WorkspaceContext cai em "Recarregar".)
 
-# 3. semear o estado E2E determinístico
-cd ../backend && bundle exec rails 'rt:seed:e2e[base]'
+# 3. semear o estado E2E determinístico (contra o robotrack_e2e)
+cd ../backend && bundle exec rails 'rt:seed:e2e[base]'      # ou [convite]
 
 # 4. rodar
 cd ../frontend

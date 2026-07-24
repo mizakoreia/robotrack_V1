@@ -278,3 +278,27 @@ OAuth — candidato a ficar como integração, não E2E). 7.1 fica `[ ]` até tu
 workspace PRÓPRIO (role owner) — então o convidado cai no workspace dele, não no que
 acabou de entrar. Provável ajuste de UX (aceite → abrir o workspace convidado), a
 decidir quando a slice 2 rodar.
+
+### BUG 15 — a fixture nunca autenticava (e o smoke passava por acaso)
+
+O par rodou o invite.spec e caiu na TELA DE LOGIN nos dois navegadores. Causa:
+`fixtures/session.ts` fazia `as { data: Session }` (Session = camelCase `accessToken`),
+mas a API devolve `data.access_token` (snake_case). `as` é cast de TIPO, não
+mapeamento em runtime → `accessToken` undefined → `JSON.stringify` descarta a chave →
+o contexto nasce SEM token → cai no login. Consertado: MAPEIA
+`access_token → accessToken`.
+
+**E o smoke 4/4 era falso positivo** (mesma família do falso positivo do staging): as
+duas asserções passavam na tela de login (`#root` visível lá também; o `user` era
+serializado, só o token sumia). O 6.3 ("entra AUTENTICADA sem clicar no login") nunca
+foi provado. `smoke.spec` endurecido: afirma (a) `accessToken` no localStorage, (b) o
+destino "Visão Geral" da sidebar (só existe no shell autenticado), (c) ausência do
+heading "Entrar".
+
+**CORS :4173** (achado do par): o default do `cors.rb` era `:5173,:3000` — o preview
+:4173 (alvo obrigatório do E2E) ficava fora, o preflight voltava sem
+`access-control-allow-origin` e nenhuma chamada passava (WorkspaceContext degradava
+para "Recarregar"). Default passou a incluir `:4173`; procedimento no `e2e/README.md`.
+
+**As 4 correções de UI (sino, dashboard→/, card clicável, slider do modal) o par
+CONFIRMOU no app vivo** (Chromium real). Só o harness estava quebrado, não o produto.

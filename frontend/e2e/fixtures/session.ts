@@ -40,8 +40,13 @@ export async function apiLogin(request: APIRequestContext, user: SeededUser, api
         'Rodou `bin/rails rt:seed:e2e[base]` contra este banco?',
     )
   }
-  const body = (await res.json()) as { data: Session }
-  return body.data
+  // A API devolve snake_case (`data.access_token`); o authStore hidrata camelCase
+  // (`accessToken`). Fazemos o MAPEAMENTO em runtime — um `as` seria só cast de
+  // tipo, deixaria `accessToken` undefined, e o JSON.stringify descartaria a chave:
+  // o contexto nasceria SEM token e a sessão cairia na tela de login (BUG 15, que
+  // ainda fez o smoke passar por acaso porque o `user` era serializado).
+  const body = (await res.json()) as { data: { access_token: string; user: Session['user'] } }
+  return { accessToken: body.data.access_token, user: body.data.user }
 }
 
 // Constrói um BrowserContext JÁ AUTENTICADO injetando a sessão no localStorage no
