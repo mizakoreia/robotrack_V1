@@ -66,6 +66,25 @@ RSpec.describe 'Criação de convite', :tenancy, type: :request do
       expect(body).to all(include('invite_url' => a_string_matching(%r{/convite/rt_inv_})))
     end
 
+    # REGRESSÃO: a listagem devolvia TODOS os convites, inclusive os CONSUMIDOS —
+    # o dono via, sob o título "Convites pendentes", o convite de quem já é
+    # membro, com link de aparência viva e botão Revogar. O registro daquele
+    # acesso é a linha de MEMBRO, não um convite pendente eterno.
+    it 'NÃO lista convite já consumido (used_at preenchido)' do
+      post_invitation(owner, ws, { email: 'joao@fabrica.com', role: 'view' })
+      post_invitation(owner, ws, { email: 'ana2@fabrica.com', role: 'edit' })
+      # Consumo é um fato ATÔMICO no banco (chk_invitations_consumption): used_at
+      # e used_by_user_id andam juntos, não há meio-consumido.
+      in_workspace(ws) do
+        Invitation.find_by(email: 'joao@fabrica.com').update!(used_at: Time.current, used_by_user_id: owner.id)
+      end
+
+      get '/api/v1/invitations', headers: headers_for(owner, ws)
+
+      body = JSON.parse(response.body)
+      expect(body.map { |i| i['email'] }).to contain_exactly('ana2@fabrica.com')
+    end
+
     it 'recusa o segundo convite pendente para o mesmo e-mail (409)' do
       post_invitation(owner, ws, { email: 'joao@fabrica.com', role: 'view' })
       expect(response).to have_http_status(:created)

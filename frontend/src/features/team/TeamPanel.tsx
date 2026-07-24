@@ -84,8 +84,14 @@ export function TeamPanel() {
         />
       )}
 
-      <div>
-        <h3 className="font-medium">{inviteText.membersTitle}</h3>
+      {/* Regiões NOMEADAS: "Membros" e "Convites pendentes" listam o MESMO e-mail
+          em momentos diferentes do fluxo. Sem landmark, nem o leitor de tela nem
+          um teste distinguem "virou membro" de "ainda pendente" — e é justamente
+          essa a diferença que importa. */}
+      <div role="region" aria-labelledby="equipe-membros">
+        <h3 id="equipe-membros" className="font-medium">
+          {inviteText.membersTitle}
+        </h3>
         {members.isError && <p className="mt-2 text-sm text-destructive">{inviteText.loadFailure}</p>}
         <ul className="mt-2 divide-y rounded-lg border">
           {(members.data ?? []).map((member) => (
@@ -105,8 +111,10 @@ export function TeamPanel() {
       </div>
 
       {isOwner && (
-        <div>
-          <h3 className="font-medium">{inviteText.invitationsTitle}</h3>
+        <div role="region" aria-labelledby="equipe-convites">
+          <h3 id="equipe-convites" className="font-medium">
+            {inviteText.invitationsTitle}
+          </h3>
           {(invitations.data ?? []).length === 0 && !invitations.isLoading && (
             <p className="mt-2 text-sm text-muted-foreground">{inviteText.invitationsEmpty}</p>
           )}

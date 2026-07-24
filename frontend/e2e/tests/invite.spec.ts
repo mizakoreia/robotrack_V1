@@ -38,9 +38,17 @@ test.describe('Fluxo 1 — convite (duas sessões)', () => {
     // O InviteRoute autenticado aceita e navega para a Visão Geral (sai do /convite).
     await expect(guestPage).not.toHaveURL(/\/convite\//)
 
-    // — Dono: o painel de equipe reflete o novo membro SEM reload manual —
-    // (Playwright reconsulta a asserção até o timeout: se o realtime invalidar a
-    //  lista de membros, o convidado aparece sem recarregar.)
-    await expect(ownerPage.getByText(SEED.guest.email)).toBeVisible({ timeout: 15_000 })
+    // — Dono: o novo MEMBRO aparece SEM reload manual —
+    // Ancorado na REGIÃO "Membros": o mesmo e-mail também aparece em "Convites
+    // pendentes", então uma busca na página inteira passaria com o convite ainda
+    // PENDENTE — o oposto do que este fluxo prova. (Playwright reconsulta até o
+    // timeout: se o realtime invalidar a lista, o convidado aparece sem recarregar.)
+    const membros = ownerPage.getByRole('region', { name: 'Membros' })
+    await expect(membros.getByText(SEED.guest.email)).toBeVisible({ timeout: 15_000 })
+
+    // E o convite SAI de "Convites pendentes" — o dono não deve ver convite
+    // pendente para quem já é membro.
+    const pendentes = ownerPage.getByRole('region', { name: 'Convites pendentes' })
+    await expect(pendentes.getByText(SEED.guest.email)).toHaveCount(0, { timeout: 15_000 })
   })
 })

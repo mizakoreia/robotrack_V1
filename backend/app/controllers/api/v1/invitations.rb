@@ -23,7 +23,13 @@ module Api
         # avaliada ANTES de este bloco rodar.
         route_setting :policy, policy: 'InvitationPolicy', action: :index
         get do
-          present ::Invitation.order(created_at: :desc).to_a, with: Api::Entities::Invitation
+          # `.pending` (used_at IS NULL): um convite CONSUMIDO não volta nesta
+          # lista. Sem o escopo, o dono via o convite de quem JÁ é membro sob o
+          # título "Convites pendentes", com link de aparência viva e botão
+          # Revogar — estado desonesto, e o registro do acesso é a linha de
+          # membro. Expirado-não-consumido CONTINUA vindo de propósito (o dono
+          # precisa saber que aquele link morreu; a UI o distingue por `status`).
+          present ::Invitation.pending.order(created_at: :desc).to_a, with: Api::Entities::Invitation
         end
 
         # POST /api/v1/invitations — cria e devolve o link absoluto.
