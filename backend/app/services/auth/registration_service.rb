@@ -19,6 +19,11 @@ module Auth
       user = User.new(name: name, email: normalized, password: password)
 
       if user.save
+        # workspace-core §5.1/5.2 (D-10) — bootstrap do workspace no cadastro (o
+        # cadastro já auto-loga). Cria o workspace + semeia as 31 tarefas-base na
+        # mesma transação; idempotente. Sem isto, o novo usuário entra sem workspace
+        # e a Visão Geral falha para sempre (BUG 6).
+        ::Workspaces::BootstrapService.new(user: user).call
         token, = TokenService.issue(user, remember_me: remember_me)
         { ok: true, status: 201, token: token, user: user }
       elsif user.errors.key?(:email) && user.errors.details[:email].any? { |e| e[:error] == :taken }

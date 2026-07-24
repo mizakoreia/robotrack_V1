@@ -13,6 +13,11 @@ module Users
       user = ::Auth::GoogleOauthService.from_omniauth(request.env['omniauth.auth'])
 
       if user
+        # workspace-core §5.1/5.2 (D-10) — bootstrap no PRIMEIRO LOGIN, também para
+        # o caminho Google (que nunca passa por registration/session_service).
+        # Idempotente; cura contas órfãs no próximo acesso. Sem isto, o usuário
+        # Google entra sem workspace e a Visão Geral falha (BUG 6).
+        ::Workspaces::BootstrapService.new(user: user).call
         token, payload = ::Auth::TokenService.issue(user, remember_me: remember_me_param)
         redirect_to_frontend("access_token=#{CGI.escape(token)}&expires_at=#{payload['exp']}")
       else

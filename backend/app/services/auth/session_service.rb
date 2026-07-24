@@ -25,6 +25,12 @@ module Auth
       user = User.find_by(email: email.to_s.downcase.strip)
 
       if user&.valid_password?(password)
+        # workspace-core §5.1/5.2 (D-10) — o gancho de PRIMEIRO LOGIN. Idempotente e
+        # à prova de corrida: no login normal é um SELECT barato (o workspace já
+        # existe); numa conta órfã (criada antes deste gancho existir) cria o
+        # workspace + semeia as 31 tarefas-base. Sem isto, a Visão Geral falha para
+        # sempre por não haver workspace (BUG 6, achado no smoke de deploy).
+        ::Workspaces::BootstrapService.new(user: user).call
         token, = TokenService.issue(user, remember_me: remember_me)
         { ok: true, status: 200, token: token, user: user }
       else
