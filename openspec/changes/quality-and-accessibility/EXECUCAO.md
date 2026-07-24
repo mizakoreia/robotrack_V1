@@ -227,3 +227,31 @@ do produto.
 revogação). Ambas no `frontend/e2e/README.md`.
 
 Após o par re-rodar Chromium+WebKit verdes, 6.1/6.2/6.3 fecham e seguem os 5 fluxos.
+
+### G6 FECHADO + regra de contraste de campo (24/07/2026)
+
+**Smoke verde nos DOIS navegadores** (par WSL): 4/4 Chromium+WebKit. 6.1/6.2/6.3
+→ `[x]`. Observação do par para os fluxos: o WebKit registra o SW mais devagar
+(~10.7s vs 5.9s) — se um fluxo ficar flaky SÓ no WebKit, a suspeita começa por
+timing de service worker, não pelo cenário.
+
+**Restrição de topologia registrada:** demo e E2E não coexistem hoje (o bundle
+embute a origem da API em build time; `E2E_API_URL` só afeta o login da fixture). O
+backend da :3000 tem de apontar pro `robotrack_e2e` na rodada (troca manual). O
+caminho para CI determinístico (VITE_API_URL + backend dedicado) está no
+`frontend/e2e/README.md` como follow-up do operador.
+
+**Regra F de contraste (convention-sweep) — fecha a CLASSE do bug branco-sobre-branco.**
+O contraste ilegível bateu DUAS vezes (login, depois criar-robô): campo nativo sem
+token de fundo cai no branco do navegador e some no tema escuro. Em vez de caçar
+campo a campo, `tests/convention-sweep.test.ts` ganhou a regra F: todo
+`<input>/<select>/<textarea>` nativo precisa de fundo temático (inline `bg-*`, classe
+de campo `.input`/`.input-base`/`.surface-*`, ou className computada). Extrator de tag
+que respeita `=>` e `{}` + neutralização de comentários (senão `<input>` citado em
+comentário vira falso positivo). PROVADO que morde: flaga o padrão do login velho
+(estático sem bg) e o do robô velho (sem className); passa nos temáticos. Suíte
+frontend 543/0 (95 arquivos), incluindo a regra F verde no código atual.
+
+**vitest.config:** exclui `e2e/**` da coleta — os specs de Playwright rodam sob
+`@playwright/test`, não vitest (senão o `npm test`/CI falha no import). Os testes de
+INTEGRAÇÃO `*.e2e.test.tsx` em `src/` seguem vitest, intocados.

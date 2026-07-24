@@ -54,6 +54,19 @@ E2E_BASE_URL=http://localhost:4173 npm run e2e
   rodadas não podem partilhar banco. O `rt:seed:e2e` RECUSA rodar contra um banco
   cujo nome não contenha `e2e`/`test` (guarda contra cair no `robotrack_dev`).
 
+## Restrição: demo e E2E NÃO coexistem (hoje)
+
+O bundle embute a origem da API em BUILD TIME (`client.ts` força `:3000`), e
+`E2E_API_URL` só afeta o LOGIN DA FIXTURE — não as requisições que o APP faz. Logo,
+o backend da `:3000` tem de apontar para o `robotrack_e2e` durante a rodada: hoje é
+troca manual do `DATABASE_URL` (derruba a demo, roda o E2E, devolve pro dev). O
+guard do seed protege o SEED de cair no `robotrack_dev`, **não** o backend.
+
+Para CI determinístico / demo+E2E lado a lado (follow-up): buildar o bundle E2E com
+`VITE_API_URL` apontando para outra porta (ex.: `:3001`) + um segundo backend
+dedicado ao `robotrack_e2e`, e setar `E2E_API_URL` para a mesma origem. Aí não há
+troca manual nem colisão na `:3000`. Decisão do operador — hoje a troca manual serve.
+
 ## Handoff (WSL) — o que só o navegador fecha
 
 - Rodar `smoke.spec.ts` verde em **Chromium E WebKit** (Chromium 149 + WebKit 26.5
