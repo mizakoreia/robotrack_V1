@@ -62,3 +62,11 @@ code=$($COMPOSE exec -T web curl -s -o /dev/null -w '%{http_code}' \
   http://localhost:3000/health/ready || echo '000')
 [ "$code" = "200" ] || dump_and_fail "/health/ready respondeu $code (esperado 200)"
 echo "[smoke] OK: /health/ready = 200"
+
+# O worker não tem endpoint HTTP, mas MORRE se subir com o papel errado (o guard de
+# imutabilidade aborta) — foi assim que o BUG 10 passou batido: o smoke só olhava o
+# web. Afirma que o worker está de pé (running), não exited.
+echo "[smoke] afirmando que o worker está de pé…"
+wstate=$($COMPOSE ps -a worker --format '{{.State}}' 2>/dev/null || echo '')
+[ "$wstate" = "running" ] || dump_and_fail "o worker não está running (state=$wstate)"
+echo "[smoke] OK: worker running"

@@ -1,19 +1,50 @@
 # Staging sobre a IMAGEM DE PRODUÇÃO (delivery-and-observability 2.4). Prova que o
-# build de produção sobe: `release` roda as migrations, `web`/`worker` só sobem
-# depois, e o healthcheck de `/health/ready` gate o `depends_on`. Um Procfile com
-# processo faltando reprova o smoke, não o primeiro deploy real.
+# build de produção sobe: `release` roda as migrations (como o migrator) e reconcilia
+# os papéis; `web`/`worker` só sobem depois, conectando como robotrack_app (não-super,
+# sob RLS); o healthcheck de `/health/ready` gate o `depends_on`. Um Procfile com
+# processo faltando, uma migration que não roda, ou um papel de runtime com privilégio
+# demais reprovam o smoke, não o primeiro deploy real.
+#
+# Papéis REAIS (BUG 10): o Postgres sobe com o superusuário `postgres` só para o
+# bootstrap; `docker/staging/init-roles.sql` cria robotrack_migrator (dono) e
+# robotrack_app (runtime, sem SUPERUSER/BYPASSRLS). Antes o compose usava
+# POSTGRES_USER: robotrack_app, que a imagem cria como SUPERUSUÁRIO — o runtime
+# subia como dono, a camada 1 (REVOKE) ficava inerte e o guard de imutabilidade
+# abortava o worker.
 #
 # HANDOFF: o smoke (scripts/staging_smoke.sh) precisa de um daemon Docker, ausente
 # neste ambiente efêmero — registrado no runbook de delivery-and-observability.
+
+x-backend-env: &backend_env
+  RAILS_ENV: production
+  REDIS_URL: redis://redis:6379/1
+  # Redis por FUNÇÃO com dbs DISTINTOS: em production o app exige as 3 (env_schema)
+  # e o guarda de topologia ABORTA o boot se cache/queue/cable resolverem para o
+  # mesmo (host,porta,db). Sem isto o web nunca sobe no smoke (§4.4).
+  REDIS_CACHE_URL: redis://redis:6379/1
+  REDIS_QUEUE_URL: redis://redis:6379/2
+  REDIS_CABLE_URL: redis://redis:6379/3
+  SECRET_KEY_BASE: staging-secret-not-for-production
+  ACTION_CABLE_URL: ws://localhost:3000/cable
+  CORS_ORIGINS: http://localhost:3000
+  # Obrigatórias em production (env_schema): sem elas o boot aborta antes do web.
+  METRICS_TOKEN: staging-metrics-token-not-for-production
+  APP_URL: http://localhost:3000
+  RAILS_LOG_TO_STDOUT: 'true'
+  FORCE_SSL: 'false'
+
 services:
   postgres:
     image: postgres:16
     environment:
-      POSTGRES_USER: robotrack_app
-      POSTGRES_PASSWORD: app_dev_pw
+      # Superusuário SÓ para bootstrap; os papéis reais vêm do init-roles.sql.
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_bootstrap_pw
       POSTGRES_DB: robotrack_staging
+    volumes:
+      - ./docker/staging/init-roles.sql:/docker-entrypoint-initdb.d/00-roles.sql:ro
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U robotrack_app -d robotrack_staging']
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d robotrack_staging']
       interval: 5s
       timeout: 3s
       retries: 10
@@ -31,25 +62,14 @@ services:
       context: .
       dockerfile: Dockerfile
       target: backend-prod
-    command: ['bin/release']
-    environment: &backend_env
-      RAILS_ENV: production
-      DATABASE_URL: postgres://robotrack_app:app_dev_pw@postgres/robotrack_staging
-      REDIS_URL: redis://redis:6379/1
-      # Redis por FUNÇÃO com dbs DISTINTOS: em production o app exige as 3 (env_schema)
-      # e o guarda de topologia ABORTA o boot se cache/queue/cable resolverem para o
-      # mesmo (host,porta,db). Sem isto o web nunca sobe no smoke (§4.4).
-      REDIS_CACHE_URL: redis://redis:6379/1
-      REDIS_QUEUE_URL: redis://redis:6379/2
-      REDIS_CABLE_URL: redis://redis:6379/3
-      SECRET_KEY_BASE: staging-secret-not-for-production
-      ACTION_CABLE_URL: ws://localhost:3000/cable
-      CORS_ORIGINS: http://localhost:3000
-      # Obrigatórias em production (env_schema): sem elas o boot aborta antes do web.
-      METRICS_TOKEN: staging-metrics-token-not-for-production
-      APP_URL: http://localhost:3000
-      RAILS_LOG_TO_STDOUT: 'true'
-      FORCE_SSL: 'false'
+    # Migra como o migrator e reconcilia os REVOKE append-only (BUG 10).
+    command: ['bash', '/staging/release.sh']
+    volumes:
+      - ./docker/staging:/staging:ro
+    environment:
+      <<: *backend_env
+      # release conecta como o MIGRATOR: DDL/migrations e dono das tabelas.
+      DATABASE_URL: postgres://robotrack_migrator:mig_staging_pw@postgres/robotrack_staging
     depends_on:
       postgres:
         condition: service_healthy
@@ -61,7 +81,11 @@ services:
       context: .
       dockerfile: Dockerfile
       target: backend-prod
-    environment: *backend_env
+    environment:
+      <<: *backend_env
+      # runtime conecta como o APP: não-superusuário, sob RLS, sem UPDATE em
+      # tabelas append-only. O guard de imutabilidade agora RODA aqui (puma, BUG 11).
+      DATABASE_URL: postgres://robotrack_app:app_staging_pw@postgres/robotrack_staging
     ports:
       - '3000:3000'
     depends_on:
@@ -79,7 +103,9 @@ services:
       dockerfile: Dockerfile
       target: backend-prod
     command: ['bundle', 'exec', 'sidekiq', '-C', 'config/sidekiq.yml']
-    environment: *backend_env
+    environment:
+      <<: *backend_env
+      DATABASE_URL: postgres://robotrack_app:app_staging_pw@postgres/robotrack_staging
     depends_on:
       release:
         condition: service_completed_successfully
