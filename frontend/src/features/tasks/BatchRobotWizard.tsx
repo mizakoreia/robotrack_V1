@@ -3,6 +3,13 @@ import { newId } from '../../lib/ids'
 import { useRobotApplications } from '../catalog/useTaskTemplates'
 import { useBatchCreateRobots, clampQuantity } from './useBatchRobots'
 
+// Campos legíveis nos DOIS temas: sem estes tokens os inputs caíam no padrão do
+// navegador (fundo branco), e no tema escuro o texto branco ficava invisível —
+// branco sobre branco. Mesmos tokens do fix de contraste do login (bg-bg-main /
+// text-text-main / border-input / placeholder text-text-muted).
+const FIELD_CLASS =
+  'mt-1 w-full rounded border border-input bg-bg-main px-3 py-2 text-text-main placeholder:text-text-muted'
+
 // robot-tasks 5.6 (§2.5) — assistente de DOIS passos, UMA requisição.
 //
 // Passo 1: quantidade (clamp visual em 50) + Aplicação (do endpoint de
@@ -54,6 +61,7 @@ export function BatchRobotWizard({ cellId, onDone }: { cellId: string; onDone?: 
           <input
             type="number"
             aria-label="Quantidade"
+            className={FIELD_CLASS}
             value={quantity}
             min={1}
             max={50}
@@ -62,7 +70,12 @@ export function BatchRobotWizard({ cellId, onDone }: { cellId: string; onDone?: 
         </label>
         <label>
           Aplicação
-          <select aria-label="Aplicação" value={currentApp} onChange={(e) => setApplication(e.target.value)}>
+          <select
+            aria-label="Aplicação"
+            className={FIELD_CLASS}
+            value={currentApp}
+            onChange={(e) => setApplication(e.target.value)}
+          >
             {appList.map((app) => (
               <option key={app} value={app}>
                 {app}
@@ -83,6 +96,7 @@ export function BatchRobotWizard({ cellId, onDone }: { cellId: string; onDone?: 
         <input
           key={i}
           aria-label={`Nome do robô ${i + 1}`}
+          className={FIELD_CLASS}
           placeholder="R01 - Solda"
           value={name}
           onChange={(e) =>
