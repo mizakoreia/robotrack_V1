@@ -21,10 +21,12 @@ ALTER DATABASE robotrack_staging OWNER TO robotrack_migrator;
 GRANT ALL   ON SCHEMA public TO robotrack_migrator;
 GRANT USAGE ON SCHEMA public TO robotrack_app;
 
--- Extensões exigem superusuário; pré-instaladas para o `enable_extension` das
--- migrations ser no-op idempotente.
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
-CREATE EXTENSION IF NOT EXISTS citext;
+-- NÃO pré-instalamos pgcrypto/citext aqui: elas são `trusted` desde o PostgreSQL
+-- 13, então o migrator (dono do banco, com CREATE) as instala sozinho no
+-- structure.sql — e vira DONO delas. Se as criássemos como `postgres`, o
+-- `COMMENT ON EXTENSION citext` do structure.sql estouraria "must be owner of
+-- extension citext" e o db:migrate reprovaria (BUG 12). Bônus de fidelidade: em
+-- produção quem instala extensão é o migrator, não um superusuário.
 
 -- Privilégios DEFAULT: toda tabela/sequence FUTURA criada pelo migrator (durante o
 -- migrate) concede DML ao app automaticamente — o app opera sob RLS sem ser dono,

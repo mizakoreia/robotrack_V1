@@ -32,7 +32,10 @@ dump_and_fail() {
 }
 
 echo "[smoke] subindo a stack de staging…"
-$COMPOSE up -d --build
+# `up` retorna não-zero se um serviço `depends_on ... completed_successfully`
+# (o release) falha — e o `set -e` mataria o script AQUI, antes do dump. Captura
+# pra reprovar com ps -a + logs em vez de morrer cego (feedback do par).
+$COMPOSE up -d --build || dump_and_fail "o \`up\` falhou (release não completou?)"
 
 echo "[smoke] aguardando o web ficar healthy…"
 healthy=false
