@@ -17,13 +17,13 @@ Você vai fazer o deploy do RoboTrack a partir da WSL (github.com/mizakoreia/rob
 
 **Estado (não re-descobrir):** `main` é a versão mais atual (`git fetch origin main` → tip
 `9621e41`). **24 de 25 changes COMPLETAS.** Suítes verdes no container: **backend 1443/0**
-(9 pending esperados), **frontend 537/0**, `tsc`/`eslint`/guarda-de-imports limpos.
+(9 pending esperados), **frontend 539/0**, `tsc`/`eslint`/guarda-de-imports limpos.
 `legacy-data-migration` está **DORMENTE/não-aplicável** (o sistema começa do zero, sem dado
 a migrar) — **não toque nela e não peça o `RoboTrack_Database.json`; não existe.**
 
 **Passo 0 — sanidade da WSL:** rode a paridade do `VALIDACAO_WSL.md §3`
 (`RAILS_ENV=test bundle exec rspec` → esperado **1443/0, 9 pending**; `npx vitest run` →
-**537/0**). Se divergir do container, o problema é a WSL, não o código — conserte o
+**539/0**). Se divergir do container, o problema é a WSL, não o código — conserte o
 ambiente antes de seguir.
 
 **Seu trabalho tem duas frentes (a WSL desbloqueia ambas):**
