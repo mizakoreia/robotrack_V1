@@ -7,7 +7,8 @@ está em [PROMPT DE RETOMADA](#prompt-de-retomada), no fim.
 
 **Mudou desde as ondas iniciais: não é mais empilhamento de branches.** Agora:
 
-- Todo o trabalho vive em `main` — **`main` é a versão mais atual** (tip `4e9a3f5`).
+- Todo o trabalho vive em `main` — **`main` é a versão mais atual** (tip `ff79cd5`,
+  após a campanha de deploy — ver a seção "Campanha de deploy" abaixo).
 - O desenvolvimento acontece na branch de feature
   `claude/robotrack-task-catalog-tc-g3-6os4vm`, que é **fast-forwarded para `main`
   a cada grupo** e empurrada. No momento a feature e `main` apontam para o MESMO
@@ -34,6 +35,37 @@ está em [PROMPT DE RETOMADA](#prompt-de-retomada), no fim.
 > se surgir uma fonte de dados a importar. Duas peças ficaram no schema compartilhado
 > (harmless): as tabelas `legacy_import_runs`/`legacy_id_map` e o `event_type`
 > `legacy_rollback` em `audit_logs`.
+
+## Campanha de deploy (par com o agente da WSL — 24/07/2026)
+
+Depois de fechar o domínio, o **primeiro deploy real** virou uma sessão de par: o
+agente da WSL opera Docker (build da imagem prod + `docker-compose.staging.yml` +
+navegador) e este container corrige o código e empurra pra `main`. **Um escritor por
+vez:** o container escreve código/config/Dockerfile/compose; a WSL executa e valida.
+
+O smoke de staging caçou **9 bugs que a suíte de 1443 specs NÃO pega** — porque
+nenhum exemplo boota `RAILS_ENV=production` nem roda o processo Sidekiq *server*. São
+todos "só aparece no processo real de produção":
+
+| # | Bug | Conserto |
+|---|---|---|
+| — | Login: texto branco em caixa branca (ilegível) | inputs com tokens `bg-bg-main`/`text-text-main`/`border-input` |
+| 6 | Bootstrap do 1º login nunca fora ligado → Visão Geral falhava | `Workspaces::BootstrapService` nos 3 caminhos de login fresco (não no renew) |
+| 4/5 | Rails 8 removeu `connection.migration_context` → `/health/ready` 503 eterno, deploy nunca ready | `connection_pool.migration_context` (health + rake de guard) |
+| — | Dockerfile prod sem `bash` → `bin/release` (shebang bash) morria exit 127 | `apk add bash` no estágio prod |
+| — | staging sem `REDIS_{CACHE,QUEUE,CABLE}_URL`/`METRICS_TOKEN`/`APP_URL` → boot abortava | env por função no compose |
+| 7 | `json-schema` só transitiva via rubocop (`:development`) → imagem prod não a tinha, eager_load morria | `gem 'json-schema'` como dep direta |
+| 8 | `.dockerignore` (correto) exclui `backend/tmp` → Puma aborta `tmp/pids/server.pid` ENOENT | `mkdir -p tmp/pids tmp/cache tmp/sockets` no Dockerfile |
+| 9 | `Sidekiq.configure_server` referencia `Tenant::SidekiqServerMiddleware` antes do eager_load → só o worker morria | registrar o middleware por **string** (Sidekiq resolve no uso) |
+| 11 | **Segurança:** guard de imutabilidade usava `defined?(Rails::Server)` (só `rails server`) → INERTE no web `puma`, o processo que atende TODAS as escritas | `ImmutabilityGuard.runtime_server_process?` com ramo `basename($0)=='puma'` (testável; regressão nos 4 caminhos) |
+| 10 | staging com `POSTGRES_USER: robotrack_app` (a imagem cria SUPERUSER) → runtime como dono, guard abortava o worker | papéis reais: `init-roles.sql` (migrator dono + app não-super), release migra como migrator e aplica os REVOKE append-only, web/worker como app |
+| 12 | pré-instalar extensões como `postgres` roubava a posse → `COMMENT ON EXTENSION citext` do structure.sql estourava | deixar o migrator (dono do banco) criar as extensões *trusted* (PG13+) |
+
+**Ganho estrutural registrado:** o buraco é não haver **smoke de boot em CI** que suba
+web+worker em `production` e afirme que ficam de pé — os 9 bugs teriam caído nele.
+Fica como follow-up pós-verde (o par concordou). O smoke de staging (§4.1 do
+`VALIDACAO_WSL.md`) já afirma web healthy + `/health/ready=200` de dentro da rede +
+worker running, e exercita os **papéis reais** (não mais só liveness).
 
 ## Suítes (estado atual, na `main` — RODADAS INTEIRAS, não mais dirigidas)
 
