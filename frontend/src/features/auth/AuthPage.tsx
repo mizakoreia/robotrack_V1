@@ -130,7 +130,7 @@ export function AuthPage() {
               aria-invalid={!!errors.name}
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="mt-1 w-full rounded border px-3 py-2"
+              className="mt-1 w-full rounded border border-input bg-bg-main px-3 py-2 text-text-main placeholder:text-text-muted"
             />
             <p aria-live="polite" className="text-sm text-red-600 min-h-[1.25rem]">{errors.name}</p>
           </div>
@@ -145,7 +145,7 @@ export function AuthPage() {
             aria-invalid={!!errors.email}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 w-full rounded border px-3 py-2"
+            className="mt-1 w-full rounded border border-input bg-bg-main px-3 py-2 text-text-main placeholder:text-text-muted"
           />
           <p aria-live="polite" className="text-sm text-red-600 min-h-[1.25rem]">{errors.email}</p>
         </div>
@@ -159,7 +159,7 @@ export function AuthPage() {
             aria-invalid={!!errors.password}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 w-full rounded border px-3 py-2"
+            className="mt-1 w-full rounded border border-input bg-bg-main px-3 py-2 text-text-main placeholder:text-text-muted"
           />
           <p aria-live="polite" className="text-sm text-red-600 min-h-[1.25rem]">{errors.password}</p>
         </div>
