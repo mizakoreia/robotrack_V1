@@ -36,9 +36,18 @@ services:
       RAILS_ENV: production
       DATABASE_URL: postgres://robotrack_app:app_dev_pw@postgres/robotrack_staging
       REDIS_URL: redis://redis:6379/1
+      # Redis por FUNÇÃO com dbs DISTINTOS: em production o app exige as 3 (env_schema)
+      # e o guarda de topologia ABORTA o boot se cache/queue/cable resolverem para o
+      # mesmo (host,porta,db). Sem isto o web nunca sobe no smoke (§4.4).
+      REDIS_CACHE_URL: redis://redis:6379/1
+      REDIS_QUEUE_URL: redis://redis:6379/2
+      REDIS_CABLE_URL: redis://redis:6379/3
       SECRET_KEY_BASE: staging-secret-not-for-production
       ACTION_CABLE_URL: ws://localhost:3000/cable
       CORS_ORIGINS: http://localhost:3000
+      # Obrigatórias em production (env_schema): sem elas o boot aborta antes do web.
+      METRICS_TOKEN: staging-metrics-token-not-for-production
+      APP_URL: http://localhost:3000
       RAILS_LOG_TO_STDOUT: 'true'
       FORCE_SSL: 'false'
     depends_on:
