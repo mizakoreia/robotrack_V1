@@ -1,8 +1,10 @@
 # EXECUCAO — code-only-invites
 
-> **Status: G0 PLANEJAMENTO.** Change materializada (proposal/design/specs/tasks) e
-> validada `--strict`. **Nenhum código de produção escrito.** Aguarda o dono confirmar
-> DA-1 (convites já criados) e DA-2 (profundidade) antes do G1.
+> **Status: EM EXECUÇÃO.** Decisões FIXADAS pelo dono (não mais pendentes):
+> **DA-2 = opção B** (remover rota pública `/convite/:token` + endpoints preview/accept
+> por token + `invite_url`; código vira o único localizador; coluna `token` DORMENTE,
+> sem migração destrutiva). **DA-1 = drenar/reemitir** os convites pendentes ANTES do
+> merge, para ninguém ficar sem caminho (rake/procedimento documentado — G3).
 
 ## Mapa de grupos
 
@@ -42,12 +44,34 @@ O que FICA (código-só reusa, não tocar): seção "Tenho um código" da `AuthP
   registrada; route-sweep segue verde (rota e allowlist saem juntas).
 - **D5/DA-1:** convites já criados que só têm link entregue — decisão de operação do dono.
 
-## Decisões em aberto (bloqueiam G1)
+## Decisões FIXADAS pelo dono
 
-- **DA-1** — convites pendentes só-link: (a) drenar [recomendado] / (b) re-emitir / (c)
-  janela de graça.
-- **DA-2** — profundidade: (A) UI-only / (B) remover rota+endpoints [recomendado] / (C) B +
-  dropar coluna.
+- **DA-1** — convites pendentes só-link: **drenar/reemitir antes do merge**. Como todo
+  convite pendente já tem código no banco (invite-by-code), a reemissão é recuperar o código
+  do pendente; um rake/procedimento documentado (G3) garante que nenhum pendente fica sem
+  caminho. Nada é enviado automaticamente — o dono passa o código.
+- **DA-2** — profundidade: **opção B** (remover rota + endpoints por token; coluna dormente,
+  sem migração destrutiva).
+
+## G1 — resultado (backend, VERDE)
+
+- **Produção:** `invitation_tokens.rb` (removidas `GET ':token'` + `POST ':token/accept'`,
+  `namespace :code` intacto); `accept_service.rb`/`preview_service.rb` (construtor só
+  `code:`/`email:`, `lookup_by_token`/`lookup` removidos, `workspace_matches?` simplificado —
+  não há mais `X-Workspace-Id` no aceite); entity sem `invite_url`; `AppUrl.invite_url`
+  removido (`base` fica — guarda de boot); `root.rb` sem as entradas de token em
+  `PUBLIC_ROUTES`/`TENANT_EXEMPT_ROUTES`; `public_routes.yml` sem a linha do token.
+- **Specs:** superfície convite+autorização+tenancy = **549 exemplos, 0 falhas, 8 pending**.
+  Reescritos token→código: `accept_spec`, `end_to_end_spec`, `concurrent_accept_spec`,
+  `invariants_spec`, `inv_6_invite_single_use_spec`, `identity_precondition_spec`,
+  `team_panel_spec`, `create_spec`, `code_flow_spec`, `app_url_spec`, `code_lockout_spec`,
+  `auth_route_sweep_spec`. `rate_limit_spec.rb` (token) **removido** — coberto por
+  `code_rate_limit_spec.rb`.
+- **Decisão de execução DE-1:** o cenário `workspace_alheio` (X-Workspace-Id divergente →
+  `invitation_workspace_mismatch`) foi **dropado** dos specs: o aceite por código é
+  tenant-exempt e não recebe `X-Workspace-Id`, então a condição 4 do `validate!` vira defesa
+  ESTRUTURAL inalcançável por HTTP. O erro e sua tradução ficam (custo zero); os "seis
+  cenários" viraram cinco, todos com código distinto.
 
 ## Armadilhas previstas
 

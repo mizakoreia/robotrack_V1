@@ -1,30 +1,34 @@
 ## G0. Reconciliação e esqueleto da change
 
-- [ ] G0.1 Materializar a change no formato OpenSpec (`proposal.md`, `design.md`,
+- [x] G0.1 Materializar a change no formato OpenSpec (`proposal.md`, `design.md`,
   `specs/code-only-invites/spec.md`, `tasks.md`) reconciliando com a REALIDADE do repo (o
   que `workspace-invitations`/`invite-by-code` construíram e o que sai)
-- [ ] G0.2 Escrever `EXECUCAO.md` com o mapa de grupos G0..G4, as decisões (D1 profundidade,
+- [x] G0.2 Escrever `EXECUCAO.md` com o mapa de grupos G0..G4, as decisões (D1 profundidade,
   D2 coluna dormente, D4 allowlist encolhe) e as armadilhas previstas (testes que cobrem
   token, ordem `code/*` vs `:token`, model `validates :token`)
-- [ ] G0.3 **Confirmar com o dono as decisões abertas DA-1 (convites já criados) e DA-2
-  (profundidade)** antes de qualquer código — registrar a resposta no `EXECUCAO.md`
-- [ ] G0.4 Verificação do grupo: `npx --yes @fission-ai/openspec@1.6.0 validate
+- [x] G0.3 Decisões FIXADAS pelo dono: DA-2 = opção B (remover rota+endpoints por token),
+  DA-1 = drenar/reemitir os pendentes antes do merge — registrado no `EXECUCAO.md`
+- [x] G0.4 Verificação do grupo: `npx --yes @fission-ai/openspec@1.6.0 validate
   code-only-invites --strict` verde
 
 ## G1. Backend — remover os endpoints e a superfície pública por token
 
-- [ ] G1.1 Remover `GET ':token'` (preview) e `POST ':token/accept'` (aceite) de
+- [x] G1.1 Remover `GET ':token'` (preview) e `POST ':token/accept'` (aceite) de
   `invitation_tokens.rb`, mantendo o `namespace :code` intacto
-- [ ] G1.2 `AcceptService`/`PreviewService`: remover os ramos de token (`lookup_by_token`/
+- [x] G1.2 `AcceptService`/`PreviewService`: remover os ramos de token (`lookup_by_token`/
   `lookup`); construtor deixa de aceitar `token:`; o código vira o único localizador
-- [ ] G1.3 Entity: parar de expor `invite_url`; remover o uso de `AppUrl.invite_url`
-- [ ] G1.4 Remover as entradas de token de `root.rb` (`PUBLIC_ROUTES`,
+- [x] G1.3 Entity: parar de expor `invite_url`; remover `AppUrl.invite_url` (mantém `base`,
+  usado pelo guarda de boot)
+- [x] G1.4 Remover as entradas de token de `root.rb` (`PUBLIC_ROUTES`,
   `TENANT_EXEMPT_ROUTES`) e de `config/authorization/public_routes.yml` (D4 — allowlist
   encolhe, registrado)
-- [ ] G1.5 **Verificação:** request specs de code/preview + code/accept verdes; specs de
-  preview/accept por token **removidos** (não deixar spec cobrindo rota inexistente);
-  route-sweep e cross-tenant verdes (rota e allowlist saíram juntas); regressão de
-  `invitations`/`tenancy`/`authorization` sem falha
+- [x] G1.5 **Verificação:** superfície de convite+autorização+tenancy **549 exemplos, 0
+  falhas, 8 pending**. Specs por token reescritos para código (`accept_spec`, `end_to_end`,
+  `concurrent_accept`, `invariants`, `inv_6`, `identity_precondition`); `rate_limit_spec`
+  (token) removido (coberto por `code_rate_limit_spec`); `auth_route_sweep` re-ancorado
+  (token GET não é mais público, `PUBLIC_ROUTES.size == 7`); route-sweep/cross-tenant verdes
+  (rota e allowlist saíram juntas). Cenário `workspace_alheio` dropado (inalcançável por
+  código); `invitation_workspace_mismatch` vira defesa estrutural inalcançável por HTTP.
 
 ## G2. Frontend — remover toda a superfície de LINK
 

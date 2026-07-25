@@ -4,19 +4,17 @@ require 'rails_helper'
 
 # workspace-invitations 5.5 — o fluxo COMPLETO, ponta a ponta, no servidor.
 #
-# Não há harness de E2E de navegador no projeto (Playwright/Cypress é escopo de
-# `quality-and-accessibility`), então o fluxo é coberto por dois testes que se
-# encontram no meio: este, que percorre o ciclo inteiro pela API real, e o teste
-# de cliente da rotina `handleAccessRevoked`
-# (`frontend/src/lib/workspace/__tests__/accessRevoked.test.ts`), que percorre o
-# que acontece na tela depois do 403. Registrado como desvio consciente no
-# EXECUCAO.md.
+# code-only-invites: o percurso é EXCLUSIVAMENTE por CÓDIGO (o link por token foi
+# removido). Não há harness de E2E de navegador aqui (Playwright é escopo de
+# `quality-and-accessibility`), então o fluxo é coberto por este teste, que
+# percorre o ciclo inteiro pela API real, e o teste de cliente da rotina
+# `handleAccessRevoked`. Registrado como desvio consciente no EXECUCAO.md.
 #
-# O percurso: o dono convida → o convidado (sem sessão) pré-visualiza pelo token
-# → autentica → aceita e vira membro → usa o workspace → o dono remove → a
-# próxima requisição do convidado é `403 workspace_access_revoked` → e um
-# "reload" (nova requisição) NÃO o traz de volta.
-RSpec.describe 'Ciclo completo do convite', :tenancy, type: :request do
+# O percurso: o dono convida (recebe o CÓDIGO) → o convidado (sem sessão)
+# pré-visualiza pelo par código+e-mail → autentica → aceita e vira membro → usa o
+# workspace → o dono remove → a próxima requisição do convidado é
+# `403 workspace_access_revoked` → e um "reload" NÃO o traz de volta.
+RSpec.describe 'Ciclo completo do convite (por código)', :tenancy, type: :request do
   let(:owner) { create(:user, name: 'Dona Ana', email: 'ana@fabrica.com') }
   let(:ws)    { make_workspace(owner: owner, name: 'Linha 3') }
   let(:joao)  { create(:user, name: 'João Silva', email: 'joao@fabrica.com') }
@@ -26,18 +24,17 @@ RSpec.describe 'Ciclo completo do convite', :tenancy, type: :request do
   end
 
   it 'convida, pré-visualiza sem sessão, aceita, usa e é expulso ao vivo' do
-    # 1. O dono cria o convite e recebe o link absoluto para copiar.
+    # 1. O dono cria o convite e recebe o CÓDIGO curto (uma vez).
     post '/api/v1/invitations',
          params: { email: 'joao@fabrica.com', role: 'edit' },
          headers: auth_headers(owner).merge('X-Workspace-Id' => ws.id)
     expect(response).to have_http_status(:created)
-    link = JSON.parse(response.body)['invite_url']
-    token = link.split('/convite/').last
-    expect(token).to match(/\Art_inv_[A-Za-z0-9_-]{43}\z/)
+    codigo = JSON.parse(response.body)['short_code']
+    expect(codigo).to match(/\A[0-9A-HJKMNP-TV-Z]{4}-[0-9A-HJKMNP-TV-Z]{4}\z/)
 
-    # 2. O convidado abre o link SEM sessão e vê para onde está sendo convidado —
-    #    sem o e-mail completo e sem o id do workspace.
-    get "/api/v1/invitations/#{token}"
+    # 2. O convidado pré-visualiza SEM sessão, pelo par código+e-mail, e vê para
+    #    onde está sendo convidado — sem o e-mail completo e sem o id do workspace.
+    post '/api/v1/invitations/code/preview', params: { code: codigo, email: 'joao@fabrica.com' }
     expect(response).to have_http_status(:ok)
     preview = JSON.parse(response.body)
     expect(preview).to include('workspace_name' => 'Linha 3', 'role' => 'edit',
@@ -45,8 +42,9 @@ RSpec.describe 'Ciclo completo do convite', :tenancy, type: :request do
     expect(response.body).not_to include('joao@fabrica.com')
     expect(response.body).not_to include(ws.id)
 
-    # 3. Autentica e aceita (sem corpo, sem X-Workspace-Id).
-    post "/api/v1/invitations/#{token}/accept", headers: auth_headers(joao)
+    # 3. Autentica e aceita pelo par (sem X-Workspace-Id).
+    post '/api/v1/invitations/code/accept',
+         params: { code: codigo, email: 'joao@fabrica.com' }, headers: auth_headers(joao)
     expect(response).to have_http_status(:ok)
     expect(JSON.parse(response.body)).to include('workspace_id' => ws.id, 'role' => 'edit')
 
@@ -90,8 +88,9 @@ RSpec.describe 'Ciclo completo do convite', :tenancy, type: :request do
     expect(convite.used_at).to be_present
     expect(convite.used_by_user_id).to eq(joao.id)
 
-    # 10. E o mesmo link não readmite ninguém: o convite é de uso único.
-    post "/api/v1/invitations/#{token}/accept", headers: auth_headers(joao)
+    # 10. E o mesmo código não readmite ninguém: o convite é de uso único.
+    post '/api/v1/invitations/code/accept',
+         params: { code: codigo, email: 'joao@fabrica.com' }, headers: auth_headers(joao)
     expect(response).to have_http_status(:conflict)
     expect(JSON.parse(response.body)['error']).to eq('invitation_already_used')
   end
@@ -99,8 +98,9 @@ RSpec.describe 'Ciclo completo do convite', :tenancy, type: :request do
   it 'readmitir exige convite NOVO, e ele funciona' do
     post '/api/v1/invitations', params: { email: 'joao@fabrica.com', role: 'view' },
                                 headers: auth_headers(owner).merge('X-Workspace-Id' => ws.id)
-    primeiro = JSON.parse(response.body)['invite_url'].split('/convite/').last
-    post "/api/v1/invitations/#{primeiro}/accept", headers: auth_headers(joao)
+    primeiro = JSON.parse(response.body)['short_code']
+    post '/api/v1/invitations/code/accept',
+         params: { code: primeiro, email: 'joao@fabrica.com' }, headers: auth_headers(joao)
     membership = in_workspace(ws) { Membership.find_by(user_id: joao.id) }
     delete "/api/v1/memberships/#{membership.id}",
            headers: auth_headers(owner).merge('X-Workspace-Id' => ws.id)
@@ -109,9 +109,10 @@ RSpec.describe 'Ciclo completo do convite', :tenancy, type: :request do
     post '/api/v1/invitations', params: { email: 'joao@fabrica.com', role: 'edit' },
                                 headers: auth_headers(owner).merge('X-Workspace-Id' => ws.id)
     expect(response).to have_http_status(:created)
-    segundo = JSON.parse(response.body)['invite_url'].split('/convite/').last
+    segundo = JSON.parse(response.body)['short_code']
 
-    post "/api/v1/invitations/#{segundo}/accept", headers: auth_headers(joao)
+    post '/api/v1/invitations/code/accept',
+         params: { code: segundo, email: 'joao@fabrica.com' }, headers: auth_headers(joao)
     expect(response).to have_http_status(:ok)
     expect(in_workspace(ws) { Membership.find_by(user_id: joao.id) }.role).to eq('edit')
 

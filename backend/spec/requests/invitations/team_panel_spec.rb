@@ -101,7 +101,11 @@ RSpec.describe 'Painel de equipe', :tenancy, type: :request do
     end
 
     before do
-      post "/api/v1/invitations/#{convite.token}/accept", headers: auth_headers(editor)
+      # code-only-invites: o membro entra consumindo o CÓDIGO (o short_code
+      # transiente do convite recém-criado), não mais o link por token.
+      post '/api/v1/invitations/code/accept',
+           params: { code: convite.short_code, email: 'edu@fabrica.com' },
+           headers: auth_headers(editor)
       expect(response).to have_http_status(:ok)
     end
 

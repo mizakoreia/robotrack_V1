@@ -40,8 +40,9 @@ RSpec.describe 'Criação de convite', :tenancy, type: :request do
       expect(body['email']).to eq('joao@fabrica.com')
       expect(body['role']).to eq('edit')
       expect(body['status']).to eq('pending')
-      expect(body['invite_url']).to match(%r{\Ahttp://localhost:5173/convite/rt_inv_[A-Za-z0-9_-]{43}\z})
-      # O token NUNCA sai como campo solto — só embutido no link.
+      # code-only-invites: o convite sai com CÓDIGO, nunca com link/token.
+      expect(body['short_code']).to match(/\A[0-9A-HJKMNP-TV-Z]{4}-[0-9A-HJKMNP-TV-Z]{4}\z/)
+      expect(body).not_to have_key('invite_url')
       expect(body).not_to have_key('token')
       expect(body).not_to have_key('workspace_id')
     end
@@ -53,7 +54,7 @@ RSpec.describe 'Criação de convite', :tenancy, type: :request do
       expect(expires_at).to be_within(1.minute).of(7.days.from_now)
     end
 
-    it 'lista os pendentes do workspace corrente, com o link para recopiar' do
+    it 'lista os pendentes do workspace corrente, com o status do código' do
       post_invitation(owner, ws, { email: 'joao@fabrica.com', role: 'view' })
       post_invitation(owner, ws, { email: 'ana2@fabrica.com', role: 'edit' })
 
@@ -63,7 +64,9 @@ RSpec.describe 'Criação de convite', :tenancy, type: :request do
       body = JSON.parse(response.body)
       expect(body.size).to eq(2)
       expect(body.map { |i| i['email'] }).to contain_exactly('joao@fabrica.com', 'ana2@fabrica.com')
-      expect(body).to all(include('invite_url' => a_string_matching(%r{/convite/rt_inv_})))
+      # code-only-invites: a listagem NÃO reexpõe link nem código em claro; traz o status.
+      expect(body).to all(include('code_status' => 'active'))
+      expect(body).to all(satisfy { |i| !i.key?('invite_url') })
     end
 
     # REGRESSÃO: a listagem devolvia TODOS os convites, inclusive os CONSUMIDOS —

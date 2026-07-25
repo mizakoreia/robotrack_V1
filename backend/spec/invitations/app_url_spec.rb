@@ -16,10 +16,12 @@ RSpec.describe 'Configuração de link e mensagens' do
       ENV['APP_URL'] = original
     end
 
-    it 'usa APP_URL quando presente, sem barra dupla' do
+    it 'usa APP_URL quando presente, sem barra final' do
       ENV['APP_URL'] = 'https://app.robotrack.com.br/'
 
-      expect(AppUrl.invite_url('rt_inv_ABC')).to eq('https://app.robotrack.com.br/convite/rt_inv_ABC')
+      # code-only-invites removeu AppUrl.invite_url (o link de convite saiu). base
+      # continua (guarda de boot) e ainda normaliza a barra final.
+      expect(AppUrl.base).to eq('https://app.robotrack.com.br')
     end
 
     it 'fora de produção cai para o padrão dev-local' do

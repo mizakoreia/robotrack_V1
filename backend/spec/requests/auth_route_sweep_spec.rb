@@ -85,11 +85,11 @@ RSpec.describe 'Varredura de autenticação das rotas', type: :request do
       expect(Api::Root.public_route?('POST', '/users/auth/google_oauth2')).to be(true)
       # O OAuth manual legado (/auth/v1/oauth/*) foi removido.
       expect(Api::Root.public_route?('GET', '/auth/v1/oauth/google_url')).to be(false)
-      # Pré-visualização do convite (workspace-invitations 3.4): pública só no
-      # GET por token. A LISTAGEM e o ACEITE continuam exigindo autenticação —
-      # senão o token viraria uma porta para enumerar convites e para consumir
-      # em nome de quem não autenticou.
-      expect(Api::Root.public_route?('GET', '/api/v1/invitations/rt_inv_ABC')).to be(true)
+      # code-only-invites: a ÚNICA rota pública de convite é o preview por CÓDIGO.
+      # O link por token foi removido — GET :token NÃO é mais público (nem existe).
+      # A LISTAGEM e o ACEITE continuam exigindo autenticação.
+      expect(Api::Root.public_route?('POST', '/api/v1/invitations/code/preview')).to be(true)
+      expect(Api::Root.public_route?('GET', '/api/v1/invitations/rt_inv_ABC')).to be(false)
       expect(Api::Root.public_route?('GET', '/api/v1/invitations')).to be(false)
       expect(Api::Root.public_route?('POST', '/api/v1/invitations/rt_inv_ABC/accept')).to be(false)
       expect(Api::Root.public_route?('DELETE', '/api/v1/invitations/rt_inv_ABC')).to be(false)

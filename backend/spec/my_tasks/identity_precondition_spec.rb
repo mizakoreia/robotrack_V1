@@ -42,7 +42,8 @@ RSpec.describe 'my-tasks-view — pré-condição de identidade (D10)', :tenancy
       convidado = create(:user, name: 'João Silva', email: 'joao@fabrica.com')
       convite = create_invitation(email: 'joao@fabrica.com')
 
-      post "/api/v1/invitations/#{convite.token}/accept", headers: auth_headers(convidado)
+      post '/api/v1/invitations/code/accept',
+           params: { code: convite.short_code, email: 'joao@fabrica.com' }, headers: auth_headers(convidado)
       expect(response).to have_http_status(:ok)
 
       person = person_in(ws.id, convidado.id)
@@ -58,7 +59,8 @@ RSpec.describe 'my-tasks-view — pré-condição de identidade (D10)', :tenancy
       convite = create_invitation(email: 'marta@fabrica.com')
 
       expect do
-        post "/api/v1/invitations/#{convite.token}/accept", headers: auth_headers(convidada)
+        post '/api/v1/invitations/code/accept',
+             params: { code: convite.short_code, email: 'marta@fabrica.com' }, headers: auth_headers(convidada)
       end.not_to(change { in_workspace(ws) { Person.where(email: 'marta@fabrica.com').count } })
       expect(response).to have_http_status(:ok)
 

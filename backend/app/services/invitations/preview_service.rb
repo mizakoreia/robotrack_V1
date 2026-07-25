@@ -1,28 +1,26 @@
 # frozen_string_literal: true
 
 module Invitations
-  # workspace-invitations §"Pré-visualização pública do convite" (tarefa 3.4 /
-  # D-INV-6).
+  # code-only-invites §"Preview por código" (era workspace-invitations D-INV-6,
+  # agora só por CÓDIGO).
   #
-  # Rota PÚBLICA: quem tem o link, mas ainda não autenticou, precisa saber a que
-  # workspace foi convidado e com qual papel — senão o fluxo "abre o link → faz
-  # login" é um salto no escuro. O que sai é o mínimo: nome do workspace, papel,
-  # e-mail MASCARADO, expiração e estado.
+  # Rota PÚBLICA que EXIGE o par código + e-mail: quem foi convidado precisa
+  # saber a que workspace foi convidado e com qual papel antes de autenticar. O
+  # que sai é o mínimo: nome do workspace, papel, e-mail MASCARADO, expiração e
+  # estado.
   #
-  # Nunca sai: e-mail completo (alvo de phishing pronto para quem interceptar o
-  # link), `workspace_id` (é o identificador usado em toda a API de domínio),
+  # Nunca sai: e-mail completo, `workspace_id` (identificador de domínio),
   # `created_by_person_id` nem qualquer lista.
   class PreviewService
     include ApiResponseHandler
 
-    def initialize(token: nil, code: nil, email: nil)
-      @token = token.to_s
+    def initialize(code: nil, email: nil)
       @code = code.presence
       @email = email
     end
 
     def call
-      row = @code ? lookup_by_code : lookup
+      row = lookup_by_code
       return error_response('invitation_not_found', 404) if row.nil?
 
       invitation = Invitation.new(
@@ -44,15 +42,8 @@ module Invitations
 
     private
 
-    def lookup
-      return nil if @token.blank?
-
-      conn = ActiveRecord::Base.connection
-      conn.select_one("SELECT * FROM invitation_by_token(#{conn.quote(@token)})")
-    end
-
-    # Preview por código EXIGE o par (design D5): diferente do token (segredo forte
-    # por si), um preview por código solto colheria alvos de phishing
+    # Preview por código EXIGE o par (design D5): um preview por código solto
+    # colheria alvos de phishing
     # (`workspace_name`/`email_masked`/`role`) por enumeração. Sem o e-mail certo,
     # a resposta é a MESMA de código inexistente (`nil` → 404 genérico no `call`),
     # e a falha do par conta para o lockout. Código travado/expirado não é revelado
@@ -71,9 +62,9 @@ module Invitations
     end
 
     # O nome do workspace é lido DENTRO do contexto daquele workspace: a política
-    # de `workspaces` libera a linha quando `id = app.current_workspace_id`.
-    # Possuir o token é justamente o que autoriza saber para onde ele leva — não
-    # há afrouxamento de RLS aqui, só um contexto aberto pelo próprio token.
+    # de `workspaces` libera a linha quando `id = app.current_workspace_id`. Casar
+    # o par código + e-mail é justamente o que autoriza saber para onde o convite
+    # leva — não há afrouxamento de RLS aqui, só um contexto aberto pelo convite.
     def workspace_name(workspace_id)
       Tenant.with(workspace_id: workspace_id, user_id: nil) do
         Workspace.where(id: workspace_id).pick(:name)

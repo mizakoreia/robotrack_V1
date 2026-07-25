@@ -25,9 +25,6 @@
 - path: /auth/v1/registration
   method: POST
   reason: "Cadastro por e-mail e senha — anterior à existência de credencial (D4.8)."
-- path: /api/v1/invitations/:token
-  method: GET
-  reason: "Pré-visualização do convite ANTES do login (workspace-invitations D-INV-6); só GET, corpo mascarado, sem workspace_id."
 - path: /api/v1/invitations/code/preview
   method: POST
-  reason: "Pré-visualização por CÓDIGO ANTES do login (invite-by-code D5); POST porque o par código+e-mail viaja no corpo (privacidade da casa), exige o e-mail certo, resposta genérica quando o par não casa."
+  reason: "Pré-visualização por CÓDIGO ANTES do login (invite-by-code D5, único caminho após code-only-invites); POST porque o par código+e-mail viaja no corpo (privacidade da casa), exige o e-mail certo, resposta genérica quando o par não casa."

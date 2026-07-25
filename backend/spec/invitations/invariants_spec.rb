@@ -5,8 +5,8 @@ require 'rails_helper'
 # workspace-invitations 6.5 — a suíte EXECUTÁVEL das invariantes 6 e 7 (§4.1).
 #
 # Este arquivo é a contribuição desta change para a suíte de
-# `authorization-policies`: os seis cenários de negação obrigatórios, cada um com
-# o SEU código. O critério de reprovação está escrito no primeiro exemplo — se
+# `authorization-policies`: os cenários de negação obrigatórios, cada um com o
+# SEU código. O critério de reprovação está escrito no primeiro exemplo — se
 # dois cenários passarem a devolver o mesmo código (o clássico "422 para tudo"),
 # ele falha, mesmo que cada negação individualmente continue negando. O motivo é
 # de produto: sem códigos distintos, a UI não consegue dizer "peça um novo
@@ -47,34 +47,39 @@ RSpec.describe 'Invariantes 6 e 7, executáveis', :tenancy, type: :request do
     create(:user, name: nome, email: email)
   end
 
-  # Os SEIS cenários de negação obrigatórios, na forma [nome, execução].
+  # Aceite por CÓDIGO: o par (código + e-mail do convite) localiza a linha. O
+  # `submitted_email` é sempre o e-mail DO CONVITE (o par tem de casar para o
+  # lookup prosseguir); a condição 5 depois compara com o e-mail AUTENTICADO.
+  def aceitar_por_codigo(convite, user, extra: {})
+    post '/api/v1/invitations/code/accept',
+         params: { code: convite.short_code, email: convite.email }.merge(extra),
+         headers: auth_headers(user)
+  end
+
+  # Os CINCO cenários de negação obrigatórios, na forma [nome, execução].
+  # code-only-invites: o cenário `workspace_alheio` (X-Workspace-Id divergente →
+  # invitation_workspace_mismatch) foi removido — o aceite por código é
+  # tenant-exempt e não recebe X-Workspace-Id, então aquele ramo é inalcançável
+  # por HTTP (a condição 4 vira defesa estrutural: o contexto é aberto pela linha).
   def cenarios
     {
       email_divergente: lambda {
         convite = criar_convite(email: 'c1@fabrica.com')
         ana = convidado('ana.outra@fabrica.com', 'Ana Outra')
-        post "/api/v1/invitations/#{convite.token}/accept", headers: auth_headers(ana)
+        aceitar_por_codigo(convite, ana)
       },
-      token_usado: lambda {
+      codigo_usado: lambda {
         convite = criar_convite(email: 'joao@fabrica.com')
-        post "/api/v1/invitations/#{convite.token}/accept", headers: auth_headers(joao)
-        post "/api/v1/invitations/#{convite.token}/accept", headers: auth_headers(joao)
+        aceitar_por_codigo(convite, joao)
+        aceitar_por_codigo(convite, joao)
       },
       expirado: lambda {
         convite = criar_convite(email: 'c3@fabrica.com', expires_at: 1.day.ago)
-        post "/api/v1/invitations/#{convite.token}/accept",
-             headers: auth_headers(convidado('c3@fabrica.com', 'Convidado 3'))
+        aceitar_por_codigo(convite, convidado('c3@fabrica.com', 'Convidado 3'))
       },
       papel_adulterado: lambda {
         convite = criar_convite(email: 'c4@fabrica.com', role: 'view')
-        post "/api/v1/invitations/#{convite.token}/accept",
-             params: { role: 'edit' }, headers: auth_headers(convidado('c4@fabrica.com', 'Convidado 4'))
-      },
-      workspace_alheio: lambda {
-        convite = criar_convite(email: 'c5@fabrica.com')
-        outro = make_workspace(owner: create(:user, email: 'dono.b@fabrica.com'), name: 'Linha 9')
-        post "/api/v1/invitations/#{convite.token}/accept",
-             headers: auth_headers(convidado('c5@fabrica.com', 'Convidado 5')).merge('X-Workspace-Id' => outro.id)
+        aceitar_por_codigo(convite, convidado('c4@fabrica.com', 'Convidado 4'), extra: { role: 'edit' })
       },
       edit_convidando: lambda {
         add_member(ws, editor, 'edit')
@@ -84,17 +89,16 @@ RSpec.describe 'Invariantes 6 e 7, executáveis', :tenancy, type: :request do
     }
   end
 
-  it 'os seis cenários falham cada um com um código DISTINTO' do
+  it 'os cinco cenários falham cada um com um código DISTINTO' do
     codigos = cenarios.transform_values do |cenario|
       cenario.call
       [response.status, codigo_de(response)]
     end
 
     expect(codigos[:email_divergente]).to eq([403, 'invitation_email_mismatch'])
-    expect(codigos[:token_usado]).to eq([409, 'invitation_already_used'])
+    expect(codigos[:codigo_usado]).to eq([409, 'invitation_already_used'])
     expect(codigos[:expirado]).to eq([410, 'invitation_expired'])
     expect(codigos[:papel_adulterado]).to eq([422, 'unexpected_parameter'])
-    expect(codigos[:workspace_alheio]).to eq([422, 'invitation_workspace_mismatch'])
     expect(codigos[:edit_convidando]).to eq([403, 'forbidden'])
 
     # O critério de reprovação: um código genérico para todos passa nos exemplos
@@ -109,7 +113,7 @@ RSpec.describe 'Invariantes 6 e 7, executáveis', :tenancy, type: :request do
       convite = criar_convite
       ana = create(:user, name: 'Ana Outra', email: 'ana.outra@fabrica.com')
 
-      expect { post "/api/v1/invitations/#{convite.token}/accept", headers: auth_headers(ana) }
+      expect { aceitar_por_codigo(convite, ana) }
         .not_to(change { estado_do_workspace })
 
       expect(codigo_de(response)).to eq('invitation_email_mismatch')
@@ -118,7 +122,7 @@ RSpec.describe 'Invariantes 6 e 7, executáveis', :tenancy, type: :request do
     it 'expirado não consome nem cria membership' do
       convite = criar_convite(expires_at: 1.day.ago)
 
-      expect { post "/api/v1/invitations/#{convite.token}/accept", headers: auth_headers(joao) }
+      expect { aceitar_por_codigo(convite, joao) }
         .not_to(change { estado_do_workspace })
     end
 
@@ -126,17 +130,16 @@ RSpec.describe 'Invariantes 6 e 7, executáveis', :tenancy, type: :request do
       convite = criar_convite(role: 'view')
 
       expect do
-        post "/api/v1/invitations/#{convite.token}/accept",
-             params: { role: 'edit' }, headers: auth_headers(joao)
+        aceitar_por_codigo(convite, joao, extra: { role: 'edit' })
       end.not_to(change { estado_do_workspace })
     end
 
     it 'aceite repetido não cria a SEGUNDA membership' do
       convite = criar_convite
-      post "/api/v1/invitations/#{convite.token}/accept", headers: auth_headers(joao)
+      aceitar_por_codigo(convite, joao)
       depois_do_primeiro = estado_do_workspace
 
-      3.times { post "/api/v1/invitations/#{convite.token}/accept", headers: auth_headers(joao) }
+      3.times { aceitar_por_codigo(convite, joao) }
 
       expect(estado_do_workspace).to eq(depois_do_primeiro)
       expect(depois_do_primeiro[:memberships]).to eq(1)
@@ -178,7 +181,7 @@ RSpec.describe 'Invariantes 6 e 7, executáveis', :tenancy, type: :request do
     it 'o papel da membership vem do convite, não do cliente' do
       convite = criar_convite(role: 'view')
 
-      post "/api/v1/invitations/#{convite.token}/accept", headers: auth_headers(joao)
+      aceitar_por_codigo(convite, joao)
 
       expect(in_workspace(ws) { Membership.find_by(user_id: joao.id) }.role).to eq('view')
     end

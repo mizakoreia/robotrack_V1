@@ -40,22 +40,20 @@ module Invitations
       end
     end
 
-    def initialize(current_user:, token: nil, code: nil, email: nil, requested_workspace_id: nil, extra_params: {})
+    def initialize(current_user:, code: nil, email: nil, extra_params: {})
       @current_user = current_user
-      @token = token.to_s
       @code = code.presence
       @email = email
-      @requested_workspace_id = requested_workspace_id.presence
       @extra_params = extra_params
     end
 
     def call
       reject_unexpected_parameters!
 
-      # Um caminho novo de LOOKUP, tudo o mais reusado (design D4): por código
-      # (par e-mail + lockout + expiração do código) ou por token. Ambos caem no
-      # MESMO `consume`.
-      row = @code ? lookup_by_code : lookup_by_token
+      # code-only-invites: a linha é localizada EXCLUSIVAMENTE por código (par
+      # e-mail + lockout + expiração do código). O `consume` é o mesmo de sempre —
+      # as 6 validações da invariante 6 não mudaram; só o localizador é único.
+      row = lookup_by_code
       raise Rejected.new('invitation_not_found', 404) if row.nil?
 
       membership = consume(row['workspace_id'], row['id'])
@@ -75,22 +73,12 @@ module Invitations
     # Condição 6 de D-INV-3, tratada de forma ESTRUTURAL: o papel da membership é
     # lido do convite, nunca do cliente. Mesmo assim mandar `role` no corpo é
     # rejeitado em vez de ignorado — ignorar deixaria um atacante crendo que teve
-    # sucesso e esconderia a tentativa. A allowlist é CIENTE DE MODO: o caminho por
-    # token só admite `token`; o por código só admite `code`/`email` — `role` no
-    # corpo de qualquer um dos dois é `422`.
+    # sucesso e esconderia a tentativa. O aceite só admite `code`/`email` — `role`
+    # no corpo é `422`.
     def reject_unexpected_parameters!
-      allowed = %w[route_info version format]
-      allowed += @code ? %w[code email] : %w[token]
+      allowed = %w[route_info version format code email]
       extras = @extra_params.keys.map(&:to_s) - allowed
       raise Rejected.new('unexpected_parameter', 422) if extras.any?
-    end
-
-    # Leitura sem workspace corrente, pela função SECURITY DEFINER (D-INV-4).
-    def lookup_by_token
-      return nil if @token.blank?
-
-      conn = ActiveRecord::Base.connection
-      conn.select_one("SELECT id, workspace_id FROM invitation_by_token(#{conn.quote(@token)})")
     end
 
     # Leitura por código (design D4/D5/D7), com a ORDEM anti-enumeração do plano
@@ -153,13 +141,11 @@ module Invitations
       raise Rejected.new('already_member', 409) if already_member?(invitation)
     end
 
-    # Condição 4: o workspace do convite tem de ser o alvo. O cliente não escolhe
-    # o alvo (ele vem do convite), mas se DECLARAR um (`X-Workspace-Id`) que
-    # diverge, isso é erro explícito — não silêncio.
+    # Condição 4: o workspace do convite tem de ser o alvo. O contexto é aberto a
+    # partir do próprio convite (`consume` abre `Tenant.with(row['workspace_id'])`),
+    # então esta condição é a rede de segurança de que a linha travada é a mesma.
     def workspace_matches?(invitation, workspace_id)
-      return false unless invitation.workspace_id == workspace_id
-
-      @requested_workspace_id.nil? || @requested_workspace_id == invitation.workspace_id
+      invitation.workspace_id == workspace_id
     end
 
     # Condição 5: comparação com o e-mail AUTENTICADO, nunca com nada vindo do

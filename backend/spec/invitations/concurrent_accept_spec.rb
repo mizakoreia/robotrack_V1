@@ -2,15 +2,17 @@
 
 require 'rails_helper'
 
-# workspace-invitations §"Corrida entre dois consumos do mesmo token"
-# (tarefas 3.5 e 3.6 — a verificação central do grupo 3).
+# workspace-invitations §"Corrida entre dois consumos do mesmo convite"
+# (tarefas 3.5 e 3.6 — a verificação central do grupo 3). code-only-invites: o
+# aceite é por CÓDIGO, mas o mecanismo de corrida (`SELECT … FOR UPDATE`) é o
+# mesmo (design D4), então a propriedade se mantém — só o localizador mudou.
 #
 # Concorrência REAL: threads com conexões distintas do pool, disparadas de um
 # latch comum. Nada de mock — a propriedade sob teste é do Postgres (`SELECT …
 # FOR UPDATE` serializando dois consumos da MESMA linha), e um dublê provaria
 # apenas que o dublê funciona. Era exatamente isto que o legado NÃO tinha: no
 # Firestore, marcar o convite como usado e criar a membership eram duas escritas
-# independentes, e dois clientes com o mesmo link podiam vencer os dois.
+# independentes, e dois clientes com o mesmo convite podiam vencer os dois.
 #
 # `:tenancy` liga a truncation: sob a transação do RSpec, as linhas criadas pelo
 # exemplo seriam invisíveis para as outras conexões e o teste não testaria nada.
@@ -26,15 +28,17 @@ RSpec.describe 'Consumo concorrente de convite', :tenancy do
   end
 
   # Executa o aceite numa conexão própria, como um segundo processo Puma faria.
-  def accept_in_thread(user, token)
+  # Por código: o par (código + e-mail do convite) localiza a linha; o `consume`
+  # é o mesmo.
+  def accept_in_thread(user, convite)
     ActiveRecord::Base.connection_pool.with_connection do
-      Invitations::AcceptService.new(current_user: user, token: token).call
+      Invitations::AcceptService.new(current_user: user, code: convite.short_code, email: convite.email).call
     end
   ensure
     Tenant.reset_thread_context!
   end
 
-  describe 'mesmo token, duas threads (3.5)' do
+  describe 'mesmo código, duas threads (3.5)' do
     let(:joao) { create(:user, name: 'João Silva', email: 'joao@fabrica.com') }
     let!(:convite) { create_invitation(email: 'joao@fabrica.com', role: 'edit') }
 
@@ -44,7 +48,7 @@ RSpec.describe 'Consumo concorrente de convite', :tenancy do
       threads = Array.new(2) do
         Thread.new do
           largada.wait(5)
-          accept_in_thread(joao, convite.token)
+          accept_in_thread(joao, convite)
         end
       end
       largada.count_down
@@ -77,7 +81,7 @@ RSpec.describe 'Consumo concorrente de convite', :tenancy do
       threads = Array.new(8) do
         Thread.new do
           largada.wait(5)
-          accept_in_thread(joao, convite.token)
+          accept_in_thread(joao, convite)
         end
       end
       largada.count_down
@@ -89,7 +93,7 @@ RSpec.describe 'Consumo concorrente de convite', :tenancy do
     end
   end
 
-  describe 'tokens distintos não se bloqueiam (3.6)' do
+  describe 'códigos distintos não se bloqueiam (3.6)' do
     it 'um convite travado NÃO impede o aceite de outro convite' do
       travado = create_invitation(email: 'travado@fabrica.com')
       livre   = create_invitation(email: 'livre@fabrica.com')
@@ -112,7 +116,7 @@ RSpec.describe 'Consumo concorrente de convite', :tenancy do
 
       expect(segurando.wait(10)).to be(true)
 
-      resultado = Thread.new { accept_in_thread(convidado_livre, livre.token) }.value
+      resultado = Thread.new { accept_in_thread(convidado_livre, livre) }.value
 
       # O ponto: isto aconteceu COM a outra linha ainda travada.
       expect(guardiao).to be_alive
@@ -122,11 +126,11 @@ RSpec.describe 'Consumo concorrente de convite', :tenancy do
       guardiao.join(10)
     end
 
-    it '50 aceites concorrentes de 50 tokens distintos, todos bem-sucedidos' do
+    it '50 aceites concorrentes de 50 códigos distintos, todos bem-sucedidos' do
       convidados = Array.new(50) do |i|
         email = "convidado#{i}@fabrica.com"
         user = create(:user, name: "Convidado #{i}", email: email)
-        [user, create_invitation(email: email).token]
+        [user, create_invitation(email: email)]
       end
 
       # O teto de paralelismo aqui é o POOL DE CONEXÕES (10 por `database.yml`),

@@ -43,17 +43,6 @@ RSpec.describe 'Lockout do código de convite', :tenancy do
     expect(r[:error]).to eq('invitation_code_locked')
   end
 
-  it 'com o código travado, o LINK ainda consome (o lockout é só do código)' do
-    inv, code = seed_invitation(role: 'edit')
-    5.times { attempt(code, 'errado@fabrica.com') }
-    expect(in_workspace(ws) { Invitation.find(inv.id) }.code_locked?).to be(true)
-
-    # Aceite por TOKEN funciona normalmente.
-    r = Invitations::AcceptService.new(current_user: joao, token: inv.token).call
-    Tenant.reset_thread_context!
-    expect(r[:status]).to eq(200)
-    expect(in_workspace(ws) { Membership.where(invitation_id: inv.id).count }).to eq(1)
-  end
 
   it 'adivinhação CEGA (código inexistente) não trava linha nenhuma' do
     inv, = seed_invitation

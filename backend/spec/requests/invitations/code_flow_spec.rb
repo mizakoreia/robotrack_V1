@@ -60,7 +60,8 @@ RSpec.describe 'Fluxo de convite por código', :tenancy, type: :request do
       expect(item).not_to have_key('short_code')
       expect(item).not_to have_key('code_hash')
       expect(item['code_status']).to eq('active')
-      expect(item['invite_url']).to match(%r{/convite/rt_inv_})
+      # code-only-invites: a listagem NÃO expõe mais o link.
+      expect(item).not_to have_key('invite_url')
     end
   end
 
@@ -111,7 +112,7 @@ RSpec.describe 'Fluxo de convite por código', :tenancy, type: :request do
       expect(memberships_of(ws)).to be_empty
     end
 
-    it 'código expirado: 410 invitation_code_expired, mas o LINK ainda consome' do
+    it 'código expirado: 410 invitation_code_expired, não consome' do
       inv, code = seed_invitation(role: 'view')
       in_workspace(ws) { Invitation.where(id: inv.id).update_all(code_expires_at: 1.hour.ago) }
 
@@ -119,11 +120,6 @@ RSpec.describe 'Fluxo de convite por código', :tenancy, type: :request do
       expect(response).to have_http_status(:gone)
       expect(JSON.parse(response.body)['error']).to eq('invitation_code_expired')
       expect(memberships_of(ws)).to be_empty
-
-      # O link (7 dias) segue válido.
-      post "/api/v1/invitations/#{inv.token}/accept", headers: auth_headers(joao)
-      expect(response).to have_http_status(:ok)
-      expect(memberships_of(ws).size).to eq(1)
     end
 
     it 'role no corpo do aceite por código: 422 unexpected_parameter, não consome' do
@@ -176,13 +172,13 @@ RSpec.describe 'Fluxo de convite por código', :tenancy, type: :request do
     end
   end
 
-  describe 'o fluxo do token permanece intacto (regressão)' do
-    it 'aceite por token de um convite que também tem código ainda funciona' do
+  describe 'o fluxo por token não existe mais (code-only-invites)' do
+    it 'aceite por token responde 404 (rota removida), não consome' do
       inv, _code = seed_invitation(role: 'edit')
 
       post "/api/v1/invitations/#{inv.token}/accept", headers: auth_headers(joao)
-      expect(response).to have_http_status(:ok)
-      expect(memberships_of(ws).size).to eq(1)
+      expect(response).to have_http_status(:not_found)
+      expect(memberships_of(ws)).to be_empty
     end
   end
 end

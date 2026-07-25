@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
-# Origem pública do aplicativo web, usada para montar o link do convite
-# (`<APP_URL>/convite/<token>`) — workspace-invitations 2.3 / 6.3.
+# Origem pública do aplicativo web — workspace-invitations 2.3 / 6.3.
 #
-# Em produção a variável é OBRIGATÓRIA: um link de convite com `localhost` é um
-# convite morto, e o erro só apareceria na caixa de entrada de quem foi
-# convidado. Fora de produção há um padrão dev-local (a porta do Vite).
+# code-only-invites removeu o link de convite (`invite_url`), único consumidor
+# direto de `base`. O `base` fica porque o guarda de boot (`app_url_guard.rb`) e
+# outros pontos de configuração ainda validam/consomem `APP_URL`; manter a
+# validação em produção é barato e não é dívida escondida.
 module AppUrl
   DEV_DEFAULT = 'http://localhost:5173'
 
@@ -19,13 +19,9 @@ module AppUrl
 
     if Rails.env.production?
       raise MissingConfiguration,
-            'APP_URL é obrigatória em produção: sem ela os links de convite apontariam para localhost'
+            'APP_URL é obrigatória em produção: origem pública do app web'
     end
 
     DEV_DEFAULT
-  end
-
-  def invite_url(token)
-    "#{base}/convite/#{token}"
   end
 end

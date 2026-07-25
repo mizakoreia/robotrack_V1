@@ -33,16 +33,12 @@ module Api
       # Google OAuth por redirect Devise (D4.8). O request phase e o callback são
       # rotas Rails, fora da varredura Grape; a entrada aqui é defensiva.
       %r{^/users/auth/google_oauth2},
-      # Pré-visualização do convite (workspace-invitations 3.4 / D-INV-6): o
-      # token chega ANTES do login, e o convidado precisa saber para onde ele
-      # leva. Só `GET`, e só com um segmento após `invitations/` — a listagem
-      # (`GET /api/v1/invitations`) continua protegida, e o aceite (`POST`) exige
-      # autenticação porque compara o e-mail do convite com o AUTENTICADO.
-      ['GET', %r{^/api/v1/invitations/[^/]+/?$}],
-      # invite-by-code: pré-visualização por CÓDIGO (pré-login). É `POST` porque o
-      # e-mail do par viaja no CORPO — a regra de privacidade da casa proíbe dado
-      # pessoal em query string. O aceite por código (`POST …/code/accept`) NÃO é
-      # público: exige autenticação (compara o e-mail do convite com o AUTENTICADO).
+      # code-only-invites: a ÚNICA rota pública de convite é a pré-visualização
+      # por CÓDIGO (pré-login). É `POST` porque o e-mail do par viaja no CORPO — a
+      # regra de privacidade da casa proíbe dado pessoal em query string. O link
+      # por token foi removido: não há mais `GET /api/v1/invitations/:token`. O
+      # aceite por código (`POST …/code/accept`) NÃO é público: exige autenticação
+      # (compara o e-mail do convite com o AUTENTICADO).
       ['POST', %r{^/api/v1/invitations/code/preview/?$}]
     ].freeze
 
@@ -65,13 +61,12 @@ module Api
     # se virarem tenant, saem daqui e a varredura cobra.
     #
     # Entradas são regex (qualquer método) OU pares `['METHOD', regex]`, mesma
-    # forma de PUBLIC_ROUTES. O par existe por causa dos convites: a
-    # pré-visualização (`GET /api/v1/invitations/:token`) e o aceite
-    # (`POST /api/v1/invitations/:token/accept`) acontecem FORA de um workspace
-    # corrente — o convidado ainda não é membro de nada —, enquanto
+    # forma de PUBLIC_ROUTES. O par existe por causa dos convites: o preview e o
+    # aceite por CÓDIGO (`POST …/code/{preview,accept}`) acontecem FORA de um
+    # workspace corrente — o convidado ainda não é membro de nada —, enquanto
     # `DELETE /api/v1/invitations/:id` é rota de domínio comum e continua na
-    # varredura de tenant. Sem ciência de método, a isenção de um arrastaria o
-    # outro (workspace-invitations, decisão de execução 6).
+    # varredura de tenant. code-only-invites removeu as isenções por token
+    # (`GET/POST /api/v1/invitations/:token[/accept]`), que não existem mais.
     TENANT_EXEMPT_ROUTES = [
       %r{^/swagger_doc},
       %r{^/auth/},
@@ -88,12 +83,9 @@ module Api
       # de um workspace — exige login, mas não `X-Workspace-Id`. A autorização por
       # membership é do `WorkspaceChannel`, no `subscribed` de cada assinatura.
       %r{^/api/v1/cable_tickets/?$},
-      ['GET',  %r{^/api/v1/invitations/[^/]+/?$}],
-      ['POST', %r{^/api/v1/invitations/[^/]+/accept/?$}],
-      # invite-by-code: preview e aceite por CÓDIGO acontecem FORA de um workspace
-      # corrente (o convidado ainda não é membro de nada), como os caminhos por
-      # token. O `accept` já casaria o padrão `[^/]+/accept` acima, mas a entrada
-      # explícita mantém a allowlist auditável e legível.
+      # code-only-invites: preview e aceite por CÓDIGO acontecem FORA de um
+      # workspace corrente (o convidado ainda não é membro de nada). São as únicas
+      # isenções de convite — as rotas por token foram removidas.
       ['POST', %r{^/api/v1/invitations/code/preview/?$}],
       ['POST', %r{^/api/v1/invitations/code/accept/?$}]
     ].freeze
