@@ -117,6 +117,11 @@ export interface InvitationDTO {
   expires_at: string
   created_at: string
   invite_url: string
+  // invite-by-code: `short_code` (XXXX-XXXX) só vem no POST de criação — uma vez.
+  // A listagem traz `code_status`/`code_expires_at`, nunca o claro nem o hash.
+  short_code?: string | null
+  code_status?: 'active' | 'expired' | 'locked' | 'used' | null
+  code_expires_at?: string | null
 }
 
 export interface InvitationPreviewDTO {
@@ -154,6 +159,21 @@ export const invitationsApi = {
   accept: (token: string) =>
     apiClient.post<{ workspace_id: string; role: 'view' | 'edit' }>(
       `/api/v1/invitations/${encodeURIComponent(token)}/accept`,
+    ),
+
+  // invite-by-code: preview por CÓDIGO é público (pré-login) e exige o PAR
+  // código+e-mail no CORPO (POST, não GET: e-mail nunca em query string). Sem o
+  // par certo, o servidor responde genérico — a UI não distingue "não existe" de
+  // "e-mail errado".
+  previewByCode: (data: { code: string; email: string }) =>
+    apiClient.postPublic<InvitationPreviewDTO>('/api/v1/invitations/code/preview', data),
+
+  // Aceite por código: autenticado, corpo `{ code, email }` (sem `role` — mandar
+  // `role` é 422 `unexpected_parameter`, como no aceite por token).
+  acceptByCode: (data: { code: string; email: string }) =>
+    apiClient.post<{ workspace_id: string; role: 'view' | 'edit' }>(
+      '/api/v1/invitations/code/accept',
+      data,
     ),
 }
 

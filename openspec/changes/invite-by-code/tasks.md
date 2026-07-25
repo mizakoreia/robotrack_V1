@@ -77,25 +77,30 @@
 
 ## G4. Frontend (entrada por código)
 
-- [ ] G4.1 `lib/api/endpoints.ts`: `invitationsApi.previewByCode({ code, email })` e
-  `acceptByCode({ code, email })`; `short_code?` no `InvitationDTO`
-- [ ] G4.2 `lib/auth/invite.ts`: `inviteStore.captureCode/readCode/clearCode` em
-  `sessionStorage` via `safeStorage`, sobrevivendo ao OAuth
-- [ ] G4.3 `lib/auth/session.ts`: `consumeInviteByCode(code, email)` reusando o mapa de
-  erros de `consumeInvite` + `invitation_code_locked` (423) e o genérico de par inválido;
-  `handleInviteAfterAuth` checa token E código
-- [ ] G4.4 `AuthPage.tsx`: seção "Tenho um código de convite" (collapsible), campos
-  E-mail e Código com máscara `XXXX-XXXX`, normalização tolerante, fundo temático
-  (regra F), alvo ≥ 32px, erros por `aria-live` no campo certo
-- [ ] G4.5 `lib/i18n/invitations.ts`: novos literais (`codeSectionTitle`, `codeLabel`,
-  `codePlaceholder`, `codeLocked`, `codeInvalidPair`, `codeAccepted`, …); nenhum literal
-  de convite fora daqui
-- [ ] G4.6 `InviteDialog.tsx`: exibir o código (`XXXX-XXXX`, `tabular`, "Copiar código"
-  com o mesmo fallback do "Copiar link") ao lado do link; deixar claro que o código
-  expira antes do link. `TeamPanel.tsx`: `code_status` na linha do convite
-- [ ] G4.7 Verificação do grupo G4: `vitest` (form, normalização, estados de erro,
-  sobrevive ao OAuth), regra F (fundo temático), alvo ≥ 32px, `tsc`/`lint`/sweeps —
-  0 falhas
+- [x] G4.1 `lib/api/endpoints.ts`: `invitationsApi.previewByCode({ code, email })` e
+  `acceptByCode({ code, email })`; `short_code?`/`code_status?`/`code_expires_at?` no
+  `InvitationDTO`
+- [x] G4.2 `lib/auth/invite.ts`: `inviteStore.captureCode/readCode/clearCode` em
+  `sessionStorage` via `safeStorage` (par `{code,email}` serializado), sobrevivendo ao
+  OAuth; robusto a valor corrompido
+- [x] G4.3 `lib/auth/session.ts`: `consumeInviteByCode(code, email)` reusando o mapa de
+  erros de `consumeInvite` + `invitation_code_locked` (423), `invitation_code_expired`
+  (410) e o genérico de par inválido (`codeInvalidPair`); `handleInviteAfterAuth` checa
+  token E código; `performLogout` limpa o par
+- [x] G4.4 `AuthPage.tsx`: seção "Tenho um código de convite" (`<details>` fora do form
+  de login, sem aninhar), campos E-mail e Código com máscara `XXXX-XXXX` (util
+  `lib/auth/code.ts`), normalização tolerante, fundo temático (regra F), alvo ≥ 37px,
+  erro por `aria-live`; auted aceita direto, guest guarda o par + marca entrada
+- [x] G4.5 `lib/i18n/invitations.ts`: novos literais (`codeSectionTitle`, `codeLabel`,
+  `codePlaceholder`, `codeLocked`, `codeExpired`, `codeInvalidPair`, `codeSaved`,
+  `inviteCodeReady`, `copyCode`, `codeStatus*`, …); nenhum literal de convite fora daqui
+- [x] G4.6 `InviteDialog.tsx`: exibe o código (`XXXX-XXXX`, `font-mono tabular`, "Copiar
+  código" com o mesmo fallback do link) ao lado do link, avisando que expira antes.
+  `TeamPanel.tsx`: `code_status` (expirado/bloqueado) na linha do convite
+- [x] G4.7 Verificação do grupo G4: `vitest` 141/141 (form/normalização/estados/sobrevive
+  ao OAuth + contraste + sweeps), `tsc` limpo, `lint` limpo nos arquivos tocados; regra F
+  e alvo ≥ 32px conferidos no navegador (dark, campos temáticos, 37–39px, máscara ao vivo
+  `il0o4k7p`→`1100-4K7P`, sem erro de console)
 
 ## G5. Docs, E2E e fechamento
 

@@ -19,6 +19,7 @@ export async function performLogout(redirect: (path: string) => void): Promise<v
   }
   useAuthStore.getState().clearSession()
   inviteStore.clear()
+  inviteStore.clearCode()
   queryClient.clear()
   redirect('/entrar')
 }
@@ -106,15 +107,92 @@ async function emailMascaradoDoConvite(token: string): Promise<string | null> {
   }
 }
 
+// Aceite por CÓDIGO pós-autenticação (invite-by-code §D). Espelha `consumeInvite`
+// e REUSA o mesmo mapa de erros, adicionando os estados próprios do código:
+// `invitation_code_locked` (423 — travado após tentativas) e o genérico de par
+// inválido (`invitation_not_found`, que aqui vira "código ou e-mail incorretos" em
+// vez de "convite não encontrado"). O par é REMOVIDO do storage ANTES do await,
+// como o token, para um mismatch não se repetir a cada navegação.
+export async function consumeInviteByCode(code: string, email: string): Promise<void> {
+  inviteStore.clearCode()
+
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    toast.warning(inviteText.offline, { duration: Infinity })
+    return
+  }
+
+  try {
+    const result = await invitationsApi.acceptByCode({ code, email })
+    if (result?.workspace_id) {
+      useWorkspaceStore.getState().selectWorkspace(result.workspace_id)
+    }
+    toast.success(inviteText.accepted(null))
+  } catch (e) {
+    const resposta = (e as { response?: { status?: number; data?: { error?: string } } })?.response
+    const status = resposta?.status
+    const codigo = resposta?.data?.error
+
+    if (codigo === 'invitation_code_locked' || status === 423) {
+      toast.warning(inviteText.codeLocked, { duration: Infinity })
+    } else if (codigo === 'invitation_code_expired') {
+      toast.warning(inviteText.codeExpired)
+    } else if (status === 410 || codigo === 'invitation_expired') {
+      toast.warning(inviteText.expired)
+    } else if (codigo === 'invitation_already_used') {
+      toast.warning(inviteText.alreadyUsed)
+    } else if (codigo === 'already_member') {
+      toast.info(inviteText.alreadyMember)
+    } else if (codigo === 'invitation_email_mismatch') {
+      // O par (código+e-mail) casou, mas a conta autenticada é outra. O e-mail
+      // mascarado vem do preview por código (mesmo par), e a ação é trocar de conta.
+      const mascarado = await emailMascaradoDoConvitePorCodigo(code, email)
+      toast.warning(inviteText.emailMismatch(mascarado), {
+        duration: Infinity,
+        action: {
+          label: inviteText.emailMismatchAction,
+          onClick: () => {
+            void performLogout((path) => {
+              try {
+                window.location.assign(path)
+              } catch {
+                /* sem window */
+              }
+            })
+          },
+        },
+      })
+    } else if (codigo === 'person_email_conflict') {
+      toast.error(inviteText.personConflict, { duration: Infinity })
+    } else if (status === 404 || codigo === 'invitation_not_found') {
+      // Par inválido (código ou e-mail errado) — genérico de propósito no servidor.
+      toast.error(inviteText.codeInvalidPair)
+    } else {
+      toast.error(inviteText.genericFailure)
+    }
+  }
+}
+
+async function emailMascaradoDoConvitePorCodigo(code: string, email: string): Promise<string | null> {
+  try {
+    const preview = await invitationsApi.previewByCode({ code, email })
+    return preview.email_masked
+  } catch {
+    return null
+  }
+}
+
 // Convite após autenticar (identity-and-auth 6.5/6.6). Se há token guardado,
 // aceita UMA única vez. Se NÃO há token mas a entrada foi por um link de convite
 // (marcador), o token se perdeu no redirect do Google com storage bloqueado:
 // orienta a reabrir o link — jamais descarta o convite em silêncio.
 export async function handleInviteAfterAuth(): Promise<void> {
   const token = inviteStore.read()
+  const codePair = inviteStore.readCode()
 
   if (token) {
     await consumeInvite(token)
+  } else if (codePair) {
+    await consumeInviteByCode(codePair.code, codePair.email)
   } else if (oauthState.wasInviteEntry()) {
     toast.warning(inviteText.lostToken)
   }

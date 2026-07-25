@@ -202,12 +202,24 @@ function LinhaConvite({ invitation, onRevoke }: { invitation: InvitationDTO; onR
   // pendente ativo: o dono precisa saber que aquele link já não funciona.
   const expirado = invitation.status === 'expired'
 
+  // invite-by-code: o estado do CÓDIGO é distinto do estado do convite (o código
+  // expira/trava antes do link). Só é mostrado quando o convite tem código e ele
+  // não está simplesmente 'ativo' — o dono precisa saber quando o código já morreu
+  // (mas o link ainda vale).
+  const rotuloCodigo =
+    invitation.code_status === 'expired'
+      ? inviteText.codeStatusExpired
+      : invitation.code_status === 'locked'
+        ? inviteText.codeStatusLocked
+        : null
+
   return (
     <li className="flex items-center justify-between gap-4 px-4 py-3">
       <div>
         <p className="text-sm font-medium">{invitation.email}</p>
         <p className="text-xs text-muted-foreground">
           {rotuloPapel(invitation.role)} · {expirado ? inviteText.statusExpired : inviteText.statusPending}
+          {rotuloCodigo && <> · {rotuloCodigo}</>}
         </p>
       </div>
 

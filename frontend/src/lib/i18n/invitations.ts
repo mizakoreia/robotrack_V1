@@ -68,6 +68,34 @@ export const inviteText = {
   inviteForbidden: 'Só o dono do workspace pode convidar.',
   close: 'Fechar',
 
+  // invite-by-code — código no diálogo de criação (ao lado do link)
+  inviteCodeReady: 'Código do convite',
+  inviteCodeHint: 'Quem está no computador pode digitar este código na tela de entrada. Ele expira antes do link — em 48 horas.',
+  copyCode: 'Copiar código',
+  codeCopied: 'Código copiado.',
+  copyCodeManual: 'Não foi possível copiar automaticamente. Selecione o código e copie manualmente.',
+
+  // invite-by-code — estado do código na lista de pendentes
+  codeStatusActive: 'Código ativo',
+  codeStatusExpired: 'Código expirado',
+  codeStatusLocked: 'Código bloqueado',
+
+  // invite-by-code — seção "Tenho um código" na tela de entrada
+  codeSectionTitle: 'Tenho um código de convite',
+  codeSectionHint: 'Recebeu um código do responsável? Digite o e-mail do convite e o código.',
+  codeLabel: 'Código do convite',
+  codePlaceholder: 'XXXX-XXXX',
+  codeEmailLabel: 'E-mail do convite',
+  codeSubmitAuthed: 'Aceitar convite',
+  codeSubmitGuest: 'Guardar e entrar para aceitar',
+  codeInvalidFormat: 'O código tem 8 caracteres, no formato XXXX-XXXX.',
+  codeSaved: 'Convite guardado. Entre com sua conta para aceitá-lo.',
+
+  // invite-by-code — desfechos do aceite por código
+  codeLocked: 'Este código foi bloqueado por tentativas demais. Peça um novo código ao responsável.',
+  codeExpired: 'Este código expirou. Peça um novo ao responsável (ou use o link, se ainda tiver).',
+  codeInvalidPair: 'Código ou e-mail incorretos. Confira os dois e tente de novo.',
+
   // Revogação de acesso
   accessRevoked: (workspaceName?: string | null) =>
     workspaceName

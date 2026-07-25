@@ -26,7 +26,9 @@ export function InviteDialog({
   const [enviando, setEnviando] = useState(false)
   const [criado, setCriado] = useState<InvitationDTO | null>(null)
   const [copiaManual, setCopiaManual] = useState(false)
+  const [copiaCodigoManual, setCopiaCodigoManual] = useState(false)
   const linkRef = useRef<HTMLInputElement>(null)
+  const codigoRef = useRef<HTMLInputElement>(null)
 
   async function submit(event: React.FormEvent) {
     event.preventDefault()
@@ -69,6 +71,21 @@ export function InviteDialog({
     }
   }
 
+  async function copiarCodigo() {
+    if (!criado?.short_code) return
+    try {
+      const clipboard = navigator.clipboard
+      if (!clipboard?.writeText) throw new Error('sem clipboard')
+      await clipboard.writeText(criado.short_code)
+      setCopiaCodigoManual(false)
+      toast.success(inviteText.codeCopied)
+    } catch {
+      setCopiaCodigoManual(true)
+      codigoRef.current?.select()
+      toast.warning(inviteText.copyCodeManual)
+    }
+  }
+
   if (criado) {
     return (
       <div role="dialog" aria-label={inviteText.inviteTitle} className="rounded-lg border p-4">
@@ -85,6 +102,28 @@ export function InviteDialog({
         />
 
         {copiaManual && <p className="mt-2 text-sm text-destructive">{inviteText.copyManual}</p>}
+
+        {/* invite-by-code: o CÓDIGO ao lado do link — as duas representações do
+            MESMO convite. Fonte mono/tabular para o código não dançar de largura;
+            aviso de que ele expira antes do link. */}
+        {criado.short_code && (
+          <div className="mt-4 border-t border-input pt-4">
+            <h4 className="text-sm font-medium">{inviteText.inviteCodeReady}</h4>
+            <p className="mt-1 text-sm text-muted-foreground">{inviteText.inviteCodeHint}</p>
+            <input
+              ref={codigoRef}
+              aria-label={inviteText.inviteCodeReady}
+              readOnly
+              value={criado.short_code}
+              onFocus={(e) => e.currentTarget.select()}
+              className="mt-3 w-full rounded-md border bg-background px-3 py-2 text-center font-mono text-lg tracking-[0.3em] tabular-nums"
+            />
+            {copiaCodigoManual && <p className="mt-2 text-sm text-destructive">{inviteText.copyCodeManual}</p>}
+            <Button type="button" variant="outline" className="mt-3" onClick={copiarCodigo}>
+              {inviteText.copyCode}
+            </Button>
+          </div>
+        )}
 
         <div className="mt-4 flex gap-2">
           <Button type="button" onClick={copiar}>

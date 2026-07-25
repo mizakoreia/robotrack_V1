@@ -262,8 +262,57 @@ falhas do par travam o código), a adivinhação online é proibitiva.
 - `G3: endurecimento (rate-limit IP/email/global, lockout, pepper, log sem claro)`
   (LOCAL, sem push).
 
-## G4 — (pendente)
+## G4 — Frontend (entrada por código)
 
-## G4 — (pendente)
+### Entregue
+
+- `lib/api/endpoints.ts`: `previewByCode`/`acceptByCode` (preview público via
+  `postPublic`, aceite autenticado via `post`); `InvitationDTO` ganha `short_code?`/
+  `code_status?`/`code_expires_at?`.
+- `lib/auth/invite.ts`: `captureCode`/`readCode`/`clearCode` (par `{code,email}` em
+  JSON, chave própria `robotrack.invite_code`; robusto a valor corrompido).
+- `lib/auth/code.ts` (novo): `normalizeInviteCode` (Crockford, I/L→1, O→0),
+  `formatInviteCode` (máscara `XXXX-XXXX`), `isCompleteInviteCode`.
+- `lib/auth/session.ts`: `consumeInviteByCode` reusando o mapa de erros +
+  `invitation_code_locked`/`invitation_code_expired`/`codeInvalidPair`;
+  `handleInviteAfterAuth` cobre token E código; `performLogout` limpa o par.
+- `features/auth/AuthPage.tsx`: seção `<details>` "Tenho um código de convite" (fora do
+  form de login, sem aninhar forms), campos temáticos, máscara ao vivo, aria-live.
+- `features/team/InviteDialog.tsx`: exibe o código (mono/tabular, "Copiar código" com
+  fallback) ao lado do link. `features/team/TeamPanel.tsx`: `code_status` na linha.
+- `lib/i18n/invitations.ts`: literais de código (o CI proíbe strings de convite fora
+  daqui — `convention-sweep` verde).
+
+### Decisões de execução
+
+- **DE-G4.1 — a seção de código fica FORA do `<form>` de login.** Forms aninhados são
+  HTML inválido; o `<details>` com seu próprio form é irmão do form de login dentro do
+  container `max-w-sm`. Resolve o aninhamento sem perder o layout de coluna única.
+- **DE-G4.2 — todo convite tem código; a UI reflete isso.** Como o backend sempre gera
+  código (DE-G1.1), o `InviteDialog` sempre mostra o bloco de código; não há toggle
+  "gerar código".
+- **DE-G4.3 — normalização no cliente é ergonomia, não segurança.** `code.ts` espelha o
+  backend, mas a igualdade de hash é do servidor (que normaliza de novo). O cliente só
+  poupa o usuário de errar por maiúscula/hífen/ambíguo.
+- **DE-G4.4 — dois eixos de e-mail na tela.** A seção tem campo de e-mail PRÓPRIO (o do
+  convite), pré-preenchido do login quando vazio — o e-mail do convite pode diferir do
+  que a pessoa digita no login. É o mesmo par que o backend exige.
+
+### Prova do G4
+
+- Verificação no navegador (dev server no caminho correto): `/entrar` renderiza no tema
+  escuro; a seção expande com campos de FUNDO TEMÁTICO (regra F — nada de branco no
+  escuro); alvos de toque 37–39px (≥32px, luva); máscara ao vivo `il0o4k7p` → `1100-4K7P`
+  (normalização tolerante); sem erro de console.
+- `vitest run` (tests/ + auth + team + api): **141 exemplos, 0 falhas** (inclui
+  `contrast`, `no-emoji`, `no-prefers-color-scheme`, `query-convention`, `stacking`,
+  `token-source`; e os novos `code`/`inviteCode`/`AuthPageCode`).
+- `tsc --noEmit` limpo; `eslint` limpo nos arquivos tocados (os 4 erros de `eslint` são
+  em `e2e/` — pré-existentes, não tocados por esta change; handoff registrado no G5).
+
+### Commit local do G4
+
+- `G4: entrada por codigo na AuthPage + codigo no InviteDialog/TeamPanel`
+  (LOCAL, sem push).
 
 ## G5 — (pendente)

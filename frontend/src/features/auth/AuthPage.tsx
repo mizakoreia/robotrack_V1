@@ -4,8 +4,11 @@ import { toast } from 'sonner'
 import { authApi } from '../../lib/api/endpoints'
 import { useAuthStore } from '../../store/authStore'
 import { withStorageTimeout } from '../../lib/safeStorage'
-import { handleInviteAfterAuth } from '../../lib/auth/session'
+import { consumeInviteByCode, handleInviteAfterAuth } from '../../lib/auth/session'
 import { oauthState } from '../../lib/auth/oauthState'
+import { inviteStore } from '../../lib/auth/invite'
+import { formatInviteCode, isCompleteInviteCode, normalizeInviteCode } from '../../lib/auth/code'
+import { inviteText } from '../../lib/i18n/invitations'
 
 type Mode = 'login' | 'signup'
 type FieldErrors = { name?: string; email?: string; password?: string; form?: string }
@@ -29,7 +32,49 @@ export function AuthPage() {
   const [loading, setLoading] = useState(false)
   const nameRef = useRef<HTMLInputElement>(null)
 
+  // invite-by-code: seção "Tenho um código de convite" (§D). Estado próprio, para
+  // não se misturar ao login. O e-mail do convite pode ser diferente do que a
+  // pessoa digita no login — por isso campo separado, pré-preenchido do login.
+  const [codeEmail, setCodeEmail] = useState('')
+  const [codeInput, setCodeInput] = useState('')
+  const [codeError, setCodeError] = useState<string | null>(null)
+  const [codeBusy, setCodeBusy] = useState(false)
+
   const isSignup = mode === 'signup'
+
+  async function onSubmitCode(ev: React.FormEvent) {
+    ev.preventDefault()
+    const alvoEmail = codeEmail.trim() || email.trim()
+    if (!EMAIL_RE.test(alvoEmail)) {
+      setCodeError('Informe o e-mail do convite.')
+      return
+    }
+    if (!isCompleteInviteCode(codeInput)) {
+      setCodeError(inviteText.codeInvalidFormat)
+      return
+    }
+    setCodeError(null)
+    const normalized = normalizeInviteCode(codeInput)
+
+    // Já autenticado nesta tela é raro, mas possível (sessão em memória, aba nova):
+    // aceita direto. Senão, guarda o par (sobrevive ao redirect do Google) e deixa
+    // o login/cadastro seguir — `handleInviteAfterAuth` consome depois.
+    if (useAuthStore.getState().isAuthenticated) {
+      setCodeBusy(true)
+      try {
+        await consumeInviteByCode(normalized, alvoEmail)
+        navigate('/')
+      } finally {
+        setCodeBusy(false)
+      }
+      return
+    }
+
+    inviteStore.captureCode({ code: normalized, email: alvoEmail })
+    oauthState.markInviteEntry()
+    if (!email) setEmail(alvoEmail) // pré-preenche o login com o e-mail do convite
+    toast.info(inviteText.codeSaved)
+  }
 
   function switchMode(next: Mode) {
     if (next === mode) return
@@ -112,7 +157,7 @@ export function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+    <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background px-4 py-8">
       <form onSubmit={onSubmit} noValidate className="w-full max-w-sm space-y-4" aria-label={isSignup ? 'Cadastro' : 'Login'}>
         <h1 className="text-2xl font-semibold text-center">
           {isSignup ? 'Criar conta' : 'Entrar'}
@@ -195,6 +240,65 @@ export function AuthPage() {
           )}
         </p>
       </form>
+
+      {/* invite-by-code (§D): entrada por CÓDIGO. Colapsável — o caminho primário
+          é o login; o código é a conveniência de quem prefere digitar. Campos com
+          fundo temático (regra F) e alvo de toque ≥ 32px (luva). */}
+      <details className="w-full max-w-sm rounded border border-input bg-bg-panel">
+        <summary className="cursor-pointer select-none px-4 py-3 text-sm font-medium text-text-main">
+          {inviteText.codeSectionTitle}
+        </summary>
+        <form onSubmit={onSubmitCode} noValidate className="space-y-3 px-4 pb-4" aria-label={inviteText.codeSectionTitle}>
+          <p className="text-sm text-text-muted">{inviteText.codeSectionHint}</p>
+
+          <div>
+            <label htmlFor="code-email" className="block text-sm font-medium text-text-main">
+              {inviteText.codeEmailLabel}
+            </label>
+            <input
+              id="code-email"
+              type="text"
+              inputMode="email"
+              autoComplete="email"
+              aria-invalid={!!codeError}
+              value={codeEmail}
+              onChange={(e) => setCodeEmail(e.target.value)}
+              placeholder={email || undefined}
+              className="mt-1 w-full rounded border border-input bg-bg-main px-3 py-2 text-text-main placeholder:text-text-muted"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="code-input" className="block text-sm font-medium text-text-main">
+              {inviteText.codeLabel}
+            </label>
+            <input
+              id="code-input"
+              type="text"
+              inputMode="text"
+              autoCapitalize="characters"
+              autoCorrect="off"
+              spellCheck={false}
+              maxLength={9} // 8 chars + 1 hífen
+              aria-invalid={!!codeError}
+              value={codeInput}
+              onChange={(e) => setCodeInput(formatInviteCode(e.target.value))}
+              placeholder={inviteText.codePlaceholder}
+              className="mt-1 w-full rounded border border-input bg-bg-main px-3 py-2 font-mono tracking-[0.2em] tabular-nums text-text-main placeholder:text-text-muted placeholder:tracking-normal"
+            />
+          </div>
+
+          <p aria-live="polite" className="min-h-[1.25rem] text-sm text-red-600">{codeError}</p>
+
+          <button
+            type="submit"
+            disabled={codeBusy}
+            className="w-full rounded bg-primary px-3 py-2 text-white disabled:opacity-60"
+          >
+            {useAuthStore.getState().isAuthenticated ? inviteText.codeSubmitAuthed : inviteText.codeSubmitGuest}
+          </button>
+        </form>
+      </details>
     </div>
   )
 }
