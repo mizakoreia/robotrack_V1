@@ -11,9 +11,9 @@ Um grupo por vez, prova verde. Marcador de segurança: `git tag pre-task-groupin
 
 ## G2. Exclusão em lote (backend)
 
-- [ ] 2.1 `Tasks::BulkDeleteService.call(ids:)`: transação — `TaskAssignee.delete_all` das ids, `Task.where(id:).update_all(deleted_at:)`, `Progress::CascadeRecompute` 1×/robô distinto; ignora ids invisíveis (RLS); retorna `{ deleted_count }`.
-- [ ] 2.2 `api/v1/tasks.rb`: rota de coleção `DELETE /tasks` com `ids: [String]`, `TaskPolicy` ação `destroy` (owner-only); resposta `{ deletedCount }`.
-- [ ] 2.3 **Verificação (RSpec):** dono exclui N (rollup recalcula 1×/robô, avanços intactos); `edit`→403; id de outro tenant ignorado (`deletedCount` só conta visível).
+- [x] 2.1 `Tasks::BulkDeleteService.call(ids:)`: transação — `TaskAssignee.delete_all` das ids, `Task.where(id:).update_all(deleted_at:)`, `Progress::CascadeRecompute` 1×/robô distinto; ignora ids invisíveis (RLS); retorna `{ deleted_count }`.
+- [x] 2.2 `api/v1/tasks.rb`: rota de coleção `DELETE /tasks` com `ids: [String]`, `TaskPolicy` ação `destroy` (owner-only); resposta `{ deletedCount }`.
+- [x] 2.3 **Verificação (RSpec):** dono exclui N (rollup recalcula 1×/robô, avanços intactos); `edit`→403; id de outro tenant ignorado (`deletedCount` só conta visível).
 
 ## G3. Seleção múltipla (frontend)
 

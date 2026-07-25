@@ -73,6 +73,21 @@ module Api
       end
 
       resource :tasks do
+        # robot-task-grouping G2 (D-TG-6/7) — exclusão em LOTE. Coleção `DELETE /tasks`
+        # com `ids[]`; `TaskPolicy#destroy?` = owner-only (edit/view → 403). Ids
+        # invisíveis (outro tenant/inexistentes) são ignorados pela RLS — sem 404 por
+        # item; a resposta conta só o que existia e era visível.
+        route_setting :policy, policy: 'TaskPolicy', action: :destroy
+        params do
+          requires :ids, type: Array[String]
+        end
+        delete do
+          result = task_result(
+            ::Tasks::BulkDeleteService.new(context: authorization_context).call(ids: params[:ids])
+          )
+          { deletedCount: result[:data][:deleted_count] }
+        end
+
         # progress-advances 4.2 (§2.4, D3, D-409) — a trilha de avanços de uma
         # tarefa: `POST` registra um avanço (a ÚNICA porta de escrita de
         # `progress`/`status`), `GET` pagina a trilha (mais recentes primeiro).
