@@ -223,6 +223,81 @@ body {
   }
 }
 
+/* impeccable-remediation G1 (§Princípio 1) — o slider de progresso é o controle
+   nº1 do operador de luva. O `<input type=range>` nativo nasce com ~16px de
+   altura (medido); aqui a ÁREA DE TOQUE sobe para ≥32px (mouse) e ≥40px em
+   ponteiro grosso (luva/tablet), sem depender de lib. O thumb visível fica menor
+   que a área de toque de propósito (Fitts: o alvo é a área, não o desenho). */
+@layer components {
+  .progress-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    max-width: 12rem;
+    height: 32px; /* área de toque, não o traço visível */
+    background: transparent;
+    cursor: pointer;
+  }
+  .progress-slider:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+  /* trilho */
+  .progress-slider::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: 9999px;
+    background: hsl(var(--track));
+  }
+  .progress-slider::-moz-range-track {
+    height: 6px;
+    border-radius: 9999px;
+    background: hsl(var(--track));
+  }
+  /* thumb — a bolinha que se arrasta; centrada no trilho de 6px */
+  .progress-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 22px;
+    width: 22px;
+    margin-top: -8px;
+    border-radius: 9999px;
+    background: hsl(var(--accent-solid));
+    border: 2px solid hsl(var(--bg-panel));
+  }
+  .progress-slider::-moz-range-thumb {
+    height: 22px;
+    width: 22px;
+    border: 2px solid hsl(var(--bg-panel));
+    border-radius: 9999px;
+    background: hsl(var(--accent-solid));
+  }
+  /* foco AA no thumb (o :focus-visible base zera o outline do input) */
+  .progress-slider:focus-visible {
+    outline: none;
+  }
+  .progress-slider:focus-visible::-webkit-slider-thumb {
+    box-shadow: 0 0 0 3px hsl(var(--ring));
+  }
+  .progress-slider:focus-visible::-moz-range-thumb {
+    box-shadow: 0 0 0 3px hsl(var(--ring));
+  }
+  /* ponteiro grosso (luva/tablet): alvo de toque ≥40px */
+  @media (pointer: coarse) {
+    .progress-slider {
+      height: 40px;
+    }
+    .progress-slider::-webkit-slider-thumb {
+      height: 28px;
+      width: 28px;
+      margin-top: -11px;
+    }
+    .progress-slider::-moz-range-thumb {
+      height: 28px;
+      width: 28px;
+    }
+  }
+}
+
 /* Global scrollbar styling */
 html {
   scroll-behavior: smooth;

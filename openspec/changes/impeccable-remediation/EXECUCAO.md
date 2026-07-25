@@ -102,4 +102,19 @@ produto já declara e o design-system já tem gate para medir. Nenhuma regressã
 *(preenchido ao fim de cada grupo)*
 
 - **G0 (planejamento):** proposal/design/4 spec deltas/tasks/EXECUCAO escritos; `validate
-  --strict` verde; marcador `pre-impeccable-remediation` criado. Commit `G0:` local. — *a registrar após o commit.*
+  --strict` verde; marcador `pre-impeccable-remediation` criado (@ `c2532a8`). Commit `G0:`
+  `017e8b0`.
+- **G1 (contraste + alvo de toque) — FECHADO:**
+  - `.progress-slider` em `globals.css` (≥32px / ≥40px em `(pointer: coarse)`) + aplicado no
+    `AdvanceControls`; `StatusSelect` `min-h-[2.5rem] sm:min-h-[2rem]` + borda `/70`.
+  - `Button` default→`bg-accent-solid`, destructive→`bg-danger-solid` (hover `brightness-110`);
+    `AuthPage` submits→`bg-accent-solid`, erros→`text-danger-ink` (0 `bg-primary`, 0 `text-red-600`);
+    `NotificationBell` badge→`bg-danger-solid`+branco; `IconButton` foco→`ring-ring`.
+  - Gate novo `tests/touch-and-contrast-usage.test.ts` (7 testes, MORDE).
+  - **Prova:** `contrast.test.ts` 20 ✓, gate 7 ✓, `convention-sweep` 13 ✓, `tokens_coverage` 3 ✓,
+    render (AdvanceControls/NotificationBell/primitives) 23 ✓, `no-heavy-deps` 1 ✓; `tsc --noEmit`
+    exit 0; `eslint` dos 6 arquivos exit 0. Medição ao vivo (login): submit `rgb(29,79,215)`
+    (#1d4ed8) sobre branco = **6,70:1** (antes #3b82f6 = 3,68:1). Screenshot em `/entrar`.
+  - **Divergência:** nenhuma. Escopo exatamente o mínimo do dono + os fixes AA adjacentes
+    (IconButton ring, StatusSelect borda). `AdvanceModal` inline segue como dívida do G2.
+  - Commit `G1:` + ff `main` + push. **PARADO aqui — aguarda OK do dono para G2.**

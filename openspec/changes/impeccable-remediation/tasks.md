@@ -6,15 +6,15 @@ handoff é anotado como handoff.
 
 ## G1. Contraste + alvo de toque (o que mais dói para o operador de luva)
 
-- [ ] 1.1 `styles/globals.css`: classe `.progress-slider` estilizando `<input type=range>` nos dois motores (`::-webkit-slider-thumb`/`-runnable-track`, `::-moz-range-thumb`/`-track`), com área de toque **≥ 32px** base e **≥ 40px** sob `@media (pointer: coarse)`; trilho `--track`, thumb `--accent-solid` com borda `--bg-panel`, foco `--ring`. (§Princípio 1 — o range nasce 16px; o thumb visível fica menor que a área de toque de propósito)
-- [ ] 1.2 `features/advances/AdvanceControls.tsx`: aplicar `progress-slider` ao slider. (§Princípio 1 — o único jeito de mudar o avanço passa a ter alvo de luva)
-- [ ] 1.3 `components/ui/StatusSelect.tsx`: `min-h-[2.5rem] sm:min-h-[2rem]` (40 mobile / 32 desktop), `py-1`, borda `border-current/70` (≥3:1). (§Princípio 1 + §5.2 — controle primário do operador; borda `/30` reprovava não-texto)
-- [ ] 1.4 `components/ui/Button.tsx`: default → `bg-accent-solid text-white hover:brightness-110`; destructive → `bg-danger-solid text-white hover:brightness-110`. (§DESIGN regra dura — #3b82f6 dá 3,68:1; a sólida dá 6,70:1)
-- [ ] 1.5 `features/auth/AuthPage.tsx`: 3 submits `bg-primary`→`bg-accent-solid` (+`hover:brightness-110 transition`); todos os `text-red-600`→`text-danger-ink`. (§DESIGN — tira o login de fora do gate de contraste)
-- [ ] 1.6 `features/notifications/NotificationBell.tsx`: badge `bg-danger`+`text-danger-ink`→`bg-danger-solid`+`text-white`. (§DESIGN — vermelho-sobre-vermelho ~1,30:1 → 5,9:1)
-- [ ] 1.7 `components/ui/IconButton.tsx`: `focus-visible:ring-accent`→`focus-visible:ring-ring`. (§5.1 a11y — foco AA)
-- [ ] 1.8 **Gate:** `tests/touch-and-contrast-usage.test.ts` — trava (a) `.progress-slider` no slider e a regra `(pointer: coarse)` no CSS; (b) piso de toque no `StatusSelect`; (c) uso de `--accent-solid`/`--danger-solid`/`--danger-ink` (não `bg-primary`/`bg-destructive`/`text-red-600`) em Button/AuthPage/NotificationBell; (d) `ring-ring` no IconButton. (§Princípio 1 — o gate MORDE: reprova a versão atual)
-- [ ] 1.9 **Verificação:** `contrast.test.ts` + o novo gate + `convention-sweep` verdes; `vitest` das áreas tocadas; `tsc --noEmit`; `eslint` — todos verdes. Screenshot do slider/select/login/sino em mobile + desktop.
+- [x] 1.1 `styles/globals.css`: classe `.progress-slider` estilizando `<input type=range>` nos dois motores (`::-webkit-slider-thumb`/`-runnable-track`, `::-moz-range-thumb`/`-track`), com área de toque **≥ 32px** base e **≥ 40px** sob `@media (pointer: coarse)`; trilho `--track`, thumb `--accent-solid` com borda `--bg-panel`, foco `--ring`. (§Princípio 1 — o range nasce 16px; o thumb visível fica menor que a área de toque de propósito)
+- [x] 1.2 `features/advances/AdvanceControls.tsx`: aplicar `progress-slider` ao slider. (§Princípio 1 — o único jeito de mudar o avanço passa a ter alvo de luva)
+- [x] 1.3 `components/ui/StatusSelect.tsx`: `min-h-[2.5rem] sm:min-h-[2rem]` (40 mobile / 32 desktop), `py-1`, borda `border-current/70` (≥3:1). (§Princípio 1 + §5.2 — controle primário do operador; borda `/30` reprovava não-texto)
+- [x] 1.4 `components/ui/Button.tsx`: default → `bg-accent-solid text-white hover:brightness-110`; destructive → `bg-danger-solid text-white hover:brightness-110`. (§DESIGN regra dura — #3b82f6 dá 3,68:1; a sólida dá 6,70:1)
+- [x] 1.5 `features/auth/AuthPage.tsx`: 3 submits `bg-primary`→`bg-accent-solid` (+`hover:brightness-110 transition`); todos os `text-red-600`→`text-danger-ink`. (§DESIGN — tira o login de fora do gate de contraste)
+- [x] 1.6 `features/notifications/NotificationBell.tsx`: badge `bg-danger`+`text-danger-ink`→`bg-danger-solid`+`text-white`. (§DESIGN — vermelho-sobre-vermelho ~1,30:1 → 5,9:1)
+- [x] 1.7 `components/ui/IconButton.tsx`: `focus-visible:ring-accent`→`focus-visible:ring-ring`. (§5.1 a11y — foco AA)
+- [x] 1.8 **Gate:** `tests/touch-and-contrast-usage.test.ts` — trava (a) `.progress-slider` no slider e a regra `(pointer: coarse)` no CSS; (b) piso de toque no `StatusSelect`; (c) uso de `--accent-solid`/`--danger-solid`/`--danger-ink` (não `bg-primary`/`bg-destructive`/`text-red-600`) em Button/AuthPage/NotificationBell; (d) `ring-ring` no IconButton. (§Princípio 1 — o gate MORDE: reprova a versão atual)
+- [x] 1.9 **Verificação:** `contrast.test.ts` + o novo gate + `convention-sweep` verdes; `vitest` das áreas tocadas; `tsc --noEmit`; `eslint` — todos verdes. Screenshot do slider/select/login/sino em mobile + desktop.
 
 ## G2. Harden dos modais e da navegação (bloqueios de a11y) — AGUARDA OK DO DONO
 

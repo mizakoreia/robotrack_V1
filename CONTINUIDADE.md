@@ -13,6 +13,16 @@ está em [PROMPT DE RETOMADA](#prompt-de-retomada), no fim.
   `owner-only-card-delete`, mais os fixes de UI da demo — responsividade mobile
   (`705a0c2`), swipe-to-reveal no repouso (`cd9722d`), remoção da luz ambiente
   (`bac3535`) e a lixeira dos cards no desktop (`6625be6`) — ver as seções abaixo).
+- **Rodada `impeccable-remediation` (change nova, EM ANDAMENTO grupo a grupo).**
+  Formaliza a `CRITICA_IMPECCABLE.md` (69 achados) como UMA change OpenSpec com 6
+  grupos ordenados por dor do operador (mapa em `openspec/changes/impeccable-remediation/`).
+  Marcador de segurança: `git tag pre-impeccable-remediation` @ `c2532a8` (voltar:
+  `git reset --hard pre-impeccable-remediation`). **G0** (planejamento, `017e8b0`) e
+  **G1** (contraste + alvo de toque) FECHADOS e no `main`; **G2–G6 aguardam OK do dono
+  entre grupos**. G1: slider/StatusSelect com alvo de luva (≥32/40px), Button/login/
+  sino/IconButton em tokens AA (submit do login 3,68:1→6,70:1 medido), gate novo
+  `tests/touch-and-contrast-usage.test.ts`. Arquivos de túnel (`vite.config.ts`,
+  `lib/api/client.ts`) seguem **sem commit** de propósito.
 - O desenvolvimento desta rodada aconteceu na branch de feature
   `feat/invite-by-code`, onde as duas changes foram **acumuladas** por instrução do
   dono e depois **fast-forwarded para `main` de uma vez** (histórico linear, sem merge

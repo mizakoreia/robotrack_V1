@@ -29,7 +29,10 @@ export function NotificationBell() {
           <span
             aria-hidden
             data-testid="bell-unread-badge"
-            className="absolute -right-0.5 -top-0.5 grid min-w-[1rem] place-content-center rounded-full bg-danger px-1 text-[0.65rem] font-semibold leading-4 text-danger-ink"
+            /* impeccable-remediation G1 — `--danger-solid` + branco (5,9:1). Antes:
+               `bg-danger` (cheia tingida) + `text-danger-ink` = vermelho-sobre-vermelho
+               ~1,30:1, e o número é aria-hidden (só o vidente o consome, e não conseguia). */
+            className="absolute -right-0.5 -top-0.5 grid min-w-[1rem] place-content-center rounded-full bg-danger-solid px-1 text-[0.65rem] font-semibold leading-4 text-white"
           >
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>

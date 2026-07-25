@@ -68,7 +68,9 @@ export function AdvanceControls({ robotId, taskId }: { robotId: string; taskId: 
         disabled={!canEdit}
         // robot-task-table 6.2 — `pan-y`: arrastar o dedo na vertical ROLA a página
         // em vez de mudar o progresso; só o gesto horizontal move o slider.
-        className="touch-pan-y"
+        // impeccable-remediation G1 — `progress-slider`: alvo de toque ≥32px (mouse)
+        // / ≥40px em ponteiro grosso (luva). O range nativo nascia com ~16px.
+        className="progress-slider touch-pan-y"
         onKeyDown={onSliderKeyDown}
         // Arrastar: atualiza o valor ao vivo (readout), mas NÃO abre o modal.
         onChange={(e) => {

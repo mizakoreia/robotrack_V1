@@ -177,7 +177,7 @@ export function AuthPage() {
               onChange={(e) => setName(e.target.value)}
               className="mt-1 w-full rounded border border-input bg-bg-main px-3 py-2 text-text-main placeholder:text-text-muted"
             />
-            <p aria-live="polite" className="text-sm text-red-600 min-h-[1.25rem]">{errors.name}</p>
+            <p aria-live="polite" className="text-sm text-danger-ink min-h-[1.25rem]">{errors.name}</p>
           </div>
         )}
 
@@ -192,7 +192,7 @@ export function AuthPage() {
             onChange={(e) => setEmail(e.target.value)}
             className="mt-1 w-full rounded border border-input bg-bg-main px-3 py-2 text-text-main placeholder:text-text-muted"
           />
-          <p aria-live="polite" className="text-sm text-red-600 min-h-[1.25rem]">{errors.email}</p>
+          <p aria-live="polite" className="text-sm text-danger-ink min-h-[1.25rem]">{errors.email}</p>
         </div>
 
         <div>
@@ -206,7 +206,7 @@ export function AuthPage() {
             onChange={(e) => setPassword(e.target.value)}
             className="mt-1 w-full rounded border border-input bg-bg-main px-3 py-2 text-text-main placeholder:text-text-muted"
           />
-          <p aria-live="polite" className="text-sm text-red-600 min-h-[1.25rem]">{errors.password}</p>
+          <p aria-live="polite" className="text-sm text-danger-ink min-h-[1.25rem]">{errors.password}</p>
         </div>
 
         <label className="flex items-center gap-2 text-sm">
@@ -214,9 +214,9 @@ export function AuthPage() {
           Manter conectado
         </label>
 
-        {errors.form && <p role="alert" className="text-sm text-red-600">{errors.form}</p>}
+        {errors.form && <p role="alert" className="text-sm text-danger-ink">{errors.form}</p>}
 
-        <button type="submit" disabled={loading} className="w-full rounded bg-primary px-3 py-2 text-white disabled:opacity-60">
+        <button type="submit" disabled={loading} className="w-full rounded bg-accent-solid px-3 py-2 text-white transition hover:brightness-110 disabled:opacity-60">
           {loading ? 'Enviando…' : isSignup ? 'Criar conta' : 'Entrar'}
         </button>
 
@@ -288,12 +288,12 @@ export function AuthPage() {
             />
           </div>
 
-          <p aria-live="polite" className="min-h-[1.25rem] text-sm text-red-600">{codeError}</p>
+          <p aria-live="polite" className="min-h-[1.25rem] text-sm text-danger-ink">{codeError}</p>
 
           <button
             type="submit"
             disabled={codeBusy}
-            className="w-full rounded bg-primary px-3 py-2 text-white disabled:opacity-60"
+            className="w-full rounded bg-accent-solid px-3 py-2 text-white transition hover:brightness-110 disabled:opacity-60"
           >
             {useAuthStore.getState().isAuthenticated ? inviteText.codeSubmitAuthed : inviteText.codeSubmitGuest}
           </button>

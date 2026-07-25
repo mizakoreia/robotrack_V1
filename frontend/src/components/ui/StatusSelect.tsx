@@ -39,7 +39,10 @@ export function StatusSelect({ value, options, onChange, status = 'na', disabled
         disabled={disabled}
         aria-label={aria['aria-label']}
         onChange={(e) => onChange(e.target.value)}
-        className="label-md appearance-none rounded-pill border border-current/30 bg-transparent py-0.5 pl-2.5 pr-7 font-medium text-current"
+        // impeccable-remediation G1 (§Princípio 1) — piso de toque 40px no mobile
+        // (luva) / 32px no desktop denso; borda `/70` passa não-texto ≥3:1 (a `/30`
+        // reprovava). Antes: `py-0.5` (~22px medido) + `border-current/30` (<3:1).
+        className="label-md min-h-[2.5rem] appearance-none rounded-pill border border-current/70 bg-transparent py-1 pl-2.5 pr-7 font-medium text-current sm:min-h-[2rem]"
       >
         {options.map((o) => (
           <option key={o.value} value={o.value}>

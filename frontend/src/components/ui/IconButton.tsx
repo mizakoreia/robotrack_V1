@@ -23,7 +23,9 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
       type="button"
       aria-label={label}
       className={cn(
-        'grid place-content-center rounded-md text-text-muted transition-colors hover:text-text-main focus-visible:ring-2 focus-visible:ring-accent',
+        // impeccable-remediation G1 — foco AA: `ring-ring` (--ring) passa ≥3:1 nos
+        // dois temas (tokens.json bloco `focus`); `ring-accent` reprovava.
+        'grid place-content-center rounded-md text-text-muted transition-colors hover:text-text-main focus-visible:ring-2 focus-visible:ring-ring',
         BOX[size],
         className,
       )}
