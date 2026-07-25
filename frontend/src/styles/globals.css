@@ -10,6 +10,12 @@
    compilando; o G8 remove os aliases. Valores documentados no design.md + paleta
    Tailwind para os derivados (validados pelo teste de contraste do G2). */
 :root {
+  /* impeccable-remediation G2 — `color-scheme: dark` faz os glifos nativos do
+     navegador (setas do <select>, caret, scrollbar nativa, checkbox/radio) herdarem
+     a UA de tema escuro; sem isto eles vinham claros sobre o fundo escuro. NÃO segue
+     o SO (D-DS-3): a palavra-chave é escolhida pelo tema do produto, não por media
+     query. O par claro está em `.light`. */
+  color-scheme: dark;
   /* Base */
   --bg-main: 224 49% 8%;        /* #0a0f1d */
   --bg-panel: 223 45% 13%;      /* #121a2f */
@@ -87,6 +93,7 @@
 
 /* Claro — só sobrescreve os PAPÉIS; os aliases seguem por var() */
 .light {
+  color-scheme: light; /* impeccable-remediation G2 — par claro de color-scheme */
   --bg-main: 210 40% 96%;       /* #f1f5f9 */
   --bg-panel: 0 0% 100%;        /* #ffffff */
   --bg-nav: 0 0% 100%;          /* #ffffff */

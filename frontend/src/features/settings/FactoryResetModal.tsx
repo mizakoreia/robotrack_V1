@@ -84,7 +84,10 @@ export function FactoryResetModal({
             </label>
             <input
               id="reset-phrase"
-              className="input-base w-full"
+              /* impeccable-remediation G2 — campo temático (a `.input-base` não
+                 existe: na ação MAIS destrutiva do produto o input ficava sem
+                 fundo/borda/altura — risco branco-no-branco no escuro, regra F). */
+              className="h-9 w-full rounded-md border border-input bg-bg-main px-3 text-sm text-text-main placeholder:text-text-muted"
               placeholder={T.resetPhrasePlaceholder}
               value={phrase}
               onChange={(e) => setPhrase(e.target.value)}

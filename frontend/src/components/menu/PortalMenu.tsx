@@ -54,6 +54,10 @@ export function PortalMenu({ anchorRef, open, onClose, items, scrollContainer, l
       ),
     )
     setActive(0)
+    // impeccable-remediation G2 — leva o foco PARA o menu ao abrir. Sem isto o
+    // foco fica no gatilho e `onMenuKey` (setas/Home/End/Enter) nunca dispara — a
+    // navegação por teclado documentada estava morta. O PortalPopover já fazia isto.
+    menuRef.current?.focus()
   }, [open, anchorRef])
 
   const close = useCallback(() => {
@@ -164,7 +168,8 @@ export function PortalMenu({ anchorRef, open, onClose, items, scrollContainer, l
             close()
           }}
           className={cn(
-            'label-md block w-full rounded px-2 py-1.5 text-left',
+            // impeccable-remediation G2 — item ≥32px de alvo de toque (era ~25px).
+            'label-md flex min-h-[2rem] w-full items-center rounded px-2 py-1.5 text-left',
             i === active ? 'bg-accent/15 text-text-main' : 'text-text-muted',
             it.disabled && 'opacity-40',
           )}

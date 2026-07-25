@@ -117,4 +117,32 @@ produto já declara e o design-system já tem gate para medir. Nenhuma regressã
     (#1d4ed8) sobre branco = **6,70:1** (antes #3b82f6 = 3,68:1). Screenshot em `/entrar`.
   - **Divergência:** nenhuma. Escopo exatamente o mínimo do dono + os fixes AA adjacentes
     (IconButton ring, StatusSelect borda). `AdvanceModal` inline segue como dívida do G2.
-  - Commit `G1:` + ff `main` + push. **PARADO aqui — aguarda OK do dono para G2.**
+  - Commit `G1:` `34ed526` + push. Tag `pre-impeccable-remediation` também no remoto.
+- **G2 (harden dos modais e navegação) — FECHADO:**
+  - `Modal`: scroll-lock do body (guarda/restaura `overflow`), `max-h-[90vh]` + coluna
+    flex com corpo em `overflow-y-auto`, × via `IconButton icon="close"` (32px).
+  - `AdvanceModal`: portado para o primitivo `Modal` (portal/fixed/trap/Esc) — era o
+    único diálogo fora do primitivo (inline no `<td>`); sinal honesto de offline
+    (`wasQueued` → "Sem rede — avanço enfileirado", não fecha como salvo); cores cruas
+    (`amber-700`/`muted-foreground`/`destructive`) → tokens (`warning-ink`/`text-muted`/
+    `danger-ink`).
+  - Gaveta mobile (`AppShell`/`Sidebar`): `role=dialog`+trap+Esc quando aberta abaixo de
+    768px, `inert` quando fechada (sai da ordem de Tab); acima de 768px é permanente.
+  - Classes mortas: `SettingsPage` `.page-title`→`.title`; `FactoryResetModal`
+    `.input-base`→campo temático (`h-9 border bg-bg-main`); `StorageWarning`
+    `text-text`→`text-text-main` + "Dispensar" ≥32px.
+  - `color-scheme: dark`/`light` em `:root`/`.light` (glifos nativos herdam o tema).
+  - `PortalMenu`: foca a si mesmo ao abrir (setas/Home/End/Enter estavam mortos) + itens
+    ≥32px. `Tooltip`: foco+toque+`aria-describedby`+Esc (era só hover). `InviteDialog`:
+    removido o `role="dialog"` falso (é form inline).
+  - Testes novos: `src/components/ui/__tests__/harden-g2.test.tsx` (Modal scroll-lock/×,
+    Tooltip foco/Esc, PortalMenu foco) 5 ✓; `TeamPanel.test` atualizado (form, não dialog).
+  - **Prova:** suíte completa 585/595 na 1ª passada — as 10 "falhas" foram TODAS
+    `Test timed out` sob carga paralela (máquina saturada: demo+túneis+dev servers); os 8
+    arquivos rodados isolados (`--no-file-parallelism`) passam 100% (statusProgressColumns,
+    robotTaskTable, settingsPage.e2e, integrationRender, navigation, e2eLoad, queue,
+    auditLogModal). `tsc --noEmit` 0; `eslint` 0.
+  - **Divergência:** `InviteDialog` — em vez de portar para `Modal` (overlap com G4),
+    removi o `role="dialog"` falso (é painel inline; a spec permite "ou remover o role").
+    O port completo de Team/Invite fica no G4.
+  - Commit `G2:` + push. **PARADO aqui — aguarda OK do dono para G3.**

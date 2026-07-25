@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { cn } from '@/lib/utils'
+import { useMediaQuery } from '@/lib/useMediaQuery'
 import { Icon } from '@/components/icons/Icon'
 import { IconButton } from '@/components/ui/IconButton'
 import { Button } from '@/components/ui/Button'
@@ -148,11 +149,55 @@ function Sidebar({
   const email = user?.email ?? ''
   const primary = name || email // fallback ao e-mail quando o nome é vazio
 
+  // impeccable-remediation G2 — a gaveta mobile ganha semântica de diálogo modal:
+  // abaixo de 768px, quando aberta, o foco entra nela, `Esc` fecha e o Tab fica
+  // preso dentro; quando FECHADA, ela sai da ordem de Tab (`inert`) — antes só era
+  // empurrada com `-translate-x-full` e seus links/conta seguiam focáveis fora de
+  // tela. Acima de 768px a sidebar é permanente e nunca é modal nem inerte.
+  const asideRef = useRef<HTMLElement>(null)
+  const isDesktop = useMediaQuery('(min-width: 768px)')
+  const drawerActive = open && !isDesktop
+  const drawerInert = !open && !isDesktop
+
+  useEffect(() => {
+    if (!drawerActive) return
+    const aside = asideRef.current
+    const FOCUSABLE = 'a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    aside?.querySelector<HTMLElement>(FOCUSABLE)?.focus()
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        e.stopPropagation()
+        onClose()
+        return
+      }
+      if (e.key === 'Tab' && aside) {
+        const items = Array.from(aside.querySelectorAll<HTMLElement>(FOCUSABLE))
+        if (items.length === 0) return
+        const first = items[0]
+        const last = items[items.length - 1]
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault()
+          last.focus()
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault()
+          first.focus()
+        }
+      }
+    }
+    document.addEventListener('keydown', onKey, true)
+    return () => document.removeEventListener('keydown', onKey, true)
+  }, [drawerActive, onClose])
+
   return (
     <>
       {/* backdrop da gaveta (só < md) */}
       {open && <div className="fixed inset-0 z-sidebar bg-black/40 md:hidden" onClick={onClose} aria-hidden="true" />}
       <aside
+        ref={asideRef}
+        role={drawerActive ? 'dialog' : undefined}
+        aria-modal={drawerActive || undefined}
+        aria-label={drawerActive ? 'Navegação' : undefined}
+        {...(drawerInert ? { inert: '' } : {})}
         className={cn(
           'surface-nav z-sidebar flex w-60 shrink-0 flex-col border-r',
           'max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:transition-transform',

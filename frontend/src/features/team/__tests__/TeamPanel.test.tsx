@@ -95,7 +95,10 @@ describe('TeamPanel', () => {
     window.location.search = '?convidar=1'
     renderPanel()
 
-    expect(await screen.findByRole('dialog', { name: 'Convidar pessoa' })).toBeInTheDocument()
+    // impeccable-remediation G2 — o InviteDialog é um form INLINE (região rotulada),
+    // não um `role="dialog"` falso (sem portal/trap/Esc). Um <form> com nome
+    // acessível tem role implícita `form`.
+    expect(await screen.findByRole('form', { name: 'Convidar pessoa' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Convidar pessoa' })).toBeNull()
   })
 

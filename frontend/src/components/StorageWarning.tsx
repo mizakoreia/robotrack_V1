@@ -39,14 +39,16 @@ export function StorageWarning() {
   return (
     <div
       role="status"
-      className="flex items-start gap-3 border-b border-warning/40 bg-warning/10 px-4 py-2 text-sm text-text"
+      /* impeccable-remediation G2 — `text-text` não existe (classe morta): o corpo
+         não aplicava a cor pretendida. `text-text-main` + "Dispensar" ≥32px. */
+      className="flex items-start gap-3 border-b border-warning/40 bg-warning/10 px-4 py-2 text-sm text-text-main"
     >
       <span className="flex-1">{message}</span>
       <button
         type="button"
         onClick={dismiss}
         aria-label="Dispensar aviso"
-        className="shrink-0 rounded px-2 py-0.5 text-text-muted hover:text-text"
+        className="flex min-h-[2rem] shrink-0 items-center rounded px-2 text-text-muted hover:text-text-main"
       >
         Dispensar
       </button>

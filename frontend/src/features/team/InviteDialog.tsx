@@ -69,8 +69,11 @@ export function InviteDialog({
   }
 
   if (criado) {
+    // impeccable-remediation G2 — sem `role="dialog"`: é um painel/form INLINE
+    // dentro do TeamPanel, não um modal (sem portal/trap/Esc). O role falso deixava
+    // o leitor de tela esperando semântica de diálogo que não existe.
     return (
-      <div role="dialog" aria-label={inviteText.inviteTitle} className="rounded-lg border p-4">
+      <div aria-label={inviteText.inviteTitle} className="rounded-lg border p-4">
         <h3 className="font-medium">{inviteText.inviteCodeReady}</h3>
         <p className="mt-1 text-sm text-muted-foreground">{inviteText.inviteCodeHint}</p>
 
@@ -103,7 +106,7 @@ export function InviteDialog({
   }
 
   return (
-    <form role="dialog" aria-label={inviteText.inviteTitle} onSubmit={submit} className="rounded-lg border p-4">
+    <form aria-label={inviteText.inviteTitle} onSubmit={submit} className="rounded-lg border p-4">
       <h3 className="font-medium">{inviteText.inviteTitle}</h3>
 
       <label className="mt-3 block text-sm" htmlFor="convite-email">

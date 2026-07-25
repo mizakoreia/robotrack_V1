@@ -18,16 +18,16 @@ handoff é anotado como handoff.
 
 ## G2. Harden dos modais e da navegação (bloqueios de a11y) — AGUARDA OK DO DONO
 
-- [ ] 2.1 `components/ui/Modal.tsx`: scroll-lock do `body` ao abrir; `max-h-[90vh] overflow-y-auto` no conteúdo; × via `IconButton icon="close"` (32px).
-- [ ] 2.2 `features/advances/AdvanceModal.tsx` (+ `AdvanceControls`): portar para o primitivo `Modal` (portal/fixed/trap/Esc); remover o `<div role=dialog>` inline do `<td>`.
-- [ ] 2.3 `features/advances/AdvanceModal.tsx`: sinal honesto de offline/enfileirado (`wasQueued` → "Sem rede — avanço enfileirado"), não fechar como "salvo"; `text-amber-700`→`text-warning-ink`.
-- [ ] 2.4 `app/AppShell.tsx`: gaveta mobile com focus-trap, Esc fecha, `inert`/`hidden` quando fechada (não só `-translate-x-full`).
-- [ ] 2.5 Classes CSS mortas: `SettingsPage.tsx` `.page-title`→`.title`; `FactoryResetModal.tsx` `.input-base`→campo temático (`bg-bg-main border h-9 rounded-md px-3`); `StorageWarning` `text-text`→`text-text-main` + "Dispensar" `min-h-[32px]`.
-- [ ] 2.6 `styles/globals.css`/`index.html`: declarar `color-scheme` (glifos nativos claros sobre o escuro).
-- [ ] 2.7 `components/menu/PortalMenu.tsx`: focar a si mesmo ao abrir (setas/Home/End/Enter); itens ≥ 32px; item desabilitado com contraste ≥ 3:1.
-- [ ] 2.8 `components/ui/Tooltip.tsx`: acessível por foco + toque, `aria-describedby`, Esc dispensa.
-- [ ] 2.9 `features/team/InviteDialog.tsx`: `role="dialog"` falso → `Modal` (ou remover o role).
-- [ ] 2.10 **Verificação:** testes de render (Modal trap/scroll-lock, AdvanceModal via portal, PortalMenu setas, Tooltip foco/Esc, gaveta Esc/inert); `tsc`; `lint`; screenshots.
+- [x] 2.1 `components/ui/Modal.tsx`: scroll-lock do `body` ao abrir; `max-h-[90vh] overflow-y-auto` no conteúdo; × via `IconButton icon="close"` (32px).
+- [x] 2.2 `features/advances/AdvanceModal.tsx` (+ `AdvanceControls`): portar para o primitivo `Modal` (portal/fixed/trap/Esc); remover o `<div role=dialog>` inline do `<td>`.
+- [x] 2.3 `features/advances/AdvanceModal.tsx`: sinal honesto de offline/enfileirado (`wasQueued` → "Sem rede — avanço enfileirado"), não fechar como "salvo"; `text-amber-700`→`text-warning-ink`.
+- [x] 2.4 `app/AppShell.tsx`: gaveta mobile com focus-trap, Esc fecha, `inert`/`hidden` quando fechada (não só `-translate-x-full`).
+- [x] 2.5 Classes CSS mortas: `SettingsPage.tsx` `.page-title`→`.title`; `FactoryResetModal.tsx` `.input-base`→campo temático (`bg-bg-main border h-9 rounded-md px-3`); `StorageWarning` `text-text`→`text-text-main` + "Dispensar" `min-h-[32px]`.
+- [x] 2.6 `styles/globals.css`/`index.html`: declarar `color-scheme` (glifos nativos claros sobre o escuro).
+- [x] 2.7 `components/menu/PortalMenu.tsx`: focar a si mesmo ao abrir (setas/Home/End/Enter); itens ≥ 32px; item desabilitado com contraste ≥ 3:1.
+- [x] 2.8 `components/ui/Tooltip.tsx`: acessível por foco + toque, `aria-describedby`, Esc dispensa.
+- [x] 2.9 `features/team/InviteDialog.tsx`: `role="dialog"` falso → `Modal` (ou remover o role).
+- [x] 2.10 **Verificação:** testes de render (Modal trap/scroll-lock, AdvanceModal via portal, PortalMenu setas, Tooltip foco/Esc, gaveta Esc/inert); `tsc`; `lint`; screenshots.
 
 ## G3. Relatório responsivo no mobile (gestor no celular) — AGUARDA OK DO DONO
 

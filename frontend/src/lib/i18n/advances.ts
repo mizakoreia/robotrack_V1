@@ -32,8 +32,15 @@ export const advanceText = {
 
   confirm: 'Registrar',
   cancel: 'Cancelar',
+  close: 'Fechar',
   saving: 'Registrando…',
   genericFailure: 'Não foi possível registrar o avanço agora.',
+
+  // Offline / enfileirado (progress-advances 7.2 / Princípio 2 — estado honesto):
+  // quando sem rede, o avanço é ENFILEIRADO, não salvo. O modal não pode fechar
+  // como "salvo" — diz a verdade e o usuário fecha ciente.
+  queuedTitle: 'Sem rede — avanço enfileirado',
+  queuedHint: 'Vamos enviar assim que a conexão voltar. Nada foi perdido.',
 
   // Conflito (409 / D-409) — não descarta o que a pessoa escreveu
   conflictTitle: 'Alguém avançou esta tarefa enquanto você escrevia',

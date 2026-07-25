@@ -1,6 +1,7 @@
 import { useEffect, useRef, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { cn } from '@/lib/utils'
+import { IconButton } from './IconButton'
 
 // design-system 6.4 (§5.2) — o Modal no nível `--z-modal`, com focus trap e Esc
 // que DEVOLVE o foco ao gatilho. MODO DE FALHA: após abrir pelo botão "Registrar
@@ -54,8 +55,14 @@ export function Modal({ open, onClose, title, children, footer }: ModalProps) {
     }
 
     document.addEventListener('keydown', onKey, true)
+    // impeccable-remediation G2 — scroll-lock do body: com o modal aberto no
+    // mobile, a página rolava atrás do overlay. Guarda o overflow anterior e o
+    // restaura no fechamento (sem assumir que era `visible`).
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
     return () => {
       document.removeEventListener('keydown', onKey, true)
+      document.body.style.overflow = prevOverflow
       triggerRef.current?.focus?.() // devolve o foco ao gatilho
     }
   }, [open, onClose])
@@ -71,16 +78,17 @@ export function Modal({ open, onClose, title, children, footer }: ModalProps) {
         aria-modal="true"
         aria-label={title}
         tabIndex={-1}
-        className={cn('surface-menu relative w-full max-w-md rounded-lg border p-0 shadow-sh-3')}
+        // impeccable-remediation G2 — `max-h-[90vh]` + coluna flex: o corpo rola
+        // internamente (não estoura o viewport), com a barra e o rodapé fixos.
+        className={cn('surface-menu relative flex max-h-[90vh] w-full max-w-md flex-col rounded-lg border p-0 shadow-sh-3')}
       >
-        <div className="modal-bar flex items-center justify-between border-b px-4 py-3">
+        <div className="modal-bar flex shrink-0 items-center justify-between border-b px-4 py-3">
           <h2 className="modal-title">{title}</h2>
-          <button type="button" aria-label="Fechar" onClick={onClose} className="text-text-muted hover:text-text-main">
-            <span aria-hidden="true">×</span>
-          </button>
+          {/* impeccable-remediation G2 — × com alvo de toque (era glifo cru). */}
+          <IconButton icon="close" label="Fechar" size="sm" onClick={onClose} className="-mr-2" />
         </div>
-        <div className="px-4 py-4">{children}</div>
-        {footer && <div className="modal-foot flex items-center justify-end gap-2 border-t px-4 py-3">{footer}</div>}
+        <div className="overflow-y-auto px-4 py-4">{children}</div>
+        {footer && <div className="modal-foot flex shrink-0 items-center justify-end gap-2 border-t px-4 py-3">{footer}</div>}
       </div>
     </div>,
     document.body,

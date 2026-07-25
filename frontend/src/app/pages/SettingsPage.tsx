@@ -26,7 +26,9 @@ export function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-8 p-4">
-      <h1 className="page-title">{T.title}</h1>
+      {/* impeccable-remediation G2 — `.title` (a `.page-title` não existe: o título
+          renderizava no tamanho cru do navegador). Todas as outras páginas usam `.title`. */}
+      <h1 className="title">{T.title}</h1>
       <PeoplePanel canWrite={canWrite} />
       <CatalogPanel canWrite={canWrite} />
       <AppearancePanel />

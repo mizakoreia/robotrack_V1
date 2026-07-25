@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { Button } from '../../components/ui/Button'
+import { Modal } from '../../components/ui/Modal'
 import { advanceText } from '../../lib/i18n/advances'
 import { newId } from '../../lib/ids'
 import { clampProgress } from './useAdvanceDraft'
-import { readAdvanceConflict, useRecordAdvance } from './useRecordAdvance'
+import { readAdvanceConflict, useRecordAdvance, wasQueued } from './useRecordAdvance'
 import { deriveStatusTarget, type TaskStatus } from './statusTarget'
 import type { AdvanceConflict } from '../../lib/api/endpoints'
 
@@ -47,6 +48,9 @@ export function AdvanceModal({
   const [comment, setComment] = useState('')
   const [advanceId, setAdvanceId] = useState<string>(() => newId())
   const [conflict, setConflict] = useState<AdvanceConflict | null>(null)
+  // impeccable-remediation G2 (Princípio 2 — estado honesto): offline, o avanço é
+  // ENFILEIRADO. O modal não pode fechar como "salvo"; mostra a verdade.
+  const [queued, setQueued] = useState(false)
   // `lock_version` corrente do envio: começa no da abertura (5.4) e, após um
   // *Recalcular*, passa a ser o que o 409 devolveu.
   const [currentLock, setCurrentLock] = useState<number>(lockVersion)
@@ -72,7 +76,11 @@ export function AdvanceModal({
         lockVersion: currentLock,
       },
       {
-        onSuccess: () => onDone(),
+        onSuccess: (result) => {
+          // Sem rede → enfileirado: NÃO fecha como salvo; mostra o estado honesto.
+          if (wasQueued(result)) setQueued(true)
+          else onDone()
+        },
         onError: (error) => {
           const c = readAdvanceConflict(error)
           if (c) setConflict(c) // preserva `comment`; NÃO reenvia
@@ -100,50 +108,61 @@ export function AdvanceModal({
     setConflict(null)
   }
 
-  function onKeyDown(e: React.KeyboardEvent) {
-    if (e.key === 'Escape') {
-      e.stopPropagation()
-      onDone()
-    }
-  }
-
   const commentLabel = requiresComment
     ? advanceText.commentLabelRequired
     : advanceText.commentLabelOptional
 
-  return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label={advanceText.title}
-      onKeyDown={onKeyDown}
-      className="rounded-lg border bg-background p-4"
-    >
-      <h3 className="font-medium">{advanceText.title}</h3>
+  // impeccable-remediation G2 — o AdvanceModal era o ÚNICO diálogo fora do primitivo
+  // `Modal` (um `<div role=dialog>` inline no `<td>`, sem portal/overlay/fixed/trap —
+  // `aria-modal` sem trap prende o leitor "fora" do diálogo). Agora usa o primitivo:
+  // portal em #rt-overlays, position:fixed, focus-trap, scroll-lock, Esc devolve o
+  // foco ao gatilho. O rodapé muda por estado (enfileirado / conflito / normal).
+  const footer = queued ? (
+    <Button type="button" onClick={onDone}>
+      {advanceText.close}
+    </Button>
+  ) : conflict ? (
+    <>
+      <Button type="button" onClick={recalculate}>
+        {advanceText.recalculate(conflict.task.progress)}
+      </Button>
+      <Button type="button" variant="outline" onClick={onDone}>
+        {advanceText.discard}
+      </Button>
+    </>
+  ) : (
+    <>
+      <Button type="button" onClick={submit} disabled={confirmDisabled}>
+        {mutation.isPending ? advanceText.saving : advanceText.confirm}
+      </Button>
+      <Button type="button" variant="outline" onClick={onDone}>
+        {advanceText.cancel}
+      </Button>
+    </>
+  )
 
-      {conflict ? (
-        <div className="mt-3">
-          <p className="text-sm font-medium text-amber-700">{advanceText.conflictTitle}</p>
+  return (
+    <Modal open onClose={onDone} title={advanceText.title} footer={footer}>
+      {queued ? (
+        <div role="status">
+          <p className="text-sm font-medium text-warning-ink">{advanceText.queuedTitle}</p>
+          <p className="mt-1 text-sm text-text-muted">{advanceText.queuedHint}</p>
+        </div>
+      ) : conflict ? (
+        <div>
+          <p className="text-sm font-medium text-warning-ink">{advanceText.conflictTitle}</p>
           {conflict.latest_advance && (
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="mt-1 text-sm text-text-muted">
               {advanceText.conflictBy(
                 conflict.latest_advance.author_name_snapshot,
                 conflict.latest_advance.to_progress,
               )}
             </p>
           )}
-          <div className="mt-4 flex gap-2">
-            <Button type="button" onClick={recalculate}>
-              {advanceText.recalculate(conflict.task.progress)}
-            </Button>
-            <Button type="button" variant="outline" onClick={onDone}>
-              {advanceText.discard}
-            </Button>
-          </div>
         </div>
       ) : (
         <>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="text-sm text-text-muted">
             {advanceText.from} {baseFrom}% → {advanceText.to} {to}%
           </p>
 
@@ -178,28 +197,19 @@ export function AdvanceModal({
             onChange={(e) => setComment(e.target.value)}
             placeholder={advanceText.commentPlaceholder}
             rows={3}
-            className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-md border bg-bg-main px-3 py-2 text-sm text-text-main"
           />
           {requiresComment && commentMissing && (
-            <p className="mt-1 text-sm text-muted-foreground">{advanceText.commentRequiredHint}</p>
+            <p className="mt-1 text-sm text-text-muted">{advanceText.commentRequiredHint}</p>
           )}
 
           {mutation.isError && !conflict && (
-            <p role="alert" aria-live="polite" className="mt-2 text-sm text-destructive">
+            <p role="alert" aria-live="polite" className="mt-2 text-sm text-danger-ink">
               {advanceText.genericFailure}
             </p>
           )}
-
-          <div className="mt-4 flex gap-2">
-            <Button type="button" onClick={submit} disabled={confirmDisabled}>
-              {mutation.isPending ? advanceText.saving : advanceText.confirm}
-            </Button>
-            <Button type="button" variant="outline" onClick={onDone}>
-              {advanceText.cancel}
-            </Button>
-          </div>
         </>
       )}
-    </div>
+    </Modal>
   )
 }
