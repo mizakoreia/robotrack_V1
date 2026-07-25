@@ -50,15 +50,20 @@
 
 ## G3. Mobile — swipe-to-reveal excluir no EntityCard
 
-- [ ] G3.1 Implementar o gesto no `EntityCard` com pointer events nativos + `transform`
-  (limiar horizontal, `touch-pan-y`, distinguir tap-abre de arrasto-revela, não disparar a
-  navegação `role=button`); painel Excluir `danger`, alvo ≥40px, z semântico
-- [ ] G3.2 `prefers-reduced-motion`: revelação instantânea, sem bounce/elastic; só no
-  toque/estreito (progressive enhancement, sem trocar o layout do grid)
-- [ ] G3.3 Fiar o toque na ação revelada ao mesmo `DeleteDialog` do nível (nunca excluir direto)
-- [ ] G3.4 **Verificação:** teste de gesto (RTL/pointer) — swipe revela, tap na ação confirma,
-  scroll vertical não revela, swipe não abre o card; teclado/leitor de tela excluem sem o
-  gesto (alternativa acessível); `axe`/contraste do painel `danger`
+- [x] G3.1 Gesto no `EntityCard` com pointer events nativos + `transform` (limiar `SLOP`,
+  trava direção h/v, `touch-action: pan-y`, distingue tap de arrasto e não navega no arrasto);
+  painel Excluir `bg-danger-solid`, alvo ≥40px, sem z literal (pintura por ordem/posição).
+  Prop opcional `onSwipeDelete` (owner-only) fiada nos 3 níveis (Overview/Project/Cell)
+- [x] G3.2 `prefers-reduced-motion`: snap instantâneo (transition none), sem bounce/elastic;
+  só com `(pointer: coarse)` (progressive enhancement, grid intocado)
+- [x] G3.3 O painel é `aria-hidden`/não-focável (não duplica nome acessível — o caminho de
+  teclado/leitor é o `IconButton` do rodapé, regra G); tocá-lo abre o mesmo `DeleteDialog` do
+  nível (`onSwipeDelete` → `setRemoving`), nunca exclui direto
+- [x] G3.4 **Verificação:** `EntityCard.swipe.test.tsx` **5/5** — swipe revela + tap chama
+  `onSwipeDelete` sem navegar; arrasto vertical não move nem revela; tap navega;
+  reduced-motion sem transição; desktop (ponteiro fino) não monta o gesto. `tsc`/`lint`
+  limpos; suíte 583/584 (flaky offline alheio). `DESIGN.md` atualizado. Axe em navegador é
+  HANDOFF (demo viva; padrão da casa)
 
 ## G4. Documentação e fechamento
 

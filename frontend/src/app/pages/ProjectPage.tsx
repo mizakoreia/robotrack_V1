@@ -82,6 +82,7 @@ export function ProjectPage() {
                 onClick={() => navigate(`/celula/${cell.id}`)}
                 badge={<Badge status="na">{hierarchyText.robotsBadge(cell.robots_count)}</Badge>}
                 ring={<ProgressRing value={cell.weighted_progress.value} metric="weighted" size={56} />}
+                onSwipeDelete={isOwner ? () => setRemoving(cell) : undefined}
                 footer={
                   <div className="flex w-full items-center justify-between">
                     <span className="label-sm text-text-muted">{t.cellFooter}</span>

@@ -56,7 +56,15 @@ propriedade (`text-success` não compila — D-DS-2).
   descendente, para alinhar os anéis), título `truncate`, anel/rodapé com `mt-auto`
   em `h-full`. **Card inteiro clicável** (`role=button` + `aria-label="Abrir X"`)
   quando recebe `onClick`; controles internos (editar/excluir) não disparam a
-  navegação.
+  navegação. **Swipe-to-reveal excluir** (owner-only-card-delete): com `onSwipeDelete`
+  e ponteiro grosso (`(pointer: coarse)`), arrastar o card para a esquerda revela um
+  painel "Excluir" (`bg-danger-solid`, alvo ≥40px). É ATALHO de toque — o painel é
+  `aria-hidden`/não-focável (não duplica nome acessível; o caminho de teclado/leitor é
+  o `IconButton` do rodapé — regra G). `touch-action: pan-y` (rolagem vertical não
+  dispara); só arrasto horizontal além do limiar move o card; tocá-lo abre a
+  confirmação (nunca exclui direto); o arrasto não navega. `prefers-reduced-motion`
+  zera a transição do snap (instantâneo, sem bounce). Sem `z-index` literal — o painel
+  fica atrás por ordem de pintura (posicionado + card opaco por cima).
 - **Button** — variantes `default`/`outline`/`ghost`/`destructive` etc. (o `primary`
   gradiente existe mas é legado do template — evitar).
 - **Badge** — pílula de status (success/warning/danger/na/accent), tingida sobre a

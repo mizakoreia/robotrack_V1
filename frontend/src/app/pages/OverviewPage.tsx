@@ -154,6 +154,7 @@ function ProjectCard({
       onClick={onOpen}
       badge={<Badge status="na">{hierarchyText.cellsBadge(project.cells_count)}</Badge>}
       ring={<ProgressRing value={project.weighted_progress.value} metric="weighted" size={56} />}
+      onSwipeDelete={canDelete ? onDelete : undefined}
       footer={
         <div className="flex w-full items-center justify-between">
           <span className="label-sm text-text-muted">{t.cardFooterMacro}</span>

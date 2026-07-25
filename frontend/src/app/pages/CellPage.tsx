@@ -88,6 +88,7 @@ export function CellPage() {
                 // badge = APLICAÇÃO (não a contagem de tarefas), §3.4
                 badge={<Badge status="accent">{robot.application}</Badge>}
                 ring={<ProgressRing value={robot.weighted_progress.value} metric="weighted" size={56} />}
+                onSwipeDelete={isOwner ? () => setRemoving(robot) : undefined}
                 footer={
                   <div className="flex w-full items-center justify-between">
                     <span className="label-sm text-text-muted">{hierarchyText.tasksFooter(robot.tasks_count)}</span>

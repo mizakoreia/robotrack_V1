@@ -80,6 +80,18 @@
 - **Gate:** `tsc`/`lint` limpos; `vitest` hierarquia+robot-tasks **77/77** (owner vê 4 excluir;
   edit vê editar mas não excluir; view nada); suíte 578/579 (flaky offline alheio).
 
+## G3 — resultado (swipe mobile, VERDE)
+
+- **`EntityCard`:** prop opcional `onSwipeDelete`; com `(pointer: coarse)`, arrastar à
+  esquerda revela um painel `bg-danger-solid` "Excluir" (≥40px). Pointer nativo + `transform`,
+  `SLOP` para tap vs arrasto, trava h/v (`touch-action: pan-y` deixa a rolagem), o arrasto não
+  navega, tocar o painel abre o mesmo `DeleteDialog` do nível. `prefers-reduced-motion` zera a
+  transição. Painel `aria-hidden`/`tabIndex=-1` — o caminho acessível é o `IconButton` do
+  rodapé (regra G, sem nome acessível duplicado). Sem `z-index` literal.
+- **Fiação:** `onSwipeDelete={isOwner ? …setRemoving : undefined}` em Overview/Project/Cell.
+- **Gate:** `EntityCard.swipe.test.tsx` **5/5**; `tsc`/`lint` limpos; suíte 583/584 (flaky
+  offline alheio). `DESIGN.md` documenta o gesto. Axe/execução em navegador = HANDOFF.
+
 ## Armadilhas previstas
 
 - **Matriz literal:** `permission_matrix_spec.rb` reafirma a matriz linha a linha — adicionar
