@@ -47,6 +47,17 @@ export function useDeleteTask(robotId: string) {
   })
 }
 
+// robot-task-grouping G3 — exclusão em LOTE (seleção múltipla). Uma chamada com os
+// ids; invalida o MESMO trio da G2 para o cabeçalho ponderado e os anéis da
+// hierarquia recalcularem sem F5.
+export function useBulkDeleteTasks(robotId: string) {
+  const invalidate = useRobotInvalidation(robotId)
+  return useMutation({
+    mutationFn: (ids: string[]) => robotTasksApi.bulkRemove(ids),
+    onSuccess: invalidate,
+  })
+}
+
 // §2.6 — a sincronização devolve `addedCount`. O componente reseta o filtro para
 // "Todos" (as linhas novas aparecem mesmo se o filtro estava em "Concluídos").
 export function useSyncTemplates(robotId: string) {

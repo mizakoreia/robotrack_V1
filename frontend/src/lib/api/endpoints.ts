@@ -537,6 +537,10 @@ export const robotTasksApi = {
   update: (taskId: string, data: { desc: string; lock_version: number }) =>
     apiClient.patch<TaskDTO>(`/api/v1/tasks/${encodeURIComponent(taskId)}`, data),
   remove: (taskId: string) => apiClient.delete(`/api/v1/tasks/${encodeURIComponent(taskId)}`),
+  // robot-task-grouping G2/G3 — exclusão em LOTE: coleção `DELETE /tasks` com `ids[]`
+  // no corpo (owner-only no servidor); devolve `{ deletedCount }`.
+  bulkRemove: (ids: string[]) =>
+    apiClient.delete<{ deletedCount: number }>('/api/v1/tasks', { data: { ids } }),
 }
 
 // my-tasks-view 3.2 (§3.6, D-MTV-4) — a LINHA achatada de "Minhas Tarefas". Só

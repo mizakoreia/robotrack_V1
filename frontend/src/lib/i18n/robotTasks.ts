@@ -58,6 +58,14 @@ export const robotTaskText = {
   save: 'Salvar',
   deleteTitle: 'Excluir tarefa',
   deleteConfirm: (desc: string) => `Excluir “${desc}”? Esta ação não pode ser desfeita.`,
+  // robot-task-grouping G3 — seleção múltipla / exclusão em lote
+  selectAria: (desc: string) => `Selecionar ${desc}`,
+  selectedCount: (n: number) => `${n} ${n === 1 ? 'tarefa selecionada' : 'tarefas selecionadas'}`,
+  bulkDelete: 'Excluir selecionadas',
+  clearSelection: 'Limpar seleção',
+  bulkDeleteTitle: 'Excluir tarefas',
+  bulkDeleteConfirm: (n: number) =>
+    `Excluir ${n} ${n === 1 ? 'tarefa' : 'tarefas'}? Esta ação não pode ser desfeita. O progresso é recalculado.`,
   addTask: 'Adicionar tarefa',
   addTitle: 'Nova tarefa',
   addCategory: 'Categoria',

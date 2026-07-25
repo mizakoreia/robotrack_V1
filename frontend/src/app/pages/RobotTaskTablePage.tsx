@@ -1,8 +1,9 @@
-import { useEffect, useState, memo } from 'react'
+import { useCallback, useEffect, useState, memo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Icon } from '@/components/icons/Icon'
 import { Button } from '@/components/ui/Button'
+import { Modal } from '@/components/ui/Modal'
 import { Badge } from '@/components/ui/Badge'
 import { BackLink } from '@/features/hierarchy/LevelChrome'
 import { useRobotTasks, useRobotHeader, type TaskDTO } from '@/features/robot-tasks/useRobotTasks'
@@ -12,7 +13,7 @@ import { ResponsaveisCell } from '@/features/robot-tasks/ResponsaveisCell'
 import { TrilhaCell } from '@/features/robot-tasks/TrilhaCell'
 import { AcoesCell } from '@/features/robot-tasks/AcoesCell'
 import { AddTaskModal } from '@/features/robot-tasks/AddTaskModal'
-import { useSyncTemplates } from '@/features/robot-tasks/useTaskCrud'
+import { useSyncTemplates, useBulkDeleteTasks } from '@/features/robot-tasks/useTaskCrud'
 import { groupByCategory, groupLetter, useCollapsedCategories } from '@/features/robot-tasks/taskGroups'
 import { useSuccessPulse } from '@/features/robot-tasks/useSuccessPulse'
 import { useMediaQuery } from '@/lib/useMediaQuery'
@@ -34,6 +35,10 @@ const FILTERS: { key: TaskFilter; label: string }[] = [
   { key: 'done', label: 'Concluídos' },
 ]
 
+// robot-task-grouping G3 — a seleção múltipla existe só para o dono (`null` para os
+// demais → sem checkboxes nem barra de ação). O servidor é a garantia (403).
+type Selection = { selected: Set<string>; toggle: (id: string) => void } | null
+
 export function RobotTaskTablePage() {
   const { id } = useParams<{ id: string }>()
   const robotId = id ?? null
@@ -49,6 +54,21 @@ export function RobotTaskTablePage() {
   const isOwner = role === 'owner'
   const [adding, setAdding] = useState(false)
   const sync = useSyncTemplates(robotId ?? '_')
+
+  // Seleção múltipla (owner). `toggle` é estável; o `key={robotId}` da rota já zera
+  // o estado ao trocar de robô.
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [confirmingBulk, setConfirmingBulk] = useState(false)
+  const bulkDelete = useBulkDeleteTasks(robotId ?? '_')
+  const toggleSelect = useCallback((tid: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(tid)) next.delete(tid)
+      else next.add(tid)
+      return next
+    })
+  }, [])
+  const sel: Selection = isOwner ? { selected: selectedIds, toggle: toggleSelect } : null
 
   // D-RTT-1 — reset do filtro na navegação (o `key={robotId}` da rota cobre A→A).
   useEffect(() => reset(), [robotId, reset])
@@ -126,13 +146,62 @@ export function RobotTaskTablePage() {
         )}
       </div>
 
+      {/* robot-task-grouping G3 — barra de ação da seleção (owner). Aparece só com
+          ≥1 marcada; excluir abre a confirmação; limpar zera a seleção. */}
+      {sel && selectedIds.size > 0 && (
+        <div className="surface-panel flex flex-wrap items-center justify-between gap-3 rounded-lg border px-4 py-2">
+          <span className="label-md text-text-main">{robotTaskText.selectedCount(selectedIds.size)}</span>
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={() => setSelectedIds(new Set())}>
+              {robotTaskText.clearSelection}
+            </Button>
+            <Button type="button" variant="destructive" size="sm" onClick={() => setConfirmingBulk(true)}>
+              <Icon name="trash" size="sm" className="mr-1" />
+              {robotTaskText.bulkDelete}
+            </Button>
+          </div>
+        </div>
+      )}
+
       {tasks.length === 0 ? (
         <TableEmpty robotName={robotName} />
       ) : (
-        <TaskTable robotId={robotId ?? '_'} tasks={visible} canEdit={canEdit} isOwner={isOwner} />
+        <TaskTable robotId={robotId ?? '_'} tasks={visible} canEdit={canEdit} isOwner={isOwner} sel={sel} />
       )}
 
       {canEdit && robotId && <AddTaskModal robotId={robotId} open={adding} onClose={() => setAdding(false)} />}
+
+      {sel && (
+        <Modal
+          open={confirmingBulk}
+          onClose={() => setConfirmingBulk(false)}
+          title={robotTaskText.bulkDeleteTitle}
+          footer={
+            <>
+              <Button type="button" variant="outline" onClick={() => setConfirmingBulk(false)}>
+                {robotTaskText.cancel}
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                disabled={bulkDelete.isPending}
+                onClick={() =>
+                  bulkDelete.mutate([...selectedIds], {
+                    onSuccess: () => {
+                      setSelectedIds(new Set())
+                      setConfirmingBulk(false)
+                    },
+                  })
+                }
+              >
+                {robotTaskText.deleteAction}
+              </Button>
+            </>
+          }
+        >
+          <p className="text-text-muted">{robotTaskText.bulkDeleteConfirm(selectedIds.size)}</p>
+        </Modal>
+      )}
     </section>
   )
 }
@@ -142,14 +211,15 @@ export function RobotTaskTablePage() {
 // `md+`, cartões abaixo de `md`. Cada categoria é um cabeçalho `<button aria-expanded>`
 // com prefixo A./B./C. (visual) + nome + contagem; recolher REMOVE do DOM as tarefas
 // do grupo (nunca `display:none`). Estado lembrado por robô (D-TG-4).
-function TaskTable({ robotId, tasks, canEdit, isOwner }: { robotId: string; tasks: TaskDTO[]; canEdit: boolean; isOwner: boolean }) {
+function TaskTable({ robotId, tasks, canEdit, isOwner, sel }: { robotId: string; tasks: TaskDTO[]; canEdit: boolean; isOwner: boolean; sel: Selection }) {
   // §6.1 (D-RTT-8) — UM layout por vez (não os dois escondidos por CSS): evita
   // montar duas árvores e mantém o DOM limpo (importa p/ §7.1 e leitores de tela).
   const isDesktop = useMediaQuery('(min-width: 768px)')
   const { collapsed, toggle } = useCollapsedCategories(robotId)
   const groups = groupByCategory(tasks)
-  // 4.4 (D-RTT-9) — a coluna Ações SAI do DOM para `view`; o colSpan acompanha.
-  const cols = canEdit ? 6 : 5
+  // 4.4 (D-RTT-9) — a coluna Ações SAI do DOM para `view`; a de seleção só existe
+  // para o dono (G3). O colSpan do cabeçalho de grupo acompanha ambas.
+  const cols = 5 + (canEdit ? 1 : 0) + (sel ? 1 : 0)
 
   if (!isDesktop) {
     return (
@@ -173,7 +243,16 @@ function TaskTable({ robotId, tasks, canEdit, isOwner }: { robotId: string; task
               {!isCollapsed && (
                 <div id={rid} className="space-y-3">
                   {g.tasks.map((t) => (
-                    <MobileTaskCard key={t.id} robotId={robotId} task={t} canEdit={canEdit} isOwner={isOwner} />
+                    <MobileTaskCard
+                      key={t.id}
+                      robotId={robotId}
+                      task={t}
+                      canEdit={canEdit}
+                      isOwner={isOwner}
+                      selectable={!!sel}
+                      selected={sel ? sel.selected.has(t.id) : false}
+                      onSelect={sel?.toggle}
+                    />
                   ))}
                 </div>
               )}
@@ -189,6 +268,7 @@ function TaskTable({ robotId, tasks, canEdit, isOwner }: { robotId: string; task
       <table className="w-full border-collapse text-left">
         <thead>
           <tr className="label-sm text-text-muted">
+            {sel && <th className="w-10 px-4 py-2 font-medium"><span className="sr-only">Selecionar</span></th>}
             <th className="px-4 py-2 font-medium">Tarefa</th>
             <th className="px-4 py-2 font-medium">Status</th>
             <th className="px-4 py-2 font-medium">Progresso</th>
@@ -217,7 +297,16 @@ function TaskTable({ robotId, tasks, canEdit, isOwner }: { robotId: string; task
               </tr>
               {!isCollapsed &&
                 g.tasks.map((t) => (
-                  <TaskRow key={t.id} robotId={robotId} task={t} canEdit={canEdit} isOwner={isOwner} />
+                  <TaskRow
+                    key={t.id}
+                    robotId={robotId}
+                    task={t}
+                    canEdit={canEdit}
+                    isOwner={isOwner}
+                    selectable={!!sel}
+                    selected={sel ? sel.selected.has(t.id) : false}
+                    onSelect={sel?.toggle}
+                  />
                 ))}
             </tbody>
           )
@@ -277,13 +366,24 @@ function CategoryToggle({
 // §7.1 (render única por mutação) — `memo`: como o React Query faz `structuralSharing`
 // por padrão, uma tarefa NÃO alterada mantém a MESMA referência entre refetches;
 // então confirmar um avanço numa linha não re-renderiza as linhas vizinhas.
-const TaskRow = memo(function TaskRow({ robotId, task, canEdit, isOwner }: { robotId: string; task: TaskDTO; canEdit: boolean; isOwner: boolean }) {
+const TaskRow = memo(function TaskRow({ robotId, task, canEdit, isOwner, selectable, selected, onSelect }: { robotId: string; task: TaskDTO; canEdit: boolean; isOwner: boolean; selectable: boolean; selected: boolean; onSelect?: (id: string) => void }) {
   const { pulsing, clear } = useSuccessPulse(task.progress)
   return (
     <tr
-      className={'border-t align-top ' + (pulsing ? 'animate-success-pulse' : '')}
+      className={'border-t align-top ' + (pulsing ? 'animate-success-pulse' : '') + (selected ? ' bg-accent/5' : '')}
       onAnimationEnd={clear}
     >
+      {selectable && (
+        <td className="px-4 py-3 align-middle">
+          <input
+            type="checkbox"
+            className="h-5 w-5 accent-accent"
+            checked={selected}
+            aria-label={robotTaskText.selectAria(task.desc)}
+            onChange={() => onSelect?.(task.id)}
+          />
+        </td>
+      )}
       <td className="px-4 py-3">{task.desc}</td>
       <td className="px-4 py-3 align-middle">
         <StatusCell robotId={robotId} task={task} />
@@ -310,15 +410,26 @@ const TaskRow = memo(function TaskRow({ robotId, task, canEdit, isOwner }: { rob
 // O cartão mobile (§6.1, D-RTT-8) — as SEIS informações preservadas em linhas
 // rotuladas, sem scroll lateral. Reusa as mesmas células da tabela. `memo` pela
 // mesma razão da linha (§7.1 — render única por mutação).
-const MobileTaskCard = memo(function MobileTaskCard({ robotId, task, canEdit, isOwner }: { robotId: string; task: TaskDTO; canEdit: boolean; isOwner: boolean }) {
+const MobileTaskCard = memo(function MobileTaskCard({ robotId, task, canEdit, isOwner, selectable, selected, onSelect }: { robotId: string; task: TaskDTO; canEdit: boolean; isOwner: boolean; selectable: boolean; selected: boolean; onSelect?: (id: string) => void }) {
   const { pulsing, clear } = useSuccessPulse(task.progress)
   return (
     <article
-      className={'surface-panel rounded-lg border p-4 ' + (pulsing ? 'animate-success-pulse' : '')}
+      className={'surface-panel rounded-lg border p-4 ' + (pulsing ? 'animate-success-pulse' : '') + (selected ? ' ring-2 ring-accent' : '')}
       onAnimationEnd={clear}
     >
       <div className="mb-3 flex items-start justify-between gap-2">
-        <h3 className="font-medium">{task.desc}</h3>
+        <div className="flex min-w-0 items-start gap-2">
+          {selectable && (
+            <input
+              type="checkbox"
+              className="mt-0.5 h-5 w-5 shrink-0 accent-accent"
+              checked={selected}
+              aria-label={robotTaskText.selectAria(task.desc)}
+              onChange={() => onSelect?.(task.id)}
+            />
+          )}
+          <h3 className="min-w-0 font-medium">{task.desc}</h3>
+        </div>
         {canEdit && <AcoesCell robotId={robotId} task={task} canDelete={isOwner} />}
       </div>
       <dl className="space-y-2">

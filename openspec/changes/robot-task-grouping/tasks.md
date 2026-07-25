@@ -17,9 +17,9 @@ Um grupo por vez, prova verde. Marcador de segurança: `git tag pre-task-groupin
 
 ## G3. Seleção múltipla (frontend)
 
-- [ ] 3.1 `endpoints.ts`: `robotTasksApi.bulkRemove(ids)`; `useTaskCrud.ts`: `useBulkDeleteTasks(robotId)` (invalida o trio).
-- [ ] 3.2 `RobotTaskTablePage.tsx`: modo de seleção owner-only (checkbox por linha nos dois layouts), barra "Excluir N", modal de confirmação → `bulkRemove`; limpa a seleção no sucesso.
-- [ ] 3.3 **Verificação (Vitest):** dono seleciona 3 e confirma → 1 chamada com 3 ids; `edit`/`view` sem checkboxes. `tsc`/`lint`.
+- [x] 3.1 `endpoints.ts`: `robotTasksApi.bulkRemove(ids)`; `useTaskCrud.ts`: `useBulkDeleteTasks(robotId)` (invalida o trio).
+- [x] 3.2 `RobotTaskTablePage.tsx`: modo de seleção owner-only (checkbox por linha nos dois layouts), barra "Excluir N", modal de confirmação → `bulkRemove`; limpa a seleção no sucesso.
+- [x] 3.3 **Verificação (Vitest):** dono seleciona 3 e confirma → 1 chamada com 3 ids; `edit`/`view` sem checkboxes. `tsc`/`lint`.
 
 ## G4. Verificação e polimento
 
