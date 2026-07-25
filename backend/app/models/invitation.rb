@@ -19,6 +19,19 @@ class Invitation < ApplicationRecord
   EMAIL_MAX = 254
   VALIDITY = 7.days
 
+  # invite-by-code (design D1/D2): o código curto é a SEGUNDA representação do
+  # MESMO convite. Crockford Base32 — 32 símbolos, exclui I/L/O/U (os ambíguos que
+  # o §F.2 pediu). 8 chars → 32⁸ = 2⁴⁰; entropia baixa DE PROPÓSITO (digitável com
+  # luva), segura só pela SOMA das defesas ativas + o vínculo de e-mail. Validade
+  # PRÓPRIA de 48h, mais curta que os 7 dias do link.
+  SHORT_CODE_ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ'
+  SHORT_CODE_LEN = 8
+  CODE_VALIDITY = 48.hours
+
+  # O código em claro é TRANSIENTE: existe só no request de criação (para a entity
+  # devolvê-lo uma vez) e nunca é persistido — a coluna guarda só o `code_hash`.
+  attr_accessor :short_code
+
   belongs_to :created_by_person, class_name: 'Person', optional: true
   belongs_to :used_by_user, class_name: 'User', optional: true
   has_one :membership, dependent: :restrict_with_exception
@@ -28,6 +41,7 @@ class Invitation < ApplicationRecord
   before_validation :normalize_email
   before_validation :assign_token, on: :create
   before_validation :assign_expiry, on: :create
+  before_validation :assign_short_code, on: :create
 
   validates :email, presence: true, length: { maximum: EMAIL_MAX }
   validates :role, presence: true
@@ -39,8 +53,53 @@ class Invitation < ApplicationRecord
     "#{TOKEN_PREFIX}#{SecureRandom.urlsafe_base64(TOKEN_BYTES)}"
   end
 
+  # Geração cripto sem viés de módulo: o alfabeto tem 32 símbolos (potência de 2),
+  # então `SecureRandom.random_number(32)` é uniforme em 0..31 sem rejeição.
+  def self.generate_short_code
+    Array.new(SHORT_CODE_LEN) { SHORT_CODE_ALPHABET[SecureRandom.random_number(SHORT_CODE_ALPHABET.size)] }.join
+  end
+
+  # HMAC determinístico com pepper de servidor (D2). Determinístico para indexar e
+  # achar a linha por igualdade; com pepper para não ser reconstruível offline se o
+  # banco vazar. Normaliza ANTES do hash para casar a digitação do galpão.
+  def self.code_hash_for(code)
+    normalized = normalize_code(code)
+    return nil if normalized.blank?
+
+    OpenSSL::HMAC.hexdigest('SHA256', code_pepper, normalized)
+  end
+
+  # Tolerância de leitura (Crockford): maiúsculas, sem hífen/espaço, e os ambíguos
+  # mapeados para o símbolo canônico (I/L→1, O→0). U está fora do alfabeto e não é
+  # mapeado — é o símbolo que o Crockford descarta.
+  def self.normalize_code(input)
+    input.to_s.upcase.gsub(/[\s–—-]/, '').tr('ILO', '110')
+  end
+
+  # Pepper: credentials → ENV → default só em dev/test. O registro no `env_schema`
+  # e a guarda de boot em produção/staging são endurecidos no G3.
+  def self.code_pepper
+    Rails.application.credentials.dig(:invitation_code_pepper).presence ||
+      ENV['INVITATION_CODE_PEPPER'].presence ||
+      (Rails.env.local? ? 'dev-insecure-invitation-code-pepper' : raise('INVITATION_CODE_PEPPER ausente'))
+  end
+
   def used? = used_at.present?
   def expired? = expires_at.present? && expires_at <= Time.current
+  def has_code? = code_hash.present?
+  def code_expired? = code_expires_at.present? && code_expires_at <= Time.current
+  def code_locked? = code_locked_at.present?
+
+  # Estado apresentável do CÓDIGO (distinto do `status` do convite): `used` vence
+  # `locked` vence `expired`. `nil` quando o convite não tem código (link puro).
+  def code_status
+    return nil unless has_code?
+    return 'used' if used?
+    return 'locked' if code_locked?
+    return 'expired' if code_expired?
+
+    'active'
+  end
 
   # Estado apresentável: `used` vence `expired` (um convite consumido não vira
   # "expirado" quando a data passa — ele já produziu acesso).
@@ -74,5 +133,18 @@ class Invitation < ApplicationRecord
 
   def assign_expiry
     self.expires_at ||= Time.current + VALIDITY
+  end
+
+  # Todo convite nasce com código (decisão de execução: o código COEXISTE com o
+  # link e é sempre gerado — resolve a subquestão menor de §F.1 sem um toggle na
+  # UI). O claro fica no `short_code` transiente para a entity devolvê-lo uma vez;
+  # a coluna guarda só o hash. Colisão de `code_hash` é tratada por retry no
+  # CreateService (G2), relendo este callback com um convite novo.
+  def assign_short_code
+    return if code_hash.present?
+
+    self.short_code ||= self.class.generate_short_code
+    self.code_hash = self.class.code_hash_for(short_code)
+    self.code_expires_at ||= Time.current + CODE_VALIDITY
   end
 end

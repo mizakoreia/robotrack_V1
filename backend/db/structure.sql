@@ -113,12 +113,31 @@ CREATE TABLE public.invitations (
     used_by_user_id uuid,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    code_hash text,
+    code_expires_at timestamp with time zone,
+    code_attempts smallint DEFAULT 0 NOT NULL,
+    code_locked_at timestamp with time zone,
     CONSTRAINT chk_invitations_consumption CHECK ((((used_at IS NULL) AND (used_by_user_id IS NULL)) OR ((used_at IS NOT NULL) AND (used_by_user_id IS NOT NULL)))),
     CONSTRAINT chk_invitations_email_length CHECK ((char_length(email) <= 254)),
     CONSTRAINT chk_invitations_email_lowercase CHECK ((email = lower(email)))
 );
 
 ALTER TABLE ONLY public.invitations FORCE ROW LEVEL SECURITY;
+
+
+--
+-- Name: invitation_by_code(text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.invitation_by_code(p_code_hash text) RETURNS SETOF public.invitations
+    LANGUAGE plpgsql STABLE SECURITY DEFINER
+    SET search_path TO 'public', 'pg_temp'
+    AS $$
+BEGIN
+  PERFORM set_config('app.invitation_code_hash', coalesce(p_code_hash, ''), true);
+  RETURN QUERY SELECT * FROM invitations WHERE code_hash = p_code_hash;
+END;
+$$;
 
 
 --
@@ -1562,6 +1581,13 @@ CREATE INDEX index_cells_on_workspace_id_live ON public.cells USING btree (works
 
 
 --
+-- Name: index_invitations_on_code_hash; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_invitations_on_code_hash ON public.invitations USING btree (code_hash) WHERE (code_hash IS NOT NULL);
+
+
+--
 -- Name: index_invitations_on_token; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2467,7 +2493,7 @@ CREATE POLICY tenant_isolation ON public.cells USING ((workspace_id = (NULLIF(cu
 -- Name: invitations tenant_isolation; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY tenant_isolation ON public.invitations USING (((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid) OR (token = NULLIF(current_setting('app.invitation_token'::text, true), ''::text)))) WITH CHECK ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid));
+CREATE POLICY tenant_isolation ON public.invitations USING (((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid) OR (token = NULLIF(current_setting('app.invitation_token'::text, true), ''::text)) OR (code_hash = NULLIF(current_setting('app.invitation_code_hash'::text, true), ''::text)))) WITH CHECK ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid));
 
 
 --
@@ -2673,6 +2699,7 @@ ALTER TABLE public.workspaces ENABLE ROW LEVEL SECURITY;
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260724120001'),
 ('20260724110002'),
 ('20260724110001'),
 ('20260724100003'),

@@ -89,7 +89,59 @@ Código de workspace reutilizável (§F.4 descartado), mudança na matriz de aut
 
 ---
 
-## G1 — (pendente)
+## G1 — Migration aditiva + model
+
+### Entregue
+
+- Migration `db/migrate/20260724120001_add_short_code_to_invitations.rb`: colunas
+  `code_hash`/`code_expires_at`/`code_attempts`/`code_locked_at`, índice único parcial
+  `index_invitations_on_code_hash WHERE code_hash IS NOT NULL`, terceiro ramo no `USING`
+  da `tenant_isolation` (via `ALTER POLICY`, reversível no `down`), função
+  `invitation_by_code(text)` `SECURITY DEFINER STABLE` (recebe o HASH; pepper fora do
+  banco), `REVOKE`/`GRANT` a `robotrack_app` e `robotrack_migrator`.
+- Model `Invitation`: `SHORT_CODE_ALPHABET` (Crockford, sem I/L/O/U), `SHORT_CODE_LEN=8`,
+  `CODE_VALIDITY=48.hours`, `attr_accessor :short_code` (claro transiente),
+  `generate_short_code` (sem viés de módulo — alfabeto de 32 = potência de 2),
+  `code_hash_for` (HMAC-SHA256 com pepper, normaliza antes), `normalize_code` (upper,
+  tira hífen/espaço, I/L→1, O→0), `code_pepper` (credentials→ENV→default dev/test),
+  `code_status`/`code_expired?`/`code_locked?`/`has_code?`, callback
+  `assign_short_code on: :create`.
+
+### Decisões de execução
+
+- **DE-G1.1 — todo convite nasce com código.** Resolve a subquestão menor de §F.1
+  (código sempre gerado, sem toggle na UI): o código COEXISTE com o link em todo
+  convite. Mais simples de operar e de explicar ao dono; o link segue sendo o caminho
+  forte, o código a conveniência.
+- **DE-G1.2 — `ALTER POLICY` em vez de `DROP/CREATE`.** O Postgres suporta trocar só o
+  `USING` da policy existente; mais limpo e reversível que recriar a policy inteira.
+- **DE-G1.3 — pepper com default só em dev/test no G1.** A função `code_hash_for`
+  precisa ser exercível pela suíte agora; o registro no `env_schema` e a guarda de boot
+  em produção/staging são do G3 (endurecimento). Fora de dev/test, `code_pepper` já
+  levanta se ausente.
+- **DE-G1.4 — dump com `PGTZ=UTC`.** O `structure.sql` regenerado sob o fuso local (-03)
+  reescreveria as fronteiras de partição de `audit_logs` (ruído alheio a esta change).
+  Migrar com `PGTZ=UTC` mantém o dump em UTC e o diff limpo (só as adições do código).
+
+### Prova do G1
+
+- `bundle exec rspec spec/invitations/short_code_generation_spec.rb spec/invitations/
+  code_schema_spec.rb` → **26 exemplos, 0 falhas**.
+- Regressão: `spec/invitations spec/tenancy/schema_guard_spec.rb
+  spec/tenancy/schema_constraints_spec.rb spec/authorization/cross_tenant_spec.rb
+  spec/authorization/route_sweep_spec.rb spec/authorization/invariants` →
+  **276 exemplos, 0 falhas, 2 pending** (os 2 pending são stubs pré-existentes de
+  invariantes 4/8, alheios a esta change).
+- `schema_guard` verde: o índice `code_hash` não começa por `workspace_id`, mas a guarda
+  exige apenas ≥1 índice começando por `workspace_id` (já existe
+  `index_invitations_on_workspace_id_and_created_at`) — mesmo caso do índice de `token`.
+
+### Commit local do G1
+
+- `G1: migration aditiva (code_hash/RLS/invitation_by_code) + model do código`
+  (LOCAL, sem push).
+
+## G2 — (pendente)
 
 ## G2 — (pendente)
 

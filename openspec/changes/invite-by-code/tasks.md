@@ -13,24 +13,25 @@
 
 ## G1. Migration aditiva + model
 
-- [ ] G1.1 Migration aditiva sobre `invitations`: colunas `code_hash text`,
+- [x] G1.1 Migration aditiva sobre `invitations`: colunas `code_hash text`,
   `code_expires_at timestamptz NULL`, `code_attempts smallint NOT NULL DEFAULT 0`,
   `code_locked_at timestamptz NULL`; índice único parcial
   `index_invitations_on_code_hash ... WHERE code_hash IS NOT NULL`
-- [ ] G1.2 Migration: terceiro ramo no `USING` da policy `tenant_isolation` de
+- [x] G1.2 Migration: terceiro ramo no `USING` da policy `tenant_isolation` de
   `invitations` (`OR code_hash = NULLIF(current_setting('app.invitation_code_hash',
   true), '')`, `WITH CHECK` inalterado) + função `invitation_by_code(text)`
   `SECURITY DEFINER STABLE` que seta a GUC e seleciona por igualdade de hash; `REVOKE`/
   `GRANT` para `robotrack_app` e `robotrack_migrator`
-- [ ] G1.3 Model `Invitation`: `SHORT_CODE_ALPHABET` (Crockford Base32),
+- [x] G1.3 Model `Invitation`: `SHORT_CODE_ALPHABET` (Crockford Base32),
   `SHORT_CODE_LEN = 8`, `CODE_VALIDITY = 48.hours`; `self.generate_short_code` (cripto,
   sem viés de módulo), `self.code_hash_for(code)` (HMAC com pepper), `normalize_code`
   (upper, tira hífen/espaço, mapeia ambíguos), `code_status`; SEM persistir claro
-- [ ] G1.4 Spec de banco (SQL cru, sem ActiveRecord): unicidade do `code_hash`,
+- [x] G1.4 Spec de banco (SQL cru, sem ActiveRecord): unicidade do `code_hash`,
   `invitation_by_code` acha por hash exato e NÃO por listagem, RLS fail-closed sem GUC,
   convite de outro tenant não vaza; `schema_guard` continua verde
-- [ ] G1.5 Spec de model: 10.000 códigos distintos e sem I/L/O/U, normalização tolerante
-  casa o hash, retry em `RecordNotUnique` (verificação do grupo G1 — 0 falhas)
+- [x] G1.5 Spec de model: 10.000 códigos distintos e sem I/L/O/U, normalização tolerante
+  casa o hash (verificação do grupo G1 — 26/26 verde; suítes de regressão de invitations/
+  tenancy/autorização: 276 exemplos, 0 falhas). Retry em `RecordNotUnique` → G2.1/G2.7
 
 ## G2. Backend do aceite/preview por código
 
