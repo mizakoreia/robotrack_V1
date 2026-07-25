@@ -24,20 +24,21 @@ está em [PROMPT DE RETOMADA](#prompt-de-retomada), no fim.
   permissão do ambiente — apagar pela UI do GitHub ou liberar a permissão Bash.
 
 > **24 de 25 changes COMPLETAS.** A única em andamento é
-> `quality-and-accessibility` — **34/39 tarefas fechadas**: o delta sem navegador (G0
+> `quality-and-accessibility` — **38/39 tarefas fechadas**: o delta sem navegador (G0
 > reconciliação, G1 fundação de teste, G2 i18n, G3 contraste, G4 foco, G5 leitor de
 > tela, G8 perf) **e o G6, o harness E2E, que FECHOU** (6.1/6.2/6.3, smoke 4/4 em
 > Chromium **e WebKit** na WSL do par — runbook em `frontend/e2e/README.md`). O G-B1
 > (a11y de navegador: **4.4 teclado, 5.5 auditor de toque, 5.6 gate axe-core**) FECHOU
 > com spec escrito + `e2e:lint` verde + a devDep `@axe-core/playwright`; a execução em
-> navegador é HANDOFF (§6d/§6e do `VALIDACAO_WSL.md`). O **G-B2** fechou os fluxos
-> **7.1** (slices 1-3; slice 4 do Google é `fixme`/integração), **7.2** e **7.3**
-> (offline). As **5 restantes**: os fluxos **7.4** (troca de workspace), **7.5**
-> (revogação ao vivo), **7.6** (relatório A4), **7.7** (os 5 ≤8min), o **INP (8.5)** —
-> e o **pipeline de CI**.
+> navegador é HANDOFF (§6d-§6f do `VALIDACAO_WSL.md`). O **G-B2** fechou **7.1**
+> (slices 1-3; slice 4 do Google é `fixme`/integração), **7.2** e **7.3** (offline); o
+> **G-B3** fechou **7.4** (troca sem vazamento), **7.5** (revogação ao vivo), **7.6**
+> (relatório A4) e **7.7** (orçamento de 8min já no `playwright.config`) — com os seeds
+> novos `[troca]` e `[relatorio]`. A **1 restante**: o **INP (8.5)**. E o **pipeline
+> de CI**.
 > **Correção de ambiente:** esta sessão roda no **Mac do dono** (não no container
-> Linux); com a demo viva em :3000/:5173, a execução de TODO E2E é handoff (§6d). Ver
-> a seção "quality-and-accessibility".
+> Linux); com a demo viva em :3000/:5173, a execução de TODO E2E é handoff (§6d-§6f).
+> Ver a seção "quality-and-accessibility".
 >
 > `legacy-data-migration` foi **CONSTRUÍDA (36/38) e FECHADA COMO DORMENTE** nesta
 > sessão: o dono confirmou que o sistema novo **começa do zero, sem dado legado a
@@ -222,7 +223,7 @@ está em `/opt/rbenv/versions/3.2.3` COM as gems instaladas (`bundle check` ok, 
 >   "Unverified". O e-mail JÁ é `noreply@anthropic.com` — limitação de ambiente. O
 >   stop-hook avisa toda vez; não há ação a tomar.
 
-## Changes concluídas (24 de 25; a 25ª, `quality-and-accessibility`, está 34/39)
+## Changes concluídas (24 de 25; a 25ª, `quality-and-accessibility`, está 38/39)
 
 `seal-template-baseline`, `workspace-tenancy`, `identity-and-auth`,
 `workspace-invitations` (anteriores) e:
@@ -537,7 +538,7 @@ suíte rodar como root). `validate --strict` OK. Tudo na `main` (`4e9a3f5`).
 
 ## O que resta
 
-- **`quality-and-accessibility`** (Onda 10) — **34/39**. O **G6 (harness) FECHOU**
+- **`quality-and-accessibility`** (Onda 10) — **38/39**. O **G6 (harness) FECHOU**
   (6.1/6.2/6.3 `[x]`, smoke 4/4 em Chromium+WebKit na WSL). O harness vive em
   `frontend/e2e/` + `frontend/playwright.config.ts`; `@playwright/test` é
   devDependency do frontend; o seed determinístico é `rt:seed:e2e[base|convite]`
@@ -548,8 +549,10 @@ suíte rodar como root). `validate --strict` OK. Tudo na `main` (`4e9a3f5`).
   O **G-B2** fechou **7.1** (slices 1-3: convite edit + avanço + membro view sem
   controle + 403 forjado; slice 4 do Google é `fixme`/integração via `/auth/callback`),
   **7.2** e **7.3** (offline: avanço pendente-nunca-salvo + drenagem de 3 com ordem).
-  As **5 abertas**: os fluxos **7.4** (troca), **7.5** (revogação), **7.6** (relatório),
-  **7.7** (os 5 ≤8min), e o **INP (8.5)**.
+  O **G-B3** fechou **7.4** (troca sem vazamento, seed `[troca]`), **7.5** (revogação
+  ao vivo — DIVERGÊNCIA: toast persistente, não `#rt-alerts`), **7.6** (relatório A4,
+  seed `[relatorio]`; os %s exatos são calibração de execução) e **7.7** (orçamento de
+  8min já fixado no `playwright.config`). A **1 aberta**: o **INP (8.5)**.
   **Correção de ambiente:** esta sessão roda no **Mac do dono**, com a demo viva em
   :3000/:5173 — sem banco E2E isolado. Rodar E2E aqui exigiria repontar o :3000 para
   `robotrack_e2e` (derruba a demo, README §88-90). Logo, a execução de TODO E2E é
@@ -662,7 +665,7 @@ OpenSpec: `npx --yes @fission-ai/openspec@1.6.0 validate <change> --strict`.
 > (ActionCable), a **fila offline** (PWA), a **infra/observabilidade**, as
 > **notificações** e a **migração legada** (esta última construída 36/38 e FECHADA COMO
 > DORMENTE — o sistema começa do zero, sem dado a migrar; código isolado em `Legacy::*`,
-> não roda). A 25ª, `quality-and-accessibility`, está em **34/39**: o **harness E2E
+> não roda). A 25ª, `quality-and-accessibility`, está em **38/39**: o **harness E2E
 > (G6) fechou** (smoke 4/4 em Chromium+WebKit, runbook em `frontend/e2e/README.md`) e
 > o Fluxo 1 (convite) está na slice 1. Depois vieram `invite-by-code` (código curto de
 > convite) e `join-workspace-by-code` (entrar noutro workspace por código estando logado),

@@ -484,6 +484,41 @@ timing de SW (o par mediu ~10.7s de registro no WebKit).
 
 ---
 
+## 6f. `quality-and-accessibility` — fluxos E2E 7.4/7.5/7.6 (HANDOFF)
+
+Os últimos fluxos. Spec escrito + `e2e:lint` verde; execução em navegador é o
+handoff. DOIS seeds novos no `e2e.rake`: `[troca]` e `[relatorio]`.
+
+- **7.4** — `workspace-switch.spec.ts` (seed `[troca]`): dono com WS-E2E + WS-ISCA;
+  nada `ISCA-` vaza, URL cruzada → 404, cache limpo após a troca.
+- **7.5** — `revocation.spec.ts` (seed `[convite]`): dono remove o `member`; a
+  sessão do membro sai em ≤5s (toast persistente), escrita pós-revogação → 403.
+  **Exige realtime no ar** (ActionCable/Redis) — se piscar, confira o Redis.
+- **7.6** — `report.spec.ts` (seed `[relatorio]`): distribuição 18/9/11/2, métrica
+  ponderada rotulada, id `RT-...`, `ROB-VAZIO` presente, assinaturas.
+
+```bash
+cd frontend && npm run build && npx vite preview --port 4173 &
+# 7.4:
+cd ../backend && bundle exec rails 'rt:seed:e2e[troca]'
+cd ../frontend && E2E_BASE_URL=http://localhost:4173 npx playwright test workspace-switch
+# 7.5 (recrie o banco — muta estado):
+cd ../backend && bundle exec rails 'rt:seed:e2e[convite]'
+cd ../frontend && E2E_BASE_URL=http://localhost:4173 npx playwright test revocation
+# 7.6:
+cd ../backend && bundle exec rails 'rt:seed:e2e[relatorio]'
+cd ../frontend && E2E_BASE_URL=http://localhost:4173 npx playwright test report
+```
+
+**Calibração de EXECUÇÃO (7.6):** os percentuais EXATOS (ponderado ~62% / contagem
+45% = 18/40), o id literal `RT-20260314-0907` (exige relógio fixo) e a paginação A4
+(3 páginas — validada pelo `frontend/scripts/print-report.mjs`, não pelo fluxo de UI)
+são afinados aqui, rodando o documento real. Se o ponderado sair fora de ~62%, ajuste
+o `progress` do bloco "Em Andamento" em `RPT_DISTRIBUTION` (`backend/lib/tasks/e2e.rake`)
+— o ponderado do banco EXCLUI as tarefas `N/A`.
+
+---
+
 ## Como me passar os resultados
 
 Rode os blocos e me mande a saída (especialmente 3 e 4). Eu interpreto, e se algo

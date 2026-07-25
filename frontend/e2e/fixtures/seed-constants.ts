@@ -60,6 +60,23 @@ export const SEED = {
   cell: { id: '0e2e0000-0000-4000-8000-0000000000c1', name: 'Célula E2E' },
   robot: { id: '0e2e0000-0000-4000-8000-0000000000d1', name: 'R01 E2E' },
   task: { id: '0e2e0000-0000-4000-8000-0000000000e1', desc: 'Soldar ponto A', progress: 40 },
+  // Cenário [troca] (fluxo 3): SEGUNDO workspace do dono, tudo prefixado ISCA-.
+  isca: {
+    workspace: { id: '0e2e0000-0000-4000-8000-0000000000a2', name: 'ISCA-WS' },
+    project: { id: '0e2e0000-0000-4000-8000-0000000000b2', name: 'ISCA-Projeto' },
+    cell: { id: '0e2e0000-0000-4000-8000-0000000000c2', name: 'ISCA-Célula' },
+    robot: { id: '0e2e0000-0000-4000-8000-0000000000d2', name: 'ISCA-R99' },
+    task: { id: '0e2e0000-0000-4000-8000-0000000000e2', desc: 'ISCA-Soldar', progress: 25 },
+  },
+  // Cenário [relatorio] (fluxo 5): projeto próprio com distribuição 18/9/11/2 + vazio.
+  report: {
+    project: { id: '0e2e0000-0000-4000-8000-0000000000b3', name: 'Relatório E2E' },
+    cell: { id: '0e2e0000-0000-4000-8000-0000000000c3', name: 'Célula Relatório' },
+    robot: { id: '0e2e0000-0000-4000-8000-0000000000d3', name: 'ROB-CHEIO' },
+    empty: { id: '0e2e0000-0000-4000-8000-0000000000d4', name: 'ROB-VAZIO' },
+    total: 40,
+    distribution: { done: 18, inProgress: 9, pending: 11, na: 2 },
+  },
 } as const satisfies {
   owner: SeededUser
   guest: SeededUser
@@ -70,4 +87,19 @@ export const SEED = {
   cell: { id: string; name: string }
   robot: { id: string; name: string }
   task: { id: string; desc: string; progress: number }
+  isca: {
+    workspace: { id: string; name: string }
+    project: { id: string; name: string }
+    cell: { id: string; name: string }
+    robot: { id: string; name: string }
+    task: { id: string; desc: string; progress: number }
+  }
+  report: {
+    project: { id: string; name: string }
+    cell: { id: string; name: string }
+    robot: { id: string; name: string }
+    empty: { id: string; name: string }
+    total: number
+    distribution: { done: number; inProgress: number; pending: number; na: number }
+  }
 }

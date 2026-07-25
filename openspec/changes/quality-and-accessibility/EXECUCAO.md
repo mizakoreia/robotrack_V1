@@ -416,3 +416,38 @@ colidiria no banco único de uma rodada. Fixture ganhou `viewerContext`/`viewerP
 
 **Gates:** `e2e:lint` (11 specs), `tsc` sobre `e2e/**` (só o pré-existente de
 session.ts:61 `base.request`, cosmético), `ruby -c` do `e2e.rake` OK.
+
+---
+
+## G-B3 — fluxos E2E: 7.4 (troca) + 7.5 (revogação) + 7.6 (relatório) + 7.7 (orçamento)
+
+Os últimos fluxos. Specs escritos + `e2e:lint` verde (14 specs) + `tsc` limpo +
+`ruby -c` OK; execução em navegador é HANDOFF (§6f). Dois seeds NOVOS.
+
+- **7.4 — ENTREGUE.** `workspace-switch.spec.ts` + seed `[troca]` (WS-E2E + WS-ISCA,
+  tudo prefixado `ISCA-`, MESMO dono → o seletor de workspace aparece com >1).
+  Afirma: `body` sem `ISCA-` no WS-E2E; URL profunda cruzada sem o nome do robô no
+  corpo; `GET` forjado do robô cruzado → 404 (não 403 — cross-tenant é
+  indistinguível de inexistente); após a troca, o projeto do WS-E2E tem count 0
+  (cache limpo ANTES do render — estado final, não intervalo de 300ms).
+- **7.5 — ENTREGUE.** `revocation.spec.ts` (seed `[convite]`, `member` edit): membro
+  com o Robô aberto; dono remove (aceita `window.confirm`); a sessão do membro avisa
+  em ≤5s nomeando o workspace; `POST` pós-revogação → 403; a sessão do dono segue
+  operante. **DIVERGÊNCIA DE-QA-B3.1:** o design pedia `#rt-alerts`; a implementação
+  avisa por TOAST PERSISTENTE (`sonner`, `duration: Infinity`) — assertivo e
+  sobrevive, mesma intenção. Afirmamos o toast (a realidade). Alimentar a live-region
+  `#rt-alerts` NO caminho de revogação fica como melhoria menor de a11y (não bloqueio).
+- **7.6 — ENTREGUE (calibração de execução).** `report.spec.ts` + seed `[relatorio]`
+  (40 tarefas 18/9/11/2 num robô + `ROB-VAZIO`; `N/A` é status do enum `task_status`;
+  ponderado exclui N/A no banco, então mirei Em Andamento a 62% para o ponderado dos
+  38 dar ~62%). O spec afirma o DETERMINÍSTICO: distribuição 18/9/11/2, `progresso
+  ponderado` rotulado, id `RT-\d{8}-\d{4}`, `ROB-VAZIO` presente, assinaturas.
+  **DE-QA-B3.2:** os percentuais EXATOS (62%/45%), o id literal `RT-20260314-0907`
+  (relógio fixo) e a paginação A4 (3 páginas — do `print-report.mjs`, não deste
+  fluxo) são calibração de EXECUÇÃO, como a casa faz com seeds de relatório.
+- **7.7 — ENTREGUE (enforcement).** O orçamento de tempo já está no
+  `playwright.config.ts` (`globalTimeout` 8min + `workers` default 4). O veredito
+  "verde em ≤8min" é a execução (handoff).
+
+**Gates:** `e2e:lint` (14 specs), `tsc` sobre `e2e/**` (só o pré-existente
+session.ts:61), `ruby -c` do `e2e.rake` OK, `validate --strict` verde.
