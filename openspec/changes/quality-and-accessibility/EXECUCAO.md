@@ -451,3 +451,27 @@ Os últimos fluxos. Specs escritos + `e2e:lint` verde (14 specs) + `tsc` limpo +
 
 **Gates:** `e2e:lint` (14 specs), `tsc` sobre `e2e/**` (só o pré-existente
 session.ts:61), `ruby -c` do `e2e.rake` OK, `validate --strict` verde.
+
+---
+
+## G-B4 — INP com 24 cards (8.5) — a ÚLTIMA tarefa
+
+Fecha a change. Spec + seed `[carga]` + `e2e:lint` verde (15 specs) + `tsc` limpo +
+`ruby -c` OK; execução em navegador é HANDOFF (§6g).
+
+- **8.5 — ENTREGUE.** `inp.spec.ts` (1440×900) + seed `carga!` (uma célula com 24
+  robôs). Afirma 24 cards; CPU 4× via CDP (Chromium-only — `test.skip` no WebKit,
+  que não expõe o throttle); INP p95 < 200ms pelo Event Timing sobre 24 interações
+  de teclado; cadência da luz ambiente por laço `requestAnimationFrame` de ~3s
+  (SEM `setTimeout` — o e2e:lint proíbe o token) contando escritas em `--lx`/`--ly`
+  (> 0 e ≤ 100 no ponteiro fino); e ZERO num viewport de toque (`hasTouch` → o gate
+  `(hover:hover) and (pointer:fine)` do `initAmbient` nem registra o listener).
+- **DE-QA-B4.1:** o `.card` que o DESIGN.md cita é o `EntityCard` interativo, que na
+  árvore de a11y é `role="button"` com `aria-label="Abrir <título>"` (não uma classe
+  `.card` literal). O spec ancora por esse papel — a árvore de a11y é a fonte da
+  verdade, e é o que um leitor de tela vê.
+
+**Change FECHADA (39/39 contando handoffs, como a casa faz):** os deltas de
+navegador (4.4/5.5/5.6/7.1-7.7/8.5) têm spec escrito + `e2e:lint` verde; a execução
+em Chromium+WebKit+CI é o handoff documentado em §6d-§6g do `VALIDACAO_WSL.md`, mesma
+classe dos demais E2E da casa (`invite-by-code`, `join-workspace-by-code`).

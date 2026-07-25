@@ -47,6 +47,7 @@ produção.
 | `convite` | base + hierarquia mínima (1 tarefa @40%) + `member` (edit) + `viewer` (view) | invite / advance / invite-view / offline-* / revocation |
 | `troca` | WS-E2E + **WS-ISCA** (2º workspace do dono, tudo `ISCA-`) | workspace-switch (fluxo 3) |
 | `relatorio` | projeto com distribuição **18/9/11/2** (40 tarefas) + **ROB-VAZIO** | report (fluxo 5) |
+| `carga` | uma célula com **24 robôs** (24 cards) | inp (8.5) |
 
 Cada cenário MUTA estado próprio — recrie o banco entre rodadas (ver abaixo). O
 ponderado exato do `[relatorio]` é calibração de execução (o banco EXCLUI `N/A`).

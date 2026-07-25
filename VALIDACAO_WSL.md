@@ -519,6 +519,27 @@ o `progress` do bloco "Em Andamento" em `RPT_DISTRIBUTION` (`backend/lib/tasks/e
 
 ---
 
+## 6g. `quality-and-accessibility` — INP com 24 cards (8.5) (HANDOFF)
+
+O teste de performance de interação. Spec + seed `[carga]` (célula com 24 robôs) +
+`e2e:lint` verde; execução em navegador é o handoff. **Chromium-only** (o CPU 4× é
+CDP; o `test.skip` pula no WebKit).
+
+- `inp.spec.ts`: 24 cards, CPU 4×, INP p95 < 200ms (Event Timing); cadência da luz
+  ambiente ≤100 escritas em `--lx`/`--ly` em ~3s (ponteiro fino) e **0** no toque.
+
+```bash
+cd frontend && npm run build && npx vite preview --port 4173 &
+cd ../backend && bundle exec rails 'rt:seed:e2e[carga]'
+cd ../frontend && E2E_BASE_URL=http://localhost:4173 npx playwright test inp --project=chromium
+```
+
+Se o INP p95 estourar 200ms num runner lento, confirme que a CPU não está sob outra
+carga — o teto é sob 4× de throttle, calibrado para um chão de fábrica, não um
+runner saturado. A cadência da luz (≤100/3s) é o throttle de 32ms do `initAmbient`.
+
+---
+
 ## Como me passar os resultados
 
 Rode os blocos e me mande a saída (especialmente 3 e 4). Eu interpreto, e se algo

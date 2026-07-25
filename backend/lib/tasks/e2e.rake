@@ -22,8 +22,9 @@ namespace :rt do
       when 'avanco' then E2eSeed.convite! # alias: a semente do fluxo 1 serve os dois specs
       when 'troca' then E2eSeed.troca!         # fluxo 3: dois workspaces (WS-E2E + WS-ISCA)
       when 'relatorio' then E2eSeed.relatorio! # fluxo 5: distribuição 18/9/11/2 + ROB-VAZIO
+      when 'carga' then E2eSeed.carga!         # INP 8.5: célula com 24 robôs (24 cards)
       else abort("[rt:seed:e2e] cenário desconhecido: '#{scenario}' " \
-                 '(conhecidos: base, convite, avanco, troca, relatorio)')
+                 '(conhecidos: base, convite, avanco, troca, relatorio, carga)')
       end
       puts "[rt:seed:e2e] cenário '#{scenario}' pronto."
     end
@@ -90,6 +91,13 @@ module E2eSeed
     ['Pendente', 0, 11],
     ['N/A', 0, 2]
   ].freeze
+
+  # Cenário [carga] (INP 8.5): uma célula com EXATAMENTE 24 robôs → 24 cards na tela,
+  # o cenário que o DESIGN.md cita e que ninguém podia reproduzir por falta de
+  # dataset. É o que o teste de INP (200ms p95, CPU 4x, 1440×900) mede.
+  CARGA_PROJECT = { id: '0e2e0000-0000-4000-8000-0000000000b4', name: 'Carga E2E' }.freeze
+  CARGA_CELL    = { id: '0e2e0000-0000-4000-8000-0000000000c4', name: 'Célula 24' }.freeze
+  CARGA_ROBOTS  = 24
 
   module_function
 
@@ -269,6 +277,34 @@ module E2eSeed
                            status: 'Em Andamento', position: 0, created_at: now, updated_at: now }], unique_by: :id)
       ::Progress::BulkRecompute.call(workspace_id: ISCA_WORKSPACE[:id])
     end
+  end
+
+  # INP 8.5: uma célula com 24 robôs (cada um com 1 tarefa a 50%, para o card exibir
+  # anel). 24 é o número exato que o DESIGN.md cita — o teste afirma 24 cards em tela.
+  def carga!
+    owner = ensure_user(OWNER)
+    ensure_workspace(owner)
+    ::Tenant.with(workspace_id: WORKSPACE[:id], user_id: owner.id) do
+      now = ::Time.current
+      ::Project.insert_all([{ id: CARGA_PROJECT[:id], workspace_id: WORKSPACE[:id], name: CARGA_PROJECT[:name],
+                              position: 2, progress_cache: 0, created_at: now, updated_at: now }], unique_by: :id)
+      ::Cell.insert_all([{ id: CARGA_CELL[:id], workspace_id: WORKSPACE[:id], project_id: CARGA_PROJECT[:id],
+                           name: CARGA_CELL[:name], position: 0, progress_cache: 0, created_at: now, updated_at: now }], unique_by: :id)
+      robots = (1..CARGA_ROBOTS).map do |n|
+        { id: format('0e2e0000-0000-4000-8000-00000020%04d', n), workspace_id: WORKSPACE[:id], cell_id: CARGA_CELL[:id],
+          name: format('R%02d CARGA', n), application: 'Misto / Geral', position: n - 1, progress_cache: 0,
+          created_at: now, updated_at: now }
+      end
+      ::Robot.insert_all(robots, unique_by: :id)
+      tasks = robots.each_with_index.map do |r, i|
+        { id: format('0e2e0000-0000-4000-8000-00000021%04d', i + 1), workspace_id: WORKSPACE[:id], robot_id: r[:id],
+          cat: 'A. Hardware', desc: "Tarefa carga #{i + 1}", weight: 1, progress: 50, status: 'Em Andamento',
+          position: 0, created_at: now, updated_at: now }
+      end
+      ::Task.insert_all(tasks, unique_by: :id)
+      ::Progress::BulkRecompute.call(workspace_id: WORKSPACE[:id])
+    end
+    puts "[rt:seed:e2e] carga: #{CARGA_ROBOTS} robôs em #{CARGA_CELL[:name]} (#{CARGA_ROBOTS} cards para o INP)"
   end
 
   def seed_report_hierarchy(owner)

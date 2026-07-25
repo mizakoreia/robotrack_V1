@@ -77,6 +77,12 @@ export const SEED = {
     total: 40,
     distribution: { done: 18, inProgress: 9, pending: 11, na: 2 },
   },
+  // Cenário [carga] (INP 8.5): célula com 24 robôs (24 cards em tela).
+  carga: {
+    project: { id: '0e2e0000-0000-4000-8000-0000000000b4', name: 'Carga E2E' },
+    cell: { id: '0e2e0000-0000-4000-8000-0000000000c4', name: 'Célula 24' },
+    robotCount: 24,
+  },
 } as const satisfies {
   owner: SeededUser
   guest: SeededUser
@@ -101,5 +107,10 @@ export const SEED = {
     empty: { id: string; name: string }
     total: number
     distribution: { done: number; inProgress: number; pending: number; na: number }
+  }
+  carga: {
+    project: { id: string; name: string }
+    cell: { id: string; name: string }
+    robotCount: number
   }
 }
