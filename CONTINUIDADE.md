@@ -1,4 +1,4 @@
-# Continuidade — estado em 25/07/2026 (`quality-and-accessibility` FECHADA 39/39 → **25/25 changes**; execução E2E em handoff)
+# Continuidade — estado em 25/07/2026 (`quality-and-accessibility` FECHADA 39/39 → **25/25 changes** do núcleo + 4 changes novas publicadas; execução E2E em handoff)
 
 Ponto de retomada do porte. Para uma sessão nova de agente, o prompt de partida
 está em [PROMPT DE RETOMADA](#prompt-de-retomada), no fim.
@@ -7,9 +7,12 @@ está em [PROMPT DE RETOMADA](#prompt-de-retomada), no fim.
 
 **Mudou desde as ondas iniciais: não é mais empilhamento de branches.** Agora:
 
-- Todo o trabalho vive em `main` — **`main` é a versão mais atual** (tip `b2cff40`,
+- Todo o trabalho vive em `main` — **`main` é a versão mais atual** (tip `6625be6`,
   após a campanha de deploy + a rodada de UI/UX + as slices 1-2 do Fluxo 1 E2E + as
-  changes `invite-by-code` e `join-workspace-by-code` — ver as seções abaixo).
+  changes `invite-by-code`, `join-workspace-by-code`, `code-only-invites` e
+  `owner-only-card-delete`, mais os fixes de UI da demo — responsividade mobile
+  (`705a0c2`), swipe-to-reveal no repouso (`cd9722d`), remoção da luz ambiente
+  (`bac3535`) e a lixeira dos cards no desktop (`6625be6`) — ver as seções abaixo).
 - O desenvolvimento desta rodada aconteceu na branch de feature
   `feat/invite-by-code`, onde as duas changes foram **acumuladas** por instrução do
   dono e depois **fast-forwarded para `main` de uma vez** (histórico linear, sem merge
