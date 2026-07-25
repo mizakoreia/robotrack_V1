@@ -271,6 +271,15 @@ body {
   .surface-panel {
     background-color: hsl(var(--bg-panel) / 0.7);
   }
+  /* Equivalente OPACO de .surface-panel: a mesma tinta (bg-panel a 70%) porém
+     composta sobre uma base sólida de bg-main, sem alpha resultante. Usado quando
+     o card precisa ser uma camada opaca de verdade — ex.: o swipe-to-reveal do
+     EntityCard, onde o painel "Excluir" fica ATRÁS do card; com o card translúcido
+     o vermelho vazava por baixo no repouso (design-system: "card opaco por cima"). */
+  .surface-panel-solid {
+    background-color: hsl(var(--bg-main));
+    background-image: linear-gradient(hsl(var(--bg-panel) / 0.7), hsl(var(--bg-panel) / 0.7));
+  }
   .surface-menu {
     background-color: hsl(var(--bg-menu) / 0.97);
   }

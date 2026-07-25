@@ -16,10 +16,17 @@ vi.mock('@/lib/useMediaQuery', () => ({
 
 import { EntityCard } from '../EntityCard'
 
+// jsdom não popula `clientX` num PointerEvent (fica `undefined` → dx NaN), então o
+// arrasto nunca movia de fato. Dirigimos com um MouseEvent (que carrega clientX)
+// tipado como pointer* — é o que o React lê no handler — para exercitar o gesto
+// de verdade e conseguir asserir o deslocamento resultante.
+function pev(type: string, x: number, y: number) {
+  return new MouseEvent(type, { clientX: x, clientY: y, bubbles: true })
+}
 function drag(el: Element, from: [number, number], to: [number, number]) {
-  fireEvent.pointerDown(el, { clientX: from[0], clientY: from[1], pointerId: 1, pointerType: 'touch' })
-  fireEvent.pointerMove(el, { clientX: to[0], clientY: to[1], pointerId: 1, pointerType: 'touch' })
-  fireEvent.pointerUp(el, { clientX: to[0], clientY: to[1], pointerId: 1, pointerType: 'touch' })
+  fireEvent(el, pev('pointerdown', from[0], from[1]))
+  fireEvent(el, pev('pointermove', to[0], to[1]))
+  fireEvent(el, pev('pointerup', to[0], to[1]))
 }
 
 describe('EntityCard — swipe-to-reveal excluir (mobile)', () => {
@@ -73,6 +80,27 @@ describe('EntityCard — swipe-to-reveal excluir (mobile)', () => {
 
     drag(card, [200, 50], [110, 52])
     expect(card.style.transition).toBe('none')
+  })
+
+  it('repouso: card OPACO por cima e sem deslocamento — o painel Excluir não vaza por baixo', () => {
+    render(<EntityCard title="Célula F" onClick={vi.fn()} onSwipeDelete={vi.fn()} />)
+    const card = screen.getByRole('button', { name: 'Abrir Célula F' }) as HTMLElement
+
+    // No repouso o card não deslizou: cobre o painel inteiro.
+    expect(card.style.transform).toBe('translateX(0px)')
+    // E é uma camada OPACA (não `surface-panel` translúcido): sem isso o vermelho
+    // do painel atrás vazaria pela translucidez do card. Este é o conserto.
+    const classes = card.className.split(/\s+/)
+    expect(classes).toContain('surface-panel-solid')
+    expect(classes).not.toContain('surface-panel')
+  })
+
+  it('gesto: o card desliza a largura do painel, revelando Excluir', () => {
+    render(<EntityCard title="Célula G" onClick={vi.fn()} onSwipeDelete={vi.fn()} />)
+    const card = screen.getByRole('button', { name: 'Abrir Célula G' }) as HTMLElement
+
+    drag(card, [200, 50], [90, 55]) // -110px, além do meio → snap para -96 (REVEAL_W)
+    expect(card.style.transform).toBe('translateX(-96px)')
   })
 
   it('sem ponteiro grosso (desktop) NÃO monta o gesto — estrutura clássica', () => {

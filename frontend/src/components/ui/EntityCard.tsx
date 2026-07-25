@@ -126,12 +126,16 @@ export function EntityCard({
     setOffset((o) => (o <= -REVEAL_W / 2 ? -REVEAL_W : 0))
   }
 
-  const cardClass = cn(
-    'surface-panel flex h-full flex-col gap-3 rounded-lg border p-4 shadow-sh-1',
+  // A superfície é o único bit que difere entre os dois caminhos: no gesto o card
+  // precisa ser OPACO (surface-panel-solid) porque desliza por cima do painel
+  // "Excluir" — com a translucidez de `surface-panel` o vermelho vazaria por baixo
+  // no repouso. Fora do gesto, o card é a superfície translúcida de sempre.
+  const cardBody =
+    'flex h-full flex-col gap-3 rounded-lg border p-4 shadow-sh-1'
+  const cardInteractive =
     interactive &&
-      'cursor-pointer transition-colors hover:border-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
-    className,
-  )
+    'cursor-pointer transition-colors hover:border-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent'
+  const cardClass = cn('surface-panel', cardBody, cardInteractive, className)
 
   const inner = (
     <>
@@ -191,7 +195,7 @@ export function EntityCard({
         </button>
       </div>
       <div
-        className={cn(cardClass, 'relative')}
+        className={cn('surface-panel-solid', cardBody, cardInteractive, className, 'relative')}
         style={{
           transform: `translateX(${offset}px)`,
           transition: snapping && !reduced ? 'transform 180ms cubic-bezier(0.22,1,0.36,1)' : 'none',
