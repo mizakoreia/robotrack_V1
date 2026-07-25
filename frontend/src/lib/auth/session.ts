@@ -113,12 +113,18 @@ async function emailMascaradoDoConvite(token: string): Promise<string | null> {
 // inválido (`invitation_not_found`, que aqui vira "código ou e-mail incorretos" em
 // vez de "convite não encontrado"). O par é REMOVIDO do storage ANTES do await,
 // como o token, para um mismatch não se repetir a cada navegação.
-export async function consumeInviteByCode(code: string, email: string): Promise<void> {
+//
+// Retorna `true` SOMENTE no aceite bem-sucedido. O valor é ignorado pelos
+// chamadores por token/OAuth (AuthPage, handleInviteAfterAuth), mas o diálogo
+// in-app de `join-workspace-by-code` o usa para só fechar/navegar quando entrou de
+// fato — em erro (toast já exibido) o diálogo permanece aberto com o código
+// digitado. O feedback ao usuário continua sendo o toast (canal único de convite).
+export async function consumeInviteByCode(code: string, email: string): Promise<boolean> {
   inviteStore.clearCode()
 
   if (typeof navigator !== 'undefined' && navigator.onLine === false) {
     toast.warning(inviteText.offline, { duration: Infinity })
-    return
+    return false
   }
 
   try {
@@ -127,6 +133,7 @@ export async function consumeInviteByCode(code: string, email: string): Promise<
       useWorkspaceStore.getState().selectWorkspace(result.workspace_id)
     }
     toast.success(inviteText.accepted(null))
+    return true
   } catch (e) {
     const resposta = (e as { response?: { status?: number; data?: { error?: string } } })?.response
     const status = resposta?.status
@@ -169,6 +176,7 @@ export async function consumeInviteByCode(code: string, email: string): Promise<
     } else {
       toast.error(inviteText.genericFailure)
     }
+    return false
   }
 }
 

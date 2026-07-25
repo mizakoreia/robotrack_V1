@@ -96,6 +96,16 @@ export const inviteText = {
   codeExpired: 'Este código expirou. Peça um novo ao responsável (ou use o link, se ainda tiver).',
   codeInvalidPair: 'Código ou e-mail incorretos. Confira os dois e tente de novo.',
 
+  // join-workspace-by-code — entrar noutro workspace por código estando LOGADO.
+  // Diferente da tela de entrada: o e-mail é o da sessão (fixo), então só o
+  // código é digitado. O item vive no menu da conta (sempre acessível, inclusive
+  // com um único workspace — o seletor de workspace só existe com mais de um).
+  joinByCodeMenu: 'Entrar em outro workspace com código',
+  joinByCodeTitle: 'Entrar em outro workspace',
+  joinByCodeHint: 'Recebeu um código para colaborar em outro workspace? Digite-o abaixo.',
+  joinByCodeAs: (email: string) => `Entrando como ${email}`,
+  joinByCodeSubmit: 'Entrar no workspace',
+
   // Revogação de acesso
   accessRevoked: (workspaceName?: string | null) =>
     workspaceName

@@ -105,5 +105,62 @@ estaria errado.
 
 ### Prova do G0
 
-- `npx --yes @fission-ai/openspec@1.6.0 validate join-workspace-by-code --strict` — a
-  registrar na execução (esperado: verde).
+- `npx --yes @fission-ai/openspec@1.6.0 validate join-workspace-by-code --strict` — verde.
+
+---
+
+## G1 — Frontend: diálogo + porta no menu da conta + i18n
+
+### O que foi aplicado
+
+- **`features/auth/JoinByCodeDialog.tsx`** (novo): diálogo sobre `ui/Modal` (foco preso,
+  `Esc` devolve o foco). E-mail da sessão (`useAuthStore`) exibido como contexto
+  somente-leitura ("Entrando como `<email>`"); **um único** campo editável, o Código, com
+  `formatInviteCode`/`normalizeInviteCode` de `lib/auth/code.ts` (máscara `XXXX-XXXX`,
+  tolerante). Submit: valida `isCompleteInviteCode` (erro inline por `aria-live`), chama
+  `consumeInviteByCode(código, emailDaSessão)`, e **só no sucesso** fecha + `navigate('/')`.
+  Campo com `bg-bg-main`/`border-input`/`text-text-main` (regra F) e `py-2` (alvo ≥ 32px).
+- **`app/AppShell.tsx`**: item "Entrar em outro workspace com código" no menu da conta
+  (`inviteText.joinByCodeMenu`), entre "Equipe e convites" e "Alternar tema"; abertura por
+  `?codigo=1` via `useSearchParams` (fechar remove o param); `<JoinByCodeDialog>` montado na
+  casca persistente.
+- **`lib/i18n/invitations.ts`**: `joinByCodeMenu`/`joinByCodeTitle`/`joinByCodeHint`/
+  `joinByCodeAs`/`joinByCodeSubmit`.
+- **`lib/auth/session.ts`**: `consumeInviteByCode` agora retorna `boolean` (DE-G1.1).
+
+### Decisões do grupo
+
+**DE-G1.1 — `consumeInviteByCode` retorna `boolean` (antes `void`).** O diálogo precisa
+saber se ENTROU de fato para decidir fechar+navegar; em erro deve permanecer aberto com o
+código digitado. **Decisão:** adicionar valor de retorno (`true` só no sucesso), sem mudar o
+comportamento de toast (o feedback ao usuário continua no toast — canal único de convite da
+casa). Backward-compatible: `AuthPage` e `handleInviteAfterAuth` ignoram o retorno (só
+`await`). **Alternativa descartada:** um hook novo chamando `acceptByCode` direto —
+reimplementaria o mapa de erro e o `selectWorkspace` (viola D3, a regra de reuso).
+
+**DE-G1.2 — Item secundário no seletor de workspace (Q2) DEFERIDO.** Só apareceria com >1
+workspace; a porta primária (menu da conta) já cobre o caso alvo. Mantida a change mínima,
+conforme a recomendação Q2 adotada pelo dono. Reabrir é aditivo.
+
+**DE-G0.1 (resolvida) — contagem de itens do menu da conta.** O teste
+`app/__tests__/AppShell.test.tsx` NÃO assertava contagem exata (itera por rótulo com
+`getByRole('menuitem', { name })`). Adicionar o 5º item não quebrou nada; o teste foi
+atualizado para incluir o novo rótulo (doc/teste verdadeiros). A spec `app-shell-navigation`
+("três itens") segue desatualizada desde a consolidação — divergência registrada, sem
+`MODIFIED` de spec (padrão `ADDED`-only do repo).
+
+**DE-G1.3 — "convite para outro e-mail" reusa `emailMismatch`.** Para o usuário logado, um
+código de convite emitido para OUTRO e-mail cai no `invitation_email_mismatch`, que
+`consumeInviteByCode` já traduz no toast `emailMismatch` (com ação "Sair e entrar com outra
+conta"). Nenhum literal novo — é exatamente a orientação específica pedida pela spec.
+
+### Prova do G1
+
+- `vitest` dirigido **35/35**: `JoinByCodeDialog.test.tsx` (6 — e-mail somente-leitura/sem
+  campo de e-mail, máscara, incompleto não chama aceite, sucesso→aceite+fecha+`/`,
+  falha→fica aberto, `Esc` fecha), `AppShell.test.tsx` (11 — inclui "porta com 1 workspace"
+  e "item abre o diálogo `?codigo=1`"), `AuthPageCode.test.tsx` (5, regressão),
+  `session.test.ts` (13, regressão).
+- Sweeps: convenção/contraste/motion/stacking/tokens/query **66/66**, i18n de convites
+  **3/3** (nenhum literal fora de `invitations.ts`). `tsc --noEmit` e `eslint` limpos.
+- `validate --strict` verde.

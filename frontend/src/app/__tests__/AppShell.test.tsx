@@ -7,6 +7,7 @@ import { AppShell } from '../AppShell'
 import { workspacesApi } from '@/lib/api/endpoints'
 import { useAuthStore } from '@/store/authStore'
 import { useWorkspaceStore } from '@/store/workspaceStore'
+import { inviteText } from '@/lib/i18n/invitations'
 
 // app-shell-navigation 4.6 (§3.10) — os testes da casca: 3 destinos, ausência de
 // faixa lateral (ativo é preenchimento, não borda), `aria-current` no corrente,
@@ -141,9 +142,36 @@ describe('AppShell (§3.10, D-F)', () => {
     const card = screen.getByRole('button', { name: /^Conta:/ })
     act(() => card.click())
     const menu = screen.getByRole('menu', { name: 'Conta' })
-    for (const label of ['Configurações do workspace', 'Equipe e convites', 'Alternar tema', 'Sair']) {
+    for (const label of [
+      'Configurações do workspace',
+      'Equipe e convites',
+      inviteText.joinByCodeMenu,
+      'Alternar tema',
+      'Sair',
+    ]) {
       expect(within(menu).getByRole('menuitem', { name: label })).toBeInTheDocument()
     }
+  })
+
+  // join-workspace-by-code — a porta para entrar noutro workspace por código vive
+  // no menu da conta, SEMPRE acessível: aqui o usuário tem um único workspace
+  // (seedStores), então o seletor de workspace nem existe — e a porta continua lá.
+  it('o menu da conta oferece "Entrar em outro workspace com código" mesmo com um só workspace', () => {
+    render(<Shell />)
+    act(() => screen.getByRole('button', { name: /^Conta:/ }).click())
+    const menu = screen.getByRole('menu', { name: 'Conta' })
+    expect(within(menu).getByRole('menuitem', { name: inviteText.joinByCodeMenu })).toBeInTheDocument()
+  })
+
+  it('escolher o item abre o diálogo de entrada por código (?codigo=1)', () => {
+    render(<Shell />)
+    act(() => screen.getByRole('button', { name: /^Conta:/ }).click())
+    act(() => {
+      screen.getByRole('menuitem', { name: inviteText.joinByCodeMenu }).click()
+    })
+    expect(screen.getByRole('dialog', { name: inviteText.joinByCodeTitle })).toBeInTheDocument()
+    // e o e-mail da sessão aparece como contexto (identidade do aceite)
+    expect(screen.getByText(inviteText.joinByCodeAs('ana@ex.com'))).toBeInTheDocument()
   })
 
   it('o card de usuário usa o e-mail como fallback quando o nome é vazio', () => {

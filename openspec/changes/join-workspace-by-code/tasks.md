@@ -13,29 +13,27 @@
 
 ## G1. Frontend: diálogo + porta no menu da conta + i18n
 
-- [ ] G1.1 Componente de diálogo de entrada por código (sob `features/auth/` ou
-  `features/invitations/`, reusando `ui/Modal`): e-mail da sessão somente-leitura + único
-  campo Código (máscara `formatInviteCode`/normalização `normalizeInviteCode` de
-  `lib/auth/code.ts`), estado de carregando, erro por `aria-live`, fundo temático (regra F)
-  e alvo ≥ 32px; no submit chama `consumeInviteByCode(codigo, emailDaSessao)` e no sucesso
-  fecha + `navigate('/')`
-- [ ] G1.2 Item "Entrar em outro workspace com código" no menu da conta em `AppShell.tsx`
+- [x] G1.1 Componente de diálogo de entrada por código (`features/auth/JoinByCodeDialog.tsx`,
+  reusando `ui/Modal`): e-mail da sessão somente-leitura + único campo Código (máscara
+  `formatInviteCode`/normalização `normalizeInviteCode` de `lib/auth/code.ts`), estado de
+  carregando, erro por `aria-live`, fundo temático (regra F, `bg-bg-main`/`border-input`) e
+  alvo ≥ 32px (`py-2`); no submit chama `consumeInviteByCode(codigo, emailDaSessao)` e SÓ no
+  sucesso fecha + `navigate('/')`. `consumeInviteByCode` passou a retornar `boolean` (DE-G1.1)
+- [x] G1.2 Item "Entrar em outro workspace com código" no menu da conta em `AppShell.tsx`
   (entre "Equipe e convites" e "Alternar tema"), seguindo o padrão `MenuItem`/`PortalMenu`;
-  fiação de abertura por `?codigo=1` (espelhando `?convidar=1`), fechar remove o param
-- [ ] G1.3 `lib/i18n/invitations.ts`: rótulo do item de menu + textos do diálogo (título,
-  contexto "Entrando como…", rótulo/placeholder do código, botão de submit, e a mensagem
-  específica de "convite emitido para outro e-mail estando logado" se ainda não existir);
-  nenhum literal de convite fora deste módulo
-- [ ] G1.4 (Opcional/decisão do dono — Q2) Item secundário "Entrar com código…" ao fim do
-  menu do seletor em `WorkspaceContext.tsx`, visível só com >1 workspace. **Deferido por
-  padrão**; só implementar se o dono aprovar. Marcar como decisão no EXECUCAO
-- [ ] G1.5 Verificação do grupo G1 (vitest/RTL): porta visível com 1 workspace; acionar
-  abre o diálogo e fecha o menu; máscara/normalização do código; submit usa o e-mail da
-  sessão e chama `consumeInviteByCode`; sucesso troca de workspace + `navigate('/')` +
-  fecha; cada estado de erro (par inválido, travado, expirado, e-mail divergente, offline)
-  renderiza a mensagem certa; contraste/regra F/alvo de toque conferidos; `tsc` e `lint`
-  limpos nos arquivos tocados. Conferir que nenhum teste do shell asserta contagem exata de
-  itens do menu da conta (e reconciliar se houver) → `validate --strict` verde
+  fiação de abertura por `?codigo=1` (`useSearchParams`, espelhando `?convidar=1`), fechar
+  remove o param; diálogo montado na casca persistente
+- [x] G1.3 `lib/i18n/invitations.ts`: rótulo do item de menu + textos do diálogo
+  (`joinByCodeMenu`, `joinByCodeTitle`, `joinByCodeHint`, `joinByCodeAs`, `joinByCodeSubmit`);
+  a mensagem de "convite para outro e-mail" REUSA `emailMismatch` (com ação de trocar de
+  conta) já existente; nenhum literal de convite fora deste módulo (sweep verde)
+- [~] G1.4 (Opcional — Q2) Item secundário no menu do seletor (`WorkspaceContext.tsx`),
+  visível só com >1 workspace. **DEFERIDO** (recomendação Q2 adotada pelo dono: manter a
+  change mínima). Registrado como decisão DE-G1.2 no EXECUCAO
+- [x] G1.5 Verificação do grupo G1: vitest 35/35 nos dirigidos (diálogo 6 + AppShell 11 +
+  AuthPageCode 5 + session 13), sweeps de convenção/contraste/i18n verdes (66 + 3), `tsc` e
+  `lint` limpos. Confirmado que o teste do shell NÃO assertava contagem exata de itens do
+  menu (itera por rótulo) — atualizado para incluir o novo item. `validate --strict` verde
 
 ## G2. E2E, docs e fechamento
 

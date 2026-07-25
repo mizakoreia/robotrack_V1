@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { Link, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { Icon } from '@/components/icons/Icon'
 import { IconButton } from '@/components/ui/IconButton'
@@ -19,6 +19,8 @@ import { useOfflineSync } from '@/hooks/useOfflineSync'
 import { useOsNotificationAlerts } from '@/features/notifications/useOsNotificationAlerts'
 import { NotificationBell } from '@/features/notifications/NotificationBell'
 import { performLogout } from '@/lib/auth/session'
+import { JoinByCodeDialog } from '@/features/auth/JoinByCodeDialog'
+import { inviteText } from '@/lib/i18n/invitations'
 import { registerRevocationNavigator } from '@/lib/workspace/accessRevoked'
 import { ConnectionIndicator } from '@/components/realtime/ConnectionIndicator'
 import { StorageWarning } from '@/components/StorageWarning'
@@ -38,6 +40,26 @@ export function AppShell() {
 
   const user = useAuthStore((s) => s.user)
   const role = useWorkspaceStore((s) => s.currentRoleLabel)
+
+  // join-workspace-by-code — o diálogo de entrada por código é endereçável por
+  // `?codigo=1` (espelha o `?convidar=1` da topbar): o item do menu da conta só
+  // acrescenta o param, fechar remove. Vive na casca (persistente), disponível em
+  // qualquer rota autenticada.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const joinByCodeOpen = searchParams.get('codigo') === '1'
+  const openJoinByCode = () =>
+    setSearchParams((prev) => {
+      prev.set('codigo', '1')
+      return prev
+    })
+  const closeJoinByCode = () =>
+    setSearchParams(
+      (prev) => {
+        prev.delete('codigo')
+        return prev
+      },
+      { replace: true },
+    )
   const baseSaveState = usePersistenceStore((s) => selectSaveState(s))
   const pendingCount = useOfflineQueueStore(selectPendingCount)
   const hasBlocked = useOfflineQueueStore(selectHasBlocked)
@@ -79,6 +101,7 @@ export function AppShell() {
         pathname={location.pathname}
         user={user}
         saveState={saveState}
+        onJoinByCode={openJoinByCode}
       />
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -95,6 +118,10 @@ export function AppShell() {
           <Outlet />
         </main>
       </div>
+
+      {/* join-workspace-by-code — diálogo de entrada por código (Modal em portal),
+          aberto por `?codigo=1` a partir do item do menu da conta. */}
+      <JoinByCodeDialog open={joinByCodeOpen} onClose={closeJoinByCode} />
     </div>
   )
 }
@@ -105,12 +132,14 @@ function Sidebar({
   pathname,
   user,
   saveState,
+  onJoinByCode,
 }: {
   open: boolean
   onClose: () => void
   pathname: string
   user: { name?: string; email?: string } | null
   saveState: ReturnType<typeof selectSaveState>
+  onJoinByCode: () => void
 }) {
   const menu = useMenu()
   const navigate = useNavigate()
@@ -188,6 +217,10 @@ function Sidebar({
               // (/logs, /backup) viraram a própria tela de Configurações.
               { label: 'Configurações do workspace', onSelect: () => navigate('/configuracoes') },
               { label: 'Equipe e convites', onSelect: () => navigate('/configuracoes/equipe') },
+              // join-workspace-by-code — participar de OUTRO workspace por código.
+              // Junto das ações de composição de time; sempre acessível (não
+              // depende do seletor de workspace, que só existe com mais de um).
+              { label: inviteText.joinByCodeMenu, onSelect: onJoinByCode },
               { label: 'Alternar tema', onSelect: () => toggleTheme() },
               { label: 'Sair', onSelect: () => void performLogout((p) => navigate(p)) },
             ]}
