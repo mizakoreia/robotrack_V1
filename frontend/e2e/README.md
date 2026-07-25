@@ -16,7 +16,8 @@ sempre do backend (`rt:seed:e2e[cenario]`, UUIDs fixos), nunca da UI.
   interações antes do 1º `expect` (6.3). Roda com `npm run e2e:lint`.
 - `tests/smoke.spec.ts` — smoke do harness (build carrega, SW registra, duas
   sessões distintas).
-- `tests/invite.spec.ts` — Fluxo 1 slice 1 (convite ponta a ponta, duas sessões).
+- `tests/invite-code.spec.ts` — Fluxo 1 (convite ponta a ponta por CÓDIGO, duas
+  sessões). code-only-invites removeu o `invite.spec.ts` (fluxo por link).
 - `tests/advance.spec.ts` — Fluxo 1 slice 2 (membro `edit` registra avanço 40→50).
 
 ## Uma semente para a suíte INTEIRA

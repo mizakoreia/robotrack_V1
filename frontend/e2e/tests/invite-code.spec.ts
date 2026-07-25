@@ -1,9 +1,10 @@
 import { test, expect, SEED } from '../fixtures/session'
 
-// invite-by-code G5.2 — o fluxo por CÓDIGO ponta a ponta, irmão de `invite.spec.ts`
-// (que cobre o LINK). O dono cria o convite, copia o CÓDIGO exibido no diálogo, e o
-// convidado o digita na seção "Tenho um código de convite" da tela de entrada; o
-// membro aparece no painel do dono. Requer o cenário `[convite]` semeado.
+// code-only-invites — o Fluxo 1 (convite ponta a ponta) por CÓDIGO, agora o ÚNICO
+// caminho (o LINK e o antigo `invite.spec.ts` foram removidos). O dono cria o
+// convite, copia o CÓDIGO exibido no diálogo, e o convidado o digita na seção
+// "Tenho um código de convite" da tela de entrada; o membro aparece no painel do
+// dono e o convite sai de pendentes. Requer o cenário `[convite]` semeado.
 //
 // Locators ancorados por região/diálogo + `{ exact: true }` (regra da casa): o
 // código do diálogo do dono e o campo de código da tela do convidado têm o MESMO
@@ -23,7 +24,7 @@ test.describe('Fluxo por código — convite (duas sessões)', () => {
     const dialogo = ownerPage.getByRole('dialog', { name: 'Convidar pessoa' })
     await dialogo.getByLabel('E-mail').fill(SEED.guest.email)
     await dialogo.getByLabel('Papel').selectOption({ label: 'Pode editar' })
-    await dialogo.getByRole('button', { name: 'Gerar link de convite' }).click()
+    await dialogo.getByRole('button', { name: 'Gerar código de convite' }).click()
 
     const codigo = await dialogo.getByRole('textbox', { name: 'Código do convite', exact: true }).inputValue()
     // Crockford, 8 chars XXXX-XXXX, sem I/L/O/U.

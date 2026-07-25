@@ -48,18 +48,20 @@
   esta change). Reescritos: `session.test`, `inviteCode.test`, `TeamPanel.test`,
   `invitations.i18n.test` (lista de telas sem o `InviteRoute` removido)
 
-## G3. E2E e documentação
+## G3. E2E, rake de reemissão (DA-1) e documentação
 
-- [ ] G3.1 `frontend/e2e/tests/invite-code.spec.ts`: retirar/ajustar qualquer trecho que
-  dependa do link; garantir que o fluxo de convite E2E é **só por código**; `e2e:lint` verde
-  (execução em navegador é HANDOFF, padrão da casa)
-- [ ] G3.2 Atualizar a documentação no MESMO empurrão: `CONTINUIDADE.md` (nova change,
-  código-só), `VALIDACAO_WSL.md` se algum passo de validação citava o link,
-  `openspec/changes/invite-by-code/*` (anotar que §F.1 "coexiste" foi superado por esta
-  change — não reescrever histórico, anotar); `grep -rn "convite/\|invite_url\|Copiar link"
-  *.md` para caçar runbook que mande usar o link
-- [ ] G3.3 **Verificação:** `openspec validate code-only-invites --strict` verde; suíte
-  backend do raio (invitations/tenancy/authorization) + frontend (`vitest run`) verdes
+- [x] G3.1 E2E **só por código**: removido `e2e/tests/invite.spec.ts` (fluxo por link);
+  `invite-code.spec.ts` promovido a Fluxo 1 (botão "Gerar código de convite"); botão
+  renomeado também em `join-by-code.spec.ts`; `e2e/README.md` atualizado. `e2e:lint` **OK
+  (14 specs)**. Execução em navegador é HANDOFF (não repontar :3000 sob a demo viva).
+- [x] G3.2 **Rake de reemissão (DA-1):** `backend/lib/tasks/invitations.rake` —
+  `invitations:reissue_codes[<workspace_id>]` gera um CÓDIGO novo para cada convite pendente
+  (o claro antigo é irrecuperável — só o HMAC é guardado), renova a validade, zera o lockout
+  e IMPRIME o par (e-mail, código) para o dono repassar. Nada é enviado. Spec
+  `spec/invitations/reissue_codes_spec.rb` **2/2** (reemite+renova+zera+imprime; não toca
+  usados/expirados). Procedimento de drenagem ANTES do merge.
+- [x] G3.3 **Verificação:** `openspec validate code-only-invites --strict` verde; `e2e:lint`
+  OK; reissue spec 2/2. (CONTINUIDADE.md fica para o G4/fechamento.)
 
 ## G4. Fechamento
 

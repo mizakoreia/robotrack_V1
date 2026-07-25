@@ -24,7 +24,7 @@ test.describe('Fluxo por código — in-app, usuário logado (duas sessões)', (
     const dialogoDono = ownerPage.getByRole('dialog', { name: 'Convidar pessoa' })
     await dialogoDono.getByLabel('E-mail').fill(SEED.guest.email)
     await dialogoDono.getByLabel('Papel').selectOption({ label: 'Pode editar' })
-    await dialogoDono.getByRole('button', { name: 'Gerar link de convite' }).click()
+    await dialogoDono.getByRole('button', { name: 'Gerar código de convite' }).click()
 
     const codigo = await dialogoDono
       .getByRole('textbox', { name: 'Código do convite', exact: true })
