@@ -6,12 +6,12 @@ import { Button } from '../../components/ui/Button'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-// team-access-management §"Cópia do link de convite" (tarefa 4.6).
+// code-only-invites §"A tela mostra só o código" (era team-access-management 4.6).
 //
-// O produto NÃO envia e-mail (não-objetivo declarado): o link é distribuído pelo
-// dono, por fora. Isso torna a cópia do link o passo crítico do fluxo inteiro —
+// O produto NÃO envia e-mail (não-objetivo declarado): o CÓDIGO é distribuído
+// pelo dono, por fora. Isso torna a cópia do código o passo crítico do fluxo —
 // se ela falhar em silêncio, o convite existe no banco e ninguém nunca o recebe.
-// Por isso a Clipboard API negada não vira erro: o link aparece num campo
+// Por isso a Clipboard API negada não vira erro: o código aparece num campo
 // selecionável, com instrução de copiar à mão.
 export function InviteDialog({
   onCreated,
@@ -25,9 +25,7 @@ export function InviteDialog({
   const [erro, setErro] = useState<string | null>(null)
   const [enviando, setEnviando] = useState(false)
   const [criado, setCriado] = useState<InvitationDTO | null>(null)
-  const [copiaManual, setCopiaManual] = useState(false)
   const [copiaCodigoManual, setCopiaCodigoManual] = useState(false)
-  const linkRef = useRef<HTMLInputElement>(null)
   const codigoRef = useRef<HTMLInputElement>(null)
 
   async function submit(event: React.FormEvent) {
@@ -55,22 +53,6 @@ export function InviteDialog({
     }
   }
 
-  async function copiar() {
-    if (!criado) return
-    try {
-      const clipboard = navigator.clipboard
-      if (!clipboard?.writeText) throw new Error('sem clipboard')
-      await clipboard.writeText(criado.invite_url)
-      setCopiaManual(false)
-      toast.success(inviteText.copied)
-    } catch {
-      // Nada de falha silenciosa: mostra o link, seleciona e explica.
-      setCopiaManual(true)
-      linkRef.current?.select()
-      toast.warning(inviteText.copyManual)
-    }
-  }
-
   async function copiarCodigo() {
     if (!criado?.short_code) return
     try {
@@ -89,27 +71,13 @@ export function InviteDialog({
   if (criado) {
     return (
       <div role="dialog" aria-label={inviteText.inviteTitle} className="rounded-lg border p-4">
-        <h3 className="font-medium">{inviteText.inviteLinkReady}</h3>
-        <p className="mt-1 text-sm text-muted-foreground">{inviteText.inviteLinkHint}</p>
+        <h3 className="font-medium">{inviteText.inviteCodeReady}</h3>
+        <p className="mt-1 text-sm text-muted-foreground">{inviteText.inviteCodeHint}</p>
 
-        <input
-          ref={linkRef}
-          aria-label={inviteText.inviteLinkReady}
-          readOnly
-          value={criado.invite_url}
-          onFocus={(e) => e.currentTarget.select()}
-          className="mt-3 w-full rounded-md border bg-background px-3 py-2 text-sm"
-        />
-
-        {copiaManual && <p className="mt-2 text-sm text-destructive">{inviteText.copyManual}</p>}
-
-        {/* invite-by-code: o CÓDIGO ao lado do link — as duas representações do
-            MESMO convite. Fonte mono/tabular para o código não dançar de largura;
-            aviso de que ele expira antes do link. */}
+        {/* code-only-invites: o CÓDIGO é o único caminho. Fonte mono/tabular para
+            não dançar de largura; o dono copia e passa para o convidado. */}
         {criado.short_code && (
-          <div className="mt-4 border-t border-input pt-4">
-            <h4 className="text-sm font-medium">{inviteText.inviteCodeReady}</h4>
-            <p className="mt-1 text-sm text-muted-foreground">{inviteText.inviteCodeHint}</p>
+          <>
             <input
               ref={codigoRef}
               aria-label={inviteText.inviteCodeReady}
@@ -119,15 +87,12 @@ export function InviteDialog({
               className="mt-3 w-full rounded-md border bg-background px-3 py-2 text-center font-mono text-lg tracking-[0.3em] tabular-nums"
             />
             {copiaCodigoManual && <p className="mt-2 text-sm text-destructive">{inviteText.copyCodeManual}</p>}
-            <Button type="button" variant="outline" className="mt-3" onClick={copiarCodigo}>
-              {inviteText.copyCode}
-            </Button>
-          </div>
+          </>
         )}
 
         <div className="mt-4 flex gap-2">
-          <Button type="button" onClick={copiar}>
-            {inviteText.copyLink}
+          <Button type="button" onClick={copiarCodigo}>
+            {inviteText.copyCode}
           </Button>
           <Button type="button" variant="outline" onClick={onClose}>
             {inviteText.close}

@@ -106,9 +106,10 @@ export interface WorkspaceItem {
 
 // workspace-invitations — superfície de convite e equipe.
 //
-// `preview` é a ÚNICA chamada pública (o token chega antes do login), por isso
-// vai por `getPublic`: sem `Authorization`, e um 404 dela não é "sessão
-// expirada". As demais são de domínio e levam `X-Workspace-Id` pelo interceptor.
+// code-only-invites: `previewByCode` é a ÚNICA chamada pública (o par código+
+// e-mail chega antes do login), por isso vai por `postPublic`: sem
+// `Authorization`, e um 404 dela não é "sessão expirada". As demais são de
+// domínio e levam `X-Workspace-Id` pelo interceptor.
 export interface InvitationDTO {
   id: string
   email: string
@@ -116,9 +117,9 @@ export interface InvitationDTO {
   status: 'pending' | 'expired' | 'used'
   expires_at: string
   created_at: string
-  invite_url: string
-  // invite-by-code: `short_code` (XXXX-XXXX) só vem no POST de criação — uma vez.
-  // A listagem traz `code_status`/`code_expires_at`, nunca o claro nem o hash.
+  // code-only-invites: o convite é só por CÓDIGO (sem link/`invite_url`).
+  // `short_code` (XXXX-XXXX) só vem no POST de criação — uma vez. A listagem traz
+  // `code_status`/`code_expires_at`, nunca o claro nem o hash.
   short_code?: string | null
   code_status?: 'active' | 'expired' | 'locked' | 'used' | null
   code_expires_at?: string | null
@@ -150,18 +151,7 @@ export const invitationsApi = {
 
   revoke: (id: string) => apiClient.delete(`/api/v1/invitations/${id}`),
 
-  preview: (token: string) =>
-    apiClient.getPublic<InvitationPreviewDTO>(`/api/v1/invitations/${encodeURIComponent(token)}`),
-
-  // O aceite NÃO leva corpo: o papel vem do convite, e mandar `role` é 422
-  // `unexpected_parameter` no servidor — de propósito, para a tentativa ficar
-  // registrada em vez de ser ignorada.
-  accept: (token: string) =>
-    apiClient.post<{ workspace_id: string; role: 'view' | 'edit' }>(
-      `/api/v1/invitations/${encodeURIComponent(token)}/accept`,
-    ),
-
-  // invite-by-code: preview por CÓDIGO é público (pré-login) e exige o PAR
+  // code-only-invites: preview por CÓDIGO é público (pré-login) e exige o PAR
   // código+e-mail no CORPO (POST, não GET: e-mail nunca em query string). Sem o
   // par certo, o servidor responde genérico — a UI não distingue "não existe" de
   // "e-mail errado".
@@ -169,7 +159,7 @@ export const invitationsApi = {
     apiClient.postPublic<InvitationPreviewDTO>('/api/v1/invitations/code/preview', data),
 
   // Aceite por código: autenticado, corpo `{ code, email }` (sem `role` — mandar
-  // `role` é 422 `unexpected_parameter`, como no aceite por token).
+  // `role` é 422 `unexpected_parameter`).
   acceptByCode: (data: { code: string; email: string }) =>
     apiClient.post<{ workspace_id: string; role: 'view' | 'edit' }>(
       '/api/v1/invitations/code/accept',

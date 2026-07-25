@@ -30,11 +30,4 @@ describe('inviteStore código', () => {
     sessionStorage.setItem('robotrack.invite_code', '{ nao é json')
     expect(inviteStore.readCode()).toBeNull()
   })
-
-  it('não confunde o par com o token (chaves distintas)', () => {
-    inviteStore.capture('rt_inv_TOKEN')
-    inviteStore.captureCode({ code: '4K7P9QMX', email: 'joao@fabrica.com' })
-    expect(inviteStore.read()).toBe('rt_inv_TOKEN')
-    expect(inviteStore.readCode()?.code).toBe('4K7P9QMX')
-  })
 })

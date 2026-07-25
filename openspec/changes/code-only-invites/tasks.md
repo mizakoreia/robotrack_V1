@@ -32,16 +32,21 @@
 
 ## G2. Frontend — remover toda a superfície de LINK
 
-- [ ] G2.1 `InviteDialog.tsx`: remover a região do link (input `invite_url`, `copiar()`,
-  "Copiar link"); manter a região do código + "Copiar código"
-- [ ] G2.2 `TeamPanel.tsx`/`LinhaConvite`: remover o input `invite_url` da lista de pendentes
-- [ ] G2.3 Remover a rota `/convite/:token` (`App.tsx`) e o componente `InviteRoute.tsx`; se
-  algum redirect apontava para lá, repontar para a entrada por código
-- [ ] G2.4 `session.ts`/`invite.ts`: remover `consumeInvite` (token), o ramo de token de
-  `handleInviteAfterAuth` e a chave `INVITE_KEY`; DTO deixa de ter `invite_url`
-- [ ] G2.5 **Verificação:** `vitest` dos diálogos/AuthPage/AppShell verde (o caminho de
-  código intacto); `tsc --noEmit` e `lint` limpos; testes que exercitavam link removidos/
-  reescritos
+- [x] G2.1 `InviteDialog.tsx`: removida a região do link (input `invite_url`, `copiar()`,
+  "Copiar link"); success view **code-first** (código + "Copiar código")
+- [x] G2.2 `TeamPanel.tsx`/`LinhaConvite`: removido o input `invite_url` da lista de pendentes
+- [x] G2.3 Removida a rota `/convite/:token` (`App.tsx`) e o componente `InviteRoute.tsx`
+  (+ seu teste); o fluxo por código já cobre a entrada
+- [x] G2.4 `session.ts`/`invite.ts`: removidos `consumeInvite`+`emailMascaradoDoConvite`
+  (token), o ramo de token de `handleInviteAfterAuth`, e a chave `INVITE_KEY`
+  (capture/read/clear); `endpoints.ts` DTO sem `invite_url` e sem os métodos `preview`/
+  `accept` por token; i18n: `inviteSubmit`/`lostToken`/`revokeConfirm`/`inviteCodeHint`
+  reescritos para código, chaves de link mortas removidas
+- [x] G2.5 **Verificação:** `tsc --noEmit` e `lint` limpos; `vitest` do domínio de convite
+  **74/74** (team + auth + session + api); suíte inteira 575/576 (a única falha é o teste
+  flaky pré-existente de fila offline `queue.test.ts` D7-12, que passa isolado — alheio a
+  esta change). Reescritos: `session.test`, `inviteCode.test`, `TeamPanel.test`,
+  `invitations.i18n.test` (lista de telas sem o `InviteRoute` removido)
 
 ## G3. E2E e documentação
 

@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 //
 // As falhas a caçar: um membro `edit` ver botões de mutação (a UI é conveniência,
 // mas oferecer um botão que só devolve 403 é mentira); um convite expirado ser
-// listado como pendente ativo; e — a pior — a cópia do link falhar em silêncio
+// listado como pendente ativo; e — a pior — a cópia do CÓDIGO falhar em silêncio
 // quando a Clipboard API é negada, deixando um convite que existe no banco e que
 // ninguém nunca recebe (o produto NÃO envia e-mail).
 
@@ -40,8 +40,8 @@ const MEMBROS = [
 ]
 
 const CONVITES = [
-  { id: 'i-9', email: 'novo@fabrica.com', role: 'view', status: 'pending', expires_at: '2026-07-28T10:00:00Z', created_at: '2026-07-21T10:00:00Z', invite_url: 'http://localhost:5173/convite/rt_inv_ABC' },
-  { id: 'i-8', email: 'velho@fabrica.com', role: 'edit', status: 'expired', expires_at: '2026-07-01T10:00:00Z', created_at: '2026-06-24T10:00:00Z', invite_url: 'http://localhost:5173/convite/rt_inv_XYZ' },
+  { id: 'i-9', email: 'novo@fabrica.com', role: 'view', status: 'pending', expires_at: '2026-07-28T10:00:00Z', created_at: '2026-07-21T10:00:00Z', short_code: '4K7P-9QMX', code_status: 'active' },
+  { id: 'i-8', email: 'velho@fabrica.com', role: 'edit', status: 'expired', expires_at: '2026-07-01T10:00:00Z', created_at: '2026-06-24T10:00:00Z', code_status: 'expired' },
 ]
 
 function renderPanel() {
@@ -174,12 +174,15 @@ describe('TeamPanel', () => {
     await waitFor(() => expect(revokeInvite).toHaveBeenCalledWith('i-9'))
   })
 
-  it('a lista de pendentes permite recopiar o link de cada convite', async () => {
+  it('a lista de pendentes mostra o status do código, sem link', async () => {
     comoPapel('owner')
     renderPanel()
 
-    const campo = (await screen.findByLabelText('Link do convite: novo@fabrica.com')) as HTMLInputElement
-    expect(campo.value).toBe('http://localhost:5173/convite/rt_inv_ABC')
+    // code-only-invites: a lista não expõe mais link nem código em claro.
+    expect(await screen.findByText('novo@fabrica.com')).toBeInTheDocument()
+    expect(screen.queryByLabelText(/Link do convite/)).not.toBeInTheDocument()
+    // O convite expirado mostra o rótulo de estado do código.
+    expect(screen.getByText(/Código expirado/i)).toBeInTheDocument()
   })
 })
 
@@ -198,56 +201,56 @@ describe('InviteDialog (dentro do painel)', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Convidar pessoa' }))
   }
 
-  it('cria o convite e mostra o link absoluto', async () => {
+  it('cria o convite e mostra o código', async () => {
     createInvite.mockResolvedValue(CONVITES[0])
     await abrirDialogo()
 
     fireEvent.change(screen.getByLabelText('E-mail'), { target: { value: 'novo@fabrica.com' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Gerar link de convite' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Gerar código de convite' }))
 
     await waitFor(() => expect(createInvite).toHaveBeenCalledWith({ email: 'novo@fabrica.com', role: 'view' }))
-    const campo = (await screen.findByLabelText('Link do convite')) as HTMLInputElement
-    expect(campo.value).toBe('http://localhost:5173/convite/rt_inv_ABC')
+    const campo = (await screen.findByLabelText('Código do convite')) as HTMLInputElement
+    expect(campo.value).toBe('4K7P-9QMX')
   })
 
   it('e-mail inválido nem chega à rede', async () => {
     await abrirDialogo()
 
     fireEvent.change(screen.getByLabelText('E-mail'), { target: { value: 'sem-arroba' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Gerar link de convite' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Gerar código de convite' }))
 
     expect(createInvite).not.toHaveBeenCalled()
     expect(await screen.findByRole('alert')).toHaveTextContent(/e-mail válido/i)
   })
 
-  it('copia o link e confirma visualmente', async () => {
+  it('copia o código e confirma visualmente', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined)
     Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
     createInvite.mockResolvedValue(CONVITES[0])
     await abrirDialogo()
 
     fireEvent.change(screen.getByLabelText('E-mail'), { target: { value: 'novo@fabrica.com' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Gerar link de convite' }))
-    fireEvent.click(await screen.findByRole('button', { name: 'Copiar link' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Gerar código de convite' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Copiar código' }))
 
-    await waitFor(() => expect(writeText).toHaveBeenCalledWith('http://localhost:5173/convite/rt_inv_ABC'))
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith('4K7P-9QMX'))
     expect(toastMock.success).toHaveBeenCalledWith(expect.stringMatching(/copiado/i))
   })
 
-  it('Clipboard negada NÃO falha em silêncio: mostra o link para copiar à mão', async () => {
+  it('Clipboard negada NÃO falha em silêncio: mostra o código para copiar à mão', async () => {
     const writeText = vi.fn().mockRejectedValue(new Error('NotAllowedError'))
     Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
     createInvite.mockResolvedValue(CONVITES[0])
     await abrirDialogo()
 
     fireEvent.change(screen.getByLabelText('E-mail'), { target: { value: 'novo@fabrica.com' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Gerar link de convite' }))
-    fireEvent.click(await screen.findByRole('button', { name: 'Copiar link' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Gerar código de convite' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Copiar código' }))
 
     await waitFor(() => expect(toastMock.warning).toHaveBeenCalledWith(expect.stringMatching(/manualmente/i)))
-    const campo = (await screen.findByLabelText('Link do convite')) as HTMLInputElement
-    expect(campo.value).toContain('rt_inv_ABC')
-    expect(screen.getByText(/Selecione o link e copie manualmente/)).toBeInTheDocument()
+    const campo = (await screen.findByLabelText('Código do convite')) as HTMLInputElement
+    expect(campo.value).toContain('4K7P')
+    expect(screen.getByText(/Selecione o código e copie manualmente/)).toBeInTheDocument()
   })
 
   it('segundo convite pendente para o mesmo e-mail (409) explica o que fazer', async () => {
@@ -255,7 +258,7 @@ describe('InviteDialog (dentro do painel)', () => {
     await abrirDialogo()
 
     fireEvent.change(screen.getByLabelText('E-mail'), { target: { value: 'novo@fabrica.com' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Gerar link de convite' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Gerar código de convite' }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/Revogue o anterior/)
   })

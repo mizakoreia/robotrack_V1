@@ -73,6 +73,20 @@ O que FICA (código-só reusa, não tocar): seção "Tenho um código" da `AuthP
   ESTRUTURAL inalcançável por HTTP. O erro e sua tradução ficam (custo zero); os "seis
   cenários" viraram cinco, todos com código distinto.
 
+## G2 — resultado (frontend, VERDE)
+
+- **Produção:** `InviteDialog` (success view code-first, sem link/`copiar()`);
+  `TeamPanel/LinhaConvite` (sem input `invite_url`); `App.tsx` sem a rota `/convite/:token`;
+  `InviteRoute.tsx` + seu teste **removidos**; `session.ts` sem `consumeInvite`/
+  `emailMascaradoDoConvite` e sem o ramo de token em `handleInviteAfterAuth`; `invite.ts`
+  sem `INVITE_KEY`/capture/read/clear (só o par código); `endpoints.ts` DTO sem `invite_url`,
+  sem `preview(token)`/`accept(token)`; i18n reescrito (link → código) e chaves de link
+  mortas removidas.
+- **Gates:** `tsc`/`lint` limpos; `vitest` de convite **74/74**; suíte inteira 575/576.
+- **Flaky pré-existente (NÃO é regressão):** `src/lib/offline/__tests__/queue.test.ts`
+  "a 501ª é REJEITADA (D7-12)" falha só sob paralelismo da suíte cheia e **passa isolado**
+  (8/8). É `offline-pwa` (IndexedDB/timing), domínio intocado por esta change.
+
 ## Armadilhas previstas
 
 - **Ordem de rota:** o `namespace :code` foi declarado ANTES de `:token` de propósito

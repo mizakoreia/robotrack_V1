@@ -65,8 +65,8 @@ describe('mensagens de convite vivem num módulo único (6.4)', () => {
   })
 
   it('as telas de convite importam do módulo em vez de escrever texto', () => {
+    // code-only-invites: InviteRoute (rota pública por token) foi removida.
     const telas = [
-      resolve(SRC, 'features/auth/InviteRoute.tsx'),
       resolve(SRC, 'features/team/TeamPanel.tsx'),
       resolve(SRC, 'features/team/InviteDialog.tsx'),
       resolve(SRC, 'lib/auth/session.ts'),

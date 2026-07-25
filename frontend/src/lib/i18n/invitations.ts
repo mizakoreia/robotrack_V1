@@ -31,7 +31,7 @@ export const inviteText = {
   personConflict: 'O e-mail do convite já está vinculado a outra conta neste workspace. Fale com o administrador.',
   offline: 'Conecte-se para aceitar o convite.',
   genericFailure: 'Não foi possível aceitar o convite agora.',
-  lostToken: 'Não conseguimos recuperar seu convite neste navegador. Você já está conectado — reabra o link do convite.',
+  lostToken: 'Não conseguimos recuperar seu convite neste navegador. Você já está conectado — peça o código de convite de novo.',
 
   // Painel de equipe
   teamTitle: 'Equipe',
@@ -48,7 +48,7 @@ export const inviteText = {
   removeMember: 'Remover',
   removeConfirm: (name: string) => `Remover ${name} deste workspace? As tarefas atribuídas a essa pessoa são mantidas.`,
   revokeInvite: 'Revogar',
-  revokeConfirm: (email: string) => `Revogar o convite de ${email}? O link deixa de funcionar imediatamente.`,
+  revokeConfirm: (email: string) => `Revogar o convite de ${email}? O código deixa de funcionar imediatamente.`,
   loadFailure: 'Não foi possível carregar a equipe.',
   mutateFailure: 'Não foi possível concluir a alteração.',
   readOnlyNotice: 'Só o dono do workspace pode convidar, alterar papéis ou remover membros.',
@@ -57,20 +57,15 @@ export const inviteText = {
   inviteTitle: 'Convidar pessoa',
   inviteEmailLabel: 'E-mail',
   inviteRoleLabel: 'Papel',
-  inviteSubmit: 'Gerar link de convite',
-  inviteLinkReady: 'Link do convite',
-  inviteLinkHint: 'O RoboTrack não envia e-mail: copie o link e mande para a pessoa.',
-  copyLink: 'Copiar link',
-  copied: 'Link copiado.',
-  copyManual: 'Não foi possível copiar automaticamente. Selecione o link e copie manualmente.',
+  inviteSubmit: 'Gerar código de convite',
   inviteInvalidEmail: 'Informe um e-mail válido.',
   invitePending: 'Já existe um convite pendente para este e-mail. Revogue o anterior para criar outro.',
   inviteForbidden: 'Só o dono do workspace pode convidar.',
   close: 'Fechar',
 
-  // invite-by-code — código no diálogo de criação (ao lado do link)
+  // code-only-invites — o código é o único caminho no diálogo de criação
   inviteCodeReady: 'Código do convite',
-  inviteCodeHint: 'Quem está no computador pode digitar este código na tela de entrada. Ele expira antes do link — em 48 horas.',
+  inviteCodeHint: 'Quem está no computador pode digitar este código na tela de entrada. Ele expira em 48 horas.',
   copyCode: 'Copiar código',
   codeCopied: 'Código copiado.',
   copyCodeManual: 'Não foi possível copiar automaticamente. Selecione o código e copie manualmente.',

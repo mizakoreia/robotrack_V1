@@ -199,13 +199,12 @@ function LinhaMembro({
 
 function LinhaConvite({ invitation, onRevoke }: { invitation: InvitationDTO; onRevoke: () => void }) {
   // Um convite expirado que ainda não foi expurgado NÃO é apresentado como
-  // pendente ativo: o dono precisa saber que aquele link já não funciona.
+  // pendente ativo: o dono precisa saber que aquele convite já não funciona.
   const expirado = invitation.status === 'expired'
 
-  // invite-by-code: o estado do CÓDIGO é distinto do estado do convite (o código
-  // expira/trava antes do link). Só é mostrado quando o convite tem código e ele
-  // não está simplesmente 'ativo' — o dono precisa saber quando o código já morreu
-  // (mas o link ainda vale).
+  // code-only-invites: o estado do CÓDIGO é distinto do estado do convite. Só é
+  // mostrado quando o convite tem código e ele não está simplesmente 'ativo' — o
+  // dono precisa saber quando o código já expirou ou travou.
   const rotuloCodigo =
     invitation.code_status === 'expired'
       ? inviteText.codeStatusExpired
@@ -224,13 +223,6 @@ function LinhaConvite({ invitation, onRevoke }: { invitation: InvitationDTO; onR
       </div>
 
       <div className="flex items-center gap-2">
-        <input
-          aria-label={`${inviteText.inviteLinkReady}: ${invitation.email}`}
-          readOnly
-          value={invitation.invite_url}
-          onFocus={(e) => e.currentTarget.select()}
-          className="hidden w-64 rounded-md border bg-background px-2 py-1 text-xs md:block"
-        />
         <Button variant="outline" size="sm" onClick={onRevoke}>
           {inviteText.revokeInvite}
         </Button>

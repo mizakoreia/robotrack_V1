@@ -10,7 +10,6 @@ import { initAmbient } from '@/lib/ambient'
 const HomePage = lazy(() => import('@/app/pages/HomePage').then((m) => ({ default: m.HomePage })))
 import { AuthPage } from '@/features/auth/AuthPage'
 import { OAuthCallbackPage } from '@/features/auth/OAuthCallbackPage'
-import { InviteRoute } from '@/features/auth/InviteRoute'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { AppShell } from '@/app/AppShell'
 import { OverviewPage } from '@/app/pages/OverviewPage'
@@ -49,7 +48,6 @@ function App() {
           <Route path="/build" element={<BuildPage />} />
 
           <Route path="/auth/callback" element={<OAuthCallbackPage />} />
-          <Route path="/convite/:token" element={<InviteRoute />} />
 
           {/* app-shell-navigation 4.1 (§3.10) — a casca PERSISTENTE envolve toda a
               área autenticada: navegar entre destinos não remonta sidebar/topbar. */}
