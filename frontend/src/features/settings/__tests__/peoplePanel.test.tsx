@@ -60,8 +60,10 @@ describe('PeoplePanel (2.3/2.4)', () => {
     vi.spyOn(peopleApi, 'list').mockResolvedValue([person({ id: 'a', name: 'Ana', has_account: true })])
     vi.spyOn(peopleApi, 'archive').mockRejectedValue({ response: { status: 409, data: { error: 'person_has_membership' } } })
     render(<PeoplePanel canWrite />, { wrapper: wrap() })
-    await screen.findByText('Ana')
-    fireEvent.click(screen.getByLabelText('Remover Ana'))
+    // impeccable-remediation G4 — chip via primitivo `Chip`; o rótulo de quem tem
+    // conta é "Ana · membro" (por isso regex, não match exato).
+    await screen.findByText(/Ana/)
+    fireEvent.click(screen.getByLabelText(/Remover Ana/))
     expect(await screen.findByText(/é membro do workspace/)).toBeInTheDocument()
   })
 

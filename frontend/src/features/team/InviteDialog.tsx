@@ -75,7 +75,7 @@ export function InviteDialog({
     return (
       <div aria-label={inviteText.inviteTitle} className="rounded-lg border p-4">
         <h3 className="font-medium">{inviteText.inviteCodeReady}</h3>
-        <p className="mt-1 text-sm text-muted-foreground">{inviteText.inviteCodeHint}</p>
+        <p className="mt-1 text-sm text-text-muted">{inviteText.inviteCodeHint}</p>
 
         {/* code-only-invites: o CÓDIGO é o único caminho. Fonte mono/tabular para
             não dançar de largura; o dono copia e passa para o convidado. */}
@@ -89,7 +89,7 @@ export function InviteDialog({
               onFocus={(e) => e.currentTarget.select()}
               className="mt-3 w-full rounded-md border bg-background px-3 py-2 text-center font-mono text-lg tracking-[0.3em] tabular-nums"
             />
-            {copiaCodigoManual && <p className="mt-2 text-sm text-destructive">{inviteText.copyCodeManual}</p>}
+            {copiaCodigoManual && <p className="mt-2 text-sm text-danger-ink">{inviteText.copyCodeManual}</p>}
           </>
         )}
 
@@ -140,7 +140,7 @@ export function InviteDialog({
       </select>
 
       {erro && (
-        <p role="alert" aria-live="polite" className="mt-2 text-sm text-destructive">
+        <p role="alert" aria-live="polite" className="mt-2 text-sm text-danger-ink">
           {erro}
         </p>
       )}

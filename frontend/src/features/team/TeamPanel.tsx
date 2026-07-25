@@ -10,7 +10,13 @@ import {
 import { useWorkspaceStore } from '../../store/workspaceStore'
 import { inviteText } from '../../lib/i18n/invitations'
 import { Button } from '../../components/ui/Button'
+import { Modal } from '../../components/ui/Modal'
 import { InviteDialog } from './InviteDialog'
+
+// impeccable-remediation G4 — confirmação de exclusão pelo primitivo `Modal`, não
+// `window.confirm()` (diálogo do SO, não-temático, era o 4º padrão de confirmação
+// diferente no app). Um só estado descreve o que confirmar.
+type ConfirmState = { title: string; message: string; confirmLabel: string; onConfirm: () => void }
 
 // team-access-management §"Painel de equipe" (tarefa 4.5 / D9, D-INV-10).
 //
@@ -38,6 +44,7 @@ export function TeamPanel() {
   const [dialogAberto, setDialogAberto] = useState(
     () => new URLSearchParams(typeof window === 'undefined' ? '' : window.location.search).get('convidar') === '1',
   )
+  const [confirmar, setConfirmar] = useState<ConfirmState | null>(null)
 
   const members = useQuery({
     queryKey: ['ws', wsId, 'members'],
@@ -76,13 +83,13 @@ export function TeamPanel() {
   return (
     <section aria-label={inviteText.teamTitle} className="space-y-8">
       <header className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">{inviteText.teamTitle}</h2>
+        <h2 className="panel-header">{inviteText.teamTitle}</h2>
         {isOwner && !dialogAberto && (
           <Button onClick={() => setDialogAberto(true)}>{inviteText.inviteTitle}</Button>
         )}
       </header>
 
-      {!isOwner && <p className="text-sm text-muted-foreground">{inviteText.readOnlyNotice}</p>}
+      {!isOwner && <p className="text-sm text-text-muted">{inviteText.readOnlyNotice}</p>}
 
       {dialogAberto && (
         <InviteDialog
@@ -99,7 +106,7 @@ export function TeamPanel() {
         <h3 id="equipe-membros" className="font-medium">
           {inviteText.membersTitle}
         </h3>
-        {members.isError && <p className="mt-2 text-sm text-destructive">{inviteText.loadFailure}</p>}
+        {members.isError && <p className="mt-2 text-sm text-danger-ink">{inviteText.loadFailure}</p>}
         <ul className="mt-2 divide-y rounded-lg border">
           {(members.data ?? []).map((member) => (
             <LinhaMembro
@@ -107,11 +114,14 @@ export function TeamPanel() {
               member={member}
               isOwner={isOwner}
               onChangeRole={(role) => mudarPapel.mutate({ id: member.id, role })}
-              onRemove={() => {
-                if (window.confirm(inviteText.removeConfirm(member.name ?? member.email ?? ''))) {
-                  remover.mutate(member.id)
-                }
-              }}
+              onRemove={() =>
+                setConfirmar({
+                  title: inviteText.confirmRemoveTitle,
+                  message: inviteText.removeConfirm(member.name ?? member.email ?? ''),
+                  confirmLabel: inviteText.removeMember,
+                  onConfirm: () => remover.mutate(member.id),
+                })
+              }
             />
           ))}
         </ul>
@@ -123,22 +133,51 @@ export function TeamPanel() {
             {inviteText.invitationsTitle}
           </h3>
           {(invitations.data ?? []).length === 0 && !invitations.isLoading && (
-            <p className="mt-2 text-sm text-muted-foreground">{inviteText.invitationsEmpty}</p>
+            <p className="mt-2 text-sm text-text-muted">{inviteText.invitationsEmpty}</p>
           )}
           <ul className="mt-2 divide-y rounded-lg border">
             {(invitations.data ?? []).map((invitation) => (
               <LinhaConvite
                 key={invitation.id}
                 invitation={invitation}
-                onRevoke={() => {
-                  if (window.confirm(inviteText.revokeConfirm(invitation.email))) {
-                    revogar.mutate(invitation.id)
-                  }
-                }}
+                onRevoke={() =>
+                  setConfirmar({
+                    title: inviteText.confirmRevokeTitle,
+                    message: inviteText.revokeConfirm(invitation.email),
+                    confirmLabel: inviteText.revokeInvite,
+                    onConfirm: () => revogar.mutate(invitation.id),
+                  })
+                }
               />
             ))}
           </ul>
         </div>
+      )}
+
+      {confirmar && (
+        <Modal
+          open
+          onClose={() => setConfirmar(null)}
+          title={confirmar.title}
+          footer={
+            <>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  confirmar.onConfirm()
+                  setConfirmar(null)
+                }}
+              >
+                {confirmar.confirmLabel}
+              </Button>
+              <Button variant="outline" onClick={() => setConfirmar(null)}>
+                {inviteText.cancel}
+              </Button>
+            </>
+          }
+        >
+          <p className="text-sm text-text-muted">{confirmar.message}</p>
+        </Modal>
       )}
     </section>
   )
@@ -169,7 +208,7 @@ function LinhaMembro({
     <li className="flex items-center justify-between gap-4 px-4 py-3">
       <div>
         <p className="text-sm font-medium">{member.name}</p>
-        <p className="text-xs text-muted-foreground">{member.email}</p>
+        <p className="text-xs text-text-muted">{member.email}</p>
       </div>
 
       <div className="flex items-center gap-2">
@@ -178,13 +217,13 @@ function LinhaMembro({
             aria-label={`${inviteText.changeRole}: ${member.name ?? ''}`}
             value={member.role}
             onChange={(e) => onChangeRole(e.target.value as 'view' | 'edit')}
-            className="rounded-md border bg-background px-2 py-1 text-sm"
+            className="min-h-[2rem] rounded-md border bg-bg-main px-2 text-sm text-text-main"
           >
             <option value="view">{inviteText.roleView}</option>
             <option value="edit">{inviteText.roleEdit}</option>
           </select>
         ) : (
-          <span className="text-sm text-muted-foreground">{rotuloPapel(member.role)}</span>
+          <span className="text-sm text-text-muted">{rotuloPapel(member.role)}</span>
         )}
 
         {mutavel && (
@@ -216,7 +255,7 @@ function LinhaConvite({ invitation, onRevoke }: { invitation: InvitationDTO; onR
     <li className="flex items-center justify-between gap-4 px-4 py-3">
       <div>
         <p className="text-sm font-medium">{invitation.email}</p>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs text-text-muted">
           {rotuloPapel(invitation.role)} · {expirado ? inviteText.statusExpired : inviteText.statusPending}
           {rotuloCodigo && <> · {rotuloCodigo}</>}
         </p>

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, cleanup, within } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 // workspace-invitations 4.5/4.6 — painel de equipe e diálogo de convite.
@@ -153,7 +153,10 @@ describe('TeamPanel', () => {
     await waitFor(() => expect(updateRole).toHaveBeenCalledWith('m-2', 'edit'))
   })
 
-  it('remover pede confirmação explícita antes de chamar a API', async () => {
+  // impeccable-remediation G4 — a confirmação de exclusão agora é o primitivo
+  // `Modal` (não `window.confirm()`): clicar "Remover"/"Revogar" ABRE o diálogo; a
+  // API só é chamada ao confirmar dentro dele.
+  it('remover pede confirmação no Modal antes de chamar a API', async () => {
     comoPapel('owner')
     removeMember.mockResolvedValue(undefined)
     renderPanel()
@@ -161,11 +164,14 @@ describe('TeamPanel', () => {
     await screen.findByText('Edu Edit')
     fireEvent.click(screen.getAllByRole('button', { name: 'Remover' })[0])
 
-    expect(window.confirm).toHaveBeenCalledWith(expect.stringMatching(/Remover Edu Edit/))
+    const dialog = await screen.findByRole('dialog', { name: 'Remover membro' })
+    expect(within(dialog).getByText(/Remover Edu Edit/)).toBeInTheDocument()
+    expect(removeMember).not.toHaveBeenCalled()
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Remover' }))
     await waitFor(() => expect(removeMember).toHaveBeenCalledWith('m-1'))
   })
 
-  it('revogar convite pede confirmação e chama a API', async () => {
+  it('revogar convite pede confirmação no Modal e chama a API', async () => {
     comoPapel('owner')
     revokeInvite.mockResolvedValue(undefined)
     renderPanel()
@@ -173,7 +179,9 @@ describe('TeamPanel', () => {
     await screen.findByText('novo@fabrica.com')
     fireEvent.click(screen.getAllByRole('button', { name: 'Revogar' })[0])
 
-    expect(window.confirm).toHaveBeenCalledWith(expect.stringMatching(/novo@fabrica\.com/))
+    const dialog = await screen.findByRole('dialog', { name: 'Revogar convite' })
+    expect(within(dialog).getByText(/novo@fabrica\.com/)).toBeInTheDocument()
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Revogar' }))
     await waitFor(() => expect(revokeInvite).toHaveBeenCalledWith('i-9'))
   })
 

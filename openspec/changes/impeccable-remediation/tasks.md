@@ -37,11 +37,11 @@ handoff é anotado como handoff.
 
 ## G4. Consistência Equipe/Convites (Nielsen 4) — AGUARDA OK DO DONO
 
-- [ ] 4.1 `features/team/TeamPanel.tsx` + `InviteDialog.tsx`: portar tokens/tipografia (`text-muted-foreground`/`text-destructive`/`text-xl`→`text-text-muted`/`text-danger-ink`/`.panel-header`).
-- [ ] 4.2 `features/team/TeamPanel.tsx`: remover `window.confirm()` de remover membro/revogar → `Modal`.
-- [ ] 4.3 Desambiguar as duas telas "Equipe" (`PeoplePanel`→"Responsáveis" + link cruzado); `PeoplePanel` remover-pessoa via primitivo `Chip` (≥32px, não chip à mão de ~18px).
-- [ ] 4.4 Padronizar posição da ação primária entre níveis (Overview vs. Projeto/Célula).
-- [ ] 4.5 **Verificação:** testes; screenshots; `convention-sweep` regra G verde.
+- [x] 4.1 `features/team/TeamPanel.tsx` + `InviteDialog.tsx`: portar tokens/tipografia (`text-muted-foreground`/`text-destructive`/`text-xl`→`text-text-muted`/`text-danger-ink`/`.panel-header`).
+- [x] 4.2 `features/team/TeamPanel.tsx`: remover `window.confirm()` de remover membro/revogar → `Modal`.
+- [x] 4.3 Desambiguar as duas telas "Equipe" (`PeoplePanel`→"Responsáveis" + link cruzado); `PeoplePanel` remover-pessoa via primitivo `Chip` (≥32px, não chip à mão de ~18px).
+- [x] 4.4 Padronizar posição da ação primária entre níveis (Overview vs. Projeto/Célula).
+- [x] 4.5 **Verificação:** testes; screenshots; `convention-sweep` regra G verde.
 
 ## G5. Distill dos bans vivos (anti-slop) — AGUARDA OK DO DONO
 

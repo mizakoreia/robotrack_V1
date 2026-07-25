@@ -3,8 +3,9 @@
 export const settingsText = {
   title: 'Configurações',
   // Painel de Equipe (§3.9)
-  teamTitle: 'Equipe',
-  teamSubtitle: 'Responsáveis do workspace. Remover arquiva a pessoa e preserva o histórico.',
+  teamTitle: 'Responsáveis',
+  teamSubtitle: 'Pessoas a quem se atribui tarefa. Remover arquiva a pessoa e preserva o histórico.',
+  teamManageLink: 'Membros e convites →',
   teamEmpty: 'Nenhuma pessoa cadastrada ainda.',
   teamAddPlaceholder: 'Nome da pessoa',
   teamAdd: 'Adicionar',

@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Icon } from '@/components/icons/Icon'
 import { Button } from '@/components/ui/Button'
+import { Chip } from '@/components/ui/Chip'
 import { usePeople, useAddPerson, useArchivePerson, isMembershipConflict, isNameTaken, type PersonDTO } from './usePeople'
 import { settingsText as T } from '@/lib/i18n/settings'
 
@@ -44,6 +44,12 @@ export function PeoplePanel({ canWrite }: { canWrite: boolean }) {
       <div>
         <h2 id="team-panel-title" className="panel-header">{T.teamTitle}</h2>
         <p className="label-sm text-text-muted">{T.teamSubtitle}</p>
+        {/* impeccable-remediation G4 — desambigua as duas telas antes homônimas
+            "Equipe": esta é "Responsáveis" (a quem se atribui tarefa); os membros e
+            papéis do workspace ficam em /configuracoes/equipe. Link cruzado. */}
+        <a href="/configuracoes/equipe" className="label-sm inline-flex min-h-[2rem] items-center text-accent-ink hover:underline">
+          {T.teamManageLink}
+        </a>
       </div>
 
       {isLoading ? (
@@ -55,19 +61,13 @@ export function PeoplePanel({ canWrite }: { canWrite: boolean }) {
       ) : (
         <ul className="flex flex-wrap gap-2">
           {people.map((person) => (
-            <li key={person.id} className="flex items-center gap-1.5 rounded-pill border bg-bg-sunken px-3 py-1 text-sm">
-              <span className="text-text-main">{person.name}</span>
-              {person.has_account && <span className="label-sm text-text-muted">· {T.teamMember}</span>}
-              {canWrite && (
-                <button
-                  type="button"
-                  onClick={() => remove(person)}
-                  aria-label={T.teamRemoveAria(person.name)}
-                  className="ml-0.5 rounded-full p-0.5 text-text-muted hover:text-danger-ink"
-                >
-                  <Icon name="close" className="h-3.5 w-3.5" />
-                </button>
-              )}
+            // impeccable-remediation G4 — primitivo `Chip` (remover = 32×32px) no
+            // lugar do chip à mão cujo "x" media ~18px (metade do piso de luva).
+            <li key={person.id}>
+              <Chip
+                label={person.has_account ? `${person.name} · ${T.teamMember}` : person.name}
+                onRemove={canWrite ? () => remove(person) : undefined}
+              />
             </li>
           ))}
         </ul>

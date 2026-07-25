@@ -44,9 +44,20 @@ export function OverviewPage() {
 
   return (
     <section aria-labelledby="ov-title" className="mx-auto max-w-6xl space-y-6">
-      <h1 id="ov-title" className="title">
-        Visão Geral
-      </h1>
+      {/* impeccable-remediation G4 — ação primária INLINE com o título, como nas
+          telas de Projeto/Célula (antes ficava numa linha própria abaixo da busca —
+          posição inconsistente entre níveis). Só aparece com projetos carregados. */}
+      <div className="flex items-center justify-between gap-4">
+        <h1 id="ov-title" className="title">
+          Visão Geral
+        </h1>
+        {canCreate && !isSearching && !isLoading && data && data.projects.length > 0 && (
+          <Button onClick={() => setCreating(true)}>
+            <Icon name="plus" size="sm" className="mr-1" />
+            {hierarchyText.overview.empty.cta}
+          </Button>
+        )}
+      </div>
 
       <HierarchySearchField value={query} onChange={setQuery} onSubmit={flush} onClear={clear} />
 
@@ -60,14 +71,6 @@ export function OverviewPage() {
         <OverviewEmpty canCreate={canCreate} onCreate={() => setCreating(true)} />
       ) : (
         <>
-          <div className="flex items-center justify-end">
-            {canCreate && (
-              <Button onClick={() => setCreating(true)}>
-                <Icon name="plus" size="sm" className="mr-1" />
-                {hierarchyText.overview.empty.cta}
-              </Button>
-            )}
-          </div>
           <OverviewHub counts={data.counts} raw={data.raw_completion} />
           {/* legenda única da grade (D-B): o anel não repete rótulo por card */}
           <p className="label-sm text-text-muted">Anéis: progresso ponderado por peso de tarefa</p>
