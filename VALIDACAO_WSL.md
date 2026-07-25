@@ -401,6 +401,33 @@ reprovar por CÓDIGO (não setup), me mande a saída — corrijo na branch local
 
 ---
 
+## 6c. `join-workspace-by-code` — E2E do fluxo IN-APP por código (HANDOFF)
+
+Change nova (27ª), **LOCAL na branch `feat/invite-by-code`** (mesma branch da 26ª;
+instrução do dono: acumular antes de subir). É a entrada por código para quem já está
+LOGADO — o convidado NÃO passa por `/entrar`.
+
+Novo spec `frontend/e2e/tests/join-by-code.spec.ts` (dono cria convite → copia o
+**código** do diálogo → convidado, já autenticado, abre o menu da conta → "Entrar em
+outro workspace com código" → digita SÓ o código no diálogo → vira membro e troca de
+workspace). Já **aprovado no `e2e:lint`** (5 specs); falta a execução em navegador.
+
+**Por que HANDOFF aqui e não rodado na sessão:** a execução exige um banco `robotrack_e2e`
+dedicado + um servidor E2E próprio; o dono estava testando no celular com os servidores
+dev (dev DB) na mesma branch, e a instrução foi NÃO derrubá-los. Roda com o MESMO setup
+do §6b e a MESMA semente `[convite]`:
+
+```bash
+cd frontend && npm run build && npx vite preview --port 4173 &
+cd ../backend && bundle exec rails 'rt:seed:e2e[convite]'
+cd ../frontend && E2E_BASE_URL=http://localhost:4173 npx playwright test join-by-code
+```
+
+Esperado: verde em Chromium (WebKit/CI seguem o mesmo handoff dos demais E2E). Se
+reprovar por CÓDIGO (não setup), me mande a saída — corrijo na branch local.
+
+---
+
 ## Como me passar os resultados
 
 Rode os blocos e me mande a saída (especialmente 3 e 4). Eu interpreto, e se algo

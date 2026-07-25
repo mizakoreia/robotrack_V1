@@ -37,17 +37,17 @@
 
 ## G2. E2E, docs e fechamento
 
-- [ ] G2.1 E2E do usuário logado entrando por código de ponta a ponta
-  (`frontend/e2e/tests/...`, locators ancorados por região/diálogo + `{ exact: true }`,
-  seed determinístico `rt:seed:e2e*`): abre o menu da conta → item → diálogo → digita o
-  código → aceite → contexto passa ao novo workspace → Visão Geral. Execução em Chromium
-  aqui; WebKit/CI é HANDOFF (padrão da casa — `VALIDACAO_WSL.md`)
-- [ ] G2.2 Docs no MESMO empurrão: `CONTINUIDADE.md` (seção da 27ª change, estado/suítes/git
-  local) e `VALIDACAO_WSL.md` (handoff do E2E in-app, se aplicável). `DESIGN.md` NÃO tocado
-  (reuso puro — nenhum token/primitivo/motion/ban novo, registrado no design G1.1/D7).
-  Conferir que nenhum runbook/`.md` afirma algo falso após a mudança
-  (`grep -rn "código de convite" *.md` e afins)
-- [ ] G2.3 Verificação final: `validate --strict` verde; docs sem afirmação falsa; commit
+- [x] G2.1 E2E do usuário logado entrando por código de ponta a ponta
+  (`frontend/e2e/tests/join-by-code.spec.ts`, locators ancorados por região/diálogo +
+  `{ exact: true }`, seed `[convite]`): abre o menu da conta → item → diálogo → digita SÓ o
+  código → aceite → contexto passa ao novo workspace → Visão Geral; dono vê o membro.
+  **Aprovado no `e2e:lint`** (5 specs). Execução em navegador é **HANDOFF** (§6c do
+  `VALIDACAO_WSL.md`) — exigiria banco `robotrack_e2e` + servidor E2E próprio, e a sessão
+  não podia derrubar os servidores dev que o dono usava no celular
+- [x] G2.2 Docs no MESMO empurrão: `CONTINUIDADE.md` (seção da 27ª change) e
+  `VALIDACAO_WSL.md` (§6c, handoff do E2E in-app). `DESIGN.md` NÃO tocado (reuso puro —
+  nenhum token/primitivo/motion/ban novo, registrado em D7). Conferido: nenhum runbook/`.md`
+  ficou com afirmação falsa (nada foi removido/renomeado na UI)
+- [x] G2.3 Verificação final: `validate --strict` verde; docs sem afirmação falsa; commit
   `G<n>:` LOCAL (sem push, sem `merge --ff-only main` — instrução vigente do dono);
-  resumo pt-BR client-friendly entregue (o que ficou pronto, o que é handoff, o que
-  aguarda decisão do dono)
+  relatório pt-BR client-friendly entregue

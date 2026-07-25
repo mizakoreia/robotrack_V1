@@ -71,6 +71,41 @@ O que foi entregue (tudo local):
   `e2e:lint`**; a execução em Chromium é **HANDOFF** (este container não tem
   Playwright/Docker — ver `VALIDACAO_WSL.md`), como todo E2E da casa.
 
+## Change NOVA: `join-workspace-by-code` (27ª change — LOCAL, aguardando push)
+
+Entrada por **código** para quem JÁ está autenticado. Antes, o campo de código só
+existia na tela de entrada (`/entrar`) — um membro existente (ex.: o dono do demo) só
+chegava a ele deslogando. Agora há uma porta DENTRO do app. É sobretudo **frontend/UX +
+navegação**: reusa o aceite por código do `invite-by-code` sem tocar no backend.
+
+> **Git — mesma restrição da 26ª.** Vive na branch LOCAL **`feat/invite-by-code`**
+> (commits `G0..G2` locais), **sem push e sem `merge --ff-only main`**. Nada em `origin`
+> mudou. A change é aditiva (só `openspec/` + frontend).
+
+O que foi entregue (tudo local):
+- **G0** planejamento OpenSpec (`openspec/changes/join-workspace-by-code/`): proposal,
+  design (D1..D7 + Q1..Q3), specs delta (`ADDED`), tasks (G0..G2), EXECUCAO. `validate
+  --strict` verde.
+- **G1** frontend: `features/auth/JoinByCodeDialog.tsx` (diálogo sobre `ui/Modal`, e-mail
+  da sessão fixo/somente-leitura + **um só campo**, o código; no sucesso troca de
+  workspace via `consumeInviteByCode` e vai para a Visão Geral); item **"Entrar em outro
+  workspace com código"** no menu da conta em `AppShell.tsx` (sempre acessível, inclusive
+  com 1 workspace — o seletor de workspace só existe com >1); abertura por `?codigo=1`
+  (`useSearchParams`, espelha `?convidar=1`); literais `joinByCode*` em `invitations.ts`;
+  `consumeInviteByCode` passou a retornar `boolean` (DE-G1.1, backward-compatible).
+- **Segurança:** nenhuma rota nova de backend, nenhuma migration, varreduras inalteradas;
+  invariante "e-mail idêntico ao autenticado" (§4.1 inv. 6) **preservada** — um usuário
+  logado só aceita convites para o próprio e-mail (correto; ver Q1 no design). Item
+  secundário no seletor de workspace (Q2) **deferido** (DE-G1.2). Tela de login **fora de
+  escopo** (Q3).
+- **Suítes:** `vitest` dirigido **35/35** (diálogo 6 + AppShell 11 + AuthPageCode 5 +
+  session 13), sweeps convenção/contraste/i18n **66+3**, `tsc`/`lint` limpos.
+- **E2E:** `frontend/e2e/tests/join-by-code.spec.ts` escrito e **aprovado no `e2e:lint`**;
+  execução é **HANDOFF** (§6c do `VALIDACAO_WSL.md`) — exigiria banco `robotrack_e2e` +
+  servidor E2E próprio, e a sessão não podia derrubar os servidores dev que o dono usava.
+- **`DESIGN.md` NÃO tocado:** reuso puro de tokens/primitivos (Modal + campos com tokens
+  já medidos) — nenhum token/primitivo/motion/ban novo.
+
 ## Campanha de deploy (par com o agente da WSL — 24/07/2026)
 
 Depois de fechar o domínio, o **primeiro deploy real** virou uma sessão de par: o

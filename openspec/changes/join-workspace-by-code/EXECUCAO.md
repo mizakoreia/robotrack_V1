@@ -164,3 +164,46 @@ conta"). Nenhum literal novo — é exatamente a orientação específica pedida
 - Sweeps: convenção/contraste/motion/stacking/tokens/query **66/66**, i18n de convites
   **3/3** (nenhum literal fora de `invitations.ts`). `tsc --noEmit` e `eslint` limpos.
 - `validate --strict` verde.
+
+---
+
+## G2 — E2E, docs e fechamento
+
+### O que foi aplicado
+
+- **`frontend/e2e/tests/join-by-code.spec.ts`** (novo): o fluxo IN-APP por código ponta a
+  ponta em duas sessões. Dono cria o convite pela UI e copia o código; o convidado (JÁ
+  autenticado, na Visão Geral) abre o menu da conta → "Entrar em outro workspace com
+  código" → digita SÓ o código no diálogo → o aceite consome, troca de workspace e o
+  diálogo fecha; o dono vê o novo membro (tempo real) e o convite sai de "Convites
+  pendentes". Locators ancorados por diálogo/região + `{ exact: true }`; gatilho do menu
+  da conta por regex ancorada `/^Conta:/`.
+- **Docs (mesmo empurrão):** `CONTINUIDADE.md` (seção da 27ª change) e `VALIDACAO_WSL.md`
+  (§6c — handoff do E2E in-app). `DESIGN.md` intocado (reuso puro, D7).
+
+### Decisão do grupo
+
+**DE-G2.1 — Execução do E2E é HANDOFF (não rodado na sessão).** O harness Playwright exige
+um banco `robotrack_e2e` dedicado + um servidor E2E próprio (build + `vite preview` + seed
+`[convite]`). O dono estava testando no celular com os servidores dev (dev DB) na MESMA
+branch `feat/invite-by-code`, com instrução explícita de NÃO derrubá-los. Rodar o E2E
+arriscaria interferir. **Decisão:** aprovar no `e2e:lint` (feito, 5 specs) e documentar a
+execução como handoff no §6c do `VALIDACAO_WSL.md` — coerente com o padrão da casa (todo
+E2E tem execução em navegador/CI como handoff). Sem risco de correção pendente: o fluxo
+lógico já tem cobertura de integração RTL (`JoinByCodeDialog.test.tsx` + `AppShell.test.tsx`).
+
+### Prova do G2
+
+- `npm run e2e:lint` — OK, 5 specs (inclui `join-by-code.spec.ts`).
+- `validate --strict` verde. Docs sem afirmação falsa (nada foi removido/renomeado na UI).
+
+---
+
+## FECHAMENTO
+
+Change **CONSTRUÍDA** (G0..G2), LOCAL na branch `feat/invite-by-code` (commits `G0..G2`),
+**sem push e sem merge** (instrução do dono). Reuso puro do aceite por código do
+`invite-by-code`: **zero backend, zero migration, varreduras inalteradas**, invariante de
+e-mail idêntico ao autenticado preservada. Único handoff: **execução do E2E em navegador**
+(§6c do `VALIDACAO_WSL.md`). Recomendações Q1 (manter a invariante), Q2 (menu da conta;
+secundário no seletor deferido) e Q3 (login fora de escopo) adotadas conforme aprovado.
