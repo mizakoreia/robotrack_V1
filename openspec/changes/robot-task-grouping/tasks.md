@@ -4,10 +4,10 @@ Um grupo por vez, prova verde. Marcador de segurança: `git tag pre-task-groupin
 
 ## G1. Categorias colapsáveis (frontend, sem backend)
 
-- [ ] 1.1 `RobotTaskTablePage.tsx`: substituir o run-length por grupos reais — `groupBy(cat)`, ordem por menor `position`, tarefas por `position`. (corrige o título repetido)
-- [ ] 1.2 Cabeçalho de grupo colapsável nos dois layouts: `<button aria-expanded aria-controls>` + região, prefixo `A./B./C.` (índice), nome, contagem; recolher REMOVE do DOM as tarefas do grupo; chevron.
-- [ ] 1.3 Estado por robô em `lib/safeStorage` (chave `rt.taskgroups.<robotId>`, guarda só as recolhidas; default tudo aberto; categoria nova nasce aberta).
-- [ ] 1.4 **Verificação:** Vitest — dois grupos p/ `A,B,A`; recolher tira do DOM; prefixo+contagem; estado lembrado. `tsc`/`lint`. Screenshots desktop+mobile.
+- [x] 1.1 `RobotTaskTablePage.tsx`: substituir o run-length por grupos reais — `groupBy(cat)`, ordem por menor `position`, tarefas por `position`. (corrige o título repetido)
+- [x] 1.2 Cabeçalho de grupo colapsável nos dois layouts: `<button aria-expanded aria-controls>` + região, prefixo `A./B./C.` (índice), nome, contagem; recolher REMOVE do DOM as tarefas do grupo; chevron.
+- [x] 1.3 Estado por robô em `lib/safeStorage` (chave `rt.taskgroups.<robotId>`, guarda só as recolhidas; default tudo aberto; categoria nova nasce aberta).
+- [x] 1.4 **Verificação:** Vitest — dois grupos p/ `A,B,A`; recolher tira do DOM; prefixo+contagem; estado lembrado. `tsc`/`lint`. Screenshots desktop+mobile.
 
 ## G2. Exclusão em lote (backend)
 

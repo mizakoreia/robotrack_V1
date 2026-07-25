@@ -1,4 +1,4 @@
-import { useEffect, useState, memo, Fragment } from 'react'
+import { useEffect, useState, memo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Icon } from '@/components/icons/Icon'
@@ -13,6 +13,7 @@ import { TrilhaCell } from '@/features/robot-tasks/TrilhaCell'
 import { AcoesCell } from '@/features/robot-tasks/AcoesCell'
 import { AddTaskModal } from '@/features/robot-tasks/AddTaskModal'
 import { useSyncTemplates } from '@/features/robot-tasks/useTaskCrud'
+import { groupByCategory, groupLetter, useCollapsedCategories } from '@/features/robot-tasks/taskGroups'
 import { useSuccessPulse } from '@/features/robot-tasks/useSuccessPulse'
 import { useMediaQuery } from '@/lib/useMediaQuery'
 import { AdvanceControls } from '@/features/advances/AdvanceControls'
@@ -136,29 +137,47 @@ export function RobotTaskTablePage() {
   )
 }
 
-// A tabela agrupada por categoria (§3.5). Dois layouts que consomem as MESMAS
-// células (§6.1, D-RTT-8): tabela em `md+`, cartões abaixo de `md` — os cabeçalhos
-// de categoria viram separadores de seção em ambos. O documento nunca rola na
-// horizontal no celular (o `<table>` fica `hidden`, não espremido).
+// robot-task-grouping G1 (D-TG-1/2/3/5) — a tabela em GRUPOS COLAPSÁVEIS por
+// categoria. Dois layouts que consomem as MESMAS células (§6.1, D-RTT-8): tabela em
+// `md+`, cartões abaixo de `md`. Cada categoria é um cabeçalho `<button aria-expanded>`
+// com prefixo A./B./C. (visual) + nome + contagem; recolher REMOVE do DOM as tarefas
+// do grupo (nunca `display:none`). Estado lembrado por robô (D-TG-4).
 function TaskTable({ robotId, tasks, canEdit, isOwner }: { robotId: string; tasks: TaskDTO[]; canEdit: boolean; isOwner: boolean }) {
   // §6.1 (D-RTT-8) — UM layout por vez (não os dois escondidos por CSS): evita
   // montar duas árvores e mantém o DOM limpo (importa p/ §7.1 e leitores de tela).
   const isDesktop = useMediaQuery('(min-width: 768px)')
+  const { collapsed, toggle } = useCollapsedCategories(robotId)
+  const groups = groupByCategory(tasks)
   // 4.4 (D-RTT-9) — a coluna Ações SAI do DOM para `view`; o colSpan acompanha.
   const cols = canEdit ? 6 : 5
-  let lastCat: string | null = null
 
   if (!isDesktop) {
     return (
       <div className="space-y-3">
-        {tasks.map((t) => {
-          const newGroup = t.cat !== lastCat
-          lastCat = t.cat
+        {groups.map((g, i) => {
+          const isCollapsed = collapsed.has(g.cat)
+          const rid = `taskgroup-${i}`
           return (
-            <Fragment key={t.id}>
-              {newGroup && <h2 className="panel-header px-1 pt-2 text-text-muted">{t.cat}</h2>}
-              <MobileTaskCard robotId={robotId} task={t} canEdit={canEdit} isOwner={isOwner} />
-            </Fragment>
+            <section key={g.cat} aria-labelledby={`${rid}-h`}>
+              <h2 id={`${rid}-h`}>
+                <CategoryToggle
+                  letter={groupLetter(i)}
+                  cat={g.cat}
+                  count={g.tasks.length}
+                  collapsed={isCollapsed}
+                  regionId={rid}
+                  onToggle={() => toggle(g.cat)}
+                  className="w-full px-1 py-2"
+                />
+              </h2>
+              {!isCollapsed && (
+                <div id={rid} className="space-y-3">
+                  {g.tasks.map((t) => (
+                    <MobileTaskCard key={t.id} robotId={robotId} task={t} canEdit={canEdit} isOwner={isOwner} />
+                  ))}
+                </div>
+              )}
+            </section>
           )
         })}
       </div>
@@ -178,26 +197,76 @@ function TaskTable({ robotId, tasks, canEdit, isOwner }: { robotId: string; task
             {canEdit && <th className="px-4 py-2 font-medium">Ações</th>}
           </tr>
         </thead>
-        <tbody>
-          {tasks.map((t) => {
-            const newGroup = t.cat !== lastCat
-            lastCat = t.cat
-            return (
-              <Fragment key={t.id}>
-                {newGroup && (
-                  <tr>
-                    <td colSpan={cols} className="panel-header bg-accent/5 px-4 py-2 text-text-muted">
-                      {t.cat}
-                    </td>
-                  </tr>
-                )}
-                <TaskRow robotId={robotId} task={t} canEdit={canEdit} isOwner={isOwner} />
-              </Fragment>
-            )
-          })}
-        </tbody>
+        {groups.map((g, i) => {
+          const isCollapsed = collapsed.has(g.cat)
+          const rid = `taskgroup-${i}`
+          return (
+            <tbody key={g.cat} id={rid}>
+              <tr>
+                <td colSpan={cols} className="bg-accent/5 px-2 py-1">
+                  <CategoryToggle
+                    letter={groupLetter(i)}
+                    cat={g.cat}
+                    count={g.tasks.length}
+                    collapsed={isCollapsed}
+                    regionId={rid}
+                    onToggle={() => toggle(g.cat)}
+                    className="px-2 py-1"
+                  />
+                </td>
+              </tr>
+              {!isCollapsed &&
+                g.tasks.map((t) => (
+                  <TaskRow key={t.id} robotId={robotId} task={t} canEdit={canEdit} isOwner={isOwner} />
+                ))}
+            </tbody>
+          )
+        })}
       </table>
     </div>
+  )
+}
+
+// robot-task-grouping G1 — o cabeçalho colapsável de uma categoria (compartilhado
+// pelos dois layouts). Chevron gira; `prefers-reduced-motion` já zera a transição no
+// CSS global. A contagem é length do grupo (não um % de categoria — D-TG-3).
+function CategoryToggle({
+  letter,
+  cat,
+  count,
+  collapsed,
+  regionId,
+  onToggle,
+  className = '',
+}: {
+  letter: string
+  cat: string
+  count: number
+  collapsed: boolean
+  regionId: string
+  onToggle: () => void
+  className?: string
+}) {
+  return (
+    <button
+      type="button"
+      aria-expanded={!collapsed}
+      aria-controls={regionId}
+      onClick={onToggle}
+      className={
+        'panel-header flex min-h-[2rem] w-full items-center gap-2 rounded-md text-left text-text-muted transition-colors hover:text-text-main ' +
+        className
+      }
+    >
+      <Icon
+        name="chevron-down"
+        size="sm"
+        className={'shrink-0 transition-transform ' + (collapsed ? '-rotate-90' : '')}
+      />
+      <span className="tabular text-text-main">{letter}.</span>
+      <span className="min-w-0 truncate">{cat}</span>
+      <span className="label-sm tabular shrink-0 text-text-muted">({count})</span>
+    </button>
   )
 }
 

@@ -1,0 +1,67 @@
+import { useCallback, useState } from 'react'
+import { safeStorage } from '@/lib/safeStorage'
+import type { TaskDTO } from '@/lib/api/endpoints'
+
+// robot-task-grouping G1 (D-TG-1/2/4) — agrupamento por categoria e o estado de
+// recolhimento. `cat` é texto livre; o servidor entrega por `position`. Agrupamos por
+// PRIMEIRA APARIÇÃO (menor position, já que a lista vem ordenada): categorias não
+// contíguas viram UM grupo só (corrige o título repetido do run-length antigo).
+
+export interface TaskGroup {
+  cat: string
+  tasks: TaskDTO[]
+}
+
+export function groupByCategory(tasks: TaskDTO[]): TaskGroup[] {
+  const order: string[] = []
+  const map = new Map<string, TaskDTO[]>()
+  for (const t of tasks) {
+    let bucket = map.get(t.cat)
+    if (!bucket) {
+      bucket = []
+      map.set(t.cat, bucket)
+      order.push(t.cat)
+    }
+    bucket.push(t)
+  }
+  return order.map((cat) => ({ cat, tasks: map.get(cat) as TaskDTO[] }))
+}
+
+// D-TG-2 — prefixo visual A./B./C. pelo índice do grupo na tela. Acima de 26 (irreal
+// aqui) cai para número, para nunca gerar um rótulo vazio.
+export function groupLetter(index: number): string {
+  return index < 26 ? String.fromCharCode(65 + index) : String(index + 1)
+}
+
+// D-TG-4 — estado por ROBÔ em safeStorage. Guardamos só as categorias RECOLHIDAS
+// (conjunto): ausência = aberta, então o default "tudo aberto" não escreve nada e uma
+// categoria nova nasce aberta. Degrada em memória quando o storage é bloqueado.
+export function useCollapsedCategories(robotId: string) {
+  const key = `rt.taskgroups.${robotId}`
+
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => {
+    const raw = safeStorage.get('local', key)
+    if (!raw) return new Set()
+    try {
+      const arr = JSON.parse(raw)
+      return Array.isArray(arr) ? new Set(arr as string[]) : new Set()
+    } catch {
+      return new Set()
+    }
+  })
+
+  const toggle = useCallback(
+    (cat: string) => {
+      setCollapsed((prev) => {
+        const next = new Set(prev)
+        if (next.has(cat)) next.delete(cat)
+        else next.add(cat)
+        safeStorage.set('local', key, JSON.stringify([...next]))
+        return next
+      })
+    },
+    [key],
+  )
+
+  return { collapsed, toggle }
+}
