@@ -67,6 +67,19 @@
   **257/0/7pend**. Cross-tenant inalterado (não-membro → 404 no `member?`, antes do papel);
   reset de fábrica intacto (já `destroy_workspace`).
 
+## G2 — resultado (UI, VERDE)
+
+- **Hooks:** `useDeleteRobot(cellId, projectId)` novo (invalida robots+cellOverview+
+  projectOverview+overview); `useDeleteProject` ganhou `qk.overview` (era órfão, agora fiado).
+- **Cards:** `OverviewPage/ProjectCard` (lixeira owner-only → `DeleteProjectDialog`);
+  `CellPage`/robô (lixeira owner-only → `DeleteRobotDialog`); `ProjectPage`/célula (renomear
+  `canEdit`, excluir `isOwner`). Diálogos avisam que a subárvore é arquivada (i18n
+  `hierarchy.{overview,project,cell}.remove`).
+- **Tarefa:** `AcoesCell` ganhou `canDelete`; `RobotTaskTablePage` passa `canDelete={isOwner}`
+  por `TaskTable`→`TaskRow`/`MobileTaskCard`. Lápis segue `canEdit`; a exclusão já confirmava.
+- **Gate:** `tsc`/`lint` limpos; `vitest` hierarquia+robot-tasks **77/77** (owner vê 4 excluir;
+  edit vê editar mas não excluir; view nada); suíte 578/579 (flaky offline alheio).
+
 ## Armadilhas previstas
 
 - **Matriz literal:** `permission_matrix_spec.rb` reafirma a matriz linha a linha — adicionar

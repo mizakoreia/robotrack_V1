@@ -44,6 +44,8 @@ export function RobotTaskTablePage() {
   const reset = useRobotTaskFilter((s) => s.reset)
   const role = useWorkspaceStore((s) => s.currentRoleLabel)
   const canEdit = role === 'owner' || role === 'edit'
+  // owner-only-card-delete: excluir tarefa é só do dono; editar segue owner+edit.
+  const isOwner = role === 'owner'
   const [adding, setAdding] = useState(false)
   const sync = useSyncTemplates(robotId ?? '_')
 
@@ -126,7 +128,7 @@ export function RobotTaskTablePage() {
       {tasks.length === 0 ? (
         <TableEmpty robotName={robotName} />
       ) : (
-        <TaskTable robotId={robotId ?? '_'} tasks={visible} canEdit={canEdit} />
+        <TaskTable robotId={robotId ?? '_'} tasks={visible} canEdit={canEdit} isOwner={isOwner} />
       )}
 
       {canEdit && robotId && <AddTaskModal robotId={robotId} open={adding} onClose={() => setAdding(false)} />}
@@ -138,7 +140,7 @@ export function RobotTaskTablePage() {
 // células (§6.1, D-RTT-8): tabela em `md+`, cartões abaixo de `md` — os cabeçalhos
 // de categoria viram separadores de seção em ambos. O documento nunca rola na
 // horizontal no celular (o `<table>` fica `hidden`, não espremido).
-function TaskTable({ robotId, tasks, canEdit }: { robotId: string; tasks: TaskDTO[]; canEdit: boolean }) {
+function TaskTable({ robotId, tasks, canEdit, isOwner }: { robotId: string; tasks: TaskDTO[]; canEdit: boolean; isOwner: boolean }) {
   // §6.1 (D-RTT-8) — UM layout por vez (não os dois escondidos por CSS): evita
   // montar duas árvores e mantém o DOM limpo (importa p/ §7.1 e leitores de tela).
   const isDesktop = useMediaQuery('(min-width: 768px)')
@@ -155,7 +157,7 @@ function TaskTable({ robotId, tasks, canEdit }: { robotId: string; tasks: TaskDT
           return (
             <Fragment key={t.id}>
               {newGroup && <h2 className="panel-header px-1 pt-2 text-text-muted">{t.cat}</h2>}
-              <MobileTaskCard robotId={robotId} task={t} canEdit={canEdit} />
+              <MobileTaskCard robotId={robotId} task={t} canEdit={canEdit} isOwner={isOwner} />
             </Fragment>
           )
         })}
@@ -189,7 +191,7 @@ function TaskTable({ robotId, tasks, canEdit }: { robotId: string; tasks: TaskDT
                     </td>
                   </tr>
                 )}
-                <TaskRow robotId={robotId} task={t} canEdit={canEdit} />
+                <TaskRow robotId={robotId} task={t} canEdit={canEdit} isOwner={isOwner} />
               </Fragment>
             )
           })}
@@ -206,7 +208,7 @@ function TaskTable({ robotId, tasks, canEdit }: { robotId: string; tasks: TaskDT
 // §7.1 (render única por mutação) — `memo`: como o React Query faz `structuralSharing`
 // por padrão, uma tarefa NÃO alterada mantém a MESMA referência entre refetches;
 // então confirmar um avanço numa linha não re-renderiza as linhas vizinhas.
-const TaskRow = memo(function TaskRow({ robotId, task, canEdit }: { robotId: string; task: TaskDTO; canEdit: boolean }) {
+const TaskRow = memo(function TaskRow({ robotId, task, canEdit, isOwner }: { robotId: string; task: TaskDTO; canEdit: boolean; isOwner: boolean }) {
   const { pulsing, clear } = useSuccessPulse(task.progress)
   return (
     <tr
@@ -229,7 +231,7 @@ const TaskRow = memo(function TaskRow({ robotId, task, canEdit }: { robotId: str
       </td>
       {canEdit && (
         <td className="px-4 py-3 align-middle">
-          <AcoesCell robotId={robotId} task={task} />
+          <AcoesCell robotId={robotId} task={task} canDelete={isOwner} />
         </td>
       )}
     </tr>
@@ -239,7 +241,7 @@ const TaskRow = memo(function TaskRow({ robotId, task, canEdit }: { robotId: str
 // O cartão mobile (§6.1, D-RTT-8) — as SEIS informações preservadas em linhas
 // rotuladas, sem scroll lateral. Reusa as mesmas células da tabela. `memo` pela
 // mesma razão da linha (§7.1 — render única por mutação).
-const MobileTaskCard = memo(function MobileTaskCard({ robotId, task, canEdit }: { robotId: string; task: TaskDTO; canEdit: boolean }) {
+const MobileTaskCard = memo(function MobileTaskCard({ robotId, task, canEdit, isOwner }: { robotId: string; task: TaskDTO; canEdit: boolean; isOwner: boolean }) {
   const { pulsing, clear } = useSuccessPulse(task.progress)
   return (
     <article
@@ -248,7 +250,7 @@ const MobileTaskCard = memo(function MobileTaskCard({ robotId, task, canEdit }: 
     >
       <div className="mb-3 flex items-start justify-between gap-2">
         <h3 className="font-medium">{task.desc}</h3>
-        {canEdit && <AcoesCell robotId={robotId} task={task} />}
+        {canEdit && <AcoesCell robotId={robotId} task={task} canDelete={isOwner} />}
       </div>
       <dl className="space-y-2">
         <CardRow label="Status">

@@ -146,6 +146,9 @@ export function useDeleteProject() {
 
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: key })
+      // owner-only-card-delete: a Visão Geral lê o overview agregado, não a lista
+      // crua de projetos — invalida a chave da tela também.
+      if (wsId) void queryClient.invalidateQueries({ queryKey: qk.overview(wsId) })
     },
   })
 }
@@ -213,6 +216,27 @@ export function useCreateRobot(cellId: string) {
     }) => hierarchyApi.createRobot({ id: id ?? newId(), name, cell_id: cellId, application }),
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: hierarchyKeys.robots(wsId, cellId) })
+    },
+  })
+}
+
+// owner-only-card-delete — excluir robô (soft-delete no servidor, 204). Espelha o
+// padrão de invalidação das outras exclusões: a grade da Célula lê o cellOverview;
+// os anéis agregados do Projeto e da Visão Geral leem os overviews de nível acima.
+// Invalida só as chaves específicas (nunca o tenant inteiro — regra de convenção).
+export function useDeleteRobot(cellId: string, projectId?: string | null) {
+  const wsId = useWorkspaceStore((s) => s.currentWorkspaceId)
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: string) => hierarchyApi.deleteRobot(id),
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: hierarchyKeys.robots(wsId, cellId) })
+      if (wsId) {
+        void queryClient.invalidateQueries({ queryKey: qk.cellOverview(wsId, cellId) })
+        void queryClient.invalidateQueries({ queryKey: qk.overview(wsId) })
+        if (projectId) void queryClient.invalidateQueries({ queryKey: qk.projectOverview(wsId, projectId) })
+      }
     },
   })
 }

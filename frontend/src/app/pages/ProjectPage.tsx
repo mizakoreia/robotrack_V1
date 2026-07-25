@@ -25,6 +25,8 @@ export function ProjectPage() {
   const { data, isLoading, isError, refetch } = useProjectOverview(projectId)
   const role = useWorkspaceStore((s) => s.currentRoleLabel)
   const canEdit = role === 'owner' || role === 'edit'
+  // owner-only-card-delete: renomear é owner+edit; EXCLUIR é só do dono.
+  const isOwner = role === 'owner'
 
   const [creating, setCreating] = useState(false)
   const [renaming, setRenaming] = useState<OverviewCellCard | null>(null)
@@ -83,10 +85,14 @@ export function ProjectPage() {
                 footer={
                   <div className="flex w-full items-center justify-between">
                     <span className="label-sm text-text-muted">{t.cellFooter}</span>
-                    {canEdit && (
+                    {(canEdit || isOwner) && (
                       <div className="flex items-center gap-1">
-                        <IconButton icon="edit" label={`Renomear ${cell.name}`} size="sm" onClick={() => setRenaming(cell)} />
-                        <IconButton icon="trash" label={`Excluir ${cell.name}`} size="sm" onClick={() => setRemoving(cell)} />
+                        {canEdit && (
+                          <IconButton icon="edit" label={`Renomear ${cell.name}`} size="sm" onClick={() => setRenaming(cell)} />
+                        )}
+                        {isOwner && (
+                          <IconButton icon="trash" label={`Excluir ${cell.name}`} size="sm" onClick={() => setRemoving(cell)} />
+                        )}
                       </div>
                     )}
                   </div>

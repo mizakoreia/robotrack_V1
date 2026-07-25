@@ -65,6 +65,35 @@ describe('OverviewPage — as duas métricas (D15)', () => {
   })
 })
 
+// owner-only-card-delete: excluir projeto é só do dono.
+describe('OverviewPage — excluir projeto é owner-only', () => {
+  function setRole(role: 'owner' | 'edit' | 'view') {
+    useWorkspaceStore.setState({
+      workspaces: [{ id: 'betim', name: 'Betim', role }],
+      currentWorkspaceId: 'betim',
+      currentRoleLabel: role,
+    })
+  }
+
+  it('o dono vê o controle de excluir no card do projeto', async () => {
+    setRole('owner')
+    vi.spyOn(overviewApi, 'workspace').mockResolvedValue(DIVERGENT)
+    renderPage()
+    expect(await screen.findByText('Linha 300')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Excluir Linha 300' })).toBeInTheDocument()
+  })
+
+  it('um membro edit NÃO vê o controle de excluir (negação)', async () => {
+    setRole('edit')
+    vi.spyOn(overviewApi, 'workspace').mockResolvedValue(DIVERGENT)
+    renderPage()
+    expect(await screen.findByText('Linha 300')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Excluir Linha 300' })).toBeNull()
+    // mas ainda vê criar (owner+edit).
+    expect(screen.getByRole('button', { name: /Novo Projeto/i })).toBeInTheDocument()
+  })
+})
+
 describe('OverviewPage — estados', () => {
   const EMPTY: WorkspaceOverviewDTO = {
     counts: { active_projects: 0, analyzed_robots: 0 },

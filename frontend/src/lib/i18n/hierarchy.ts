@@ -24,6 +24,12 @@ export const hierarchyText = {
       body: 'Não foi possível carregar a Visão Geral.',
       retry: 'Tentar novamente',
     },
+    // owner-only-card-delete: excluir projeto arquiva toda a subárvore.
+    remove: {
+      title: 'Excluir projeto',
+      body: (name: string) =>
+        `Excluir o projeto "${name}"? Suas células, robôs e tarefas também são arquivados. Esta ação não pode ser desfeita.`,
+    },
   },
   project: {
     back: 'Voltar à Visão Geral',
@@ -37,7 +43,11 @@ export const hierarchyText = {
       cta: 'Nova célula',
     },
     rename: { title: 'Renomear célula' },
-    remove: { title: 'Excluir célula', body: (name: string) => `Excluir a célula "${name}"? Esta ação não pode ser desfeita.` },
+    remove: {
+      title: 'Excluir célula',
+      body: (name: string) =>
+        `Excluir a célula "${name}"? Seus robôs e tarefas também são arquivados. Esta ação não pode ser desfeita.`,
+    },
   },
   cell: {
     back: 'Voltar ao projeto',
@@ -49,6 +59,12 @@ export const hierarchyText = {
       body: 'Adicione robôs a esta célula para materializar as tarefas de comissionamento.',
       bodyView: 'Esta célula ainda não tem robôs.',
       cta: 'Adicionar robôs',
+    },
+    // owner-only-card-delete: excluir robô arquiva suas tarefas.
+    remove: {
+      title: 'Excluir robô',
+      body: (name: string) =>
+        `Excluir o robô "${name}"? Suas tarefas também são arquivadas. Esta ação não pode ser desfeita.`,
     },
   },
   // §3.3 / §3.4 — rótulo de progresso físico dos níveis internos.

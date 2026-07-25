@@ -8,12 +8,13 @@ import { robotTaskText } from '@/lib/i18n/robotTasks'
 import type { TaskDTO } from '@/lib/api/endpoints'
 
 // robot-task-table 4.3 (§3.5, §4.1) — a coluna Ações: editar a descrição e excluir
-// a tarefa. SÓ renderiza para owner/edit — para `view` a coluna inteira sai do DOM
-// (4.4), e o servidor é a garantia (403 nas policies de robot-tasks). A exclusão
-// exige confirmação; ambas invalidam o trio (a linha some e o % do cabeçalho
-// recalcula na mesma render, via useTaskCrud).
+// a tarefa. A coluna renderiza para owner/edit — para `view` sai do DOM (4.4).
+// owner-only-card-delete: o EXCLUIR (lixeira) é só do dono (`canDelete`), enquanto
+// o EDITAR segue em owner+edit. O servidor é a garantia (403 no `DELETE /tasks/:id`
+// para `edit`). A exclusão exige confirmação; ambas invalidam o trio (a linha some
+// e o % do cabeçalho recalcula na mesma render, via useTaskCrud).
 
-export function AcoesCell({ robotId, task }: { robotId: string; task: TaskDTO }) {
+export function AcoesCell({ robotId, task, canDelete }: { robotId: string; task: TaskDTO; canDelete: boolean }) {
   const [editing, setEditing] = useState(false)
   const [confirming, setConfirming] = useState(false)
   const [desc, setDesc] = useState(task.desc)
@@ -44,16 +45,18 @@ export function AcoesCell({ robotId, task }: { robotId: string; task: TaskDTO })
       >
         <Icon name="edit" size="sm" />
       </Button>
-      <Button
-        type="button"
-        size="sm"
-        variant="ghost"
-        className="min-h-[40px] min-w-[40px]"
-        aria-label={robotTaskText.deleteAria(task.desc)}
-        onClick={() => setConfirming(true)}
-      >
-        <Icon name="trash" size="sm" />
-      </Button>
+      {canDelete && (
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          className="min-h-[40px] min-w-[40px]"
+          aria-label={robotTaskText.deleteAria(task.desc)}
+          onClick={() => setConfirming(true)}
+        >
+          <Icon name="trash" size="sm" />
+        </Button>
+      )}
 
       <Modal
         open={editing}

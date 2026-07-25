@@ -30,21 +30,23 @@
 
 ## G2. UI — excluir owner-only: 3 níveis de hierarquia + tarefa
 
-- [ ] G2.1 `useDeleteRobot` novo em `useHierarchy.ts` (ligar `hierarchyApi.deleteRobot`,
-  invalidar só `robots(wsId, cellId)`, espelhando `useCreateRobot`/`useDeleteCell`)
-- [ ] G2.2 `CellPage`/card de robô: `IconButton` lixeira (owner-only) → `DeleteRobotDialog`
-  (padrão do `DeleteCellDialog`)
-- [ ] G2.3 `OverviewPage`/`ProjectCard`: `IconButton` lixeira (owner-only) → `DeleteProjectDialog`
-  → `useDeleteProject` (hoje órfão); invalidar `qk.overview`/`projects`
-- [ ] G2.4 `ProjectPage`/card de célula: re-gated de `canEdit` para owner-only (o controle já
-  existe); alinhar rótulos e o diálogo (aviso de subárvore arquivada)
-- [ ] G2.5 `AcoesCell` (tarefa): a lixeira vira owner-only via `canDelete={isOwner}`; o lápis
-  (editar descrição) segue em owner+edit; excluir tarefa passa por confirmação
-- [ ] G2.6 Gating dos controles de EXCLUIR de `canEdit` para `isOwner` nas telas de hierarquia
-  e no `AcoesCell`; **não** trocar o gating de criar/editar/reordenar/atribuir
-- [ ] G2.7 **Verificação:** `vitest` — dono vê os 4 excluir, edit vê editar mas não excluir,
-  view não vê nada; confirmar/cancelar; invalidação correta; `tsc`/`lint`; sweep de convenção
-  (sem invalidar tenant inteiro, sem importar `lib/api` em `app/`)
+- [x] G2.1 `useDeleteRobot(cellId, projectId)` novo em `useHierarchy.ts` (liga
+  `hierarchyApi.deleteRobot`, invalida `robots(wsId, cellId)` + `cellOverview` +
+  `projectOverview` + `overview`, nunca o tenant inteiro). `useDeleteProject` ganhou a
+  invalidação de `qk.overview` que faltava (era órfão)
+- [x] G2.2 `CellPage`/card de robô: `IconButton` lixeira (owner-only) → `DeleteRobotDialog`
+- [x] G2.3 `OverviewPage`/`ProjectCard`: `IconButton` lixeira (owner-only) → `DeleteProjectDialog`
+  → `useDeleteProject` (deixou de ser órfão)
+- [x] G2.4 `ProjectPage`/card de célula: renomear fica em `canEdit`, excluir vira `isOwner`;
+  diálogos com aviso de subárvore arquivada (i18n `hierarchy.*.remove`)
+- [x] G2.5 `AcoesCell` (tarefa): lixeira gated por `canDelete={isOwner}`; lápis segue
+  `canEdit`; excluir tarefa já passava por confirmação (mantido)
+- [x] G2.6 Gating de EXCLUIR = `isOwner` nas telas de hierarquia e no `AcoesCell`; criar/
+  editar/reordenar/atribuir inalterados (`canEdit`)
+- [x] G2.7 **Verificação:** `tsc`/`lint` limpos; `vitest` hierarquia+robot-tasks **77/77**
+  (dono vê os 4 excluir; edit vê editar mas NÃO excluir tarefa nem card; view nada; confirmar/
+  remover); suíte 578/579 (a única falha é o flaky pré-existente de fila offline, alheio);
+  sweep de convenção verde (invalidação específica, sem `lib/api` em `app/`)
 
 ## G3. Mobile — swipe-to-reveal excluir no EntityCard
 

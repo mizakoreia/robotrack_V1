@@ -6,9 +6,11 @@ import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { Badge } from '@/components/ui/Badge'
 import { EntityCard } from '@/components/ui/EntityCard'
+import { IconButton } from '@/components/ui/IconButton'
 import { ProgressRing } from '@/components/progress/ProgressRing'
 import { BatchRobotWizard } from '@/features/tasks/BatchRobotWizard'
-import { useCellOverview } from '@/features/hierarchy/useOverview'
+import { useCellOverview, type OverviewRobotCard } from '@/features/hierarchy/useOverview'
+import { useDeleteRobot } from '@/features/hierarchy/useHierarchy'
 import { LevelHub } from '@/features/hierarchy/LevelHub'
 import { BackLink, LevelEmpty, LevelError, LevelSkeleton } from '@/features/hierarchy/LevelChrome'
 import { useWorkspaceStore } from '@/store/workspaceStore'
@@ -27,7 +29,10 @@ export function CellPage() {
   const { data, isLoading, isError, refetch } = useCellOverview(cellId)
   const role = useWorkspaceStore((s) => s.currentRoleLabel)
   const canEdit = role === 'owner' || role === 'edit'
+  // owner-only-card-delete: EXCLUIR é só do dono (o servidor confirma com 403).
+  const isOwner = role === 'owner'
   const [adding, setAdding] = useState(false)
+  const [removing, setRemoving] = useState<OverviewRobotCard | null>(null)
 
   const t = hierarchyText.cell
 
@@ -83,7 +88,14 @@ export function CellPage() {
                 // badge = APLICAÇÃO (não a contagem de tarefas), §3.4
                 badge={<Badge status="accent">{robot.application}</Badge>}
                 ring={<ProgressRing value={robot.weighted_progress.value} metric="weighted" size={56} />}
-                footer={<span className="label-sm text-text-muted">{hierarchyText.tasksFooter(robot.tasks_count)}</span>}
+                footer={
+                  <div className="flex w-full items-center justify-between">
+                    <span className="label-sm text-text-muted">{hierarchyText.tasksFooter(robot.tasks_count)}</span>
+                    {isOwner && (
+                      <IconButton icon="trash" label={`Excluir ${robot.name}`} size="sm" onClick={() => setRemoving(robot)} />
+                    )}
+                  </div>
+                }
               />
             ))}
           </div>
@@ -95,6 +107,39 @@ export function CellPage() {
           <BatchRobotWizard cellId={cellId} onDone={closeWizard} />
         </Modal>
       )}
+      {removing && (
+        <DeleteRobotDialog cellId={cellId} projectId={data.project_id} robot={removing} onClose={() => setRemoving(null)} />
+      )}
     </section>
+  )
+}
+
+// owner-only-card-delete: confirma antes de excluir (destrutivo). Excluir um robô
+// arquiva suas tarefas (soft-delete cascateia no servidor).
+function DeleteRobotDialog({
+  cellId,
+  projectId,
+  robot,
+  onClose,
+}: {
+  cellId: string
+  projectId?: string | null
+  robot: OverviewRobotCard
+  onClose: () => void
+}) {
+  const remove = useDeleteRobot(cellId, projectId)
+  const t = hierarchyText.cell.remove
+  return (
+    <Modal open onClose={onClose} title={t.title}>
+      <p className="mb-4 text-text-muted">{t.body(robot.name)}</p>
+      <div className="flex justify-end gap-2">
+        <Button variant="ghost" onClick={onClose}>
+          Cancelar
+        </Button>
+        <Button variant="destructive" disabled={remove.isPending} onClick={() => remove.mutate(robot.id, { onSuccess: onClose })}>
+          Excluir
+        </Button>
+      </div>
+    </Modal>
   )
 }

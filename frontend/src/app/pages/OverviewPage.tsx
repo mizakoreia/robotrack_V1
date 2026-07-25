@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { Badge } from '@/components/ui/Badge'
 import { EntityCard } from '@/components/ui/EntityCard'
+import { IconButton } from '@/components/ui/IconButton'
 import { ProgressRing } from '@/components/progress/ProgressRing'
 import {
   useWorkspaceOverview,
@@ -14,7 +15,7 @@ import {
   type RawCompletionEnvelope,
   type WorkspaceOverviewDTO,
 } from '@/features/hierarchy/useOverview'
-import { useCreateProject } from '@/features/hierarchy/useHierarchy'
+import { useCreateProject, useDeleteProject } from '@/features/hierarchy/useHierarchy'
 import { useSearchQuery } from '@/features/hierarchy/useSearch'
 import { HierarchySearchField } from '@/features/hierarchy/HierarchySearchField'
 import { SearchResults } from '@/features/hierarchy/SearchResults'
@@ -32,8 +33,11 @@ export function OverviewPage() {
   const { data, isLoading, isError, refetch } = useWorkspaceOverview()
   const role = useWorkspaceStore((s) => s.currentRoleLabel)
   const canCreate = role === 'owner' || role === 'edit' // §4.1 — view não cria
+  // owner-only-card-delete: EXCLUIR é só do dono (o servidor confirma com 403).
+  const isOwner = role === 'owner'
   const navigate = useNavigate()
   const [creating, setCreating] = useState(false)
+  const [removing, setRemoving] = useState<OverviewProjectCard | null>(null)
   const { query, setQuery, debounced, flush, clear } = useSearchQuery()
   // 6.3 (D-E) — visão substituída pelo TERMO derivado, sem flag booleana
   const isSearching = debounced.trim().length > 0
@@ -69,13 +73,20 @@ export function OverviewPage() {
           <p className="label-sm text-text-muted">Anéis: progresso ponderado por peso de tarefa</p>
           <div className="grid items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {data.projects.map((p) => (
-              <ProjectCard key={p.id} project={p} onOpen={() => navigate(`/projeto/${p.id}`)} />
+              <ProjectCard
+                key={p.id}
+                project={p}
+                onOpen={() => navigate(`/projeto/${p.id}`)}
+                canDelete={isOwner}
+                onDelete={() => setRemoving(p)}
+              />
             ))}
           </div>
         </>
       )}
 
       <NewProjectDialog open={creating} onClose={() => setCreating(false)} />
+      {removing && <DeleteProjectDialog project={removing} onClose={() => setRemoving(null)} />}
     </section>
   )
 }
@@ -124,7 +135,17 @@ function Stat({ label, value }: { label: string; value: string }) {
   )
 }
 
-function ProjectCard({ project, onOpen }: { project: OverviewProjectCard; onOpen: () => void }) {
+function ProjectCard({
+  project,
+  onOpen,
+  canDelete,
+  onDelete,
+}: {
+  project: OverviewProjectCard
+  onOpen: () => void
+  canDelete: boolean
+  onDelete: () => void
+}) {
   const t = hierarchyText.overview
   return (
     <EntityCard
@@ -133,8 +154,36 @@ function ProjectCard({ project, onOpen }: { project: OverviewProjectCard; onOpen
       onClick={onOpen}
       badge={<Badge status="na">{hierarchyText.cellsBadge(project.cells_count)}</Badge>}
       ring={<ProgressRing value={project.weighted_progress.value} metric="weighted" size={56} />}
-      footer={<span className="label-sm text-text-muted">{t.cardFooterMacro}</span>}
+      footer={
+        <div className="flex w-full items-center justify-between">
+          <span className="label-sm text-text-muted">{t.cardFooterMacro}</span>
+          {canDelete && (
+            <IconButton icon="trash" label={`Excluir ${project.name}`} size="sm" onClick={onDelete} />
+          )}
+        </div>
+      }
     />
+  )
+}
+
+// owner-only-card-delete: confirma antes de excluir (destrutivo). Excluir um
+// projeto arquiva toda a subárvore (células/robôs/tarefas) — o soft-delete
+// cascateia no servidor.
+function DeleteProjectDialog({ project, onClose }: { project: OverviewProjectCard; onClose: () => void }) {
+  const remove = useDeleteProject()
+  const t = hierarchyText.overview.remove
+  return (
+    <Modal open onClose={onClose} title={t.title}>
+      <p className="mb-4 text-text-muted">{t.body(project.name)}</p>
+      <div className="flex justify-end gap-2">
+        <Button variant="ghost" onClick={onClose}>
+          Cancelar
+        </Button>
+        <Button variant="destructive" disabled={remove.isPending} onClick={() => remove.mutate(project.id, { onSuccess: onClose })}>
+          Excluir
+        </Button>
+      </div>
+    </Modal>
   )
 }
 

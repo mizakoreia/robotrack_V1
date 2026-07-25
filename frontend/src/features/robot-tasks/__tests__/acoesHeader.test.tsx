@@ -98,8 +98,9 @@ describe('coluna Ações (4.3)', () => {
     await waitFor(() => expect(screen.getByText('Fixar base do robô')).toBeInTheDocument())
   })
 
-  it('excluir exige confirmação e remove a linha', async () => {
-    setRole('edit')
+  // owner-only-card-delete: o DONO exclui (com confirmação).
+  it('o dono exclui a tarefa com confirmação e remove a linha', async () => {
+    setRole('owner')
     const remove = vi.spyOn(robotTasksApi, 'remove').mockImplementation(() => {
       serverTasks = []
       return Promise.resolve(undefined as never)
@@ -114,6 +115,16 @@ describe('coluna Ações (4.3)', () => {
 
     await waitFor(() => expect(remove).toHaveBeenCalledWith('t1'))
     await waitFor(() => expect(screen.queryByText('Fixar base')).toBeNull())
+  })
+
+  // owner-only-card-delete: edit edita a descrição mas NÃO vê o excluir.
+  it('membro edit vê editar mas NÃO vê excluir a tarefa', async () => {
+    setRole('edit')
+    renderPage()
+    await screen.findByText('Fixar base')
+
+    expect(screen.getByRole('button', { name: 'Editar a descrição de Fixar base' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Excluir Fixar base' })).toBeNull()
   })
 })
 
