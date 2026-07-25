@@ -24,13 +24,17 @@ está em [PROMPT DE RETOMADA](#prompt-de-retomada), no fim.
   permissão do ambiente — apagar pela UI do GitHub ou liberar a permissão Bash.
 
 > **24 de 25 changes COMPLETAS.** A única em andamento é
-> `quality-and-accessibility` — **28/39 tarefas fechadas**: o delta sem navegador (G0
+> `quality-and-accessibility` — **31/39 tarefas fechadas**: o delta sem navegador (G0
 > reconciliação, G1 fundação de teste, G2 i18n, G3 contraste, G4 foco, G5 leitor de
 > tela, G8 perf) **e o G6, o harness E2E, que FECHOU** (6.1/6.2/6.3, smoke 4/4 em
-> Chromium **e WebKit** na WSL do par — runbook em `frontend/e2e/README.md`). As **11
-> restantes**: os 5 fluxos (**7.1 nas slices 1-2**, verdes em Chromium), gate axe-core,
-> E2E de teclado, auditor de toque, INP — e o E2E **roda no container** (só WebKit e o
-> **pipeline de CI** dependem de fora). Ver a seção "quality-and-accessibility".
+> Chromium **e WebKit** na WSL do par — runbook em `frontend/e2e/README.md`). O G-B1
+> (a11y de navegador: **4.4 teclado, 5.5 auditor de toque, 5.6 gate axe-core**) FECHOU
+> com spec escrito + `e2e:lint` verde + a devDep `@axe-core/playwright`; a execução em
+> navegador é HANDOFF (§6d do `VALIDACAO_WSL.md`). As **8 restantes**: os 5 fluxos
+> (**7.1 nas slices 1-2**), INP (8.5), 7.7 (os 5 fluxos ≤8min) — e o **pipeline de CI**.
+> **Correção de ambiente:** esta sessão roda no **Mac do dono** (não no container
+> Linux); com a demo viva em :3000/:5173, a execução de TODO E2E é handoff (§6d). Ver
+> a seção "quality-and-accessibility".
 >
 > `legacy-data-migration` foi **CONSTRUÍDA (36/38) e FECHADA COMO DORMENTE** nesta
 > sessão: o dono confirmou que o sistema novo **começa do zero, sem dado legado a
@@ -215,7 +219,7 @@ está em `/opt/rbenv/versions/3.2.3` COM as gems instaladas (`bundle check` ok, 
 >   "Unverified". O e-mail JÁ é `noreply@anthropic.com` — limitação de ambiente. O
 >   stop-hook avisa toda vez; não há ação a tomar.
 
-## Changes concluídas (24 de 25; a 25ª, `quality-and-accessibility`, está 28/39)
+## Changes concluídas (24 de 25; a 25ª, `quality-and-accessibility`, está 31/39)
 
 `seal-template-baseline`, `workspace-tenancy`, `identity-and-auth`,
 `workspace-invitations` (anteriores) e:
@@ -530,21 +534,24 @@ suíte rodar como root). `validate --strict` OK. Tudo na `main` (`4e9a3f5`).
 
 ## O que resta
 
-- **`quality-and-accessibility`** (Onda 10) — **28/39**. O **G6 (harness) FECHOU**
+- **`quality-and-accessibility`** (Onda 10) — **31/39**. O **G6 (harness) FECHOU**
   (6.1/6.2/6.3 `[x]`, smoke 4/4 em Chromium+WebKit na WSL). O harness vive em
   `frontend/e2e/` + `frontend/playwright.config.ts`; `@playwright/test` é
   devDependency do frontend; o seed determinístico é `rt:seed:e2e[base|convite]`
   (`backend/lib/tasks/e2e.rake`, UUIDs fixos, com guarda que RECUSA banco sem
   `e2e`/`test` no nome). Runbook: **`frontend/e2e/README.md`**.
-  As **11 abertas**: os 5 fluxos (7.1-7.7 — **7.1 nas slices 1 e 2**: convite ponta a
-  ponta + o membro registrando avanço, ambas VERDES em Chromium; faltam o convite
-  `view` com controle desabilitado + `PATCH` forjado 403 e o token no redirect do
-  Google), gate `@axe-core/playwright` (5.6), E2E de teclado (4.4), auditor de alvo de
-  toque (5.5), INP com 24 cards (8.5). **Tudo isso roda em Chromium AQUI** — só o
-  WebKit e o pipeline de CI dependem de fora.
-  **Handoff que resta:** pipeline de CI. E a topologia: demo e E2E **não coexistem**
-  hoje (o bundle embute a origem da API em build time) — caminho para CI
-  determinístico anotado no `e2e/README.md`.
+  O **G-B1** (4.4 teclado, 5.5 auditor de toque, 5.6 gate axe-core) FECHOU com spec +
+  `e2e:lint` verde + a devDep `@axe-core/playwright@^4.12.1`; execução handoff (§6d).
+  As **8 abertas**: os 5 fluxos (7.1-7.7 — **7.1 nas slices 1 e 2**: convite ponta a
+  ponta + o membro registrando avanço; faltam o convite `view` com controle
+  desabilitado + `PATCH` forjado 403 e o token no redirect do Google), INP com 24
+  cards (8.5), e 7.7 (os 5 fluxos ≤8min).
+  **Correção de ambiente:** esta sessão roda no **Mac do dono**, com a demo viva em
+  :3000/:5173 — sem banco E2E isolado. Rodar E2E aqui exigiria repontar o :3000 para
+  `robotrack_e2e` (derruba a demo, README §88-90). Logo, a execução de TODO E2E é
+  **HANDOFF** (§6d do `VALIDACAO_WSL.md`), como WebKit/CI. **Handoff que resta:**
+  pipeline de CI + execução dos specs em navegador. A topologia (demo e E2E não
+  coexistem — bundle embute a origem da API em build time) está no `e2e/README.md`.
 - **`legacy-data-migration`** — **NADA A FAZER (dormente).** Construída 36/38 e fechada
   como não-aplicável (começa do zero). Só reabrir se surgir uma fonte de dados a importar —
   aí 8.6/8.7 rodam o corte pelo runbook `backend/docs/runbooks/legacy-cutover.md`. Não peça
@@ -651,7 +658,7 @@ OpenSpec: `npx --yes @fission-ai/openspec@1.6.0 validate <change> --strict`.
 > (ActionCable), a **fila offline** (PWA), a **infra/observabilidade**, as
 > **notificações** e a **migração legada** (esta última construída 36/38 e FECHADA COMO
 > DORMENTE — o sistema começa do zero, sem dado a migrar; código isolado em `Legacy::*`,
-> não roda). A 25ª, `quality-and-accessibility`, está em **28/39**: o **harness E2E
+> não roda). A 25ª, `quality-and-accessibility`, está em **31/39**: o **harness E2E
 > (G6) fechou** (smoke 4/4 em Chromium+WebKit, runbook em `frontend/e2e/README.md`) e
 > o Fluxo 1 (convite) está na slice 1. Depois vieram `invite-by-code` (código curto de
 > convite) e `join-workspace-by-code` (entrar noutro workspace por código estando logado),

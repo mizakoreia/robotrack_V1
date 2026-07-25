@@ -368,10 +368,11 @@ cd ../frontend && E2E_BASE_URL=http://localhost:4173 npx playwright test
 - **Nunca** `context.serviceWorkers()` (Chromium-only): afirme pela página com
   `navigator.serviceWorker.ready`.
 
-**O que resta desta change (11 tarefas):** os 5 fluxos (7.1 na slice 1), gate
-`axe-core` (5.6), E2E de teclado (4.4), auditor de alvo de toque (5.5), INP (8.5), e
-o **pipeline de CI** (handoff). `legacy-data-migration` foi construída (36/38) e
-FECHADA COMO DORMENTE (o sistema começa do zero) — não há corte a rodar e o
+**O que resta desta change:** os 5 fluxos E2E (7.x — spec escrito, execução handoff),
+o INP (8.5), e o **pipeline de CI** (handoff). Os gates de a11y de navegador — E2E de
+teclado (4.4), auditor de toque (5.5), gate axe-core (5.6) — têm o **spec escrito +
+`e2e:lint` verde**; a execução é o handoff §6d. `legacy-data-migration` foi construída
+(36/38) e FECHADA COMO DORMENTE (o sistema começa do zero) — não há corte a rodar e o
 `RoboTrack_Database.json` não será fornecido; nada a validar na WSL.
 
 ---
@@ -425,6 +426,34 @@ cd ../frontend && E2E_BASE_URL=http://localhost:4173 npx playwright test join-by
 
 Esperado: verde em Chromium (WebKit/CI seguem o mesmo handoff dos demais E2E). Se
 reprovar por CÓDIGO (não setup), me mande a saída — corrijo na branch local.
+
+---
+
+## 6d. `quality-and-accessibility` — gates de a11y de navegador (4.4/5.5/5.6) (HANDOFF)
+
+Três gates de acessibilidade que só um navegador REAL fecha (medem layout/árvore de
+a11y). Spec escrito + **`e2e:lint` verde** + `tsc` limpo + devDep instalada; a
+execução é o handoff (o ambiente da sessão era o Mac do dono com a demo viva em
+:3000/:5173 — sem banco E2E isolado, e repontar o :3000 derrubaria a demo).
+
+- **4.4 teclado** — `e2e/tests/keyboard.spec.ts`: percurso Visão Geral → Projeto →
+  Célula → Robô → modal de avanço → Minhas Tarefas → Relatório SÓ com teclado.
+- **5.5 alvo de toque** — `e2e/a11y/touch-targets.ts` + `e2e/tests/touch-targets.spec.ts`:
+  retângulo efetivo ≥ 32px em 375×812, sem sobreposição estendida.
+- **5.6 axe-core** — `@axe-core/playwright` + `e2e/a11y/axe.ts` + `e2e/tests/axe.spec.ts`:
+  8 telas × 2 temas + modal aberto; `incomplete` de contraste = não-aprovação.
+
+Rodam com o MESMO setup do §6 e a MESMA semente `[convite]`:
+
+```bash
+cd frontend && npm run build && npx vite preview --port 4173 &
+cd ../backend && bundle exec rails 'rt:seed:e2e[convite]'
+cd ../frontend && E2E_BASE_URL=http://localhost:4173 npx playwright test keyboard touch-targets axe
+```
+
+Esperado: verde em Chromium (WebKit/CI seguem o mesmo handoff). Cada spec traz uma
+**prova de não-vacuidade** (planta uma violação e afirma que o gate a pega) — se a
+prova plantada NÃO reprovar, o gate está quebrado; me mande a saída.
 
 ---
 

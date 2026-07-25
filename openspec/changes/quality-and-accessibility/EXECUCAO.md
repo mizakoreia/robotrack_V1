@@ -338,3 +338,49 @@ que não é o dele. Termine as conexões (`pg_terminate_backend`) antes. Está n
 paralelo, contra banco recriado. **7.1 segue `[ ]`**: faltam o convite `view` com
 controle desabilitado + `PATCH` forjado 403, e o token no redirect do Google; e o
 WebKit é confirmação do par.
+
+---
+
+## G-B1 — a11y de navegador: teclado (4.4) + auditor de toque (5.5) + axe (5.6)
+
+Sessão de fechamento (25/07/2026) no **Mac do dono**, NÃO no container Linux das
+notas antigas. Prova empírica do ambiente: sem `/opt/pw-browsers` (nenhum navegador
+Playwright), ruby 2.6 do sistema (Rails 8 precisa de 3.2), e a **demo viva** em
+`:5173`/`:3000` (o dono testando no celular). Consequência: repontar o backend
+`:3000` para `robotrack_e2e` — o único jeito de rodar E2E aqui (README §88-90) —
+**derrubaria a demo**. Logo, a EXECUÇÃO em navegador destes três gates é HANDOFF
+documentado (§6d do `VALIDACAO_WSL.md`), mesma classe de WebKit/CI. O que fecha
+aqui: spec escrito + `e2e:lint` verde + `tsc` limpo + a devDep instalada — o
+precedente da casa (`invite-by-code` G5.2, `join-workspace-by-code` G2.1).
+
+- **4.4 E2E de teclado — ENTREGUE (execução=handoff).** `e2e/tests/keyboard.spec.ts`:
+  percurso Visão Geral → Projeto → Célula → Robô → (modal de avanço) → Minhas
+  Tarefas → Relatório SÓ com Tab/setas/Enter/Escape. Cards por Enter (`EntityCard`
+  `role=button`), modal aberto por `ArrowRight`+keyup (a UX nova abre a observação no
+  fim do "arraste"), `Escape` devolve o foco ao slider (contrato 4.3), avanço 40→50
+  completado por teclado. Helper `tabPara(nome)` varre por nome acessível — NÃO fixa
+  contagem de Tab (a ordem é detalhe de layout; os locators se afinam na 1ª execução
+  no par, como as slices 1-2).
+- **5.5 Auditor de toque — ENTREGUE (execução=handoff).** `e2e/a11y/touch-targets.ts`
+  mede o retângulo EFETIVO no contexto da página: base (`getBoundingClientRect`) unida
+  ao pseudo `::before`/`::after` absoluto com inset negativo (o padrão de ampliar o
+  toque sem inchar layout). Reprova < 32px (requisito de ambiente, > 24px de WCAG
+  2.5.8) e sobreposição entre áreas ESTENDIDAS adjacentes; ISENTA link de texto inline
+  em fluxo. `touch-targets.spec.ts` roda em 4 telas mobile (375×812) + prova de
+  não-vacuidade (planta 20px, afirma que é pego).
+- **5.6 Gate axe-core — ENTREGUE (execução=handoff).** `@axe-core/playwright@^4.12.1`
+  instalada. `e2e/a11y/axe.ts` roda o axe (WCAG 2.0/2.1 A/AA) e conta os `incomplete`
+  de CONTRASTE como não-aprovação — o resto de `incomplete` (julgamento humano) fica
+  de fora, senão o gate vira ruído e é desligado. `setTheme` alterna `.light`. Spec:
+  8 telas × 2 temas + Robô com o modal aberto (claro) + prova de não-vacuidade
+  (`<button>` sem nome → `button-name` crítico).
+
+**Decisão de execução DE-QA-B1.** Os três specs referenciam o SEED `[convite]` já
+existente (ids fixos) — nenhum seed novo. O erro de `tsc` que aparece em
+`e2e/fixtures/session.ts:61` (`base.request`) é PRÉ-EXISTENTE e cosmético do
+type-check ad-hoc: o arquivo rodou verde 4/4 no container sob o esbuild do Playwright
+(que não faz `tsc` estrito). Não tocado — corrigir um arquivo provado por um
+type-check que o runtime não usa seria regressão de risco.
+
+**Gates verdes aqui:** `npm run lint` (100%), `npm run e2e:lint` (8 specs),
+`typecheck:test-imports`, `tsc` sobre `e2e/**` (só o pré-existente de session.ts).
