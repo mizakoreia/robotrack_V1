@@ -17,16 +17,21 @@ está em [PROMPT DE RETOMADA](#prompt-de-retomada), no fim.
   Formaliza a `CRITICA_IMPECCABLE.md` (69 achados) como UMA change OpenSpec com 6
   grupos ordenados por dor do operador (mapa em `openspec/changes/impeccable-remediation/`).
   Marcador de segurança: `git tag pre-impeccable-remediation` @ `c2532a8` (voltar:
-  `git reset --hard pre-impeccable-remediation`). **G0** (`017e8b0`), **G1**
-  (contraste + alvo de toque) e **G2** (harden modais/navegação) FECHADOS e no `main`;
-  **G3–G6 aguardam OK do dono entre grupos**. G1: slider/StatusSelect com alvo de luva
-  (≥32/40px), Button/login/sino/IconButton em tokens AA (submit do login 3,68:1→6,70:1
-  medido), gate `tests/touch-and-contrast-usage.test.ts`. G2: AdvanceModal virou modal
-  de verdade (primitivo `Modal`: portal/trap/scroll-lock/max-h/× de toque), gaveta
-  mobile com trap/Esc/`inert`, classes CSS mortas corrigidas (`.page-title`/`.input-base`/
-  `text-text`), `color-scheme` declarado, `PortalMenu` focável, `Tooltip` acessível,
-  sinal honesto de offline no avanço; teste novo `harden-g2.test.tsx`. Arquivos de túnel
-  (`vite.config.ts`, `lib/api/client.ts`) seguem **sem commit** de propósito.
+  `git reset --hard pre-impeccable-remediation`). **TODOS os 6 grupos FECHADOS e no
+  `main`** (`G0`..`G6`). G1: slider/StatusSelect com alvo de luva (≥32/40px), Button/
+  login/sino/IconButton em tokens AA (submit do login 3,68:1→6,70:1 medido), gate
+  `tests/touch-and-contrast-usage.test.ts`. G2: AdvanceModal virou modal de verdade
+  (primitivo `Modal`: portal/trap/scroll-lock/max-h/× de toque), gaveta mobile com
+  trap/Esc/`inert`, classes CSS mortas (`.page-title`/`.input-base`/`text-text`),
+  `color-scheme`, `PortalMenu` focável, `Tooltip` acessível, sinal honesto de offline;
+  teste `harden-g2.test.tsx`. G3: relatório legível no mobile (min-width na tela + scroll,
+  A4 intacta) + carimbo/nome de métrica. G4: Equipe/Convites no DS único, `window.confirm`
+  →`Modal`, "Responsáveis" desambiguada com link cruzado + `Chip`, ação primária inline.
+  G5: bans removidos (`Button` sem primary/gradient; utilities gradient/rainbow mortas;
+  gradient-text=0 no detector — só resta `overused-font:Inter`, decisão de DESIGN);
+  border-faixa lateral → tinte. G6: Badge nowrap, notificação lida sem opacity-60, loaders
+  honestos, busca ≥32px. Arquivos de túnel (`vite.config.ts`, `lib/api/client.ts`) seguem
+  **sem commit** de propósito.
 - O desenvolvimento desta rodada aconteceu na branch de feature
   `feat/invite-by-code`, onde as duas changes foram **acumuladas** por instrução do
   dono e depois **fast-forwarded para `main` de uma vez** (histórico linear, sem merge

@@ -145,4 +145,31 @@ produto já declara e o design-system já tem gate para medir. Nenhuma regressã
   - **Divergência:** `InviteDialog` — em vez de portar para `Modal` (overlap com G4),
     removi o `role="dialog"` falso (é painel inline; a spec permite "ou remover o role").
     O port completo de Team/Invite fica no G4.
-  - Commit `G2:` + push. **PARADO aqui — aguarda OK do dono para G3.**
+  - Commit `G2:` `220355f` + push.
+- **G3 (relatório legível no mobile) — FECHADO:** `.rpt-doc` com `min-width: 30rem` só em
+  `@media screen` (abaixo disso o `.overflow-x-auto` do ReportPage rola em vez de espremer;
+  impressão A4 intacta); carimbo deixa de ser hero-métrica (% `.title`→`.modal-title`, nome
+  `label-sm text-text-muted`→`label-md text-text-main`, D15); ReportBody sem `/70`. Prova:
+  report/reportPage/literalSweep 28 ✓; tsc 0. Commit `G3:`.
+- **G4 (consistência Equipe/Convites) — FECHADO:** TeamPanel/InviteDialog portados para o DS
+  (`text-muted-foreground`→`text-text-muted`, `text-destructive`→`text-danger-ink`,
+  `text-xl`→`panel-header`); `window.confirm()`→`Modal` (remover/revogar); PeoplePanel vira
+  "Responsáveis" com link cruzado + chip via primitivo `Chip` (32px); Overview com ação
+  primária inline no título. Testes atualizados ao novo fluxo. Prova: team/settings/hierarchy
+  /convention-sweep verdes; tsc 0; eslint 0. Commit `G4:`.
+  - **Divergência:** o nome composto do `Chip` ("Ana · membro") mudou 2 asserts do peoplePanel
+    (regex em vez de match exato) — atualizados.
+- **G5 (distill dos bans) — FECHADO:** `Button` sem `primary`/`gradient` (dead bans);
+  `uiverse` fica (landing legada — divergência no spec ui-primitives); globals.css sem
+  `.card-highlight`/`icon-hue-cycle`/`.text-goat-gradient-*` (todos sem uso); BuildPage h1
+  gradient-text→sólido; HistoryModal+AuditLogModal `border-l-2`→tinte de fundo. Prova:
+  `detect.mjs` gradient-text **0** (só resta `overused-font: Inter`, decisão de DESIGN); tsc 0;
+  eslint 0. Commit `G5:`.
+- **G6 (polimento) — FECHADO:** Badge `whitespace-nowrap`; NotificationCenter lido sem
+  `opacity-60` (contraste) + header `flex-wrap` (≤320px); PeoplePanel loader honesto
+  (role=status); busca "Buscar" ≥32px; nested card em Utilitários VERIFICADO como irmãos (sem
+  aninhamento). Prova: notifications/settings/hierarchy/primitives 34 ✓; tsc 0; eslint 0.
+  Commit `G6:`.
+- **Fechamento:** suíte completa (`--no-file-parallelism`) verde; `validate --strict` verde.
+  Todos os 6 grupos no `main` e empurrados. Túnel (`vite.config.ts`, `lib/api/client.ts`)
+  nunca commitado.

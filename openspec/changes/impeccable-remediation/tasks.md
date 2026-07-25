@@ -57,4 +57,4 @@ handoff é anotado como handoff.
 - [x] 6.2 Badge "Solda Ponto" quebrando em 2 linhas; tratamento uniforme das pílulas de aplicação.
 - [x] 6.3 `label-sm` pequeno para "legível de longe" onde a crítica apontou (busca, colunas).
 - [x] 6.4 Loaders "…" com `aria-busy`; item de notificação lido sinalizado por ponto/fundo (não `opacity-60` no texto); header da central empilha em ≤320px.
-- [ ] 6.5 **Verificação:** `/impeccable critique` de novo (meta: nota subir de 27/40); suíte completa verde.
+- [x] 6.5 **Verificação:** `/impeccable critique` de novo (meta: nota subir de 27/40); suíte completa verde.
