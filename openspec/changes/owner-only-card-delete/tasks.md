@@ -67,9 +67,9 @@
 
 ## G4. Documentação e fechamento
 
-- [ ] G4.1 Atualizar a documentação no MESMO empurrão: `CONTINUIDADE.md` (nova change,
-  excluir owner-only, UI dos 3 níveis, swipe), `DESIGN.md` se o swipe virar primitivo/motion
-  nomeado, `VALIDACAO_WSL.md` se algum passo de validação mudar; `grep -rn "Excluir\|excluir"
-  *.md` para runbook que dependa do gating antigo
-- [ ] G4.2 `EXECUCAO.md`: CONCLUSÃO (o que foi fiado, DA-1/2/3 como decididas, estado das
-  suítes) + resumo pt-BR client-friendly ao dono
+- [x] G4.1 `CONTINUIDADE.md` com a 29ª change (excluir owner-only, tarefa incluída, UI dos 3
+  níveis + swipe) e o count 27→29 na retomada; `DESIGN.md` documenta o swipe no EntityCard.
+  `VALIDACAO_WSL.md` inalterado (o passo de validação não muda). Nenhum runbook `.md` dependia
+  do gating antigo de excluir.
+- [x] G4.2 `EXECUCAO.md`: CONCLUSÃO (DA-1 tarefa também owner-only, DA-2 swipe só excluir+
+  confirmação, DA-3 três níveis + tarefa; estado das suítes) + resumo pt-BR client-friendly.

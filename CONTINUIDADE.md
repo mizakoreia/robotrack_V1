@@ -145,6 +145,31 @@ casa G1..G4; ff para `main` a cada grupo.
   falha só sob paralelismo da suíte cheia e passa isolado — domínio `offline-pwa`, intocado.
 - **`DESIGN.md` NÃO tocado:** só remoção + reordenação da UI de convite (código já existia).
 
+## Change NOVA: `owner-only-card-delete` (29ª change — PUBLICADA em `main`)
+
+Excluir projeto/célula/robô/**tarefa** vira **owner-only** (tira do `edit`), fecha a **lacuna
+de UI de excluir** (os cards de projeto e robô não tinham botão para ninguém; `useDeleteRobot`
+nem existia) e adiciona **swipe-to-reveal excluir** no mobile. Ajuste do dono: a **tarefa
+também** entra no owner-only (só o `destroy`; editar/atribuir seguem em owner+edit).
+
+- **G1 autorização:** `PermissionMatrix` +`destroy_commissioning: %i[owner]` (9ª linha);
+  `Project/Cell/Robot/TaskPolicy` `destroy?` → owner-only. Consequência: `edit` não exclui
+  (403), mas cria/edita/reordena/atribui. **Não** afeta reset de fábrica (já owner) nem o
+  soft-delete (só o gate). Specs `permission_matrix`/`resource_policies`/`matrix_conformance`
+  (implementada a conformance HTTP de TAREFA que era `pending`)/`tasks_spec`. Gate **257/0/7pend**.
+- **G2 UI:** `useDeleteRobot` novo; `useDeleteProject` deixou de ser órfão (ganhou
+  `qk.overview`); lixeira owner-only nos cards de projeto/célula/robô (com diálogo de confirmação
+  + aviso de subárvore) e no `AcoesCell` da tarefa (`canDelete` separado de `canEdit`). `vitest`
+  hierarquia+robot-tasks **77/77**.
+- **G3 swipe:** `EntityCard.onSwipeDelete` (só ponteiro grosso) revela um painel Excluir
+  `bg-danger-solid`; pointer nativo + `transform`, `touch-action: pan-y`, o arrasto não navega,
+  tocar abre o diálogo; `prefers-reduced-motion` zera a animação; painel `aria-hidden`/não-focável
+  (o caminho a11y é o `IconButton` do rodapé — regra G). `EntityCard.swipe.test` **5/5**.
+  **`DESIGN.md` atualizado** (o gesto no EntityCard).
+- **Suíte frontend:** 583/584 — a única falha é o **flaky pré-existente** de fila offline
+  (`queue.test.ts` D7-12), que passa isolado; domínio `offline-pwa`, intocado.
+- **Execução E2E/axe em navegador:** HANDOFF (demo viva em :3000/:5173 — não repontar).
+
 ## Campanha de deploy (par com o agente da WSL — 24/07/2026)
 
 Depois de fechar o domínio, o **primeiro deploy real** virou uma sessão de par: o
@@ -685,8 +710,9 @@ OpenSpec: `npx --yes @fission-ai/openspec@1.6.0 validate <change> --strict`.
 
 > Estou continuando o desenvolvimento do RoboTrack (github.com/mizakoreia/robotrack_V1):
 > reimplementação de um sistema legado (PWA + Firestore) sobre um template Rails 8
-> API-only + React 18/TS, organizada com OpenSpec — 27 changes em `openspec/changes/`
-> (as 25 do núcleo + `invite-by-code` + `join-workspace-by-code`, estas duas já em `main`).
+> API-only + React 18/TS, organizada com OpenSpec — 29 changes em `openspec/changes/`
+> (as 25 do núcleo + `invite-by-code` + `join-workspace-by-code` + `code-only-invites` +
+> `owner-only-card-delete`, todas já em `main`).
 >
 > Leia, em ordem: **`CLAUDE.md`** (regras de trabalho — inclui "documentação ANTES de
 > cada push"), `CONTINUIDADE.md` (estado, modelo de git, método), e, se for tocar em

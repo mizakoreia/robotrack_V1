@@ -92,6 +92,25 @@
 - **Gate:** `EntityCard.swipe.test.tsx` **5/5**; `tsc`/`lint` limpos; suíte 583/584 (flaky
   offline alheio). `DESIGN.md` documenta o gesto. Axe/execução em navegador = HANDOFF.
 
+## CONCLUSÃO (G1..G4 — COMPLETA, publicada em `main`)
+
+Excluir projeto/célula/robô/**tarefa** é **owner-only** (`destroy_commissioning`, 9ª linha da
+matriz). A **lacuna de UI** foi fechada: projeto e robô ganharam botão de excluir (novo
+`useDeleteRobot`, `useDeleteProject` deixou de ser órfão), célula/tarefa re-gated. **Swipe-to-
+reveal** no mobile (`EntityCard.onSwipeDelete`, só ponteiro grosso), sempre com confirmação e
+com o caminho a11y preservado (IconButton do rodapé, regra G). Decisões finais: **DA-1** tarefa
+também owner-only (ajuste do dono), **DA-2** swipe só excluir + confirmação, **DA-3** três
+níveis + tarefa.
+
+Gates: backend `policies+authorization+tasks+hierarchy` **257/0/7pend**; frontend
+`tsc`/`lint` limpos, `vitest` hierarquia+robot-tasks **77/77** + swipe **5/5**, suíte 583/584
+(a única falha é o flaky pré-existente de fila offline, alheio). `DESIGN.md` documenta o swipe.
+Execução E2E/axe em navegador é HANDOFF (demo viva; padrão da casa). `validate --strict` verde.
+
+**Consequência de papel registrada:** um membro `edit` deixa de excluir (dos 4 recursos) —
+continua criando, editando, reordenando e atribuindo. Não afeta o reset de fábrica (já
+owner-only) nem o soft-delete no banco (só o gate mudou).
+
 ## Armadilhas previstas
 
 - **Matriz literal:** `permission_matrix_spec.rb` reafirma a matriz linha a linha — adicionar
