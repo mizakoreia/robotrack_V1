@@ -70,8 +70,8 @@ impressionar numa demo.
 
 WCAG **AA**, medido no CI (não aspiracional): `tests/contrast.test.ts` reprova
 contraste < 4.5:1 (corpo) / 3:1 (não-texto), composição alfa das camadas incluída.
-Alvos de toque ≥ 32px (luva). `prefers-reduced-motion` zera animações (a luz ambiente
-fica parada, não some). Live regions no shell (`#rt-status` polite, `#rt-alerts`
+Alvos de toque ≥ 32px (luva). `prefers-reduced-motion` zera animações. Live regions
+no shell (`#rt-status` polite, `#rt-alerts`
 assertive). Foco visível AA (ring ≥ 3:1). Tema NÃO segue o SO (escuro é o primário;
 guarda de CI). Rótulos de métrica sempre nomeados para leitor de tela (`role=img` no
 anel, `role=progressbar` nas barras). A wave `quality-and-accessibility` é o gate que

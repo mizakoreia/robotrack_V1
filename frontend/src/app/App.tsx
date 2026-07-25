@@ -1,9 +1,8 @@
 // App component
-import { lazy, Suspense, useEffect } from 'react'
+import { lazy, Suspense } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import { ThemeProvider } from '@/components/ThemeProvider'
-import { initAmbient } from '@/lib/ambient'
 // quality-and-accessibility 8.4 (D-QA-7) — a landing de marketing arrasta o campfire
 // e o `gsap` (pesado); carregá-la EAGER punha `gsap` no chunk de entrada e estourava
 // o teto gzip. `lazy` a manda para um chunk próprio, alcançado só em `/apresentacao`.
@@ -28,16 +27,10 @@ import { IconSprite } from '@/components/icons/sprite'
 
 
 function App() {
-  // design-system 7.1 — inicia a luz ambiente (throttle 32ms, gate por ponteiro
-  // fino, congela sob movimento reduzido). Limpa o listener no unmount.
-  useEffect(() => initAmbient(), [])
-
   return (
     <ThemeProvider>
       {/* design-system 3.2 — o sprite de ícones, renderizado UMA vez no topo. */}
       <IconSprite />
-      {/* design-system 7.2 — o halo da luz ambiente (nível ambient, sob tudo). */}
-      <div className="ambient" aria-hidden="true" />
       <div className="min-h-screen bg-background font-sans antialiased">
         <Routes>
           {/* app-shell-navigation 4.1 — a landing de marketing do template sai de

@@ -95,10 +95,13 @@ propriedade (`text-success` não compila — D-DS-2).
 
 ## Motion
 
-- **Luz ambiente** (`.ambient` / `.glass-sheen`) throttled (32ms), 3 degradações.
-- `prefers-reduced-motion: reduce` **zera** animações e transições — a luz ambiente
-  fica PARADA na posição de repouso (não some: quem pediu menos movimento não perde
-  o sistema visual).
+- **Luz ambiente REMOVIDA.** O efeito de luz que seguia o cursor no desktop (a fonte
+  única em `--lx`/`--ly` throttled + as camadas `.ambient` / `.glass-sheen` / `.glass`,
+  a antiga D-DS-6) foi retirada por completo — sem listener de `pointermove`, sem
+  brilho estático residual, custo de runtime zero. As superfícies, cards, contraste e
+  temas seguem intactos (a luz nunca carregou informação; era decoração). Registro da
+  decisão em `openspec/changes/design-system/EXECUCAO.md`.
+- `prefers-reduced-motion: reduce` **zera** animações e transições.
 - `successPulse` na transição <100→100 (suprimido por reduced-motion; NÃO move o foco
   — pode disparar por evento remoto de outra pessoa).
 - Ease-out; sem bounce/elastic.

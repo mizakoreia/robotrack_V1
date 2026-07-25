@@ -121,6 +121,32 @@ commit** `G<n>:`. Divergência design×realidade: decidir, registrar aqui, segui
   desestilizaria telas vivas sem ganho. A remoção real fica para quando app-shell/hierarchy-screens as
   substituírem. ProfilePage simplificada para `<textarea>` (sem texto rico, §2.4). **change COMPLETA.**
 
+## REMOÇÃO POSTERIOR — luz ambiente (D-DS-6) retirada (2026-07-25)
+
+**Divergência registrada, não em silêncio (método da casa).** Depois da change
+fechada, o dono pediu para **remover** o efeito de luz que seguia o cursor no desktop
+(D-DS-6 / capacidade `ambient-light`). Feito por completo, num commit `refactor:`
+próprio:
+
+- **Removido:** `frontend/src/lib/ambient.ts` (o `initAmbient`, listener de
+  `pointermove` throttled 32ms que escrevia `--lx`/`--ly`); a inicialização em
+  `App.tsx` e o `<div className="ambient">`; no `globals.css` as declarações
+  `@property --lx/--ly`, as três camadas `.ambient` / `.glass-sheen(::before)` /
+  `.glass::after`, a regra `.ambient` sob reduced-motion e o desligamento
+  `data-glow="off"`. `tests/ambient.test.ts` apagado; `tests/motion.test.ts` e
+  `e2e/tests/inp.spec.ts` podados (o gate de INP fica; a cadência de `--lx`/`--ly`
+  sai). **Sem brilho estático residual, custo de runtime zero.**
+- **Mantido intacto:** superfícies, cards, contraste, temas (a luz era decoração —
+  nunca alterou token de texto/fundo, então o contraste é idêntico ao de antes). O
+  nível de z-index `ambient` (token `--z-ambient: 0` + `zIndex.ambient` no Tailwind)
+  **fica**: é o piso semântico do empilhamento (D-DS-4), verificado por
+  `stacking.test.ts`, ortogonal à luz.
+- **Motivo:** decisão de produto do dono (a luz que acompanhava o mouse não é mais
+  desejada). As specs/tasks históricas desta change descrevem o que FOI construído à
+  época; esta seção é o registro de que D-DS-6 foi posteriormente revertida. Docs
+  vivas atualizadas no mesmo empurrão: `DESIGN.md` (Motion), `PRODUCT.md` (a11y),
+  `CONTINUIDADE.md` (design-system), `VALIDACAO_WSL.md` (6g/INP).
+
 ## RETOMADA (para o próximo agente)
 
 1. `git log --oneline` na branch `design-system` (empilhada em `progress-rollup`); um commit

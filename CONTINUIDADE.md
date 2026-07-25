@@ -345,8 +345,11 @@ está em `/opt/rbenv/versions/3.2.3` COM as gems instaladas (`bundle check` ok, 
   tema não segue o SO (guarda de CI) com dark default/.light/anti-FOUC; 9+ primitivos em
   `components/ui/` (EntityCard, ProgressRing base que OMITE o path a 0%, Hub, Badge,
   StatusSelect, Chip, Modal com focus-trap/Esc, SaveIndicator, FilterBar, IconButton com
-  a11y na assinatura de tipo — D-DS-9); luz ambiente (`lib/ambient.ts`, throttle 32ms, 3
-  degradações); Recharts/TipTap/Slate DESINSTALADOS (bundle -208kB) com guarda de retorno.
+  a11y na assinatura de tipo — D-DS-9); Recharts/TipTap/Slate DESINSTALADOS (bundle -208kB)
+  com guarda de retorno. **Luz ambiente (D-DS-6) REMOVIDA** por decisão do dono: o efeito
+  que seguia o cursor (`lib/ambient.ts` + camadas `.ambient`/`.glass-sheen`/`.glass` em
+  `--lx`/`--ly`) saiu inteiro — sem brilho estático nem custo de runtime; tokens de z-index
+  seguem (o nível `ambient` é o piso semântico do empilhamento). Motivo em EXECUCAO da change.
   **Divergência:** `tokens-campfire.css` + aliases shadcn mantidos (só vars da landing,
   ortogonais aos papéis; remoção real quando as telas substituírem as páginas do template —
   EXECUCAO decisão 3/4). HANDOFF de CSP para `delivery-and-observability`. Backup em
