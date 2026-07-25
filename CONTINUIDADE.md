@@ -32,6 +32,18 @@ está em [PROMPT DE RETOMADA](#prompt-de-retomada), no fim.
   border-faixa lateral → tinte. G6: Badge nowrap, notificação lida sem opacity-60, loaders
   honestos, busca ≥32px. Arquivos de túnel (`vite.config.ts`, `lib/api/client.ts`) seguem
   **sem commit** de propósito.
+- **Feature `robot-task-grouping` (change nova, TODOS os grupos FECHADOS no `main`).**
+  Pedido do dono. Marcador: `git tag pre-task-grouping` @ `0f84014`. **G1:** categorias
+  na tela do robô viraram **grupos colapsáveis** (prefixo A./B./C., contagem, estado
+  lembrado por robô em safeStorage; agrupamento real por `cat` corrige o título repetido)
+  — `features/robot-tasks/taskGroups.ts` + `RobotTaskTablePage`. **G2:** exclusão em
+  **lote** — `Tasks::BulkDeleteService` + `DELETE /api/v1/tasks { ids[] }` (owner-only,
+  soft-delete atômico, `CascadeRecompute` 1×/robô, RLS ignora invisíveis, trilha
+  preservada). **G3:** **seleção múltipla** owner-only na tabela (checkbox por linha nos
+  dois layouts) + barra de ação + modal → `bulkRemove`. Nota: "apagar tarefa sem quebrar
+  os cálculos" para UMA tarefa **já existia** (soft-delete + views filtram `deleted_at`);
+  esta change entregou o LOTE. Specs: `taskGroups.test.tsx`, `taskBulkDelete.test.tsx`
+  (front), `spec/requests/tasks_bulk_delete_spec.rb` (back).
 - O desenvolvimento desta rodada aconteceu na branch de feature
   `feat/invite-by-code`, onde as duas changes foram **acumuladas** por instrução do
   dono e depois **fast-forwarded para `main` de uma vez** (histórico linear, sem merge

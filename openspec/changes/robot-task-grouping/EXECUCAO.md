@@ -43,4 +43,23 @@ Mapa de execução. Escrito ANTES do código (commit G0). RETOMADA no fim.
 
 ## RETOMADA
 
-*(preenchido ao fim de cada grupo)*
+- **G0** planejamento (proposal/design/tasks/EXECUCAO + 2 spec deltas), validate --strict
+  verde, `git tag pre-task-grouping`. Commit `G0`.
+- **G1 (colapsável) — FECHADO:** `taskGroups.ts` (groupByCategory por 1ª aparição —
+  corrige título repetido; groupLetter A./B.; useCollapsedCategories em safeStorage por
+  robô, guarda só recolhidas, default aberto); `RobotTaskTablePage` com CategoryToggle
+  (`<button aria-expanded aria-controls>` + prefixo + contagem; recolher REMOVE do DOM)
+  nos dois layouts. Prova: taskGroups.test.tsx (4) + robotTaskTable/e2eLoad verdes; tsc 0;
+  eslint 0. Commit `G1`.
+- **G2 (lote backend) — FECHADO:** `Tasks::BulkDeleteService` (transação, `update_all(deleted_at:)`
+  sem callbacks, CascadeRecompute 1×/robô, RLS ignora invisíveis, deleted_count);
+  `DELETE /tasks { ids[] }` owner-only. Prova (RSpec): dono exclui N (cache→100, avanços
+  intactos, soft não hard), edit→403, tenant alheio ignorado; tasks_spec + matrix 57 ex 0
+  falhas. Commit `G2`.
+- **G3 (seleção múltipla frontend) — FECHADO:** `robotTasksApi.bulkRemove`, `useBulkDeleteTasks`;
+  checkbox owner-only nos dois layouts (props estáveis preservam o memo §7.1), barra de ação +
+  modal de confirmação → bulkRemove. Prova: taskBulkDelete.test.tsx (2) + robot-tasks 68
+  verdes; tsc 0; eslint 0. Commit `G3`.
+- **G4 (fechamento):** validate --strict verde; suíte frontend completa + specs backend das
+  áreas verdes; docs (CONTINUIDADE/EXECUCAO); ff `main` + push. Divergência: nenhuma —
+  "apagar sem quebrar cálculo" individual já existia; entregue o LOTE.

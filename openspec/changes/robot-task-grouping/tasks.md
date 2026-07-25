@@ -23,5 +23,5 @@ Um grupo por vez, prova verde. Marcador de segurança: `git tag pre-task-groupin
 
 ## G4. Verificação e polimento
 
-- [ ] 4.1 Suíte completa (Vitest + RSpec das áreas), `tsc`, `lint`; prova do rollup pós-lote; screenshots do colapsável e da seleção.
-- [ ] 4.2 `openspec validate robot-task-grouping --strict`; docs (CONTINUIDADE/EXECUCAO); ff `main` + push.
+- [x] 4.1 Suíte completa (Vitest + RSpec das áreas), `tsc`, `lint`; prova do rollup pós-lote; screenshots do colapsável e da seleção.
+- [x] 4.2 `openspec validate robot-task-grouping --strict`; docs (CONTINUIDADE/EXECUCAO); ff `main` + push.
