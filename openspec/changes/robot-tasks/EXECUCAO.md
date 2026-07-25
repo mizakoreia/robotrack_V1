@@ -176,6 +176,25 @@ Total: ~30 tarefas em 6 grupos de código.
    Registrado; se algum consumidor precisar de homônimos por célula, é decisão de
    `commissioning-hierarchy` (dona do índice).
 
+10. **Pós-conclusão (rodada de UI/UX, demo real): o clamp de quantidade do
+    `BatchRobotWizard` (5.6) roda no BLUR/avanço, não a cada tecla.** O dono, na
+    demo, não conseguia apagar a quantidade: ficava presa em `1` e só chegava a
+    "10+" acrescentando dígitos. **Causa raiz:** o campo era controlado
+    (`value={quantity}`, `quantity: number`) e aplicava `clampQuantity(Number(
+    e.target.value))` no `onChange` — apagar dava `Number("") === 0 →
+    clampQuantity(0) === 1`, reescrevendo o valor a cada tecla, e o `1` inicial
+    não podia ser removido (só dava para acrescentar depois dele → 10+). **Decisão:**
+    a quantidade passa a ser TEXTO CRU enquanto se digita (estado intermediário
+    vazio permitido, aceita 2/3/7); o clamp `1..50` migra para o `onBlur` e para
+    o avanço (`normalizeQuantity`). O clamp continua sendo só de UX (a fonte da
+    verdade é o `BatchNormalizer` do servidor — decisão D-RT-4). **Contrato
+    preservado:** "digitar 99 mostra 50 campos" (tasks 5.6) continua verdadeiro —
+    o clamp visual apenas mudou de MOMENTO (blur/avanço), não desapareceu; a
+    tarefa 5.6 segue `[x]` sem regressão. Testes acrescentados em
+    `BatchRobotWizard.test.tsx`: apagar o campo (fica vazio), valor intermediário
+    (7), blur com vazio → 1, 99 → 50 no blur, 51 → 50 ao avançar, 0 → 1,
+    negativo → 1. Registrado também na tabela de UI/UX do `CONTINUIDADE.md`.
+
 ## Progresso
 
 - [x] G1 — Esquema `tasks` (1.1–1.6) — backend 712 → 723 (12→11 pending: a
