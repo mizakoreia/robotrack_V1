@@ -21,13 +21,14 @@ sempre do backend (`rt:seed:e2e[cenario]`, UUIDs fixos), nunca da UI.
 
 ## Uma semente para a suíte INTEIRA
 
-`rt:seed:e2e[convite]` semeia TRÊS usuários de propósito:
+`rt:seed:e2e[convite]` semeia QUATRO usuários de propósito:
 
 | Usuário | Papel no WS-E2E | Serve a |
 |---|---|---|
 | `owner@e2e…` | dono | quem convida |
 | `guest@e2e…` | **NÃO-membro** | o spec do convite (ele é convidado no teste) |
 | `member@e2e…` | membro `edit` | o spec do avanço (já pode escrever) |
+| `viewer@e2e…` | membro `view` | o slice-view de 7.1 (sem controle no DOM + 403 forjado) |
 
 Com um usuário só, um dos dois specs teria de rodar contra outro estado de banco —
 ou depender da ORDEM de execução, que é acoplamento. A fixture expõe

@@ -10,7 +10,7 @@ import { SEED, type SeededUser } from './seed-constants'
 // O app chama o backend DIRETO na :3000 (client.ts força a porta) — não pela
 // proxy /api do nginx. Então o login E2E bate no backend, como o app faz.
 // `E2E_API_URL` sobrepõe (ex.: a origem do backend no compose).
-function apiBase(baseURL: string | undefined): string {
+export function apiBase(baseURL: string | undefined): string {
   if (process.env.E2E_API_URL) return process.env.E2E_API_URL.replace(/\/$/, '')
   const origin = baseURL ?? 'http://localhost'
   try {
@@ -122,9 +122,11 @@ export const test = base.extend<{
   ownerContext: BrowserContext
   guestContext: BrowserContext
   memberContext: BrowserContext
+  viewerContext: BrowserContext
   ownerPage: import('@playwright/test').Page
   guestPage: import('@playwright/test').Page
   memberPage: import('@playwright/test').Page
+  viewerPage: import('@playwright/test').Page
 }>({
   ownerContext: async ({ browser, baseURL }, use) => {
     const ctx = await authenticatedContext(browser, SEED.owner, baseURL)
@@ -141,8 +143,16 @@ export const test = base.extend<{
     await use(ctx)
     await ctx.close()
   },
+  viewerContext: async ({ browser, baseURL }, use) => {
+    const ctx = await authenticatedContext(browser, SEED.viewer, baseURL)
+    await use(ctx)
+    await ctx.close()
+  },
   memberPage: async ({ memberContext }, use) => {
     await use(await memberContext.newPage())
+  },
+  viewerPage: async ({ viewerContext }, use) => {
+    await use(await viewerContext.newPage())
   },
   ownerPage: async ({ ownerContext }, use) => {
     await use(await ownerContext.newPage())

@@ -46,6 +46,13 @@ module E2eSeed
     id: '0e2e0000-0000-4000-8000-000000000003',
     name: 'Membro E2E', email: 'member@e2e.robotrack.local', password: 'e2e-member-pw-2026'
   }.freeze
+  # Quarto usuário: JÁ é membro `view`. Serve o slice-view de 7.1 (controle fora do
+  # DOM + PATCH forjado → 403) sem colidir com o `guest`, que o spec do convite
+  # consome como convidado. Espelha MEMBER (edit).
+  VIEWER = {
+    id: '0e2e0000-0000-4000-8000-000000000004',
+    name: 'Espectador E2E', email: 'viewer@e2e.robotrack.local', password: 'e2e-viewer-pw-2026'
+  }.freeze
   WORKSPACE = { id: '0e2e0000-0000-4000-8000-0000000000a1', name: 'WS-E2E' }.freeze
 
   # Hierarquia mínima do cenário [convite]: 1 projeto → 1 célula → 1 robô → 1 tarefa
@@ -63,11 +70,14 @@ module E2eSeed
     owner = ensure_user(OWNER)
     ensure_user(GUEST) # NÃO vira membro: é quem o spec do convite convida
     member = ensure_user(MEMBER)
+    viewer = ensure_user(VIEWER)
     ensure_workspace(owner)
     ensure_hierarchy(owner)
     ensure_membership(owner, member, 'edit') # já membro: é quem o spec do avanço usa
+    ensure_membership(owner, viewer, 'view')  # já membro view: slice-view de 7.1
     puts "[rt:seed:e2e] fluxo1: task=#{TASK[:id]} @#{TASK[:progress]}% em #{ROBOT[:name]}; " \
-         "#{GUEST[:email]} NÃO-membro (convite), #{MEMBER[:email]} membro edit (avanço)"
+         "#{GUEST[:email]} NÃO-membro (convite), #{MEMBER[:email]} membro edit (avanço), " \
+         "#{VIEWER[:email]} membro view (gating)"
   end
 
   # RECUSA cair num banco que não seja dedicado a E2E. O par rodou `rt:seed:e2e`

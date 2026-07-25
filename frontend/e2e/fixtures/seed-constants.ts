@@ -38,6 +38,17 @@ export const SEED = {
     email: 'member@e2e.robotrack.local',
     password: 'e2e-member-pw-2026',
   },
+  // Quarto usuário: JÁ é membro `view` do workspace do dono. Serve o slice-view de
+  // 7.1 (controle FORA do DOM + PATCH forjado → 403) sem colidir com `guest`, que
+  // o spec do convite consome como convidado `edit`. Espelha `member` (edit): um
+  // papel pré-semeado por spec, para a suíte rodar INTEIRA com UMA semente sem
+  // depender da ordem (D-QA-2).
+  viewer: {
+    id: '0e2e0000-0000-4000-8000-000000000004',
+    name: 'Espectador E2E',
+    email: 'viewer@e2e.robotrack.local',
+    password: 'e2e-viewer-pw-2026',
+  },
   // Workspace do dono (id do cliente — D1 — para o bootstrap abrir o próprio
   // contexto de RLS ao criá-lo).
   workspace: {
@@ -53,6 +64,7 @@ export const SEED = {
   owner: SeededUser
   guest: SeededUser
   member: SeededUser
+  viewer: SeededUser
   workspace: { id: string; name: string }
   project: { id: string; name: string }
   cell: { id: string; name: string }

@@ -384,3 +384,35 @@ type-check que o runtime não usa seria regressão de risco.
 
 **Gates verdes aqui:** `npm run lint` (100%), `npm run e2e:lint` (8 specs),
 `typecheck:test-imports`, `tsc` sobre `e2e/**` (só o pré-existente de session.ts).
+
+---
+
+## G-B2 — fluxos E2E: 7.1 (completo) + 7.2 (offline) + 7.3 (drenagem)
+
+Continuação dos 5 fluxos. Todos os specs escritos + `e2e:lint` verde + `tsc`
+limpo; execução em navegador é HANDOFF (§6e do `VALIDACAO_WSL.md`), pelo mesmo
+motivo do G-B1 (Mac do dono, demo viva). Nenhum seed NOVO — reusam `[convite]`.
+
+- **7.1 — FECHADO em slices.** Slices 1-2 já eram verdes em Chromium no container
+  (`invite.spec.ts`/`advance.spec.ts`). **Slice 3** (`invite-view.spec.ts`): o membro
+  `view` não tem o slider no DOM (fora do DOM, não `disabled`) + POST de avanço
+  forjado com o token do view → **403** (não 404: é membro, a falha é de PAPEL). A
+  **slice 4** (token no redirect do Google) é `test.fixme`: CANDIDATO A INTEGRAÇÃO
+  (§274) — stub de OAuth, coberto no `/auth/callback` em RTL.
+- **7.2 — ENTREGUE.** `offline-advance.spec.ts`: `context().setOffline(true)` (rede
+  REAL desligada), avanço 40→50 enfileira, overlay mostra 50, indicador "Alterações
+  pendentes" e `Salvo` (exact) COUNT 0. A invariante de estado honesto do PRODUCT.md.
+- **7.3 — ENTREGUE.** `offline-drain.spec.ts`: 3 avanços offline, `reload` ainda
+  offline (overlay derivado da fila sobrevive ao remount), reconexão → dreno →
+  "Salvo"; `expect.poll` no `GET /tasks/:id/advances` converge em 3 e cada
+  `recorded_at` < o carimbo de reconexão. Sub-caso robô-offline = `test.fixme`
+  (seam aberto de `offline-pwa`: o `BatchRobotWizard` não tem produtor de fila).
+
+**Decisão de execução DE-QA-B2.** Semeamos um quarto usuário `viewer` (membro
+`view`, id …004), espelho do `member` (edit): o slice-view precisa de um membro view
+pré-existente, e re-convidar `guest` (consumido como convidado `edit` pela slice 1)
+colidiria no banco único de uma rodada. Fixture ganhou `viewerContext`/`viewerPage`;
+`apiBase(baseURL)` foi exportado para o spec forjar o POST no backend :3000.
+
+**Gates:** `e2e:lint` (11 specs), `tsc` sobre `e2e/**` (só o pré-existente de
+session.ts:61 `base.request`, cosmético), `ruby -c` do `e2e.rake` OK.

@@ -457,6 +457,33 @@ prova plantada NÃO reprovar, o gate está quebrado; me mande a saída.
 
 ---
 
+## 6e. `quality-and-accessibility` — fluxos E2E 7.1/7.2/7.3 (HANDOFF)
+
+Os três primeiros fluxos. Spec escrito + `e2e:lint` verde; execução em navegador é
+o handoff. Reusam a semente `[convite]` (que agora também cria `viewer@e2e…`, membro
+`view`).
+
+- **7.1 slice 3** — `e2e/tests/invite-view.spec.ts`: membro `view` sem o slider no
+  DOM + POST de avanço forjado → 403. (Slices 1-2 já verdes em Chromium; slice 4 do
+  Google é `test.fixme` — integração via `/auth/callback`.)
+- **7.2** — `e2e/tests/offline-advance.spec.ts`: `setOffline(true)`, avanço 40→50
+  enfileira, overlay 50, indicador "Alterações pendentes", nunca "Salvo".
+- **7.3** — `e2e/tests/offline-drain.spec.ts`: 3 avanços offline, reload offline,
+  reconexão → dreno → 3 no servidor, `recorded_at` < reconexão. (Sub-caso
+  robô-criado-offline é `test.fixme` — seam aberto de `offline-pwa`.)
+
+```bash
+cd frontend && npm run build && npx vite preview --port 4173 &
+cd ../backend && bundle exec rails 'rt:seed:e2e[convite]'
+cd ../frontend && E2E_BASE_URL=http://localhost:4173 npx playwright test invite-view offline-advance offline-drain
+```
+
+Nota: 7.2/7.3 dependem do service worker (rede real desligada) — só rodam no BUILD
+DE PRODUÇÃO servido (§6). Se um deles piscar SÓ no WebKit, a suspeita começa por
+timing de SW (o par mediu ~10.7s de registro no WebKit).
+
+---
+
 ## Como me passar os resultados
 
 Rode os blocos e me mande a saída (especialmente 3 e 4). Eu interpreto, e se algo
