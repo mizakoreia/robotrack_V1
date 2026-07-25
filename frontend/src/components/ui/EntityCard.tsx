@@ -62,7 +62,12 @@ export function EntityCard({
   // levaria pra dentro dela. `closest` sobe do alvo até um controle; o `!== card`
   // exclui o PRÓPRIO card (que é `role="button"`) de se auto-detectar como interno.
   const fromInnerControl = (target: EventTarget | null, card: EventTarget) => {
-    if (!(target instanceof HTMLElement)) return false
+    // `Element`, não `HTMLElement`: o alvo do clique costuma ser o <svg>/<use> do
+    // ícone dentro do botão (o glifo preenche quase todo o alvo). SVGElement NÃO é
+    // HTMLElement — com o guarda antigo o clique no ícone da lixeira escapava como
+    // "não-interno" e o card NAVEGAVA em vez de excluir. `closest` existe em todo
+    // Element e sobe do <svg> até o <button> ancestral.
+    if (!(target instanceof Element)) return false
     const el = target.closest(INNER_CONTROL)
     return !!el && el !== card
   }

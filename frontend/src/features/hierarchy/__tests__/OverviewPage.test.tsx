@@ -1,9 +1,9 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
 import { OverviewPage } from '@/app/pages/OverviewPage'
-import { overviewApi, type WorkspaceOverviewDTO } from '@/lib/api/endpoints'
+import { hierarchyApi, overviewApi, type WorkspaceOverviewDTO } from '@/lib/api/endpoints'
 import { useWorkspaceStore } from '@/store/workspaceStore'
 
 // hierarchy-screens 4.6 (D15) — o teste sobre a fixture DIVERGENTE: o hub mostra a
@@ -91,6 +91,25 @@ describe('OverviewPage — excluir projeto é owner-only', () => {
     expect(screen.queryByRole('button', { name: 'Excluir Linha 300' })).toBeNull()
     // mas ainda vê criar (owner+edit).
     expect(screen.getByRole('button', { name: /Novo Projeto/i })).toBeInTheDocument()
+  })
+
+  // REGRESSÃO "a lixeira não exclui no desktop": clicar no ÍCONE (svg) do botão
+  // abria a navegação do card em vez da confirmação. Aqui exercitamos o alvo real
+  // (o <svg>) e provamos: o diálogo abre (não navegou) e confirmar chama a mutation.
+  it('clicar no ícone da lixeira abre a confirmação e confirmar chama deleteProject', async () => {
+    setRole('owner')
+    vi.spyOn(overviewApi, 'workspace').mockResolvedValue(DIVERGENT)
+    const del = vi.spyOn(hierarchyApi, 'deleteProject').mockResolvedValue(undefined as never)
+    renderPage()
+
+    const lixeira = await screen.findByRole('button', { name: 'Excluir Linha 300' })
+    fireEvent.click(lixeira.querySelector('svg') as Element) // alvo = svg (não HTMLElement)
+
+    // abriu a confirmação — NÃO navegou para dentro do projeto.
+    const dialog = await screen.findByRole('dialog', { name: 'Excluir projeto' })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Excluir' }))
+
+    await waitFor(() => expect(del).toHaveBeenCalledWith('p1'))
   })
 })
 
