@@ -104,11 +104,14 @@
 
 ## G5. Docs, E2E e fechamento
 
-- [ ] G5.1 Atualizar `CONTINUIDADE.md` (estado, suítes, o que resta), `VALIDACAO_WSL.md`
-  (se tocar comando/seletor/topologia), `DESIGN.md` (se tocar token/primitivo/motion)
-- [ ] G5.2 E2E do fluxo por código em Chromium (dono cria → copia código → convidado
-  digita e-mail+código na entrada → autentica → vira membro); WebKit/CI como handoff
-  registrado
-- [ ] G5.3 Verificação final: `validate --strict` verde, docs sem afirmação falsa,
-  relatório final pt-BR client-friendly com o que ficou pronto, estado das suítes,
-  decisões, pendências/handoffs e o que está commitado localmente aguardando push
+- [x] G5.1 `CONTINUIDADE.md` (seção nova da 26ª change, estado/suítes/git local) e
+  `VALIDACAO_WSL.md` (§6b handoff do E2E por código) atualizados. `DESIGN.md` NÃO tocado:
+  a change reusa tokens/primitivos existentes (native `<details>` + campos com tokens já
+  medidos) — nenhum token/primitivo/motion/ban novo
+- [x] G5.2 E2E do fluxo por código escrito (`frontend/e2e/tests/invite-code.spec.ts`,
+  locators ancorados + `{exact:true}`) e **aprovado no `e2e:lint`**; execução em Chromium
+  é HANDOFF (container sem Playwright/Docker — §6b do VALIDACAO_WSL), como todo E2E da
+  casa
+- [x] G5.3 Verificação final: `validate --strict` verde; docs sem afirmação falsa;
+  relatório final pt-BR client-friendly entregue (pronto, suítes, decisões, handoffs, o
+  que está local aguardando push)

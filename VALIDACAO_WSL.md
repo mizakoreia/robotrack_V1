@@ -376,6 +376,31 @@ FECHADA COMO DORMENTE (o sistema começa do zero) — não há corte a rodar e o
 
 ---
 
+## 6b. `invite-by-code` — E2E do fluxo por CÓDIGO (HANDOFF)
+
+Change nova (26ª), **LOCAL na branch `feat/invite-by-code`** — NÃO empurrada e NÃO
+mergeada a `main` (instrução do dono: acumular antes de subir). Antes de validar,
+esteja na branch certa: `git checkout feat/invite-by-code`.
+
+Novo spec `frontend/e2e/tests/invite-code.spec.ts` (dono cria convite → copia o
+**código** do diálogo → convidado digita e-mail+código na seção "Tenho um código de
+convite" da tela de entrada → vira membro). Já **aprovado no `e2e:lint`**; falta a
+execução em navegador (este container não tem Playwright/Docker).
+
+Roda com o MESMO setup do §6 e a MESMA semente `[convite]` (o `guest@e2e…` é o
+convidado):
+
+```bash
+cd frontend && npm run build && npx vite preview --port 4173 &
+cd ../backend && bundle exec rails 'rt:seed:e2e[convite]'
+cd ../frontend && E2E_BASE_URL=http://localhost:4173 npx playwright test invite-code
+```
+
+Esperado: verde em Chromium (WebKit/CI seguem o mesmo handoff dos demais E2E). Se
+reprovar por CÓDIGO (não setup), me mande a saída — corrijo na branch local.
+
+---
+
 ## Como me passar os resultados
 
 Rode os blocos e me mande a saída (especialmente 3 e 4). Eu interpreto, e se algo

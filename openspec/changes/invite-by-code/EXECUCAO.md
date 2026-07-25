@@ -315,4 +315,49 @@ falhas do par travam o código), a adivinhação online é proibitiva.
 - `G4: entrada por codigo na AuthPage + codigo no InviteDialog/TeamPanel`
   (LOCAL, sem push).
 
-## G5 — (pendente)
+## G5 — Docs, E2E e fechamento
+
+### Entregue
+
+- `CONTINUIDADE.md`: seção nova "Change NOVA: `invite-by-code`" — estado, entregas por
+  grupo, suítes, e o AVISO explícito de que esta change NÃO seguiu o "ff a `main` +
+  push" por instrução do dono (vive local em `feat/invite-by-code`).
+- `VALIDACAO_WSL.md`: §6b — handoff da execução do E2E por código em Chromium (mesmo
+  setup/semente `[convite]` do §6).
+- `frontend/e2e/tests/invite-code.spec.ts`: fluxo por código ponta a ponta, locators
+  ancorados por diálogo/região + `{ exact: true }`; **aprovado no `e2e:lint`**.
+
+### Decisões de execução
+
+- **DE-G5.1 — `DESIGN.md` não muda.** A change reusa tokens (`bg-bg-main`/`text-text-
+  main`/`border-input`/`bg-bg-panel`) e o primitivo nativo `<details>`; nenhum token,
+  primitivo, motion ou ban novo. Pela tabela do CLAUDE.md, `DESIGN.md` só é atualizado
+  quando o sistema visual muda — não é o caso.
+- **DE-G5.2 — E2E-green é HANDOFF, não [x] de verde.** O CLAUDE.md proíbe `[x]` sem
+  prova verde; este container não tem Playwright/Docker (o próprio `VALIDACAO_WSL.md`
+  registra isso para TODO E2E da casa). Marca-se o spec como ESCRITO + `e2e:lint` verde,
+  e a execução em Chromium como handoff — coerente com como a casa trata E2E.
+
+### Prova do G5
+
+- `e2e:lint` → **OK, 4 spec(s)** (inclui `invite-code.spec.ts`).
+- `validate --strict` → verde.
+- Docs relidos: sem afirmação falsa (o git-local é dito explicitamente; o E2E é dito
+  handoff, não verde).
+
+### Commit local do G5
+
+- `G5: docs (CONTINUIDADE/VALIDACAO) + E2E por codigo (lint verde) + fechamento`
+  (LOCAL, sem push).
+
+---
+
+## Estado final da change (aguardando decisão do dono sobre push)
+
+- **Grupos G0..G5 completos**, todos com specs dirigidos verdes e commits `G<n>:`
+  **LOCAIS** em `feat/invite-by-code`. NADA empurrado; NADA mergeado a `main`.
+- `validate --strict` verde em cada grupo.
+- **Handoff aberto:** rodar `invite-code.spec.ts` em Chromium (e WebKit/CI) na WSL —
+  §6b do `VALIDACAO_WSL.md`.
+- **Não-objetivos preservados:** sem código de workspace reutilizável (§F.4), sem mudar
+  a matriz de autorização (§F.3 — só o dono convida), sem e-mail/SMS, link intocado.

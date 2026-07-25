@@ -38,6 +38,39 @@ está em [PROMPT DE RETOMADA](#prompt-de-retomada), no fim.
 > (harmless): as tabelas `legacy_import_runs`/`legacy_id_map` e o `event_type`
 > `legacy_rollback` em `audit_logs`.
 
+## Change NOVA: `invite-by-code` (26ª change — LOCAL, aguardando push)
+
+Convite por **CÓDIGO** curto (`XXXX-XXXX`), além do link. Representação adicional do
+MESMO registro `invitations` (por-e-mail, uso único, hasheada), coexistindo com o
+link — decisões do dono em `openspec/changes/invite-by-code/PLANO.md` §F. Método da
+casa seguido grupo a grupo (G0..G5); specs verdes por grupo; `validate --strict`
+verde; EXECUCAO com decisões/armadilhas.
+
+> **Git — DIFERENTE do protocolo padrão desta seção.** Por **instrução explícita do
+> dono nesta sessão**, `invite-by-code` NÃO seguiu o "ff a `main` por grupo + push".
+> Todo o trabalho vive na branch LOCAL **`feat/invite-by-code`** (commits `G0..G4`
+> locais; `G5` de docs a caminho), **sem push e sem `merge --ff-only main`**. O dono
+> quer acumular antes de subir. Nada em `origin` mudou por causa desta change.
+
+O que foi entregue (tudo local):
+- **G1** migration aditiva (`code_hash`/`code_expires_at`/`code_attempts`/
+  `code_locked_at`, índice único parcial, `invitation_by_code` `SECURITY DEFINER` + 3º
+  ramo RLS, sem BYPASSRLS) + model (Crockford sem I/L/O/U, HMAC com pepper).
+- **G2** aceite/preview por código reusando o `consume` do `AcceptService`; rotas
+  `POST /api/v1/invitations/code/{preview,accept}`; entity com `short_code` só na
+  criação.
+- **G3** endurecimento: rate-limit `code-accept-ip`/`-email`/`-global` +
+  `code-preview-ip`; lockout por convite (5 falhas do par → 423); `INVITATION_CODE_
+  PEPPER` no `env_schema`; log só com `code_sha256`.
+- **G4** frontend: seção "Tenho um código de convite" na `AuthPage` (sobrevive ao
+  OAuth), código no `InviteDialog`/`TeamPanel`, `consumeInviteByCode`.
+- **Suítes:** backend dos grupos verdes (geração/RLS/lookup, request specs do fluxo,
+  lockout+rate-limit, regressões de invitations/tenancy/autorização sem falha);
+  frontend `vitest` **141/141** + `tsc`/`lint` limpos.
+- **E2E:** `frontend/e2e/tests/invite-code.spec.ts` escrito e **aprovado no
+  `e2e:lint`**; a execução em Chromium é **HANDOFF** (este container não tem
+  Playwright/Docker — ver `VALIDACAO_WSL.md`), como todo E2E da casa.
+
 ## Campanha de deploy (par com o agente da WSL — 24/07/2026)
 
 Depois de fechar o domínio, o **primeiro deploy real** virou uma sessão de par: o
