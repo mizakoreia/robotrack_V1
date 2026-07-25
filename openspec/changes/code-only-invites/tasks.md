@@ -65,6 +65,6 @@
 
 ## G4. Fechamento
 
-- [ ] G4.1 `EXECUCAO.md`: CONCLUSÃO com o que foi removido, as decisões finais (DA-1/DA-2
-  como o dono decidiu) e o estado das suítes
-- [ ] G4.2 Resumo pt-BR client-friendly ao dono
+- [x] G4.1 `EXECUCAO.md`: CONCLUSÃO com o que foi removido, as decisões finais (DA-2=B,
+  DA-1=drenar/reemitir) e o estado das suítes; `CONTINUIDADE.md` com a 28ª change
+- [x] G4.2 Resumo pt-BR client-friendly ao dono

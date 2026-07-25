@@ -87,6 +87,22 @@ O que FICA (código-só reusa, não tocar): seção "Tenho um código" da `AuthP
   "a 501ª é REJEITADA (D7-12)" falha só sob paralelismo da suíte cheia e **passa isolado**
   (8/8). É `offline-pwa` (IndexedDB/timing), domínio intocado por esta change.
 
+## CONCLUSÃO (G1..G4 — COMPLETA, publicada em `main`)
+
+Convite **só por código**. Removido do produto: rota pública `/convite/:token`, endpoints
+preview/accept por token, `invite_url`, `AppUrl.invite_url`, `InviteRoute.tsx`, o ramo de
+token no cliente e nas allowlists. Coluna `token` **dormente** (D2 — sem migração). Decisões
+finais: **DA-2=B**, **DA-1=drenar/reemitir** (rake `invitations:reissue_codes`).
+
+Gates: backend convite+autz+tenancy **549/0/8pend** + reissue **2/2**; frontend `tsc`/`lint`
+limpos, `vitest` de convite **74/74** (suíte 575/576 — a única falha é o flaky pré-existente
+de fila offline, alheio). `e2e:lint` OK (14); execução E2E em navegador é HANDOFF (demo viva
+em :3000/:5173 — não repontar). `validate --strict` verde. **DESIGN.md não tocado.**
+
+**Passo de operação ANTES do merge para produção (DA-1):** rodar
+`rake invitations:reissue_codes[<workspace_id>]` e repassar os códigos aos convidados com
+pendências — nada é enviado automaticamente.
+
 ## Armadilhas previstas
 
 - **Ordem de rota:** o `namespace :code` foi declarado ANTES de `:token` de propósito

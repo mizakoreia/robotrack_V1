@@ -118,6 +118,33 @@ O que foi entregue (tudo local):
 - **`DESIGN.md` NÃO tocado:** reuso puro de tokens/primitivos (Modal + campos com tokens
   já medidos) — nenhum token/primitivo/motion/ban novo.
 
+## Change NOVA: `code-only-invites` (28ª change — PUBLICADA em `main`)
+
+Convite **SÓ por CÓDIGO** — o LINK por token foi removido do produto. **Supera a decisão
+§F.1 de `invite-by-code`** (que fazia link e código COEXISTIREM); agora o código é o único
+caminho. Decisões do dono: **profundidade B** (remover a rota pública `/convite/:token` + os
+endpoints preview/accept por token + `invite_url`; a coluna `token` fica **DORMENTE**, sem
+migração destrutiva — D2) e **drenar/reemitir** os pendentes antes do merge (DA-1). Método da
+casa G1..G4; ff para `main` a cada grupo.
+
+- **G1 backend:** `invitation_tokens.rb` sem as rotas por token (só `namespace :code`);
+  `AcceptService`/`PreviewService` só por código (construtor sem `token:`); entity sem
+  `invite_url`; `AppUrl.invite_url` removido (`base` fica — guarda de boot); `root.rb` +
+  `public_routes.yml` sem as entradas de token (D4 — allowlist ENCOLHE, registrado). Suíte
+  convite+autorização+tenancy **549/0/8pend**; specs por token reescritos p/ código;
+  `rate_limit_spec` (token) removido; cenário `workspace_alheio` dropado (inalcançável por
+  código — `invitation_workspace_mismatch` vira defesa estrutural).
+- **G2 frontend:** `InviteDialog` code-first (sem link); `TeamPanel` sem input de link;
+  rota `/convite/:token` + `InviteRoute.tsx` removidos; `session.ts`/`invite.ts` sem o ramo
+  de token; `endpoints.ts` sem `invite_url`/`preview`/`accept` por token; i18n reescrito
+  (link→código). `tsc`/`lint` limpos; `vitest` de convite **74/74**.
+- **G3 e2e + rake:** `invite.spec.ts` (link) removido; `invite-code.spec.ts` é o Fluxo 1;
+  `e2e:lint` OK (14). **Rake DA-1** `invitations:reissue_codes[<workspace_id>]` reemite código
+  novo p/ cada convite pendente e imprime (e-mail, código) — nada é enviado; spec 2/2.
+- **Flaky pré-existente (não é regressão):** `frontend .../offline/queue.test.ts` (D7-12)
+  falha só sob paralelismo da suíte cheia e passa isolado — domínio `offline-pwa`, intocado.
+- **`DESIGN.md` NÃO tocado:** só remoção + reordenação da UI de convite (código já existia).
+
 ## Campanha de deploy (par com o agente da WSL — 24/07/2026)
 
 Depois de fechar o domínio, o **primeiro deploy real** virou uma sessão de par: o
