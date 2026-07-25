@@ -10,6 +10,7 @@ import {
   type TaskDTO,
 } from '@/lib/api/endpoints'
 import { useWorkspaceStore } from '@/store/workspaceStore'
+import { safeStorage } from '@/lib/safeStorage'
 
 // robot-task-table 7.2/7.3 (§3.5, §4.1, D-RTT-3) — os cenários operacionais ponta a
 // ponta (cada cenário nomeado é um teste) e a prova de carga: 40 tarefas em 9
@@ -78,7 +79,13 @@ function renderAt(path = '/robo/r1', withHarness = false) {
 afterEach(() => vi.restoreAllMocks())
 
 describe('E2E — cenários operacionais (7.2)', () => {
-  beforeEach(() => setRole('owner'))
+  beforeEach(() => {
+    setRole('owner')
+    // categorias fecham por padrão; estes cenários operam sobre a tarefa (cat
+    // 'A. Hardware'), então abrimos o grupo nos robôs usados (r1/r2).
+    safeStorage.set('local', 'rt.taskgroups.v2.r1', JSON.stringify(['A. Hardware']))
+    safeStorage.set('local', 'rt.taskgroups.v2.r2', JSON.stringify(['A. Hardware']))
+  })
 
   it('reset de filtro A→B→A mostra "Todos"', async () => {
     getSpy = vi.spyOn(robotTasksApi, 'getRobot').mockImplementation((rid) => Promise.resolve({ ...HEADER, id: rid, name: rid.toUpperCase() }))
@@ -156,8 +163,8 @@ describe('carga — 40 tarefas / 9 categorias / 1 requisição (7.3, D-RTT-3)', 
     mockApi(bigDataset())
     renderAt()
 
-    // todas as 40 linhas presentes
-    await waitFor(() => expect(screen.getByText('Tarefa 39')).toBeInTheDocument())
+    // as 9 categorias carregam com UMA requisição (fechadas por padrão)
+    await waitFor(() => expect(screen.getAllByText(/^[A-I]\. Categoria \d$/)).toHaveLength(9))
     const tti = performance.now() - t0
 
     // UMA requisição para a lista; UMA para o cabeçalho; ZERO por linha
@@ -168,6 +175,11 @@ describe('carga — 40 tarefas / 9 categorias / 1 requisição (7.3, D-RTT-3)', 
 
     // 9 separadores de categoria (um por grupo)
     expect(screen.getAllByText(/^[A-I]\. Categoria \d$/)).toHaveLength(9)
+
+    // expandir um grupo revela suas linhas SEM nova requisição (os dados já vieram)
+    fireEvent.click(screen.getByRole('button', { name: /I\. Categoria 9/ }))
+    await waitFor(() => expect(screen.getByText('Tarefa 8')).toBeInTheDocument())
+    expect(listSpy).toHaveBeenCalledTimes(1)
 
     // sanidade de tempo até interativo (jsdom é generoso; só garante que não explode)
     expect(tti).toBeLessThan(10_000)

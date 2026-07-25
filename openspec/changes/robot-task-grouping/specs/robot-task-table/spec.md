@@ -32,21 +32,21 @@ não contíguas produzem títulos repetidos.*
 - **AND** o cabeçalho mostra a contagem de tarefas do grupo
 - **AND** o cabeçalho NÃO mostra um percentual de progresso da categoria
 
-### Requirement: Estado de expansão lembrado por robô, aberto por padrão
+### Requirement: Estado de expansão lembrado por robô, fechado por padrão
 
-O sistema SHALL iniciar com todas as categorias expandidas e SHALL persistir o estado de
-recolhimento por categoria, por robô, em `lib/safeStorage`, de modo que reabrir a tela do
-mesmo robô reflita o que o operador deixou.
+O sistema SHALL iniciar com todas as categorias RECOLHIDAS e SHALL persistir por robô, em
+`lib/safeStorage`, o conjunto de categorias que o operador ABRIU, de modo que reabrir a
+tela do mesmo robô reflita o que ele deixou aberto.
 
 #### Scenario: o estado sobrevive à reabertura
 
-- **WHEN** o operador recolhe a categoria `B` no robô R e volta para a tela de R
-- **THEN** a categoria `B` aparece recolhida e as demais expandidas
+- **WHEN** o operador abre a categoria `B` no robô R e volta para a tela de R
+- **THEN** a categoria `B` aparece aberta e as demais recolhidas
 
-#### Scenario: categoria nova nasce aberta
+#### Scenario: categoria nova nasce fechada
 
 - **WHEN** uma categoria ainda não vista aparece no robô
-- **THEN** ela é renderizada expandida (só o conjunto de recolhidas é persistido)
+- **THEN** ela é renderizada recolhida (só o conjunto de abertas é persistido)
 
 ### Requirement: Seleção múltipla e exclusão em lote (owner-only)
 

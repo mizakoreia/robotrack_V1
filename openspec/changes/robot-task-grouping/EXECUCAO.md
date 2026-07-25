@@ -63,3 +63,7 @@ Mapa de execução. Escrito ANTES do código (commit G0). RETOMADA no fim.
 - **G4 (fechamento):** validate --strict verde; suíte frontend completa + specs backend das
   áreas verdes; docs (CONTINUIDADE/EXECUCAO); ff `main` + push. Divergência: nenhuma —
   "apagar sem quebrar cálculo" individual já existia; entregue o LOTE.
+- **Ajuste pós-entrega (pedido do dono):** default do colapso INVERTIDO — categorias agora
+  **fecham por padrão** e o storage guarda as **abertas** (`useCategoryCollapse`, chave `v2`).
+  D-TG-4 e o spec `robot-task-table` atualizados. Testes que operam sobre a tarefa
+  pré-abrem o grupo do cenário (safeStorage). Suíte frontend 601/601; tsc 0; eslint 0.

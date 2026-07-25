@@ -62,29 +62,30 @@ describe('categorias colapsáveis (D-TG-2/3/4/5)', () => {
       task({ id: 'a', cat: 'Hardware', desc: 'Fixar base', status: 'Pendente' }),
       task({ id: 'b', cat: 'Rede', desc: 'Configurar IP', status: 'Concluído', progress: 100 }),
     ])
-    safeStorage.set('local', 'rt.taskgroups.r1', '[]') // começa tudo aberto
+    safeStorage.set('local', 'rt.taskgroups.v2.r1', '[]') // nada aberto → tudo fechado
   })
   afterEach(() => vi.restoreAllMocks())
 
-  it('cabeçalho tem prefixo A./B. e contagem; começa aberto', async () => {
+  it('cabeçalho tem prefixo A./B. e contagem; começa FECHADO', async () => {
     renderPage()
     const h = await screen.findByRole('button', { name: /A\..*Hardware.*\(1\)/s })
-    expect(h).toHaveAttribute('aria-expanded', 'true')
+    expect(h).toHaveAttribute('aria-expanded', 'false')
     expect(screen.getByRole('button', { name: /B\..*Rede.*\(1\)/s })).toBeInTheDocument()
-    expect(screen.getByText('Fixar base')).toBeInTheDocument()
+    // fechado por padrão: a tarefa não está no DOM
+    expect(screen.queryByText('Fixar base')).not.toBeInTheDocument()
   })
 
-  it('recolher tira as tarefas do grupo do DOM e persiste por robô', async () => {
+  it('expandir mostra as tarefas do grupo e persiste a ABERTA por robô', async () => {
     renderPage()
     const h = await screen.findByRole('button', { name: /A\..*Hardware/s })
-    expect(screen.getByText('Fixar base')).toBeInTheDocument()
+    expect(screen.queryByText('Fixar base')).not.toBeInTheDocument()
 
     fireEvent.click(h)
-    await waitFor(() => expect(screen.queryByText('Fixar base')).not.toBeInTheDocument())
-    expect(h).toHaveAttribute('aria-expanded', 'false')
-    // a outra categoria segue visível
-    expect(screen.getByText('Configurar IP')).toBeInTheDocument()
-    // persistiu a recolhida
-    expect(safeStorage.get('local', 'rt.taskgroups.r1')).toContain('Hardware')
+    await waitFor(() => expect(screen.getByText('Fixar base')).toBeInTheDocument())
+    expect(h).toHaveAttribute('aria-expanded', 'true')
+    // a outra categoria segue fechada
+    expect(screen.queryByText('Configurar IP')).not.toBeInTheDocument()
+    // persistiu a aberta
+    expect(safeStorage.get('local', 'rt.taskgroups.v2.r1')).toContain('Hardware')
   })
 })

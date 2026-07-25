@@ -7,6 +7,7 @@ import { useSuccessPulse } from '@/features/robot-tasks/useSuccessPulse'
 import { STATUS_COLOR } from '@/features/robot-tasks/StatusCell'
 import { robotTasksApi, type TaskDTO } from '@/lib/api/endpoints'
 import { useWorkspaceStore } from '@/store/workspaceStore'
+import { safeStorage } from '@/lib/safeStorage'
 
 // robot-task-table 6.5 (§5.1, §3.5, DESIGN.md §Motion/Accessibility) — a verificação
 // da trilha 6: o pulso aos 100% (uma vez, na transição observada), o refluxo em
@@ -82,6 +83,7 @@ describe('refluxo em cartões e alvos de toque (6.1/6.2)', () => {
       workspaces: [{ id: 'betim', name: 'Betim', role: 'owner' }],
       currentWorkspaceId: 'betim', currentRoleLabel: 'owner',
     })
+    safeStorage.set('local', 'rt.taskgroups.v2.r1', JSON.stringify(['A. Hardware'])) // categorias fecham por padrão; abrimos o grupo do cenário
     vi.spyOn(robotTasksApi, 'getRobot').mockResolvedValue(HEADER)
     vi.spyOn(robotTasksApi, 'listForRobot').mockResolvedValue([task()])
   })

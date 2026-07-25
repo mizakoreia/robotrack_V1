@@ -85,7 +85,7 @@ describe('RobotTaskTablePage — reset de filtro na navegação (D-RTT-1)', () =
     expect(within(tl).getByRole('tab', { name: 'Todos' })).toHaveAttribute('aria-selected', 'true')
   })
 
-  it('agrupa por categoria com separador (uma vez por grupo)', async () => {
+  it('agrupa por categoria (cabeçalho por grupo, fechado por padrão; expandir revela)', async () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })
     render(
       <QueryClientProvider client={client}>
@@ -96,8 +96,12 @@ describe('RobotTaskTablePage — reset de filtro na navegação (D-RTT-1)', () =
         </MemoryRouter>
       </QueryClientProvider>,
     )
+    // um cabeçalho por categoria; fechado por padrão (a tarefa não está no DOM)
+    const hHardware = await screen.findByRole('button', { name: /Hardware/ })
+    expect(screen.getByRole('button', { name: /Software/ })).toBeInTheDocument()
+    expect(screen.queryByText('Fixar base')).not.toBeInTheDocument()
+    // expandir revela a tarefa do grupo
+    fireEvent.click(hHardware)
     expect(await screen.findByText('Fixar base')).toBeInTheDocument()
-    expect(screen.getByText('A. Hardware')).toBeInTheDocument()
-    expect(screen.getByText('B. Software')).toBeInTheDocument()
   })
 })

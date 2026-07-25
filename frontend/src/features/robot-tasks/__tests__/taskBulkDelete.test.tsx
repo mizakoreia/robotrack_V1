@@ -5,6 +5,7 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import { RobotRouteKey } from '@/app/pages/RobotRouteKey'
 import { robotTasksApi, type TaskDTO } from '@/lib/api/endpoints'
 import { useWorkspaceStore } from '@/store/workspaceStore'
+import { safeStorage } from '@/lib/safeStorage'
 
 // robot-task-grouping G3 — seleção múltipla e exclusão em lote (owner-only).
 function task(over: Partial<TaskDTO>): TaskDTO {
@@ -37,6 +38,8 @@ beforeEach(() => {
     task({ id: 'b', cat: 'Hardware', desc: 'Aterrar' }),
     task({ id: 'c', cat: 'Rede', desc: 'Configurar IP' }),
   ])
+  // categorias fecham por padrão; abrimos as duas para os checkboxes aparecerem.
+  safeStorage.set('local', 'rt.taskgroups.v2.r1', JSON.stringify(['Hardware', 'Rede']))
 })
 afterEach(() => vi.restoreAllMocks())
 

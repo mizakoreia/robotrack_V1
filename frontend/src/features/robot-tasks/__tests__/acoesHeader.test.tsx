@@ -6,6 +6,7 @@ import { Toaster } from 'sonner'
 import { RobotRouteKey } from '@/app/pages/RobotRouteKey'
 import { robotTasksApi, hierarchyApi, type TaskDTO } from '@/lib/api/endpoints'
 import { useWorkspaceStore } from '@/store/workspaceStore'
+import { safeStorage } from '@/lib/safeStorage'
 
 // robot-task-table 4.4/4.5 (§4.1, D-RTT-9) — o gating de `view` na tela (controles
 // FORA do DOM, não desabilitados), a coluna Ações (editar/excluir + confirmação) e
@@ -49,7 +50,8 @@ function setRole(role: 'owner' | 'edit' | 'view') {
 
 beforeEach(() => {
   serverTasks = [task()]
-  vi.spyOn(robotTasksApi, 'getRobot').mockResolvedValue(HEADER)
+  safeStorage.set('local', 'rt.taskgroups.v2.r1', JSON.stringify(['A. Hardware'])) // categorias fecham por padrão; abrimos o grupo do cenário
+    vi.spyOn(robotTasksApi, 'getRobot').mockResolvedValue(HEADER)
   vi.spyOn(robotTasksApi, 'listForRobot').mockImplementation(() => Promise.resolve(serverTasks))
 })
 afterEach(() => vi.restoreAllMocks())

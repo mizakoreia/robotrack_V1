@@ -33,13 +33,14 @@ export function groupLetter(index: number): string {
   return index < 26 ? String.fromCharCode(65 + index) : String(index + 1)
 }
 
-// D-TG-4 — estado por ROBÔ em safeStorage. Guardamos só as categorias RECOLHIDAS
-// (conjunto): ausência = aberta, então o default "tudo aberto" não escreve nada e uma
-// categoria nova nasce aberta. Degrada em memória quando o storage é bloqueado.
-export function useCollapsedCategories(robotId: string) {
-  const key = `rt.taskgroups.${robotId}`
+// D-TG-4 — estado por ROBÔ em safeStorage. Default: TUDO FECHADO; guardamos só as
+// categorias ABERTAS (conjunto): ausência = fechada, então uma categoria nova nasce
+// fechada e a lista abre compacta. Degrada em memória quando o storage é bloqueado.
+// (chave `v2`: a v1 guardava o inverso — as recolhidas.)
+export function useCategoryCollapse(robotId: string) {
+  const key = `rt.taskgroups.v2.${robotId}`
 
-  const [collapsed, setCollapsed] = useState<Set<string>>(() => {
+  const [expanded, setExpanded] = useState<Set<string>>(() => {
     const raw = safeStorage.get('local', key)
     if (!raw) return new Set()
     try {
@@ -52,7 +53,7 @@ export function useCollapsedCategories(robotId: string) {
 
   const toggle = useCallback(
     (cat: string) => {
-      setCollapsed((prev) => {
+      setExpanded((prev) => {
         const next = new Set(prev)
         if (next.has(cat)) next.delete(cat)
         else next.add(cat)
@@ -63,5 +64,7 @@ export function useCollapsedCategories(robotId: string) {
     [key],
   )
 
-  return { collapsed, toggle }
+  const isCollapsed = useCallback((cat: string) => !expanded.has(cat), [expanded])
+
+  return { isCollapsed, toggle }
 }

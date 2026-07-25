@@ -14,7 +14,7 @@ import { TrilhaCell } from '@/features/robot-tasks/TrilhaCell'
 import { AcoesCell } from '@/features/robot-tasks/AcoesCell'
 import { AddTaskModal } from '@/features/robot-tasks/AddTaskModal'
 import { useSyncTemplates, useBulkDeleteTasks } from '@/features/robot-tasks/useTaskCrud'
-import { groupByCategory, groupLetter, useCollapsedCategories } from '@/features/robot-tasks/taskGroups'
+import { groupByCategory, groupLetter, useCategoryCollapse } from '@/features/robot-tasks/taskGroups'
 import { useSuccessPulse } from '@/features/robot-tasks/useSuccessPulse'
 import { useMediaQuery } from '@/lib/useMediaQuery'
 import { AdvanceControls } from '@/features/advances/AdvanceControls'
@@ -215,7 +215,7 @@ function TaskTable({ robotId, tasks, canEdit, isOwner, sel }: { robotId: string;
   // §6.1 (D-RTT-8) — UM layout por vez (não os dois escondidos por CSS): evita
   // montar duas árvores e mantém o DOM limpo (importa p/ §7.1 e leitores de tela).
   const isDesktop = useMediaQuery('(min-width: 768px)')
-  const { collapsed, toggle } = useCollapsedCategories(robotId)
+  const { isCollapsed, toggle } = useCategoryCollapse(robotId)
   const groups = groupByCategory(tasks)
   // 4.4 (D-RTT-9) — a coluna Ações SAI do DOM para `view`; a de seleção só existe
   // para o dono (G3). O colSpan do cabeçalho de grupo acompanha ambas.
@@ -225,7 +225,7 @@ function TaskTable({ robotId, tasks, canEdit, isOwner, sel }: { robotId: string;
     return (
       <div className="space-y-3">
         {groups.map((g, i) => {
-          const isCollapsed = collapsed.has(g.cat)
+          const groupCollapsed = isCollapsed(g.cat)
           const rid = `taskgroup-${i}`
           return (
             <section key={g.cat} aria-labelledby={`${rid}-h`}>
@@ -234,13 +234,13 @@ function TaskTable({ robotId, tasks, canEdit, isOwner, sel }: { robotId: string;
                   letter={groupLetter(i)}
                   cat={g.cat}
                   count={g.tasks.length}
-                  collapsed={isCollapsed}
+                  collapsed={groupCollapsed}
                   regionId={rid}
                   onToggle={() => toggle(g.cat)}
                   className="w-full px-1 py-2"
                 />
               </h2>
-              {!isCollapsed && (
+              {!groupCollapsed && (
                 <div id={rid} className="space-y-3">
                   {g.tasks.map((t) => (
                     <MobileTaskCard
@@ -278,7 +278,7 @@ function TaskTable({ robotId, tasks, canEdit, isOwner, sel }: { robotId: string;
           </tr>
         </thead>
         {groups.map((g, i) => {
-          const isCollapsed = collapsed.has(g.cat)
+          const groupCollapsed = isCollapsed(g.cat)
           const rid = `taskgroup-${i}`
           return (
             <tbody key={g.cat} id={rid}>
@@ -288,14 +288,14 @@ function TaskTable({ robotId, tasks, canEdit, isOwner, sel }: { robotId: string;
                     letter={groupLetter(i)}
                     cat={g.cat}
                     count={g.tasks.length}
-                    collapsed={isCollapsed}
+                    collapsed={groupCollapsed}
                     regionId={rid}
                     onToggle={() => toggle(g.cat)}
                     className="px-2 py-1"
                   />
                 </td>
               </tr>
-              {!isCollapsed &&
+              {!groupCollapsed &&
                 g.tasks.map((t) => (
                   <TaskRow
                     key={t.id}

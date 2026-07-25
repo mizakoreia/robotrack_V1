@@ -5,6 +5,7 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import { RobotRouteKey } from '@/app/pages/RobotRouteKey'
 import { robotTasksApi, taskAdvancesApi, type TaskDTO } from '@/lib/api/endpoints'
 import { useWorkspaceStore } from '@/store/workspaceStore'
+import { safeStorage } from '@/lib/safeStorage'
 
 // robot-task-table 7.1 (§3.5) — render ÚNICA por mutação: confirmar um avanço numa
 // linha NÃO re-renderiza as linhas não afetadas. A prova é o `structuralSharing` do
@@ -44,6 +45,7 @@ beforeEach(() => {
     workspaces: [{ id: 'betim', name: 'Betim', role: 'owner' }],
     currentWorkspaceId: 'betim', currentRoleLabel: 'owner',
   })
+  safeStorage.set('local', 'rt.taskgroups.v2.r1', JSON.stringify(['A. Hardware'])) // categorias fecham por padrão; abrimos o grupo do cenário
   vi.spyOn(robotTasksApi, 'getRobot').mockResolvedValue(HEADER)
   vi.spyOn(robotTasksApi, 'listForRobot').mockImplementation(() => Promise.resolve(serverTasks.map((t) => ({ ...t }))))
 })

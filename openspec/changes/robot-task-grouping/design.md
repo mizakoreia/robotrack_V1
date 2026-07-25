@@ -25,13 +25,16 @@ por categoria no cliente violaria "nada de progresso recalculado no cliente" (D1
 **Decisão:** o cabeçalho mostra só a contagem de tarefas do grupo (`length` do array —
 não é métrica de progresso). Se um dia quisermos % por categoria, ele nasce no servidor.
 
-## D-TG-4 — Estado colapsado: todas abertas, lembrado por robô
+## D-TG-4 — Estado colapsado: TODAS FECHADAS por padrão, lembrado por robô
 
-**Decisão:** default = todas expandidas; o estado por categoria é persistido em
-`lib/safeStorage` sob uma chave por robô (`rt.taskgroups.<robotId>`). Guardamos só as
-categorias **fechadas** (conjunto) — ausência = aberta, então o default "tudo aberto" não
-precisa escrever nada e categorias novas nascem abertas. `safeStorage` degrada em memória
+**Decisão (revisada a pedido do dono):** default = todas **recolhidas**; o estado é
+persistido em `lib/safeStorage` sob uma chave por robô (`rt.taskgroups.v2.<robotId>`).
+Guardamos só as categorias **abertas** (conjunto) — ausência = fechada, então uma
+categoria nova nasce fechada e a lista abre compacta. `safeStorage` degrada em memória
 quando o storage é bloqueado (o estado não sobrevive a reload nesse nível — honesto).
+
+*(A 1ª versão era o inverso — default aberto, guardava as recolhidas, chave `v1`. A chave
+subiu para `v2` para não reinterpretar o estado antigo ao contrário.)*
 
 ## D-TG-5 — Colapsável nos dois layouts, acessível
 

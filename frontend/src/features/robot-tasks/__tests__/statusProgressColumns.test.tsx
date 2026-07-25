@@ -5,6 +5,7 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import { RobotRouteKey } from '@/app/pages/RobotRouteKey'
 import { robotTasksApi, taskAdvancesApi, type TaskDTO } from '@/lib/api/endpoints'
 import { useWorkspaceStore } from '@/store/workspaceStore'
+import { safeStorage } from '@/lib/safeStorage'
 
 // robot-task-table 2.4 (§2.2, §2.4, D-RTT-5/10) — as colunas de MUTAÇÃO da tabela:
 // incremento duplo (+20, não +10), cancelamento sem requisição, 409 em modo status,
@@ -54,6 +55,7 @@ beforeEach(() => {
     currentWorkspaceId: 'betim',
     currentRoleLabel: 'owner',
   })
+  safeStorage.set('local', 'rt.taskgroups.v2.r1', JSON.stringify(['A. Hardware'])) // categorias fecham por padrão; abrimos o grupo do cenário
   vi.spyOn(robotTasksApi, 'getRobot').mockResolvedValue(HEADER)
   vi.spyOn(robotTasksApi, 'listForRobot').mockImplementation(() => Promise.resolve(serverTasks))
 })
