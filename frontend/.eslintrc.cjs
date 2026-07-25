@@ -57,5 +57,16 @@ module.exports = {
       files: ['**/__tests__/**', '**/*.test.{ts,tsx}', 'src/test/**', '**/*.sw.ts'],
       rules: { 'no-restricted-globals': 'off', 'no-restricted-properties': 'off' },
     },
+    {
+      // E2E (Playwright) — o `localStorage`/`sessionStorage` que aparece em
+      // `e2e/**` está SEMPRE dentro de `page.evaluate(...)`: é código que roda no
+      // contexto da PÁGINA do navegador (a Web Storage API real), não código de
+      // app. A regra `safeStorage` (D7-11) protege o APP (`src/**`) do branco-sobre-
+      // branco em modo privado; um driver de teste que semeia a sessão da página
+      // NÃO é o alvo dela. Isentar `e2e/**` mantém o gate 100% verde SEM afrouxar a
+      // regra para `src/**` (o app continua obrigado a usar `lib/safeStorage`).
+      files: ['e2e/**'],
+      rules: { 'no-restricted-globals': 'off', 'no-restricted-properties': 'off' },
+    },
   ],
 }
