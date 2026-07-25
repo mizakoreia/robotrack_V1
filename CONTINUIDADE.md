@@ -1,4 +1,4 @@
-# Continuidade — estado em 24/07/2026 (atualizado após a rodada de UI/UX + harness E2E)
+# Continuidade — estado em 25/07/2026 (após `invite-by-code` + `join-workspace-by-code`, publicadas em `main`)
 
 Ponto de retomada do porte. Para uma sessão nova de agente, o prompt de partida
 está em [PROMPT DE RETOMADA](#prompt-de-retomada), no fim.
@@ -7,16 +7,18 @@ está em [PROMPT DE RETOMADA](#prompt-de-retomada), no fim.
 
 **Mudou desde as ondas iniciais: não é mais empilhamento de branches.** Agora:
 
-- Todo o trabalho vive em `main` — **`main` é a versão mais atual** (tip `5dd2e63`,
-  após a campanha de deploy + a rodada de UI/UX + as slices 1-2 do Fluxo 1 E2E —
-  ver as seções abaixo).
-- O desenvolvimento acontece na branch de feature
-  `claude/robotrack-task-catalog-tc-g3-6os4vm`, que é **fast-forwarded para `main`
-  a cada grupo** e empurrada. No momento a feature e `main` apontam para o MESMO
-  commit — nada pendente para mergear.
-- Protocolo de push por grupo: commit `G<n>:` na feature → `git checkout main &&
-  git merge --ff-only <feature>` → `git push -u origin main` → `git checkout
-  <feature>`.
+- Todo o trabalho vive em `main` — **`main` é a versão mais atual** (tip `b2cff40`,
+  após a campanha de deploy + a rodada de UI/UX + as slices 1-2 do Fluxo 1 E2E + as
+  changes `invite-by-code` e `join-workspace-by-code` — ver as seções abaixo).
+- O desenvolvimento desta rodada aconteceu na branch de feature
+  `feat/invite-by-code`, onde as duas changes foram **acumuladas** por instrução do
+  dono e depois **fast-forwarded para `main` de uma vez** (histórico linear, sem merge
+  commit) e empurradas. O fix do clamp de quantidade do `BatchRobotWizard` (commit
+  `d714a7e`, ex-branch `docs/batch-quantity-fix`) foi arrastado no mesmo ff — já era
+  ancestral da feature.
+- Protocolo de push (padrão): commit `G<n>:` na feature → `git checkout main &&
+  git merge --ff-only <feature>` → `git push origin main` → `git checkout <feature>`.
+  Quando o dono pede para acumular, os `G<n>:` ficam locais e o ff+push é feito no fim.
 - **Branches remotas antigas** (as ~19 de capacidades já mergeadas) podem ser
   apagadas, MAS o `git push origin --delete` está bloqueado pelo classificador de
   permissão do ambiente — apagar pela UI do GitHub ou liberar a permissão Bash.
@@ -38,7 +40,7 @@ está em [PROMPT DE RETOMADA](#prompt-de-retomada), no fim.
 > (harmless): as tabelas `legacy_import_runs`/`legacy_id_map` e o `event_type`
 > `legacy_rollback` em `audit_logs`.
 
-## Change NOVA: `invite-by-code` (26ª change — LOCAL, aguardando push)
+## Change NOVA: `invite-by-code` (26ª change — PUBLICADA em `main`)
 
 Convite por **CÓDIGO** curto (`XXXX-XXXX`), além do link. Representação adicional do
 MESMO registro `invitations` (por-e-mail, uso único, hasheada), coexistindo com o
@@ -46,11 +48,10 @@ link — decisões do dono em `openspec/changes/invite-by-code/PLANO.md` §F. M�
 casa seguido grupo a grupo (G0..G5); specs verdes por grupo; `validate --strict`
 verde; EXECUCAO com decisões/armadilhas.
 
-> **Git — DIFERENTE do protocolo padrão desta seção.** Por **instrução explícita do
-> dono nesta sessão**, `invite-by-code` NÃO seguiu o "ff a `main` por grupo + push".
-> Todo o trabalho vive na branch LOCAL **`feat/invite-by-code`** (commits `G0..G4`
-> locais; `G5` de docs a caminho), **sem push e sem `merge --ff-only main`**. O dono
-> quer acumular antes de subir. Nada em `origin` mudou por causa desta change.
+> **Git — acumulada e depois publicada.** Por instrução do dono, `invite-by-code` foi
+> acumulada na branch `feat/invite-by-code` (commits `G0..G5`) e, com a autorização de
+> push, **integrada a `main` por `merge --ff-only`** (histórico linear) e empurrada
+> junto de `join-workspace-by-code`. Agora está em `origin/main`.
 
 O que foi entregue (tudo local):
 - **G1** migration aditiva (`code_hash`/`code_expires_at`/`code_attempts`/
@@ -71,16 +72,17 @@ O que foi entregue (tudo local):
   `e2e:lint`**; a execução em Chromium é **HANDOFF** (este container não tem
   Playwright/Docker — ver `VALIDACAO_WSL.md`), como todo E2E da casa.
 
-## Change NOVA: `join-workspace-by-code` (27ª change — LOCAL, aguardando push)
+## Change NOVA: `join-workspace-by-code` (27ª change — PUBLICADA em `main`)
 
 Entrada por **código** para quem JÁ está autenticado. Antes, o campo de código só
 existia na tela de entrada (`/entrar`) — um membro existente (ex.: o dono do demo) só
 chegava a ele deslogando. Agora há uma porta DENTRO do app. É sobretudo **frontend/UX +
 navegação**: reusa o aceite por código do `invite-by-code` sem tocar no backend.
 
-> **Git — mesma restrição da 26ª.** Vive na branch LOCAL **`feat/invite-by-code`**
-> (commits `G0..G2` locais), **sem push e sem `merge --ff-only main`**. Nada em `origin`
-> mudou. A change é aditiva (só `openspec/` + frontend).
+> **Git — acumulada e depois publicada.** Vivia na branch `feat/invite-by-code`
+> (commits `G0..G2`, empilhados sobre `invite-by-code`); com a autorização de push, foi
+> **integrada a `main` por `merge --ff-only`** (linear) e empurrada. Agora está em
+> `origin/main`. A change é aditiva (só `openspec/` + frontend).
 
 O que foi entregue (tudo local):
 - **G0** planejamento OpenSpec (`openspec/changes/join-workspace-by-code/`): proposal,
@@ -638,7 +640,8 @@ OpenSpec: `npx --yes @fission-ai/openspec@1.6.0 validate <change> --strict`.
 
 > Estou continuando o desenvolvimento do RoboTrack (github.com/mizakoreia/robotrack_V1):
 > reimplementação de um sistema legado (PWA + Firestore) sobre um template Rails 8
-> API-only + React 18/TS, organizada com OpenSpec — 25 changes em `openspec/changes/`.
+> API-only + React 18/TS, organizada com OpenSpec — 27 changes em `openspec/changes/`
+> (as 25 do núcleo + `invite-by-code` + `join-workspace-by-code`, estas duas já em `main`).
 >
 > Leia, em ordem: **`CLAUDE.md`** (regras de trabalho — inclui "documentação ANTES de
 > cada push"), `CONTINUIDADE.md` (estado, modelo de git, método), e, se for tocar em
@@ -650,8 +653,10 @@ OpenSpec: `npx --yes @fission-ai/openspec@1.6.0 validate <change> --strict`.
 > DORMENTE — o sistema começa do zero, sem dado a migrar; código isolado em `Legacy::*`,
 > não roda). A 25ª, `quality-and-accessibility`, está em **28/39**: o **harness E2E
 > (G6) fechou** (smoke 4/4 em Chromium+WebKit, runbook em `frontend/e2e/README.md`) e
-> o Fluxo 1 (convite) está na slice 1. Tudo na `main` (`49b43d4`); a branch de trabalho
-> `claude/robotrack-task-catalog-tc-g3-6os4vm` aponta para o mesmo commit da `main`.
+> o Fluxo 1 (convite) está na slice 1. Depois vieram `invite-by-code` (código curto de
+> convite) e `join-workspace-by-code` (entrar noutro workspace por código estando logado),
+> ambas COMPLETAS e já em `main` (tip `b2cff40`). A branch de trabalho recente é
+> `feat/invite-by-code`, já integrada por `merge --ff-only`.
 >
 > **O deploy foi validado de ponta a ponta** com um par na WSL (Docker + navegador
 > real): 12 bugs que só aparecem no processo REAL de produção + uma rodada de UI/UX com
