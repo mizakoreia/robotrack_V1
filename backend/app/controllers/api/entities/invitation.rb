@@ -20,6 +20,18 @@ module Api
       expose :expires_at
       expose :created_at
       expose(:invite_url) { |invitation| ::AppUrl.invite_url(invitation.token) }
+
+      # invite-by-code: o código em CLARO sai UMA única vez — na criação, quando o
+      # `short_code` transiente está preenchido —, formatado `XXXX-XXXX`. Depois
+      # disso a listagem recarrega do banco (sem o claro) e este bloco não expõe
+      # nada. O `code_hash` NUNCA é serializado.
+      expose(:short_code, if: ->(inv, _o) { inv.short_code.present? }) do |inv|
+        inv.short_code.gsub(/(.{4})(.{4})/, '\1-\2')
+      end
+      # Estado do código na listagem de pendentes (ativo/expirado/travado/usado ou
+      # nil quando o convite é só-link). Nunca o hash, nunca o claro.
+      expose(:code_status) { |inv| inv.code_status }
+      expose :code_expires_at
     end
   end
 end

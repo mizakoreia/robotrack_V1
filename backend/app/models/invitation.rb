@@ -27,6 +27,9 @@ class Invitation < ApplicationRecord
   SHORT_CODE_ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ'
   SHORT_CODE_LEN = 8
   CODE_VALIDITY = 48.hours
+  # Lockout por convite (design D7): após N falhas do PAR (código certo, e-mail
+  # errado) contra a MESMA linha, o código trava. O link segue válido.
+  CODE_MAX_ATTEMPTS = 5
 
   # O código em claro é TRANSIENTE: existe só no request de criação (para a entity
   # devolvê-lo uma vez) e nunca é persistido — a coluna guarda só o `code_hash`.
@@ -82,6 +85,50 @@ class Invitation < ApplicationRecord
     Rails.application.credentials.dig(:invitation_code_pepper).presence ||
       ENV['INVITATION_CODE_PEPPER'].presence ||
       (Rails.env.local? ? 'dev-insecure-invitation-code-pepper' : raise('INVITATION_CODE_PEPPER ausente'))
+  end
+
+  # Localiza a linha por código SEM workspace corrente, pela função SECURITY
+  # DEFINER `invitation_by_code`. Recebe o código em CLARO; o HMAC é computado aqui
+  # (o pepper nunca entra no banco). Devolve a Hash da linha ou `nil`. NÃO revela
+  # estado nem decide nada — quem chama aplica a política anti-enumeração (par
+  # e-mail primeiro; só então lockout/expiração).
+  def self.row_by_code(code)
+    hash = code_hash_for(code)
+    return nil if hash.blank?
+
+    conn = ActiveRecord::Base.connection
+    conn.select_one(
+      'SELECT id, workspace_id, email, role, expires_at, used_at, ' \
+      "code_expires_at, code_locked_at FROM invitation_by_code(#{conn.quote(hash)})"
+    )
+  end
+
+  def self.code_row_expired?(row)
+    exp = row['code_expires_at']
+    return false if exp.blank?
+
+    time = exp.is_a?(Time) ? exp : Time.zone.parse(exp.to_s)
+    time <= Time.current
+  end
+
+  # Registra UMA falha do par contra a linha, numa transação curta e PRÓPRIA (o
+  # incremento persiste mesmo quando o request "falha" com resposta genérica).
+  # Trava na Nª falha. `update_columns` (UPDATE direto) evita o commit-on-return e
+  # não dispara callback. Idempotente contra linha já travada.
+  def self.register_code_failure!(row, user_id: nil)
+    Tenant.with(workspace_id: row['workspace_id'], user_id: user_id) do
+      inv = lock('FOR UPDATE').find_by(id: row['id'])
+      next if inv.nil? || inv.code_locked_at.present?
+
+      attempts = inv.code_attempts.to_i + 1
+      inv.update_columns(
+        code_attempts: attempts,
+        code_locked_at: (attempts >= CODE_MAX_ATTEMPTS ? Time.current : nil),
+        updated_at: Time.current
+      )
+    end
+  rescue ActiveRecord::StatementInvalid
+    nil
   end
 
   def used? = used_at.present?

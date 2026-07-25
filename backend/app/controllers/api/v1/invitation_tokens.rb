@@ -29,6 +29,52 @@ module Api
       end
 
       resource :invitations do
+        # invite-by-code (design D6): as rotas por CÓDIGO são declaradas ANTES de
+        # `:token/accept` porque `POST /invitations/code/accept` casaria o padrão
+        # `POST /invitations/:token/accept` com `token = "code"` — o Grape resolve
+        # por ORDEM de declaração. `POST` mesmo no preview: o e-mail viaja no CORPO,
+        # nunca em query string (regra de privacidade da casa).
+        namespace :code do
+          # POST /api/v1/invitations/code/preview — público, exige o par
+          # (código + e-mail); resposta genérica quando o par não casa (anti-
+          # colheita de phishing).
+          params do
+            requires :code, type: String
+            requires :email, type: String
+          end
+          post :preview do
+            result = ::Invitations::PreviewService.new(code: params[:code], email: params[:email]).call
+            error!({ error: result[:error] }, result[:status]) unless result[:success]
+
+            # POST por privacidade (e-mail no corpo), mas é uma LEITURA: 200, não o
+            # 201 que o Grape assume para POST.
+            status 200
+            present result[:data], with: Api::Entities::InvitationPreview
+          end
+
+          # POST /api/v1/invitations/code/accept — autenticado, sem tenant. A
+          # autorização É a invariante 6 (avaliada com a linha travada no
+          # AcceptService); aqui só a autenticação conta. O corpo NÃO admite `role`.
+          route_setting :policy, access: :authenticated
+          params do
+            requires :code, type: String
+            requires :email, type: String
+          end
+          post :accept do
+            result = ::Invitations::AcceptService.new(
+              current_user: env['api.current_user'],
+              code: params[:code],
+              email: params[:email],
+              extra_params: request.params
+            ).call
+
+            error!({ error: result[:error] }, result[:status]) unless result[:success]
+
+            status 200
+            result[:data]
+          end
+        end
+
         # GET /api/v1/invitations/:token — público (pré-login).
         params do
           requires :token, type: String

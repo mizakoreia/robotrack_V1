@@ -35,27 +35,28 @@
 
 ## G2. Backend do aceite/preview por código
 
-- [ ] G2.1 `CreateService`: gerar o código em claro UMA vez quando o convite deve ter
+- [x] G2.1 `CreateService`: gerar o código em claro UMA vez quando o convite deve ter
   código, guardar `code_hash`, setar `code_expires_at`, retornar o claro no payload;
-  retry no `RecordNotUnique` do `code_hash`
-- [ ] G2.2 `AcceptService#lookup_by_code(code, email)`: normaliza, computa HMAC, checa
-  lockout/expiração do código, `SELECT * FROM invitation_by_code($hash)`, confere par
-  e-mail, e chama o MESMO `consume`; incremento de `code_attempts` em transação curta no
-  caminho de falha
-- [ ] G2.3 `PreviewService#preview_by_code(code, email)` exigindo o par; resposta
-  genérica idêntica (corpo e tempo) para código inexistente e par inválido
-- [ ] G2.4 Rotas `POST /api/v1/invitations/code/preview` (público, tenant-exempt) e
+  retry no `RecordNotUnique` do `code_hash` (distinto da colisão pendente-por-e-mail)
+- [x] G2.2 `AcceptService#lookup_by_code(code, email)`: normaliza, computa HMAC, ordem
+  anti-enumeração (par e-mail → lockout → expiração), `invitation_by_code($hash)`, e
+  chama o MESMO `consume`; incremento de `code_attempts` em transação curta na falha do
+  par (`Invitation.register_code_failure!`)
+- [x] G2.3 `PreviewService#preview_by_code(code, email)` exigindo o par; resposta
+  genérica idêntica (corpo/status) para código inexistente e par inválido
+- [x] G2.4 Rotas `POST /api/v1/invitations/code/preview` (público, tenant-exempt) e
   `POST /api/v1/invitations/code/accept` (autenticado, tenant-exempt), declaradas ANTES
-  de `:token/accept` (ordem de roteamento); `route_setting :policy, access:
-  :authenticated` no accept; corpo `{ code, email }` sem `role`
-- [ ] G2.5 `Api::Entities::Invitation`: `short_code` exposto só na criação;
+  de `:token/accept` (namespace `code`); `route_setting :policy, access: :authenticated`
+  no accept; corpo `{ code, email }` sem `role`; preview força `status 200`
+- [x] G2.5 `Api::Entities::Invitation`: `short_code` (XXXX-XXXX) exposto só na criação;
   `code_status`/`code_expires_at` na listagem; `code_hash` e claro NUNCA
-- [ ] G2.6 Allowlist: `PUBLIC_ROUTES` (preview), `TENANT_EXEMPT_ROUTES` (ambas),
-  `public_routes.yml` (preview com reason); confirmar que `/code/*` não é elegível ao
-  gerador cross-tenant (sem `:id`) e que o route-sweep aceita as duas
-- [ ] G2.7 Request specs espelhando o token: aceite ok, corrida (200/409), e-mail
-  divergente, código expirado, `role` no corpo → 422, preview exige par, token segue
-  funcionando (verificação do grupo G2 — 0 falhas)
+- [x] G2.6 Allowlist: `PUBLIC_ROUTES` (preview), `TENANT_EXEMPT_ROUTES` (ambas),
+  `public_routes.yml` (preview com reason); `/code/*` sem `:id` → fora do gerador
+  cross-tenant (correto); route-sweep e tenant-sweep verdes
+- [x] G2.7 Request specs espelhando o token: aceite ok, e-mail submetido divergente →
+  404 genérico, e-mail autenticado divergente → 403, código expirado → 410 (link segue),
+  `role` no corpo → 422, duplo-aceite → 409, preview exige par, token segue funcionando
+  (verificação do grupo G2 — 12/12 verde; regressão 227/227)
 
 ## G3. Endurecimento contra enumeração
 

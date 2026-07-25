@@ -15,12 +15,14 @@ module Invitations
   class PreviewService
     include ApiResponseHandler
 
-    def initialize(token:)
+    def initialize(token: nil, code: nil, email: nil)
       @token = token.to_s
+      @code = code.presence
+      @email = email
     end
 
     def call
-      row = lookup
+      row = @code ? lookup_by_code : lookup
       return error_response('invitation_not_found', 404) if row.nil?
 
       invitation = Invitation.new(
@@ -47,6 +49,25 @@ module Invitations
 
       conn = ActiveRecord::Base.connection
       conn.select_one("SELECT * FROM invitation_by_token(#{conn.quote(@token)})")
+    end
+
+    # Preview por código EXIGE o par (design D5): diferente do token (segredo forte
+    # por si), um preview por código solto colheria alvos de phishing
+    # (`workspace_name`/`email_masked`/`role`) por enumeração. Sem o e-mail certo,
+    # a resposta é a MESMA de código inexistente (`nil` → 404 genérico no `call`),
+    # e a falha do par conta para o lockout. Código travado/expirado não é revelado
+    # aqui: o preview só informa o convite; o estado do código é enforçado no
+    # aceite.
+    def lookup_by_code
+      row = Invitation.row_by_code(@code)
+      return nil if row.nil?
+
+      unless row['email'].present? && row['email'] == @email.to_s.strip.downcase
+        Invitation.register_code_failure!(row, user_id: nil)
+        return nil
+      end
+
+      row
     end
 
     # O nome do workspace é lido DENTRO do contexto daquele workspace: a política

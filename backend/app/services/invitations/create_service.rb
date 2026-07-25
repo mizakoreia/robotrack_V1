@@ -40,10 +40,14 @@ module Invitations
 
       invitation = create_invitation
       success_response(payload(invitation), 201)
-    rescue ActiveRecord::RecordNotUnique
-      # Já existe convite PENDENTE para este e-mail neste workspace (índice único
-      # parcial). Dois links vivos para a mesma pessoa deixariam o dono sem saber
-      # qual vale e tornariam a revogação uma adivinhação.
+    rescue ActiveRecord::RecordNotUnique => e
+      # Colisão do `code_hash` já foi absorvida por retry em `create_invitation`;
+      # o que chega aqui é a unicidade de PENDENTE por e-mail. Dois links vivos
+      # para a mesma pessoa deixariam o dono sem saber qual vale e tornariam a
+      # revogação uma adivinhação. Se por acaso for outra unicidade, propaga (500)
+      # em vez de mascarar.
+      raise unless e.message.include?('index_invitations_pending_unique_per_email')
+
       error_response('invitation_already_pending', 409)
     end
 
@@ -58,14 +62,28 @@ module Invitations
       # Postgres. Sem o `requires_new`, o 409 seria devolvido sobre uma transação
       # já envenenada — e qualquer consulta seguinte falharia com
       # "current transaction is aborted".
-      ActiveRecord::Base.transaction(requires_new: true) do
-        Invitation.create!(
-          email: @email,
-          role: @role,
-          created_by_person: creator_person,
-          used_at: nil,
-          used_by_user_id: nil
-        )
+      #
+      # Retry APENAS na colisão do `code_hash` (astronomicamente rara em 2⁴⁰, mas
+      # possível): cada tentativa é um novo `Invitation.create!`, que regenera o
+      # código no callback `assign_short_code`. A colisão de pendente-por-e-mail
+      # NÃO é retriável (é estado de negócio) e sobe para o `rescue` de `call`.
+      attempts = 0
+      begin
+        ActiveRecord::Base.transaction(requires_new: true) do
+          Invitation.create!(
+            email: @email,
+            role: @role,
+            created_by_person: creator_person,
+            used_at: nil,
+            used_by_user_id: nil
+          )
+        end
+      rescue ActiveRecord::RecordNotUnique => e
+        raise unless e.message.include?('index_invitations_on_code_hash')
+
+        attempts += 1
+        retry if attempts < 5
+        raise
       end
     end
 

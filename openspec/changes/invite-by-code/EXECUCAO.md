@@ -141,9 +141,59 @@ Código de workspace reutilizável (§F.4 descartado), mudança na matriz de aut
 - `G1: migration aditiva (code_hash/RLS/invitation_by_code) + model do código`
   (LOCAL, sem push).
 
-## G2 — (pendente)
+## G2 — Backend do aceite/preview por código
 
-## G2 — (pendente)
+### Entregue
+
+- `AcceptService`: aceita `code`/`email` além de `token`; `lookup_by_code` com a ORDEM
+  anti-enumeração (par e-mail → lockout → expiração), chamando o MESMO `consume`;
+  `reject_unexpected_parameters!` agora é CIENTE DE MODO (token só admite `token`;
+  código só `code`/`email` — `role` no corpo de qualquer um é 422).
+- `PreviewService`: `preview_by_code` exigindo o par; genérico (404) idêntico para
+  código inexistente e par inválido.
+- `Invitation` (model): `row_by_code`, `code_row_expired?`, `register_code_failure!`
+  (transação curta, `update_columns`, trava na Nª falha), `CODE_MAX_ATTEMPTS = 5`.
+- `CreateService`: retry no `RecordNotUnique` do `code_hash` (distinto da colisão
+  pendente-por-e-mail, que sobe como 409); o `short_code` transiente vai no payload.
+- Entity `Invitation`: `short_code` (XXXX-XXXX) só na criação; `code_status`/
+  `code_expires_at` na listagem; `code_hash`/claro nunca.
+- Rotas em `InvitationTokens` (namespace `code`, ANTES de `:token`): `POST /code/preview`
+  (público, `status 200`) e `POST /code/accept` (`access: :authenticated`).
+- Allowlists: `PUBLIC_ROUTES` (+preview), `TENANT_EXEMPT_ROUTES` (+preview/+accept),
+  `public_routes.yml` (+preview com reason).
+
+### Decisões / armadilhas confirmadas
+
+- **DE-G2.1 — preview é POST mas responde 200.** O Grape assume 201 para POST; forcei
+  `status 200` (é uma LEITURA; POST só por causa do e-mail no corpo).
+- **DE-G2.2 — ordem anti-enumeração (§B.3).** O estado discriminado do código
+  (423 travado / 410 expirado / 409 usado) só é revelado ao PAR que já casou
+  e-mail+código. Código cego ou e-mail errado → 404 genérico + contabiliza a falha.
+- **DE-G2.3 — duas checagens de e-mail coexistem.** O e-mail SUBMETIDO no par (eixo do
+  lockout, em `lookup_by_code`) é distinto da condição 5 do `validate!`, que compara com
+  o e-mail AUTENTICADO dentro da transação. Ana, autenticada, conhecendo o código E o
+  e-mail de João, passa o par mas leva 403 `invitation_email_mismatch` no consume.
+- **DE-G2.4 — colisão de roteamento resolvida.** `namespace :code` declarado ANTES de
+  `:token/accept` faz o Grape casar `/code/accept` como rota literal, não como
+  `token="code"`. Confirmado pelos specs (aceite por código responde, token intacto).
+- **Confirmado:** `/code/*` sem `:id` → fora do gerador cross-tenant (correto; a prova
+  cross-tenant do código é o `code_schema_spec` do G1). Lockout (mecanismo) já vive
+  aqui; rate-limit/env/specs de lockout são G3.
+- **Corrida:** não dupliquei o teste com threads — o caminho por código chama o MESMO
+  `consume` já provado por `concurrent_accept_spec`. O `code_flow_spec` prova o one-shot
+  sequencial (segundo aceite → 409).
+
+### Prova do G2
+
+- `spec/requests/invitations/code_flow_spec.rb` → **12 exemplos, 0 falhas**.
+- Regressão: `accept_spec`, `create_spec`, `end_to_end_spec`, `team_panel_spec`,
+  `route_sweep_spec`, `tenant_route_sweep_spec`, `cross_tenant_spec` → **227/227 verde**
+  (a única falha da 1ª rodada foi o 201→200 do preview, já corrigida).
+
+### Commit local do G2
+
+- `G2: aceite/preview por codigo (services reusam consume, rotas /code/*, entity)`
+  (LOCAL, sem push).
 
 ## G3 — (pendente)
 

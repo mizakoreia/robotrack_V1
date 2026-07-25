@@ -38,7 +38,12 @@ module Api
       # leva. Só `GET`, e só com um segmento após `invitations/` — a listagem
       # (`GET /api/v1/invitations`) continua protegida, e o aceite (`POST`) exige
       # autenticação porque compara o e-mail do convite com o AUTENTICADO.
-      ['GET', %r{^/api/v1/invitations/[^/]+/?$}]
+      ['GET', %r{^/api/v1/invitations/[^/]+/?$}],
+      # invite-by-code: pré-visualização por CÓDIGO (pré-login). É `POST` porque o
+      # e-mail do par viaja no CORPO — a regra de privacidade da casa proíbe dado
+      # pessoal em query string. O aceite por código (`POST …/code/accept`) NÃO é
+      # público: exige autenticação (compara o e-mail do convite com o AUTENTICADO).
+      ['POST', %r{^/api/v1/invitations/code/preview/?$}]
     ].freeze
 
     def self.public_route?(method, path)
@@ -84,7 +89,13 @@ module Api
       # membership é do `WorkspaceChannel`, no `subscribed` de cada assinatura.
       %r{^/api/v1/cable_tickets/?$},
       ['GET',  %r{^/api/v1/invitations/[^/]+/?$}],
-      ['POST', %r{^/api/v1/invitations/[^/]+/accept/?$}]
+      ['POST', %r{^/api/v1/invitations/[^/]+/accept/?$}],
+      # invite-by-code: preview e aceite por CÓDIGO acontecem FORA de um workspace
+      # corrente (o convidado ainda não é membro de nada), como os caminhos por
+      # token. O `accept` já casaria o padrão `[^/]+/accept` acima, mas a entrada
+      # explícita mantém a allowlist auditável e legível.
+      ['POST', %r{^/api/v1/invitations/code/preview/?$}],
+      ['POST', %r{^/api/v1/invitations/code/accept/?$}]
     ].freeze
 
     def self.tenant_exempt?(method, path)

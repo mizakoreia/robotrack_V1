@@ -40,9 +40,11 @@ module Invitations
       end
     end
 
-    def initialize(current_user:, token:, requested_workspace_id: nil, extra_params: {})
+    def initialize(current_user:, token: nil, code: nil, email: nil, requested_workspace_id: nil, extra_params: {})
       @current_user = current_user
       @token = token.to_s
+      @code = code.presence
+      @email = email
       @requested_workspace_id = requested_workspace_id.presence
       @extra_params = extra_params
     end
@@ -50,7 +52,10 @@ module Invitations
     def call
       reject_unexpected_parameters!
 
-      row = lookup_by_token
+      # Um caminho novo de LOOKUP, tudo o mais reusado (design D4): por código
+      # (par e-mail + lockout + expiração do código) ou por token. Ambos caem no
+      # MESMO `consume`.
+      row = @code ? lookup_by_code : lookup_by_token
       raise Rejected.new('invitation_not_found', 404) if row.nil?
 
       membership = consume(row['workspace_id'], row['id'])
@@ -70,9 +75,13 @@ module Invitations
     # Condição 6 de D-INV-3, tratada de forma ESTRUTURAL: o papel da membership é
     # lido do convite, nunca do cliente. Mesmo assim mandar `role` no corpo é
     # rejeitado em vez de ignorado — ignorar deixaria um atacante crendo que teve
-    # sucesso e esconderia a tentativa.
+    # sucesso e esconderia a tentativa. A allowlist é CIENTE DE MODO: o caminho por
+    # token só admite `token`; o por código só admite `code`/`email` — `role` no
+    # corpo de qualquer um dos dois é `422`.
     def reject_unexpected_parameters!
-      extras = @extra_params.keys.map(&:to_s) - %w[token route_info version format]
+      allowed = %w[route_info version format]
+      allowed += @code ? %w[code email] : %w[token]
+      extras = @extra_params.keys.map(&:to_s) - allowed
       raise Rejected.new('unexpected_parameter', 422) if extras.any?
     end
 
@@ -82,6 +91,34 @@ module Invitations
 
       conn = ActiveRecord::Base.connection
       conn.select_one("SELECT id, workspace_id FROM invitation_by_token(#{conn.quote(@token)})")
+    end
+
+    # Leitura por código (design D4/D5/D7), com a ORDEM anti-enumeração do plano
+    # (§B.3): o estado discriminado do código (travado/expirado) só é revelado a um
+    # PAR que já casou e-mail+código. Um código cego, ou com e-mail errado, recebe
+    # o genérico (`invitation_not_found`) — indistinguível de código inexistente —,
+    # e a falha do par é contabilizada para o lockout.
+    def lookup_by_code
+      row = Invitation.row_by_code(@code)
+      return nil if row.nil? # código inexistente → genérico
+
+      unless submitted_email_matches?(row)
+        Invitation.register_code_failure!(row, user_id: @current_user&.id)
+        return nil # par inválido → genérico (não vaza travado/expirado/usado)
+      end
+
+      # O par casou: agora sim o estado do código pode ser revelado.
+      raise Rejected.new('invitation_code_locked', 423) if row['code_locked_at'].present?
+      raise Rejected.new('invitation_code_expired', 410) if Invitation.code_row_expired?(row)
+
+      row
+    end
+
+    # Confere o e-mail SUBMETIDO no par contra o e-mail do convite (eixo do
+    # lockout). É distinto da condição 5 do `validate!`, que compara com o e-mail
+    # AUTENTICADO dentro da transação — as duas defesas coexistem.
+    def submitted_email_matches?(row)
+      row['email'].present? && row['email'] == @email.to_s.strip.downcase
     end
 
     def consume(workspace_id, invitation_id)
