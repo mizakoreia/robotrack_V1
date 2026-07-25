@@ -31,6 +31,14 @@ module EnvSchema
       name: 'SECRET_KEY_BASE', type: :string, required_in: %i[production staging],
       default: nil, help: 'Chave-base do Rails. Obrigatória fora de dev/test.'
     ),
+    # invite-by-code (design D2): pepper do HMAC do código de convite. Material de
+    # chave — se vazar, o code_hash volta a ser brute-forceável offline. Vive FORA
+    # do banco (credentials/ENV), rotacionável. Em dev/test há default inseguro no
+    # model; em produção/staging é OBRIGATÓRIA (o guarda de boot cobra).
+    Entry.new(
+      name: 'INVITATION_CODE_PEPPER', type: :string, required_in: %i[production staging],
+      default: nil, help: 'Pepper do HMAC do código de convite (invite-by-code). Fora do banco, rotacionável.'
+    ),
     # ── Redis (isolamento por função entra no G3) ────────────────────────────
     Entry.new(
       name: 'REDIS_URL', type: :url, required_in: %i[production staging],
@@ -78,6 +86,8 @@ module EnvSchema
               help: 'Tentativas de autenticação por minuto.'),
     Entry.new(name: 'RATE_LIMIT_REPORT', type: :int, required_in: [], default: '5',
               help: 'Gerações de relatório por minuto.'),
+    Entry.new(name: 'RATE_LIMIT_CODE_ACCEPT_GLOBAL', type: :int, required_in: [], default: '300',
+              help: 'Aceites por CÓDIGO de convite por minuto no sistema inteiro (teto global anti-enumeração).'),
     # ── Toggles com default seguro ───────────────────────────────────────────
     Entry.new(name: 'FORCE_SSL', type: :bool, required_in: [], default: 'true',
               help: 'Redireciona http→https. Default ligado.'),

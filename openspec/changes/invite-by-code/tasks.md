@@ -60,20 +60,20 @@
 
 ## G3. Endurecimento contra enumeração
 
-- [ ] G3.1 `env_schema`: `INVITATION_CODE_PEPPER` registrado (obrigatória em
-  produção/staging, guarda de boot), regenerar `.env.example`; pepper lido de
-  credentials/ENV, nunca versionado
-- [ ] G3.2 `rack_attack`: `code-accept-ip` 5/10min, `code-accept-email` 5/10min,
-  `code-preview-ip` 10/10min e teto GLOBAL de falhas de código; `throttled_responder`
-  loga `code_sha256[0,12]`
-- [ ] G3.3 Lockout por convite: após 5 falhas do par, `code_locked_at` setado e `423
-  invitation_code_locked`; link segue válido; scrubber cobre o código no log
-- [ ] G3.4 Purge/anulação do código quando só o CÓDIGO expira (48h < 7d) mas o link
-  ainda vale — decidir e registrar no EXECUCAO; timing-equality entre código
-  inexistente e existente
-- [ ] G3.5 Specs de rate-limit (IP/e-mail/global), lockout (trava na 6ª, link sobrevive,
-  cega não trava), log-scrubber (nunca claro); custo de brute-force documentado no
-  EXECUCAO (verificação do grupo G3 — 0 falhas)
+- [x] G3.1 `env_schema`: `INVITATION_CODE_PEPPER` registrado (obrigatória em
+  produção/staging, guarda de boot herdado) + `RATE_LIMIT_CODE_ACCEPT_GLOBAL`;
+  `.env.example` regenerado; pepper lido de credentials/ENV, nunca versionado
+- [x] G3.2 `rack_attack`: `code-accept-ip` 5/10min, `code-accept-email` 5/10min,
+  `code-accept-global` (300/min, ENV), `code-preview-ip` 10/10min; `throttled_responder`
+  loga `code_sha256[0,12]` (do corpo, nunca o claro)
+- [x] G3.3 Lockout por convite: após 5 falhas do par, `code_locked_at` setado e `423
+  invitation_code_locked`; link segue válido; filtro exato do param `code` no log
+- [x] G3.4 Purge/anulação e timing-equality: decididos e registrados no EXECUCAO
+  (DE-G3.1/DE-G3.2)
+- [x] G3.5 Specs de rate-limit (IP/e-mail/global, log sem claro) e lockout (trava na 6ª,
+  link sobrevive, cega não trava, e-mail errado em travado segue genérico); custo de
+  brute-force documentado no EXECUCAO (verificação do grupo G3 — 16/16 verde; regressão
+  rate-limit token + suíte invitations 80/80)
 
 ## G4. Frontend (entrada por código)
 

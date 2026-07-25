@@ -195,7 +195,74 @@ Código de workspace reutilizável (§F.4 descartado), mudança na matriz de aut
 - `G2: aceite/preview por codigo (services reusam consume, rotas /code/*, entity)`
   (LOCAL, sem push).
 
-## G3 — (pendente)
+## G3 — Endurecimento contra enumeração
+
+### Entregue
+
+- `env_schema`: `INVITATION_CODE_PEPPER` (obrigatória em produção/staging; o guarda de
+  boot de `delivery-and-observability` já cobra o que está no schema) e
+  `RATE_LIMIT_CODE_ACCEPT_GLOBAL` (opcional, default 300). `.env.example` regenerado
+  (25 variáveis) — o spec de sincronia do schema segue verde.
+- `rack_attack`: `invitations/code-accept-ip` 5/10min, `invitations/code-accept-email`
+  5/10min (e-mail do corpo), `invitations/code-accept-global` (300/min, ENV,
+  discriminador constante) e `invitations/code-preview-ip` 10/10min. O
+  `throttled_responder` loga `code_sha256[0,12]` do código NORMALIZADO do corpo nos
+  caminhos `/code/*` (e `token_sha256` fora deles) — nunca o claro.
+- `filter_parameter_logging`: lambda de filtro EXATO do param `code` (não substring,
+  para não redigir `country_code`/`zip_code`).
+- Lockout por convite: mecânica de G2 (`register_code_failure!` + `CODE_MAX_ATTEMPTS`)
+  agora coberta por spec.
+
+### Decisões de execução
+
+- **DE-G3.1 — não anular o código quando só ele expira.** Quando o CÓDIGO vence (48h) mas
+  o LINK ainda vale (7d), NÃO se anula `code_hash`/`code_expires_at`. Motivos: (a) um
+  código expirado já é recusado no `lookup_by_code` (`410` uma vez que o par casa) e
+  continua recusado; (b) o slot no índice único de `code_hash` é aleatório e não escasso;
+  (c) o `purge_expired_invitations()` existente já remove a LINHA inteira quando o convite
+  está pendente e expirado há >30d (cobre o link e, com ele, o código). Anular ativamente
+  seria trabalho sem ganho de segurança. Registrado para o caso de o dono querer, no
+  futuro, "aposentar só o código" — seria um job novo, decisão própria.
+- **DE-G3.2 — timing-equality: igualdade de CORPO/STATUS garantida; timing perfeito não.**
+  Código inexistente e par inválido devolvem o MESMO corpo e status (`404`
+  `invitation_not_found`) — sem canal lateral de CONTEÚDO. Há uma assimetria de TEMPO: o
+  par inválido faz um `UPDATE` curto (`register_code_failure!`) que o código inexistente
+  não faz, então a resposta ao par inválido é marginalmente mais lenta. Tornar isso
+  perfeitamente constante (ex.: escrita-fantasma no caminho inexistente) foi avaliado e
+  DESCARTADO: acopla o caminho a um custo artificial e a defesa real contra enumeração é a
+  soma rate-limit (IP/e-mail/global) + expiração 48h + exigência do e-mail, não a
+  indistinguibilidade temporal de milissegundos. Registrado como limite conhecido; se um
+  dia virar requisito, é handoff próprio.
+- **DE-G3.3 — teto global com chave constante.** `code-accept-global` conta TODOS os
+  aceites por código (não só falhas — o rack-attack corre antes do endpoint e não sabe o
+  desfecho). É um proxy aceitável: aceite legítimo é raro (um por convidado); 300/min
+  deixa passar onboarding simultâneo de um time e ainda corta brute-force distribuído. O
+  overlap com o `accept-ip` do token (a regex `ACCEPT_PATH` casa `/code/accept`) é
+  benigno — o teto do código (5) morde antes do do token (10).
+
+### Custo de brute-force (documentado)
+
+Espaço do código: 32⁸ = 2⁴⁰ ≈ 1,1 × 10¹². Por IP: 5 aceites/10min ⇒ ~720/dia/IP. Por
+e-mail-alvo: 5/10min (o eixo que o IP não cobre). Global: 300/min ⇒ ~432 mil/dia no
+sistema inteiro, ainda que o atacante rode IPs infinitos. Para acertar UM código válido
+específico (janela de 48h) enumerando às cegas, mesmo saturando o teto global, a fração
+do espaço coberta em 48h é ~864 mil / 1,1×10¹² ≈ **8×10⁻⁷** — e cada acerto ainda exige
+controlar a conta de e-mail do convidado (condição 5). Somada ao lockout por convite (5
+falhas do par travam o código), a adivinhação online é proibitiva.
+
+### Prova do G3
+
+- `spec/invitations/code_lockout_spec.rb` + `spec/requests/invitations/code_rate_limit_spec.rb`
+  + `spec/config/env_schema_spec.rb` → **16 exemplos, 0 falhas**.
+- Regressão: `spec/requests/invitations/rate_limit_spec.rb` (token) + `spec/invitations`
+  → **80 exemplos, 0 falhas** (o `throttled_responder` novo não regrediu o log do token).
+
+### Commit local do G3
+
+- `G3: endurecimento (rate-limit IP/email/global, lockout, pepper, log sem claro)`
+  (LOCAL, sem push).
+
+## G4 — (pendente)
 
 ## G4 — (pendente)
 

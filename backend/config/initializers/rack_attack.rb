@@ -40,6 +40,18 @@ module Rack
     PREVIEW_PATH = %r{\A/api/v1/invitations/[^/]+/?\z}
     INVITE_TOKEN_IN_PATH = %r{/api/v1/invitations/([^/]+)}
 
+    # invite-by-code (design D8): o código curto é enumerável (2⁴⁰), então os tetos
+    # por código são MAIS APERTADOS que os do token, em três eixos — IP, e-mail
+    # submetido e um teto GLOBAL (um atacante distribui IPs). Nota: `ACCEPT_PATH`
+    # acima também casa `/code/accept`, então os tetos do token incidem junto; o
+    # teto do código (5/10) é o que morde primeiro.
+    CODE_ACCEPT_PATH = %r{\A/api/v1/invitations/code/accept/?\z}
+    CODE_PREVIEW_PATH = %r{\A/api/v1/invitations/code/preview/?\z}
+    # Teto global de aceites por código por minuto: com 2⁴⁰ de espaço + expiração de
+    # 48h, algumas centenas/min tornam esgotar o espaço tempo geológico. Folgado o
+    # bastante para onboarding simultâneo de um time; configurável por ENV.
+    CODE_GLOBAL_LIMIT = ENV.fetch('RATE_LIMIT_CODE_ACCEPT_GLOBAL', '300').to_i
+
     # Tráfego local (dev/rspec) não é throttled — os specs de auth fazem vários
     # logins como 127.0.0.1 e não podem colidir com o limite. Os specs de
     # rate-limit exercitam o throttle com um IP não-local.
@@ -76,6 +88,34 @@ module Rack
       req.ip if req.get? && PREVIEW_PATH.match?(req.path)
     end
 
+    # ── invite-by-code (design D8): tetos por CÓDIGO, mais apertados ────────────
+    # Aceite por código: por IP (5/10min).
+    throttle('invitations/code-accept-ip', limit: 5, period: 10.minutes) do |req|
+      req.ip if req.post? && CODE_ACCEPT_PATH.match?(req.path)
+    end
+
+    # Aceite por código: por E-MAIL submetido no corpo (5/10min) — cobre o eixo que
+    # o IP não cobre (atacante distribui IPs, fixa o e-mail-alvo). O e-mail vai no
+    # corpo, nunca em query string.
+    throttle('invitations/code-accept-email', limit: 5, period: 10.minutes) do |req|
+      if req.post? && CODE_ACCEPT_PATH.match?(req.path)
+        email = req.params['email'].to_s.downcase.gsub(/\s+/, '')
+        "code-accept:#{email}" if email.present?
+      end
+    end
+
+    # Aceite por código: teto GLOBAL (discriminador constante) — a última linha
+    # contra brute-force distribuído por muitos IPs. Limite lido do ENV a cada
+    # request (barato), configurável sem redeploy.
+    throttle('invitations/code-accept-global', limit: ->(_req) { CODE_GLOBAL_LIMIT }, period: 60) do |req|
+      'code-accept-global' if req.post? && CODE_ACCEPT_PATH.match?(req.path)
+    end
+
+    # Pré-visualização por código: por IP (10/10min).
+    throttle('invitations/code-preview-ip', limit: 10, period: 10.minutes) do |req|
+      req.ip if req.post? && CODE_PREVIEW_PATH.match?(req.path)
+    end
+
     # ── Tetos por CLASSE de domínio (7.2/7.3), por minuto, por identidade ──────
     # Um throttle por classe; o discriminador devolve a chave só quando a
     # requisição pertence àquela classe, senão a ignora. `limit` é lido do ENV a
@@ -97,13 +137,20 @@ module Rack
       # aqui, nem na linha de request (ver initializers/invitation_log_scrubber).
       # 12 chars de SHA-256 bastam para correlacionar tentativas do mesmo token
       # sem permitir reconstruí-lo.
-      token = req.path[INVITE_TOKEN_IN_PATH, 1]
+      # Nos caminhos por CÓDIGO, o segredo está no CORPO (`code`), não no path. Loga
+      # só o SHA-256 truncado do código normalizado — nunca o código em claro —, o
+      # análogo do `token_sha256`. Fora deles, o path pode conter o token.
+      code_path = CODE_ACCEPT_PATH.match?(req.path) || CODE_PREVIEW_PATH.match?(req.path)
+      token = req.path[INVITE_TOKEN_IN_PATH, 1] unless code_path
+      code = req.params['code'].to_s if code_path
+
       Rails.logger.warn(
         {
           event: 'rate_limit_blocked',
           matched: req.env['rack.attack.matched'],
           ip: req.ip,
-          token_sha256: token ? Digest::SHA256.hexdigest(token)[0, 12] : nil
+          token_sha256: token ? Digest::SHA256.hexdigest(token)[0, 12] : nil,
+          code_sha256: code.present? ? Digest::SHA256.hexdigest(Invitation.normalize_code(code))[0, 12] : nil
         }.compact.to_json
       )
 
