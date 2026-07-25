@@ -45,11 +45,11 @@ handoff é anotado como handoff.
 
 ## G5. Distill dos bans vivos (anti-slop) — AGUARDA OK DO DONO
 
-- [ ] 5.1 `components/ui/Button.tsx`: remover variantes `primary`/`gradient`/`uiverse` do union (tsc trava o uso).
-- [ ] 5.2 `styles/globals.css`: remover `.text-goat-gradient*` e bordas rainbow (`.card-highlight`, `icon-hue-cycle`, `.btn`).
-- [ ] 5.3 `features/.../HistoryModal.tsx`: `border-l-2 border-accent/40` (ban de borda-faixa) → tratamento sem faixa lateral.
-- [ ] 5.4 `BuildPage`/`ProfilePage`/`UsersPage` legado: remover ou reduzir ao mínimo que compila (decidir com o dono; alinhar com `design-system` EXECUCAO decisão 3).
-- [ ] 5.5 **Verificação:** `detect.mjs` sobre `frontend/src` = 0 achados; `tsc`; `lint`.
+- [x] 5.1 `components/ui/Button.tsx`: remover variantes `primary`/`gradient`/`uiverse` do union (tsc trava o uso).
+- [x] 5.2 `styles/globals.css`: remover `.text-goat-gradient*` e bordas rainbow (`.card-highlight`, `icon-hue-cycle`, `.btn`).
+- [x] 5.3 `features/.../HistoryModal.tsx`: `border-l-2 border-accent/40` (ban de borda-faixa) → tratamento sem faixa lateral.
+- [x] 5.4 `BuildPage`/`ProfilePage`/`UsersPage` legado: remover ou reduzir ao mínimo que compila (decidir com o dono; alinhar com `design-system` EXECUCAO decisão 3).
+- [x] 5.5 **Verificação:** `detect.mjs` sobre `frontend/src` = 0 achados; `tsc`; `lint`.
 
 ## G6. Polimento final — AGUARDA OK DO DONO
 

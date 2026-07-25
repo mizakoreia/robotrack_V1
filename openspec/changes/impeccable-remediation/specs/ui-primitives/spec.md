@@ -38,16 +38,27 @@ interno, e o × é um glifo cru sem área de toque.*
 - **AND** o container do conteúdo tem `max-h` com `overflow-y: auto`
 - **AND** o botão de fechar tem alvo de toque ≥ 32px
 
-### Requirement: Button não exporta variantes banidas
+### Requirement: Button não exporta as variantes banidas de gradiente
 
-O sistema SHALL NÃO exportar as variantes `primary`, `gradient` e `uiverse` do `Button`
-(bans do DESIGN: texto/fundo em gradiente e chrome de template).
+O sistema SHALL NÃO exportar as variantes `primary` e `gradient` do `Button` (bans do
+DESIGN: fundo/texto em gradiente). A variante `uiverse` (skin `.btn` de borda animada)
+permanece exportada, mas SHALL ser usada apenas pela landing de marketing
+(`components/campfire/*`) e páginas de template legado — nenhum callsite do PRODUTO a usa.
 
-#### Scenario: as variantes banidas somem do tipo
+*Porquê: `primary`/`gradient` não tinham uso e são bans diretos; `uiverse` só existe para a
+landing legada, cuja restilização está fora do escopo desta remediação (design-system
+EXECUCAO decisão 4).*
+
+#### Scenario: as variantes de gradiente somem do tipo
 
 - **WHEN** o tipo `ButtonProps` é inspecionado
-- **THEN** o union de `variant` não contém `primary`, `gradient` nem `uiverse`
+- **THEN** o union de `variant` não contém `primary` nem `gradient`
 - **AND** passar uma delas é erro de `tsc --noEmit`
+
+#### Scenario: o detector estático não acha gradient-text no produto
+
+- **WHEN** `detect.mjs` roda sobre `frontend/src`
+- **THEN** não há achado `gradient-text` (o único remanescente é `overused-font: Inter`, a família única deliberada do DESIGN)
 
 ### Requirement: PortalMenu é navegável por teclado
 

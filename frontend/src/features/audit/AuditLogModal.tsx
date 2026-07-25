@@ -44,8 +44,9 @@ export function AuditLogModal({ open, onClose }: { open: boolean; onClose: () =>
 }
 
 function AuditRow({ log }: { log: AuditLogDTO }) {
+  // impeccable-remediation G5 — sem borda-faixa lateral (ban): tinte de fundo.
   return (
-    <li className="border-l-2 border-accent/40 pl-3 text-sm">
+    <li className="rounded-md bg-bg-sunken/40 px-3 py-2 text-sm">
       <p className="text-text-main">{log.msg}</p>
       {/* ts_local verbatim do servidor; `ts` (ISO) só na semântica do <time> */}
       <time dateTime={log.ts} className="label-sm tabular text-text-muted">

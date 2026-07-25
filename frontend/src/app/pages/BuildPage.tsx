@@ -47,7 +47,9 @@ export function BuildPage() {
 
       <section className={`relative overflow-hidden ${theme === 'dark' ? 'bg-goat-gradient-dark' : 'bg-goat-gradient-light'}`}>
         <div className="px-6 md:px-12 pt-20 md:pt-28 pb-16 text-center max-w-6xl mx-auto">
-          <h1 className="mt-4 text-4xl md:text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-500 via-purple-500 to-cyan-400">
+          {/* impeccable-remediation G5 — sem gradient-text (ban do detector): cor
+              sólida. (Rota /build é template legado, fora do produto.) */}
+          <h1 className="mt-4 text-4xl md:text-5xl font-extrabold tracking-tight text-text-main">
             Instruções do Build
           </h1>
           <p className="mt-3 text-sm md:text-base text-muted-foreground max-w-2xl mx-auto">

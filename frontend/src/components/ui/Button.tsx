@@ -3,7 +3,13 @@ import { cn } from '@/lib/utils'
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link' | 'gradient' | 'primary' | 'uiverse'
+  // impeccable-remediation G5 — variantes banidas `primary` e `gradient` (texto/
+  // fundo em gradiente) REMOVIDAS do union: não tinham uso no produto e passá-las
+  // agora é erro de tsc. `uiverse` (skin `.btn` de borda animada) permanece só
+  // porque a LANDING de marketing (components/campfire/*) depende dele — nenhum
+  // callsite do PRODUTO usa; removê-lo é restilizar a landing, fora deste escopo
+  // (ver design-system EXECUCAO decisão 4).
+  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link' | 'uiverse'
   size?: 'default' | 'sm' | 'lg' | 'icon'
 }
 
@@ -22,8 +28,6 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
       ghost: 'hover:bg-accent hover:text-accent-foreground',
       link: 'text-primary underline-offset-4 hover:underline',
-      gradient: 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-sm hover:from-blue-600 hover:to-purple-600',
-      primary: 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-sm hover:from-blue-600 hover:to-purple-600 rounded-[10px] text-[0.9rem] gap-2',
       uiverse: ''
     }
     

@@ -27,8 +27,10 @@ export function HistoryModal({ task, onClose }: { task: TaskDTO; onClose: () => 
         <p className="text-text-muted">{robotTaskText.historyEmpty}</p>
       ) : (
         <ol className="space-y-3">
+          {/* impeccable-remediation G5 — sem borda-faixa lateral (ban): tinte de
+              fundo sutil no lugar do `border-l-2 border-accent/40`. */}
           {trail.map((a) => (
-            <li key={a.id} className="border-l-2 border-accent/40 pl-3">
+            <li key={a.id} className="rounded-md bg-bg-sunken/40 px-3 py-2">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-medium">{a.author_name_snapshot}</span>
                 <span className="label-sm tabular-nums text-text-muted">
