@@ -31,9 +31,9 @@ handoff é anotado como handoff.
 
 ## G3. Relatório responsivo no mobile (gestor no celular) — AGUARDA OK DO DONO
 
-- [ ] 3.1 `features/report/` + `report-print.css`: reflow/overflow do documento print-width (433px) em 375/320px **sem regredir a impressão A4**.
-- [ ] 3.2 `features/report/ReportHeader.tsx`: carimbo — nome da métrica em `.label-md`+`text-text-main`, reduzir o domínio do %; `ReportBody.tsx` `text-text-muted/70`→sem `/70`.
-- [ ] 3.3 **Verificação:** teste de largura/estrutura; screenshot em 320/375px; prova de que a impressão A4 não mudou.
+- [x] 3.1 `features/report/` + `report-print.css`: reflow/overflow do documento print-width (433px) em 375/320px **sem regredir a impressão A4**.
+- [x] 3.2 `features/report/ReportHeader.tsx`: carimbo — nome da métrica em `.label-md`+`text-text-main`, reduzir o domínio do %; `ReportBody.tsx` `text-text-muted/70`→sem `/70`.
+- [x] 3.3 **Verificação:** teste de largura/estrutura; screenshot em 320/375px; prova de que a impressão A4 não mudou.
 
 ## G4. Consistência Equipe/Convites (Nielsen 4) — AGUARDA OK DO DONO
 

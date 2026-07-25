@@ -14,9 +14,14 @@ export function ReportHeader({ report }: { report: CommissioningReportDTO }) {
         <h1 className="title tracking-wide">{header.title}</h1>
         {header.workspace_name && <p className="mt-1 text-text-muted">{header.workspace_name}</p>}
       </div>
+      {/* impeccable-remediation G3 — o carimbo era hero-métrica banida: % gigante
+          em `.title` sobre o nome que o desambigua em `label-sm text-text-muted`
+          (<4,5:1). No único documento que se assina, o nome da métrica (D15) precisa
+          ser tão legível quanto o número: % reduzido a `.modal-title`, nome em
+          `.label-md` + `text-text-main`. */}
       <div className="rpt-stamp shrink-0 rounded-lg border px-4 py-2 text-right">
-        <div className="title tabular text-text-main">{stamp.percent}%</div>
-        <div className="label-sm font-semibold tracking-wide text-text-muted">{stamp.label}</div>
+        <div className="modal-title tabular text-text-main">{stamp.percent}%</div>
+        <div className="label-md font-semibold tracking-wide text-text-main">{stamp.label}</div>
       </div>
     </header>
   )

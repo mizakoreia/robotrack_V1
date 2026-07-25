@@ -27,8 +27,10 @@ function Bar({ value, label }: { value: number; label: string }) {
       <div className="rpt-bar-track h-1.5 w-40 overflow-hidden rounded-full bg-bg-sunken" role="progressbar" aria-valuenow={value} aria-valuemin={0} aria-valuemax={100}>
         <div className="rpt-bar-fill h-full bg-accent" style={{ width: `${value}%` }} />
       </div>
+      {/* impeccable-remediation G3 — nome da métrica sem `/70` (caía abaixo de
+          4,5:1); segue muted mas no piso de contraste do corpo. */}
       <span className="label-sm tabular text-text-muted">
-        {value}% <span className="text-text-muted/70">{label}</span>
+        {value}% <span>{label}</span>
       </span>
     </div>
   )

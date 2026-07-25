@@ -19,6 +19,17 @@
   display: none;
 }
 
+/* impeccable-remediation G3 — na TELA o documento tem largura mínima legível.
+   Abaixo dela, o container `.overflow-x-auto` do ReportPage ROLA na horizontal em
+   vez de espremer as células (em 375px o gestor via só "○ Per" no lugar de
+   "Pendente 5"). Escopado a @media screen: a impressão pagina em A4 com o fluxo
+   normal (o `w-full` da tabela + as regras de @media print abaixo mandam lá). */
+@media screen {
+  .rpt-doc {
+    min-width: 30rem; /* ~480px: acima da largura intrínseca do conteúdo (~433px) */
+  }
+}
+
 @media print {
   /* O chrome da TELA do relatório (seletor de escopo, botão Imprimir) não sai
    * no papel. */
