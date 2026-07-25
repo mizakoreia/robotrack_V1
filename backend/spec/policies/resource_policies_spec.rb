@@ -15,9 +15,20 @@ RSpec.describe 'Policies de recurso' do
   nulo  = papel.new(nil)
 
   describe 'comissionamento (§4.1 L2)' do
-    it 'ProjectPolicy.destroy? — edit true, view false' do
-      expect(ProjectPolicy.destroy?(edit)).to be(true)
-      expect(ProjectPolicy.destroy?(view)).to be(false)
+    it 'criar/editar é owner+edit em todos os recursos' do
+      [ProjectPolicy, CellPolicy, RobotPolicy, TaskPolicy].each do |policy|
+        expect(policy.create?(edit)).to be(true)
+        expect(policy.update?(edit)).to be(true)
+      end
+    end
+
+    # owner-only-card-delete: EXCLUIR projeto/célula/robô/tarefa é só do dono.
+    it 'destroy? é owner-only nos quatro recursos — edit e view NÃO' do
+      [ProjectPolicy, CellPolicy, RobotPolicy, TaskPolicy].each do |policy|
+        expect(policy.destroy?(owner)).to be(true)
+        expect(policy.destroy?(edit)).to be(false)
+        expect(policy.destroy?(view)).to be(false)
+      end
     end
 
     it 'view lê, não muta, em todos os recursos de comissionamento' do
@@ -114,10 +125,14 @@ RSpec.describe 'Policies de recurso' do
     it 'membro sem papel suficiente levanta Forbidden (403)' do
       expect { ProjectPolicy.authorize!(view, :destroy) }
         .to raise_error(Authorization::Forbidden)
+      # owner-only-card-delete: edit não exclui mais.
+      expect { ProjectPolicy.authorize!(edit, :destroy) }
+        .to raise_error(Authorization::Forbidden)
     end
 
     it 'papel suficiente retorna true' do
-      expect(ProjectPolicy.authorize!(edit, :destroy)).to be(true)
+      expect(ProjectPolicy.authorize!(edit, :create)).to be(true)
+      expect(ProjectPolicy.authorize!(owner, :destroy)).to be(true)
     end
   end
 end

@@ -14,6 +14,7 @@ RSpec.describe 'Conformidade papel × ação com a §4.1', :tenancy, type: :requ
     ESPERADO = {
       read_workspace:         { owner: true,  edit: true,  view: true  },
       manage_commissioning:   { owner: true,  edit: true,  view: false },
+      destroy_commissioning:  { owner: true,  edit: false, view: false },
       record_progress:        { owner: true,  edit: true,  view: false },
       manage_catalog:         { owner: true,  edit: true,  view: false },
       create_log:             { owner: true,  edit: true,  view: false },
@@ -80,30 +81,60 @@ RSpec.describe 'Conformidade papel × ação com a §4.1', :tenancy, type: :requ
       expect(response).to have_http_status(:created)
     end
 
-    it 'manage_commissioning por HTTP: Clara (view) não cria/edita/exclui; Bruno (edit) executa' do
+    it 'manage_commissioning por HTTP: view não cria/edita; edit cria/edita mas NÃO exclui (owner-only-card-delete)' do
       projeto = in_workspace(ws) { Project.create!(name: 'Linha HTTP') }
       celula  = in_workspace(ws) { Cell.create!(project_id: projeto.id, name: 'Célula HTTP') }
       robo    = in_workspace(ws) { Robot.create!(cell_id: celula.id, name: 'Robô HTTP') }
 
+      # view: nada.
       post '/api/v1/projects', params: { name: 'De Clara' }, headers: headers(clara)
       expect(response).to have_http_status(:forbidden)
       patch "/api/v1/cells/#{celula.id}", params: { name: 'X', lock_version: 0 }, headers: headers(clara)
       expect(response).to have_http_status(:forbidden)
       delete "/api/v1/robots/#{robo.id}", headers: headers(clara)
       expect(response).to have_http_status(:forbidden)
-      expect(in_workspace(ws) { Robot.count }).to eq(1)
 
+      # edit: cria e edita, mas o EXCLUIR agora é owner-only → 403.
       post '/api/v1/projects', params: { name: 'De Bruno' }, headers: headers(bruno)
       expect(response).to have_http_status(:created)
       patch "/api/v1/cells/#{celula.id}", params: { name: 'Renomeada', lock_version: 0 }, headers: headers(bruno)
       expect(response).to have_http_status(:ok)
       delete "/api/v1/robots/#{robo.id}", headers: headers(bruno)
+      expect(response).to have_http_status(:forbidden)
+      expect(in_workspace(ws) { Robot.where(deleted_at: nil).count }).to eq(1)
+
+      # owner: exclui (soft-delete 204).
+      delete "/api/v1/robots/#{robo.id}", headers: headers(ana)
       expect(response).to have_http_status(:no_content)
+      expect(in_workspace(ws) { Robot.where(deleted_at: nil).count }).to eq(0)
     end
 
-    it 'manage_commissioning por HTTP para TAREFAS' do
-      pending 'bloqueada por robot-tasks — os endpoints de tarefa não existem'
-      raise 'implementar quando robot-tasks expuser as rotas'
+    it 'destroy de TAREFA por HTTP é owner-only; edit cria/edita mas não exclui' do
+      projeto = in_workspace(ws) { Project.create!(name: 'Linha T') }
+      celula  = in_workspace(ws) { Cell.create!(project_id: projeto.id, name: 'Célula T') }
+      robo    = in_workspace(ws) { Robot.create!(cell_id: celula.id, name: 'Robô T') }
+
+      # owner cria a tarefa-alvo pela API (contrato real: id, cat, desc).
+      tarefa_id = SecureRandom.uuid
+      post "/api/v1/robots/#{robo.id}/tasks",
+           params: { id: tarefa_id, cat: 'A. Hardware', desc: 'Tarefa T' }, headers: headers(ana)
+      expect(response).to have_http_status(:created)
+
+      # edit cria e edita tarefa (owner+edit).
+      post "/api/v1/robots/#{robo.id}/tasks",
+           params: { id: SecureRandom.uuid, cat: 'A. Hardware', desc: 'De Bruno' }, headers: headers(bruno)
+      expect(response).to have_http_status(:created)
+
+      # edit NÃO exclui tarefa (owner-only) → 403; view também não.
+      delete "/api/v1/tasks/#{tarefa_id}", headers: headers(bruno)
+      expect(response).to have_http_status(:forbidden)
+      delete "/api/v1/tasks/#{tarefa_id}", headers: headers(clara)
+      expect(response).to have_http_status(:forbidden)
+      expect(in_workspace(ws) { Task.where(id: tarefa_id, deleted_at: nil).count }).to eq(1)
+
+      # owner exclui (204).
+      delete "/api/v1/tasks/#{tarefa_id}", headers: headers(ana)
+      expect(response).to have_http_status(:no_content)
     end
 
     it 'record_progress por HTTP (avanços, atribuição, reordenação)' do

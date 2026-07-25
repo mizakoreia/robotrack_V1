@@ -120,18 +120,34 @@ RSpec.describe 'API de tarefas do robô', :tenancy, type: :request do
     end
   end
 
-  describe 'exclusão' do
-    it 'exclui a tarefa e suas atribuições (CASCADE), 204' do
+  describe 'exclusão (owner-only — owner-only-card-delete)' do
+    it 'o DONO exclui a tarefa e suas atribuições (CASCADE), 204' do
       robo = robot_in(ws)
       tarefa_id = in_workspace(ws) do
         t = create_task(robo, desc: 'Excluível')
         TaskAssignee.create!(task: t, person: Person.create!(name: 'Resp'))
         t.id
       end
-      delete "/api/v1/tasks/#{tarefa_id}", headers: headers(bruno)
+      delete "/api/v1/tasks/#{tarefa_id}", headers: headers(ana)
       expect(response).to have_http_status(:no_content)
       expect(in_workspace(ws) { Task.exists?(tarefa_id) }).to be(false)
       expect(in_workspace(ws) { TaskAssignee.where(task_id: tarefa_id).count }).to eq(0)
+    end
+
+    it 'um membro edit NÃO exclui tarefa (403), mas ainda cria/edita' do
+      robo = robot_in(ws)
+      tarefa = in_workspace(ws) { create_task(robo, desc: 'Intocável por edit') }
+
+      delete "/api/v1/tasks/#{tarefa.id}", headers: headers(bruno)
+      expect(response).to have_http_status(:forbidden)
+      expect(in_workspace(ws) { Task.exists?(tarefa.id) }).to be(true)
+
+      # edit segue criando/editando tarefa.
+      post "/api/v1/robots/#{robo.id}/tasks",
+           params: { cat: 'A. Hardware', desc: 'Edit cria' }, headers: headers(bruno)
+      expect(response).to have_http_status(:created)
+      patch "/api/v1/tasks/#{tarefa.id}", params: { desc: 'Edit edita', lock_version: 0 }, headers: headers(bruno)
+      expect(response).to have_http_status(:ok)
     end
   end
 

@@ -1,30 +1,34 @@
 ## G0. Reconciliação e esqueleto da change
 
-- [ ] G0.1 Materializar a change no formato OpenSpec (`proposal.md`, `design.md`,
+- [x] G0.1 Materializar a change no formato OpenSpec (`proposal.md`, `design.md`,
   `specs/authorization-policies/spec.md`, `specs/owner-only-card-delete/spec.md`, `tasks.md`)
   reconciliando com a REALIDADE (backend pronto, UI faltante nos cards de projeto/robô,
   `useDeleteRobot` inexistente, sem motor de swipe)
-- [ ] G0.2 Escrever `EXECUCAO.md` com o mapa de grupos G0..G4, as decisões (D1 matriz, D2
-  consequência do edit, D3 UI, D4 swipe nativo, D5 só-excluir, D6 acessível) e as armadilhas
-  (matriz literal, swipe × navegação, invalidação do robô)
-- [ ] G0.3 **Confirmar com o dono DA-1 (tarefa também owner-only?), DA-2 (swipe só excluir?)
-  e DA-3 (os três níveis?)** antes do código — registrar no `EXECUCAO.md`
-- [ ] G0.4 Verificação: `npx --yes @fission-ai/openspec@1.6.0 validate owner-only-card-delete
+- [x] G0.2 Escrever `EXECUCAO.md` com o mapa de grupos G0..G4, as decisões (D1 matriz, D2
+  consequência do edit, D3 UI, D4 swipe nativo, D5 só-excluir, D6 acessível, D7 tarefa) e as
+  armadilhas (matriz literal, swipe × navegação, invalidação do robô)
+- [x] G0.3 Decisões FIXADAS pelo dono: **DA-1 = tarefa TAMBÉM owner-only** (ajuste), DA-2 =
+  swipe só excluir + confirmação, DA-3 = três níveis + tarefa — registrado no `EXECUCAO.md`
+- [x] G0.4 Verificação: `npx --yes @fission-ai/openspec@1.6.0 validate owner-only-card-delete
   --strict` verde
 
-## G1. Autorização — excluir vira owner-only
+## G1. Autorização — excluir (projeto/célula/robô/TAREFA) vira owner-only
 
-- [ ] G1.1 `PermissionMatrix`: adicionar `destroy_commissioning: %i[owner]`
-- [ ] G1.2 `ProjectPolicy`/`CellPolicy`/`RobotPolicy`: `destroy?` → `:destroy_commissioning`
-  (create/update/reorder ficam em `manage_commissioning`)
-- [ ] G1.3 Atualizar `permission_matrix_spec.rb` (reafirma a matriz literalmente — agora 9
-  linhas) e os specs de autorização/policy que afirmavam "edit exclui"
-- [ ] G1.4 **Verificação:** specs de policy dos três recursos provando owner→204/204/204 e
-  **edit→403** e view→403; cross-tenant→404; route-sweep de 100% das rotas ainda verde
-  (nenhuma rota nova; só o gate mudou); reset de fábrica inalterado (regressão de
-  `workspace-settings`/`workspace-factory-reset`)
+- [x] G1.1 `PermissionMatrix`: adicionada `destroy_commissioning: %i[owner]` (9ª linha,
+  logo após `manage_commissioning`)
+- [x] G1.2 `ProjectPolicy`/`CellPolicy`/`RobotPolicy`/`TaskPolicy`: `destroy?` →
+  `:destroy_commissioning` (create/update/reorder/assign seguem em owner+edit)
+- [x] G1.3 `permission_matrix_spec.rb` reafirma a 9ª linha; `resource_policies_spec` e
+  `matrix_conformance_spec` reescritos (destroy owner-only nos 4 recursos; edit→403; a
+  conformance HTTP de TAREFA, antes `pending` por robot-tasks, foi IMPLEMENTADA); `tasks_spec`
+  exclusão agora owner-only (owner→204, edit→403 mas cria/edita)
+- [x] G1.4 **Verificação:** `spec/policies spec/authorization spec/requests/tasks_spec
+  spec/requests/hierarchy_crud_spec spec/requests/hierarchy_soft_delete_spec` = **257
+  exemplos, 0 falhas, 7 pending** (pendings pré-existentes). owner→204, edit/view→403 nos 4
+  recursos; edit ainda cria/edita/reordena/atribui; cross-tenant 404 (não-membro falha no
+  `member?` antes do papel); reset de fábrica inalterado.
 
-## G2. UI — fechar a lacuna de excluir nos três níveis (owner-only)
+## G2. UI — excluir owner-only: 3 níveis de hierarquia + tarefa
 
 - [ ] G2.1 `useDeleteRobot` novo em `useHierarchy.ts` (ligar `hierarchyApi.deleteRobot`,
   invalidar só `robots(wsId, cellId)`, espelhando `useCreateRobot`/`useDeleteCell`)
@@ -34,11 +38,13 @@
   → `useDeleteProject` (hoje órfão); invalidar `qk.overview`/`projects`
 - [ ] G2.4 `ProjectPage`/card de célula: re-gated de `canEdit` para owner-only (o controle já
   existe); alinhar rótulos e o diálogo (aviso de subárvore arquivada)
-- [ ] G2.5 Trocar o gating dos controles de excluir de `canEdit` para `isOwner` (`role ===
-  'owner'`) nas três telas; **não** trocar o gating de criar/editar/reordenar
-- [ ] G2.6 **Verificação:** `vitest` — dono vê os 3 excluir, edit/view não veem nenhum;
-  confirmar/cancelar; invalidação correta; `tsc`/`lint`; sweep de convenção (sem invalidar
-  tenant inteiro, sem importar `lib/api` em `app/`)
+- [ ] G2.5 `AcoesCell` (tarefa): a lixeira vira owner-only via `canDelete={isOwner}`; o lápis
+  (editar descrição) segue em owner+edit; excluir tarefa passa por confirmação
+- [ ] G2.6 Gating dos controles de EXCLUIR de `canEdit` para `isOwner` nas telas de hierarquia
+  e no `AcoesCell`; **não** trocar o gating de criar/editar/reordenar/atribuir
+- [ ] G2.7 **Verificação:** `vitest` — dono vê os 4 excluir, edit vê editar mas não excluir,
+  view não vê nada; confirmar/cancelar; invalidação correta; `tsc`/`lint`; sweep de convenção
+  (sem invalidar tenant inteiro, sem importar `lib/api` em `app/`)
 
 ## G3. Mobile — swipe-to-reveal excluir no EntityCard
 

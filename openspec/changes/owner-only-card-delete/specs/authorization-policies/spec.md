@@ -15,36 +15,38 @@ exige mudar os dois lugares de propósito.
 
 ## MODIFIED Requirements
 
-### Requirement: Autorização de exclusão de projeto, célula e robô
+### Requirement: Autorização de exclusão de projeto, célula, robô e tarefa
 
-Excluir (`destroy?`) um projeto, uma célula ou um robô SHALL ser autorizado **apenas ao
-dono do workspace** (papel `owner`). `ProjectPolicy`, `CellPolicy` e `RobotPolicy` SHALL
-mapear `destroy?` para a action `destroy_commissioning` (owner-only). Criar (`create?`),
-editar (`update?`) e reordenar (`reorder?`) SHALL permanecer autorizados a `owner` e `edit`.
-O servidor SHALL ser a autoridade: um pedido de exclusão de um membro `edit` SHALL falhar
-mesmo que a UI o tivesse exposto.
+Excluir (`destroy?`) um projeto, uma célula, um robô **ou uma tarefa** SHALL ser autorizado
+**apenas ao dono do workspace** (papel `owner`). `ProjectPolicy`, `CellPolicy`, `RobotPolicy`
+e `TaskPolicy` SHALL mapear `destroy?` para a action `destroy_commissioning` (owner-only).
+Criar (`create?`), editar (`update?`), reordenar (`reorder?`) e atribuir (`assign?`) SHALL
+permanecer autorizados a `owner` e `edit`. O servidor SHALL ser a autoridade: um pedido de
+exclusão de um membro `edit` SHALL falhar mesmo que a UI o tivesse exposto.
 
-#### Scenario: Dono exclui projeto/célula/robô
+#### Scenario: Dono exclui projeto/célula/robô/tarefa
 
-- **WHEN** o dono faz `DELETE /api/v1/{projects,cells,robots}/:id` de um recurso do próprio
-  workspace
+- **WHEN** o dono faz `DELETE /api/v1/{projects,cells,robots,tasks}/:id` de um recurso do
+  próprio workspace
 - **THEN** a exclusão SHALL prosseguir (soft-delete) e responder 204
 
 #### Scenario: Membro edit NÃO exclui (negação)
 
-- **WHEN** um membro com papel `edit` faz `DELETE /api/v1/{projects,cells,robots}/:id`
+- **WHEN** um membro com papel `edit` faz `DELETE /api/v1/{projects,cells,robots,tasks}/:id`
 - **THEN** a aplicação SHALL responder 403 (Forbidden)
 - **AND** nenhum `deleted_at` SHALL ser gravado
 
 #### Scenario: Membro view NÃO exclui (negação)
 
-- **WHEN** um membro com papel `view` faz `DELETE /api/v1/{projects,cells,robots}/:id`
+- **WHEN** um membro com papel `view` faz `DELETE /api/v1/{projects,cells,robots,tasks}/:id`
 - **THEN** a aplicação SHALL responder 403 (Forbidden)
 
-#### Scenario: Membro edit ainda cria, edita e reordena
+#### Scenario: Membro edit ainda cria, edita, reordena e atribui
 
-- **WHEN** um membro `edit` faz `POST`/`PATCH`/reorder de projeto/célula/robô
+- **WHEN** um membro `edit` faz `POST`/`PATCH`/reorder de projeto/célula/robô ou edita/atribui
+  uma tarefa
 - **THEN** as operações SHALL continuar autorizadas (owner+edit), inalteradas por esta change
+- **AND** apenas o `destroy?` (dos quatro recursos) SHALL ter mudado para owner-only
 
 #### Scenario: Exclusão cross-tenant não vaza (negação)
 

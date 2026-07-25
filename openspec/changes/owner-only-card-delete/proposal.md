@@ -26,12 +26,16 @@ tradução de Firebase nova.
 
 - **Autorização — excluir vira owner-only (§4.1):**
   - Nova linha na matriz `PermissionMatrix`: `destroy_commissioning: %i[owner]`.
-  - `ProjectPolicy`/`CellPolicy`/`RobotPolicy`: `destroy?` passa de `:manage_commissioning`
-    para `:destroy_commissioning`. `create?`/`update?`/`reorder?` **ficam** em owner+edit.
-  - **Consequência:** um membro `edit` deixa de poder excluir projeto/célula/robô — continua
-    criando, editando e reordenando. `view` segue sem excluir (inalterado).
-  - Atualizar `permission_matrix_spec.rb` (reafirma a matriz literalmente) e os specs de
-    autorização que hoje afirmam "edit exclui" → "edit **não** exclui (403), owner exclui".
+  - `ProjectPolicy`/`CellPolicy`/`RobotPolicy`/**`TaskPolicy`**: `destroy?` passa de
+    `:manage_commissioning` para `:destroy_commissioning`. `create?`/`update?`/`reorder?`/
+    `assign?` **ficam** em owner+edit.
+  - **Ajuste do dono:** a tarefa entra no owner-only junto com os três níveis de hierarquia
+    ("excluir cards de tarefas também"). Editar a tarefa (descrição) segue em owner+edit.
+  - **Consequência:** um membro `edit` deixa de poder excluir projeto/célula/robô/tarefa —
+    continua criando, editando, reordenando e atribuindo. `view` segue sem excluir (inalterado).
+  - Atualizar `permission_matrix_spec.rb` (reafirma a matriz literalmente — agora 9 linhas) e
+    os specs de autorização que hoje afirmam "edit exclui" → "edit **não** exclui (403), owner
+    exclui".
 - **UI de excluir nos três níveis (fechar a lacuna):**
   - `OverviewPage`/`ProjectCard`: adicionar `IconButton` lixeira → diálogo de confirmação →
     `useDeleteProject` (já existe, hoje órfão).
@@ -39,6 +43,9 @@ tradução de Firebase nova.
     `useDeleteRobot` (fiar o endpoint `deleteRobot` que já existe no client).
   - `ProjectPage`/card de célula: já existe; só re-gated para owner-only (ver abaixo) e
     alinhado ao mesmo padrão de swipe.
+  - `AcoesCell` (tarefa): o botão **excluir** (lixeira) vira owner-only; o botão **editar**
+    (descrição) segue em owner+edit. O `RobotTaskTablePage` monta a coluna quando `canEdit`
+    e passa `canDelete={isOwner}`.
   - **Gating de UI:** os controles de excluir passam de `canEdit` (owner+edit) para
     **owner-only** (`role === 'owner'`), espelhando a matriz. O servidor continua sendo a
     autoridade (403 para edit).
@@ -61,14 +68,17 @@ tradução de Firebase nova.
   (`destroy_workspace`); esta change não o altera.
 - **Não** revelar outras ações no swipe (renomear/editar) — só **excluir**, mínimo e sempre
   com confirmação (ver design D5). Renomear/editar seguem pelo `IconButton`.
+- **Não** aplicar o swipe às tarefas: o gesto é só dos cards de HIERARQUIA (EntityCard); a
+  tarefa vive numa tabela/`MobileTaskCard` e seu excluir owner-only continua pelo botão.
+- **Não** tornar owner-only o EDITAR da tarefa (descrição) nem o atribuir — só o EXCLUIR.
 - **Não** introduzir biblioteca de drag/dnd — o gesto é implementado com pointer events
   nativos + `transform`, dentro dos tokens de `DESIGN.md` (D4).
 - **Não** permitir excluir por `edit` em lugar nenhum (nem UI nem API) depois desta change.
 
 ## Capabilities
 
-- `authorization-policies` (MODIFIED): excluir projeto/célula/robô passa a ser **owner-only**
-  (nova action de matriz `destroy_commissioning`).
-- `owner-only-card-delete` (ADDED): controle de excluir nos cards dos três níveis, visível só
-  ao dono, sempre com confirmação, e o gesto de **swipe-to-reveal** no mobile com alternativa
-  acessível.
+- `authorization-policies` (MODIFIED): excluir projeto/célula/robô/**tarefa** passa a ser
+  **owner-only** (nova action de matriz `destroy_commissioning`).
+- `owner-only-card-delete` (ADDED): controle de excluir nos cards dos três níveis de
+  hierarquia + o excluir de tarefa, visível só ao dono, sempre com confirmação, e o gesto de
+  **swipe-to-reveal** no mobile (cards de hierarquia) com alternativa acessível.

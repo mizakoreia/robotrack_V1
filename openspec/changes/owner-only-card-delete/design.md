@@ -41,8 +41,9 @@ Estado REAL levantado no planejamento (paths verificados):
 
 ### D1 — Owner-only por nova action de matriz, não por `role ==` na policy.
 
-Adicionar `destroy_commissioning: %i[owner]` à `PermissionMatrix` e repontar os três
-`destroy?` para ela. `create?`/`update?`/`reorder?` continuam em `manage_commissioning`.
+Adicionar `destroy_commissioning: %i[owner]` à `PermissionMatrix` e repontar os QUATRO
+`destroy?` (`ProjectPolicy`, `CellPolicy`, `RobotPolicy`, **`TaskPolicy`**) para ela.
+`create?`/`update?`/`reorder?`/`assign?` continuam em `manage_commissioning`/`record_progress`.
 
 **Por quê:** a matriz é a fonte única (D3.2 de `authorization-policies`), e há um cop que
 reprova `role ==` fora de `permission_matrix.rb`. A máquina de owner-only já é provada
@@ -53,18 +54,17 @@ matriz **literalmente** — "mudar a matriz exige mudar dois lugares de propósi
 **Alternativa descartada:** comparar papel na policy (`context.role == :owner`) — proibido
 pelo cop e quebra a fonte-única.
 
-### D2 — Consequência explícita: `edit` perde excluir, mantém o resto.
+### D2 — Consequência explícita: `edit` perde excluir (dos 4), mantém o resto.
 
-Depois desta change, um membro `edit` **não** exclui projeto/célula/robô (403 no servidor,
-controle ausente na UI) — continua criando, editando e reordenando. `view` segue sem excluir.
-Isso é o pedido do dono. **Não afeta:**
+Depois desta change, um membro `edit` **não** exclui projeto/célula/robô/**tarefa** (403 no
+servidor, controle ausente/gated na UI) — continua criando, editando, reordenando e
+atribuindo. `view` segue sem excluir. Isso é o pedido do dono (com o ajuste de incluir a
+tarefa). **Não afeta:**
 
 - o **reset de fábrica** (já owner-only via `destroy_workspace`);
 - o **soft-delete** em si (o serviço e o 204 são iguais; só o gate muda);
-- excluir **tarefa** no `robot-task-table` (`AcoesCell`/`useDeleteTask`) — **decisão aberta
-  DA-1:** o dono disse "cards" (projeto/célula/robô); tarefa é outra granularidade. Recomendo
-  **manter tarefa em owner+edit** (o operador de chão de fábrica mexe em tarefa o tempo todo;
-  travar em owner atrapalharia o fluxo diário) e restringir só os cards de hierarquia. Confirmar.
+- **editar** a tarefa (descrição, `TaskPolicy#update?`) nem **atribuir** (`assign?`) — seguem
+  em owner+edit; só o `destroy?` da tarefa vira owner-only (ver D7).
 
 ### D3 — Fechar a lacuna de UI nos três níveis, reusando o padrão que já funciona.
 
@@ -121,15 +121,24 @@ O `IconButton` visível de excluir (foco, Enter/Espaço, rótulo para leitor de 
 todos os cards para o dono. Swipe é atalho de toque. Assim teclado e leitor de tela têm o mesmo
 poder que o dedo — requisito de `PRODUCT.md`/WCAG e do gate `quality-and-accessibility`.
 
-## Decisões em aberto (para o dono)
+### D7 — Tarefa: excluir owner-only no `AcoesCell`, editar segue owner+edit.
 
-- **DA-1 — Excluir TAREFA também vira owner-only?** O dono disse "cards" (projeto/célula/robô).
-  Tarefa (`AcoesCell`) é outra granularidade, usada no fluxo diário do operador. **Recomendo
-  manter tarefa em owner+edit** e restringir só os cards de hierarquia. Confirmar.
-- **DA-2 — Swipe revela só excluir, sempre com confirmação?** **Recomendo sim** (mínimo +
-  seguro). Se o dono quiser mais ações no swipe, é escopo maior.
-- **DA-3 — Cobrir os três níveis (projeto, célula, robô)?** **Recomendo sim** — consistência; é
-  onde a lacuna de UI está (projeto e robô não têm botão hoje). Confirmar.
+`AcoesCell` renderiza editar (descrição) + excluir (lixeira) da tarefa, montado pelo
+`RobotTaskTablePage` quando `canEdit`. Com o ajuste do dono, o `destroy?` da tarefa vira
+owner-only, mas o `update?` (editar descrição) e o `assign?` NÃO. Então o `AcoesCell` ganha
+`canDelete` (owner) separado do `canEdit` (owner+edit): a lixeira só aparece para o dono; o
+lápis para owner+edit. O servidor é a autoridade (403 no `DELETE /tasks/:id` para `edit`).
+
+**Alternativa descartada:** owner-only no `AcoesCell` inteiro (editar + excluir) — mais
+simples, mas tiraria do `edit` o EDITAR da tarefa, que o dono NÃO pediu (só o excluir).
+
+## Decisões FIXADAS pelo dono
+
+- **DA-1 — Excluir TAREFA também owner-only? → SIM** (ajuste explícito: "excluir cards de
+  tarefas também"). O `destroy?` da tarefa entra no `destroy_commissioning`; editar/atribuir
+  ficam em owner+edit (D7).
+- **DA-2 — Swipe revela só excluir, sempre com confirmação? → SIM** (mínimo + seguro).
+- **DA-3 — Cobrir os três níveis (projeto, célula, robô)? → SIM** (+ tarefa, por DA-1).
 
 ## Riscos / trade-offs
 

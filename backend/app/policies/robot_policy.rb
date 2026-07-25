@@ -6,6 +6,6 @@ class RobotPolicy < BasePolicy
           show?: :read_workspace,
           create?: :manage_commissioning,
           update?: :manage_commissioning,
-          destroy?: :manage_commissioning,
+          destroy?: :destroy_commissioning,
           reorder?: :record_progress
 end

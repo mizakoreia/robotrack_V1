@@ -44,6 +44,30 @@ arquivada (o soft-delete cascateia).
 - **THEN** o cliente SHALL usar um hook de exclusão de robô ligado a `DELETE
   /api/v1/robots/:id`, invalidando apenas a chave de robôs da célula (nunca o tenant inteiro)
 
+### Requirement: Excluir tarefa é owner-only; editar a tarefa segue owner+edit
+
+Na tabela de tarefas do robô (`AcoesCell`), o controle de **excluir** (lixeira) SHALL ser
+visível apenas ao **dono**; o controle de **editar** a descrição SHALL permanecer visível a
+`owner` e `edit`. O servidor SHALL ser a autoridade (`DELETE /api/v1/tasks/:id` responde 403
+para `edit`). O swipe-to-reveal NÃO SHALL ser aplicado às tarefas (a tarefa vive numa
+tabela/cartão, não num `EntityCard`).
+
+#### Scenario: Dono vê excluir e editar na tarefa
+
+- **WHEN** o dono abre a tabela de tarefas de um robô
+- **THEN** cada linha/cartão de tarefa SHALL apresentar excluir (lixeira) e editar (descrição)
+
+#### Scenario: Membro edit vê editar mas NÃO excluir na tarefa (negação)
+
+- **WHEN** um membro `edit` abre a tabela de tarefas
+- **THEN** cada tarefa SHALL apresentar o controle de editar a descrição
+- **AND** NÃO SHALL apresentar o controle de excluir a tarefa
+
+#### Scenario: Excluir tarefa exige confirmação
+
+- **WHEN** o dono ativa excluir numa tarefa
+- **THEN** a exclusão SHALL passar por confirmação antes de chamar `DELETE /api/v1/tasks/:id`
+
 ### Requirement: Swipe-to-reveal excluir no mobile com alternativa acessível
 
 No viewport de toque/estreito, arrastar um card de hierarquia para o lado SHALL revelar uma
