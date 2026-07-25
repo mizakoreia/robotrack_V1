@@ -53,7 +53,8 @@ export function PeoplePanel({ canWrite }: { canWrite: boolean }) {
       </div>
 
       {isLoading ? (
-        <p className="text-text-muted">…</p>
+        // impeccable-remediation G6 — loader honesto (role=status) em vez de "…" cru.
+        <p className="text-text-muted" role="status" aria-busy="true">{T.loading}</p>
       ) : isError ? (
         <p className="text-danger-ink" role="alert">{T.errorGeneric}</p>
       ) : people.length === 0 ? (

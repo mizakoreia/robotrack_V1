@@ -6,6 +6,7 @@ export const settingsText = {
   teamTitle: 'Responsáveis',
   teamSubtitle: 'Pessoas a quem se atribui tarefa. Remover arquiva a pessoa e preserva o histórico.',
   teamManageLink: 'Membros e convites →',
+  loading: 'Carregando…',
   teamEmpty: 'Nenhuma pessoa cadastrada ainda.',
   teamAddPlaceholder: 'Nome da pessoa',
   teamAdd: 'Adicionar',

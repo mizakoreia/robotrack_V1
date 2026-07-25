@@ -53,8 +53,8 @@ handoff é anotado como handoff.
 
 ## G6. Polimento final — AGUARDA OK DO DONO
 
-- [ ] 6.1 `UtilitiesPanel`: nested card (uma borda só).
-- [ ] 6.2 Badge "Solda Ponto" quebrando em 2 linhas; tratamento uniforme das pílulas de aplicação.
-- [ ] 6.3 `label-sm` pequeno para "legível de longe" onde a crítica apontou (busca, colunas).
-- [ ] 6.4 Loaders "…" com `aria-busy`; item de notificação lido sinalizado por ponto/fundo (não `opacity-60` no texto); header da central empilha em ≤320px.
+- [x] 6.1 `UtilitiesPanel`: nested card — VERIFICADO: a estrutura atual são dois cards IRMÃOS (export/reset) dentro de uma `<section>` SEM borda; não há aninhamento. Nenhuma mudança necessária.
+- [x] 6.2 Badge "Solda Ponto" quebrando em 2 linhas; tratamento uniforme das pílulas de aplicação.
+- [x] 6.3 `label-sm` pequeno para "legível de longe" onde a crítica apontou (busca, colunas).
+- [x] 6.4 Loaders "…" com `aria-busy`; item de notificação lido sinalizado por ponto/fundo (não `opacity-60` no texto); header da central empilha em ≤320px.
 - [ ] 6.5 **Verificação:** `/impeccable critique` de novo (meta: nota subir de 27/40); suíte completa verde.

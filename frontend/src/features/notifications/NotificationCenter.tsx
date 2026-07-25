@@ -26,7 +26,9 @@ export function NotificationCenter() {
 
   return (
     <section aria-labelledby="notif-center-title" className="space-y-3">
-      <header className="flex items-center justify-between">
+      {/* impeccable-remediation G6 — `flex-wrap`: em ≤320px o h2 + dois botões de
+          texto não estouram a largura (w-80 max-w-[90vw]); as ações descem. */}
+      <header className="flex flex-wrap items-center justify-between gap-2">
         <h2 id="notif-center-title" className="panel-header">
           Notificações
           <span aria-live="polite" className="ml-2 text-sm text-text-muted" data-testid="unread-badge">
@@ -59,8 +61,11 @@ export function NotificationCenter() {
               <button
                 type="button"
                 onClick={() => open(n)}
+                // impeccable-remediation G6 — lido é sinalizado pela AUSÊNCIA do
+                // ponto/fundo de não-lido, não por `opacity-60` (que derrubava o
+                // corpo abaixo de 4,5:1). O texto do lido fica em contraste pleno.
                 className={`flex w-full items-start gap-3 rounded-md border p-3 text-left ${
-                  n.read ? 'opacity-60' : 'bg-accent/5'
+                  n.read ? '' : 'bg-accent/5'
                 }`}
               >
                 {!n.read && <span aria-label="não lida" className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-accent" />}

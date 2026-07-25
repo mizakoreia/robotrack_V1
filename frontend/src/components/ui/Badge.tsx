@@ -31,8 +31,11 @@ const INK: Record<BadgeStatus, string> = {
 }
 
 export function Badge({ status, children, className }: BadgeProps) {
+  // impeccable-remediation G6 — `whitespace-nowrap`: uma pílula de duas palavras
+  // ("Solda Ponto") não quebra em duas linhas enquanto as de uma palavra ficam em
+  // uma — tratamento uniforme das pílulas.
   return (
-    <span className={cn('label-md inline-flex items-center rounded-pill px-2 py-0.5 font-medium', BG[status], INK[status], className)}>
+    <span className={cn('label-md inline-flex items-center whitespace-nowrap rounded-pill px-2 py-0.5 font-medium', BG[status], INK[status], className)}>
       {children}
     </span>
   )

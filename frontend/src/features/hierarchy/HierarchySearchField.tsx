@@ -39,7 +39,8 @@ export function HierarchySearchField({
         className="h-8 min-w-0 flex-1 bg-transparent text-base text-text-main placeholder:text-text-muted"
       />
       {value && <IconButton icon="close" label="Limpar busca" size="sm" onClick={onClear} />}
-      <button type="submit" className="label-md rounded-md bg-accent px-3 py-1 font-medium text-accent-ink">
+      {/* impeccable-remediation G6 — botão ≥32px (era py-1 ~27px, menor que o input h-8). */}
+      <button type="submit" className="label-md flex min-h-[2rem] items-center rounded-md bg-accent px-3 font-medium text-accent-ink">
         Buscar
       </button>
     </form>
