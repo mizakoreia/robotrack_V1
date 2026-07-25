@@ -33,11 +33,11 @@ export function ReportPage() {
         <h1 id="report-title" className="title">
           {T.title}
         </h1>
-        <div className="flex items-center gap-3">
-          <label className="label-sm flex items-center gap-2 text-text-muted">
+        <div className="flex w-full items-center gap-3 sm:w-auto">
+          <label className="label-sm flex min-w-0 flex-1 items-center gap-2 text-text-muted sm:flex-none">
             {T.scopeLabel}
             <select
-              className="input h-9 rounded-md border bg-bg-main px-2 text-sm text-text-main"
+              className="input h-9 min-w-0 flex-1 rounded-md border bg-bg-main px-2 text-sm text-text-main sm:flex-none"
               value={scope}
               onChange={(e) => setScope(e.target.value)}
             >
@@ -58,7 +58,13 @@ export function ReportPage() {
       </div>
 
       {report ? (
-        <ReportDocument report={report} />
+        // Documento denso de impressão (Protocolo). Na TELA, telas estreitas rolam
+        // o documento na horizontal DENTRO do próprio bloco em vez de empurrar a
+        // página inteira (que forçava zoom out no celular). Impressão intacta:
+        // `print:overflow-visible` devolve o fluxo normal ao paginar.
+        <div className="overflow-x-auto print:overflow-visible">
+          <ReportDocument report={report} />
+        </div>
       ) : !online ? (
         // §4.3 — sem conexão a query fica PAUSADA (networkMode online): informar
         // explicitamente, nunca girar um loading eterno nem montar doc parcial.

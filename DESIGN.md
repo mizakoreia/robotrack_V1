@@ -85,8 +85,11 @@ propriedade (`text-success` não compila — D-DS-2).
   Relatório) por **preenchimento tintado** (nunca faixa lateral), topbar com contexto
   de workspace + sino + menu da conta, rodapé com card de usuário + indicador de
   gravação. Gaveta abaixo de 768px. Navegar entre destinos NÃO remonta o shell.
-- Grades de card responsivas sem breakpoint fixo; `items-stretch` para cards de
-  mesma altura.
+- Grades de card responsivas; `items-stretch` para cards de mesma altura. Todo grid
+  que salta de coluna em `sm:`/`lg:` **começa em `grid-cols-1`** no base — sem a
+  coluna base `minmax(0,1fr)`, a trilha implícita `auto` estica no `min-content` do
+  título `truncate` (que é `nowrap`) e o card estoura a viewport do celular (o antigo
+  bug do zoom-out). Travado pela regra H do `convention-sweep`.
 - **Escala z semântica** (`z-dropdown` / `z-sticky` / `z-sidebar` / `z-modal`…), com
   lint — nunca `9999`.
 

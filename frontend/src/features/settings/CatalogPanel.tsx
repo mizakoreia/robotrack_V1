@@ -59,6 +59,7 @@ export function CatalogPanel({ canWrite }: { canWrite: boolean }) {
       ) : grouped.length === 0 ? (
         <p className="text-text-muted">{T.catalogEmpty}</p>
       ) : (
+        <div className="overflow-x-auto">
         <table className="w-full border-collapse text-left text-sm">
           <thead>
             <tr className="label-sm text-text-muted">
@@ -114,6 +115,7 @@ export function CatalogPanel({ canWrite }: { canWrite: boolean }) {
             )}
           </tbody>
         </table>
+        </div>
       )}
 
       {canWrite && (

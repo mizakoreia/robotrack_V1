@@ -48,8 +48,8 @@ export function CellPage() {
   return (
     <section aria-labelledby="cell-title" className="mx-auto max-w-6xl space-y-6">
       <BackLink label={t.back} onClick={() => navigate(`/projeto/${data.project_id}`)} />
-      <div className="flex items-center justify-between gap-3">
-        <h1 id="cell-title" className="title">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 id="cell-title" className="title min-w-0">
           {data.name}
         </h1>
         {canEdit && !empty && (
@@ -78,7 +78,7 @@ export function CellPage() {
             caption={hierarchyText.levelPhysicalCaption(Math.round(data.raw_completion.percent))}
           />
           <p className="label-sm text-text-muted">Anéis: progresso ponderado por peso de tarefa</p>
-          <div className="grid items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {data.robots.map((robot) => (
               <EntityCard
                 key={robot.id}

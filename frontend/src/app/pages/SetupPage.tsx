@@ -25,7 +25,7 @@ export function SetupPage() {
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {/* Card Comunidade Discord */}
         <Card>
           <CardHeader>

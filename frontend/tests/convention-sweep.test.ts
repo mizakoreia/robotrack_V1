@@ -245,6 +245,50 @@ describe('regra G: botão do SHELL não reusa nome de botão de outra tela', () 
   })
 })
 
+describe('regra H: grid responsivo de coluna começa com base grid-cols (bug do zoom-out no celular)', () => {
+  // O DEFEITO que esta regra trava: um grid que salta para várias colunas em
+  // `sm:`/`md:`/`lg:` SEM um `grid-cols-*` no base cai na trilha implícita `auto`,
+  // cujo mínimo é `min-content`. Um filho com título `truncate` (que é
+  // `white-space: nowrap`) tem min-content = largura do TEXTO INTEIRO — então a
+  // única coluna do celular estica até o nome completo e ultrapassa a viewport
+  // (o `overflow-hidden` do shell mascarava o `scrollWidth`, e a página forçava
+  // ZOOM OUT no aparelho). `grid-cols-1` = `minmax(0,1fr)` (mínimo 0) prende a
+  // coluna à largura do container e o `truncate` volta a funcionar. Regra: toda
+  // className com `<bp>:grid-cols-` precisa de um `grid-cols-*` SEM prefixo.
+  const CLASS_ATTR = /className\s*=\s*["']([^"']*)["']/g
+  const RESPONSIVE_COLS = /^(?:sm|md|lg|xl|2xl):grid-cols-/
+  const BASE_COLS = /^grid-cols-/
+
+  function offendersIn(src: string): string[] {
+    const bad: string[] = []
+    let m: RegExpExecArray | null
+    CLASS_ATTR.lastIndex = 0
+    while ((m = CLASS_ATTR.exec(src))) {
+      const tokens = m[1].split(/\s+/)
+      if (!tokens.some((t) => RESPONSIVE_COLS.test(t))) continue
+      if (!tokens.some((t) => BASE_COLS.test(t))) bad.push(m[1].slice(0, 70))
+    }
+    return bad
+  }
+
+  it('nenhum grid responsivo sem base grid-cols', () => {
+    const offenders: string[] = []
+    for (const f of ALL) {
+      for (const cls of offendersIn(f.src)) offenders.push(`${f.path}: "${cls}"`)
+    }
+    expect(
+      offenders,
+      `grid responsivo sem base grid-cols-1 (a coluna do celular estica no min-content e estoura): ${offenders.join(', ')}`,
+    ).toEqual([])
+  })
+
+  it('o sweep MORDE: pega o padrão sem base e absolve o padrão com base', () => {
+    expect(offendersIn('<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" />')).toHaveLength(1)
+    expect(offendersIn('<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" />')).toEqual([])
+    expect(offendersIn('<div className="grid grid-cols-[auto_1fr] gap-4" />')).toEqual([]) // sem salto responsivo
+  })
+})
+
 describe('quality-and-accessibility 4.1 — regra E: nada de outline-none INCONDICIONAL', () => {
   // `outline-none` cru (sem `focus-visible:`/`focus:`) remove o foco em TODO estado,
   // inclusive teclado — foco invisível sob luz de galpão. O anel do componente deve
