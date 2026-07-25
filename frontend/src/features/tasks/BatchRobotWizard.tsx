@@ -26,15 +26,26 @@ export function BatchRobotWizard({ cellId, onDone }: { cellId: string; onDone?: 
   const batch = useBatchCreateRobots(cellId)
 
   const [step, setStep] = useState<1 | 2>(1)
-  const [quantity, setQuantity] = useState(1)
+  // A quantidade é texto CRU enquanto se digita — para o campo poder ficar vazio
+  // (apagar o `1`), aceitar valores intermediários (2, 3, 7) e não pular pra 10+
+  // por causa de um clamp que reescrevia o valor a cada tecla. O clamp 1..50
+  // acontece no BLUR e no avanço, nunca por tecla.
+  const [quantity, setQuantity] = useState('1')
   const [application, setApplication] = useState<string>('')
   const [names, setNames] = useState<string[]>([''])
 
   const appList = applications ?? []
   const currentApp = application || appList[0] || ''
 
+  // Normaliza o texto cru para um inteiro válido (1..50). Vazio/inválido → 1.
+  const normalizeQuantity = () => {
+    const n = clampQuantity(Number(quantity))
+    setQuantity(String(n))
+    return n
+  }
+
   const goToStep2 = () => {
-    const n = clampQuantity(quantity)
+    const n = normalizeQuantity()
     setNames((prev) => Array.from({ length: n }, (_, i) => prev[i] ?? ''))
     setStep(2)
   }
@@ -62,12 +73,14 @@ export function BatchRobotWizard({ cellId, onDone }: { cellId: string; onDone?: 
           Quantidade
           <input
             type="number"
+            inputMode="numeric"
             aria-label="Quantidade"
             className={FIELD_CLASS}
             value={quantity}
             min={1}
             max={50}
-            onChange={(e) => setQuantity(clampQuantity(Number(e.target.value)))}
+            onChange={(e) => setQuantity(e.target.value)}
+            onBlur={normalizeQuantity}
           />
         </label>
         <label className={LABEL_CLASS}>

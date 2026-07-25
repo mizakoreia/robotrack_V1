@@ -25,11 +25,47 @@ function goToStep2WithQuantity(value: string) {
 }
 
 describe('BatchRobotWizard', () => {
-  it('digitar 99 no passo 1 limita a 50 e o passo 2 mostra exatamente 50 campos', () => {
+  // Bug de UX de primeiro uso (demo real): o clamp rodava a cada tecla, então
+  // apagar o campo devolvia 1 na hora e só dava para chegar a 10+ acrescentando
+  // dígitos depois do 1. O clamp 1..50 tem de acontecer no BLUR / no avanço.
+  it('deixa apagar o campo enquanto digita (estado vazio permitido)', () => {
+    render(<BatchRobotWizard cellId="c1" />)
+    const qty = goToStep2WithQuantity('')
+    expect(qty.value).toBe('') // NÃO volta a 1 por tecla
+  })
+
+  it('deixa digitar valores intermediários sem pular para 10+', () => {
+    render(<BatchRobotWizard cellId="c1" />)
+    const qty = screen.getByLabelText('Quantidade') as HTMLInputElement
+    fireEvent.change(qty, { target: { value: '' } })
+    fireEvent.change(qty, { target: { value: '7' } })
+    expect(qty.value).toBe('7') // digitar 7 dá 7, não 17
+
+    fireEvent.click(screen.getByText('Avançar'))
+    expect(screen.getAllByLabelText(/Nome do robô/)).toHaveLength(7)
+  })
+
+  it('blur com o campo vazio volta ao mínimo válido (1)', () => {
+    render(<BatchRobotWizard cellId="c1" />)
+    const qty = goToStep2WithQuantity('')
+    fireEvent.blur(qty)
+    expect(qty.value).toBe('1')
+  })
+
+  it('digitar 99 limita a 50 no blur e o passo 2 mostra exatamente 50 campos', () => {
     render(<BatchRobotWizard cellId="c1" />)
     const qty = goToStep2WithQuantity('99')
-    expect(qty.value).toBe('50') // clamp visual
+    expect(qty.value).toBe('99') // sem clamp por tecla
+    fireEvent.blur(qty)
+    expect(qty.value).toBe('50') // clamp visual no blur
 
+    fireEvent.click(screen.getByText('Avançar'))
+    expect(screen.getAllByLabelText(/Nome do robô/)).toHaveLength(50)
+  })
+
+  it('51 vira 50 ao avançar mesmo sem blur', () => {
+    render(<BatchRobotWizard cellId="c1" />)
+    goToStep2WithQuantity('51')
     fireEvent.click(screen.getByText('Avançar'))
     expect(screen.getAllByLabelText(/Nome do robô/)).toHaveLength(50)
   })
@@ -37,6 +73,13 @@ describe('BatchRobotWizard', () => {
   it('0 vira 1 campo', () => {
     render(<BatchRobotWizard cellId="c1" />)
     goToStep2WithQuantity('0')
+    fireEvent.click(screen.getByText('Avançar'))
+    expect(screen.getAllByLabelText(/Nome do robô/)).toHaveLength(1)
+  })
+
+  it('valor negativo é tratado como o mínimo (1)', () => {
+    render(<BatchRobotWizard cellId="c1" />)
+    goToStep2WithQuantity('-5')
     fireEvent.click(screen.getByText('Avançar'))
     expect(screen.getAllByLabelText(/Nome do robô/)).toHaveLength(1)
   })
