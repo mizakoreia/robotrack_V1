@@ -116,6 +116,43 @@ O que foi entregue (tudo local):
 - **`DESIGN.md` NÃO tocado:** reuso puro de tokens/primitivos (Modal + campos com tokens
   já medidos) — nenhum token/primitivo/motion/ban novo.
 
+## Change NOVA: `owner-only-deletion` (28ª change — **G0 PLANEJADO**, sem código ainda)
+
+Exclusão de **projeto/célula/robô/tarefa** passa a ser exclusiva do **dono**. O papel `edit`
+continua criando, editando, reordenando, atribuindo e registrando avanço — perde **apenas**
+a exclusão. Pedido do dono nesta sessão; escopo decidido por ele antes do desenho:
+**só a hierarquia** (catálogo — pessoas e modelos de tarefa — fica como está) e trava em
+**policy + banco**.
+
+> **É BREAKING para o papel `edit`.** É remoção de capacidade, visível em produção: quem é
+> editor e apagava passa a receber **403** e a não ver o botão. Precisa aparecer no resumo
+> ao cliente quando a change for executada.
+
+> **É divergência deliberada da §4.1 L2** ("criar/editar/excluir … `owner`, `edit`"), não
+> correção de bug: o comportamento atual implementa a spec legada corretamente. A divergência
+> é registrada em `config/authorization/legacy_parity.yml` (entrada `L42 — projects allow
+> write` migra de `covered_by` para `divergence`) e no comentário da matriz.
+
+Estado: **apenas G0** — `openspec/changes/owner-only-deletion/` com `proposal.md`,
+`design.md` (D1..D8 + Q1..Q3), `specs/owner-only-deletion/spec.md` (5 requisitos, cenários de
+negação obrigatórios), `tasks.md` (G0..G4) e `EXECUCAO.md` com a reconciliação design ×
+realidade. `validate --strict` **verde**. **Nenhum arquivo de `backend/` ou `frontend/`
+tocado.**
+
+Achados da reconciliação que mudam o desenho (estão no `EXECUCAO.md` §2):
+- **O gatilho tem de ser `BEFORE UPDATE`, não `BEFORE DELETE`**: desde
+  `hierarchy-soft-delete`, `CrudService#destroy` não chama `destroy!` — arquiva via
+  `SoftDeleteService`. Um gatilho de `DELETE` nunca dispararia.
+- **`app.current_user_id` já existe** no `SET LOCAL` do `Tenant`, então o banco já sabe quem
+  age; e há dois precedentes de forma (`memberships_owner_is_not_member`,
+  `workspaces_owner_immutable`) e um de válvula (`app.invitation_purge`).
+- **A matriz vai de 8 para 9 actions** (`destroy_commissioning: %i[owner]`); um `if` na
+  policy seria reprovado pelo `role_comparison_guard_spec`.
+- **A UI só tem 2 controles de exclusão** (excluir célula na `ProjectPage`, excluir tarefa
+  no `AcoesCell`) para 4 endpoints — escopo de UI menor que o de servidor, deliberado.
+- **Suposição única a provar** (tarefa G2.4): o reset de fábrica passa pelo gatilho sem
+  precisar da válvula, por rodar como o dono dentro da transação de tenant.
+
 ## Campanha de deploy (par com o agente da WSL — 24/07/2026)
 
 Depois de fechar o domínio, o **primeiro deploy real** virou uma sessão de par: o
@@ -559,6 +596,13 @@ suíte rodar como root). `validate --strict` OK. Tudo na `main` (`4e9a3f5`).
   **HANDOFF** (§6d do `VALIDACAO_WSL.md`), como WebKit/CI. **Handoff que resta:**
   pipeline de CI + execução dos specs em navegador. A topologia (demo e E2E não
   coexistem — bundle embute a origem da API em build time) está no `e2e/README.md`.
+- **`owner-only-deletion`** (28ª change) — **G0 planejado, G1..G4 abertos.** Só o dono
+  apaga projeto/célula/robô/tarefa; `edit` mantém criar/editar/reordenar/atribuir/avançar.
+  Planejamento OpenSpec pronto e `validate --strict` verde; nenhum código tocado. Próximo
+  passo é o **G1** (9ª action `destroy_commissioning` + quatro policies + conformidade e
+  `legacy_parity.yml`), depois **G2** (gatilho `BEFORE UPDATE` nas quatro tabelas + válvula
+  `app.hierarchy_archive_bypass` + a prova G2.4 do reset de fábrica), **G3** (esconder os
+  dois controles de exclusão da UI) e **G4** (E2E + docs). **BREAKING para `edit`.**
 - **`legacy-data-migration`** — **NADA A FAZER (dormente).** Construída 36/38 e fechada
   como não-aplicável (começa do zero). Só reabrir se surgir uma fonte de dados a importar —
   aí 8.6/8.7 rodam o corte pelo runbook `backend/docs/runbooks/legacy-cutover.md`. Não peça
