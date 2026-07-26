@@ -4,7 +4,7 @@ import { render, screen, fireEvent, act } from '@testing-library/react'
 import { Badge } from '../Badge'
 import { StatusSelect } from '../StatusSelect'
 import { Chip } from '../Chip'
-import { SaveIndicator } from '../SaveIndicator'
+import { SaveIndicator, saveStateNeedsAttention } from '../SaveIndicator'
 import { FilterBar } from '../FilterBar'
 import { Modal } from '../Modal'
 import { IconButton } from '../IconButton'
@@ -64,7 +64,7 @@ describe('Chip — estático vs removível (6.3)', () => {
   })
 })
 
-describe('SaveIndicator — não mente estado (6.5)', () => {
+describe('SaveIndicator — só sinaliza atenção, não mente estado (6.5)', () => {
   it('erro NÃO afirma "Salvo" e é aria-live polite', () => {
     const { container } = render(<SaveIndicator state="error" />)
     const el = container.firstElementChild as HTMLElement
@@ -73,9 +73,33 @@ describe('SaveIndicator — não mente estado (6.5)', () => {
     expect(el.textContent?.toLowerCase()).toContain('erro')
   })
 
-  it('saved diz "Salvo" com tinta de sucesso', () => {
-    render(<SaveIndicator state="saved" />)
-    expect(screen.getByText('Salvo').closest('span')?.className).toContain('text-success-ink')
+  // save-indicator-quiet — o repouso ("Salvo") e o transitório ("Salvando…") não
+  // ocupam o canto: nada é renderizado. Esconder o SUCESSO não fere o estado
+  // honesto — ausência nunca afirma "salvo"; a exigência é que a FALHA apareça.
+  it('saved não desenha nada (sem "Salvo" parado no canto)', () => {
+    const { container } = render(<SaveIndicator state="saved" />)
+    expect(container).toBeEmptyDOMElement()
+    expect(screen.queryByText('Salvo')).toBeNull()
+  })
+
+  it('saving (transitório) também não desenha nada', () => {
+    const { container } = render(<SaveIndicator state="saving" />)
+    expect(container).toBeEmptyDOMElement()
+  })
+
+  it('pendente e bloqueado seguem visíveis (fila offline exige atenção)', () => {
+    const { rerender } = render(<SaveIndicator state="pendente" />)
+    expect(screen.getByText('Alterações pendentes')).toBeInTheDocument()
+    rerender(<SaveIndicator state="bloqueado" />)
+    expect(screen.getByText('Alterações bloqueadas')).toBeInTheDocument()
+  })
+
+  it('saveStateNeedsAttention: só erro/pendente/bloqueado', () => {
+    expect(saveStateNeedsAttention('saved')).toBe(false)
+    expect(saveStateNeedsAttention('saving')).toBe(false)
+    expect(saveStateNeedsAttention('error')).toBe(true)
+    expect(saveStateNeedsAttention('pendente')).toBe(true)
+    expect(saveStateNeedsAttention('bloqueado')).toBe(true)
   })
 })
 

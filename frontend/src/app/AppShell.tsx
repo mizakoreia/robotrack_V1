@@ -5,7 +5,7 @@ import { useMediaQuery } from '@/lib/useMediaQuery'
 import { Icon } from '@/components/icons/Icon'
 import { IconButton } from '@/components/ui/IconButton'
 import { Button } from '@/components/ui/Button'
-import { SaveIndicator } from '@/components/ui/SaveIndicator'
+import { SaveIndicator, saveStateNeedsAttention } from '@/components/ui/SaveIndicator'
 import { PortalMenu } from '@/components/menu/PortalMenu'
 import { useMenu } from '@/components/menu/useMenu'
 import { NAV_DESTINATIONS } from './nav'
@@ -228,9 +228,14 @@ function Sidebar({
         </nav>
 
         <div className="mt-auto border-t px-3 py-3">
-          <div className="mb-2">
-            <SaveIndicator state={saveState} />
-          </div>
+          {/* O indicador de gravação só ocupa o canto quando há algo a saber
+              (erro/pendente/bloqueado). No repouso ("Salvo") nada é desenhado — sem
+              espaçador órfão. Por isso a margem só existe quando ele aparece. */}
+          {saveStateNeedsAttention(saveState) && (
+            <div className="mb-2">
+              <SaveIndicator state={saveState} />
+            </div>
+          )}
           {/* O nome sozinho não diz o que o botão FAZ (leitor de tela ouviria só
               "Ana Silva, botão"). O rótulo nomeia a ação; o conteúdo visual segue
               sendo o card. */}
@@ -303,10 +308,14 @@ function Topbar({
         <WorkspaceContext />
       </div>
 
-      {/* gaveta fechada: indicador de gravação promovido à topbar (4.5) */}
-      <div className="md:hidden">
-        <SaveIndicator state={saveState} />
-      </div>
+      {/* gaveta fechada: indicador de gravação promovido à topbar (4.5), mas só
+          quando há algo a sinalizar (erro/pendente/bloqueado); no repouso não
+          ocupa slot. */}
+      {saveStateNeedsAttention(saveState) && (
+        <div className="md:hidden">
+          <SaveIndicator state={saveState} />
+        </div>
+      )}
 
       {/* indicador de transporte (7.3): só aparece em degraded/offline */}
       <ConnectionIndicator />

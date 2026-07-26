@@ -78,13 +78,20 @@ propriedade (`text-success` não compila — D-DS-2).
 - **StatusSelect**, **Chip**, **IconButton** (a11y na assinatura de tipo — `label`
   obrigatório), **SaveIndicator**, **FilterBar**, **LiveRegions** (`#rt-status`
   polite / `#rt-alerts` assertive), **NotificationBell** (sino + badge de não-lidas).
+  - **SaveIndicator** só desenha quando há algo a saber/agir: `error`, `pendente`,
+    `bloqueado` (`saveStateNeedsAttention`). Os estados de repouso/feliz (`saved`,
+    `saving`) **não renderizam nada** — um "Salvo" parado no canto é decoração, não
+    informação (§Princípios 5). Esconder o SUCESSO não fere o estado honesto
+    (Princípio 2): ausência nunca afirma "salvo"; a exigência é que FALHA/pendência
+    apareçam, e essas seguem visíveis, com `aria-live="polite"`.
 
 ## Layout & Spacing
 
 - **App-shell** permanente: sidebar de 3 destinos (Visão Geral / Minhas Tarefas /
   Relatório) por **preenchimento tintado** (nunca faixa lateral), topbar com contexto
-  de workspace + sino + menu da conta, rodapé com card de usuário + indicador de
-  gravação. Gaveta abaixo de 768px. Navegar entre destinos NÃO remonta o shell.
+  de workspace + sino + menu da conta, rodapé com card de usuário (o indicador de
+  gravação só aparece acima dele quando há erro/pendência — no repouso o canto fica
+  limpo). Gaveta abaixo de 768px. Navegar entre destinos NÃO remonta o shell.
 - Grades de card responsivas; `items-stretch` para cards de mesma altura. Todo grid
   que salta de coluna em `sm:`/`lg:` **começa em `grid-cols-1`** no base — sem a
   coluna base `minmax(0,1fr)`, a trilha implícita `auto` estica no `min-content` do

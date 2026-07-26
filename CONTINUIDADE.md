@@ -396,7 +396,8 @@ está em `/opt/rbenv/versions/3.2.3` COM as gems instaladas (`bundle check` ok, 
   tenant null da query desabilitada). Menu em portal (`#rt-overlays`, fixed, medição prévia, 5
   gatilhos de fechamento, teclado virtual, a11y). `AppShell` envolve toda a área autenticada
   (sidebar de 3 destinos por preenchimento tintado — nunca faixa lateral; rodapé com card de
-  usuário + indicador de gravação; topbar com contexto de workspace e menu da conta; gaveta
+  usuário, com o indicador de gravação acima dele **só em erro/pendência** — no repouso "Salvo"
+  o canto fica limpo; topbar com contexto de workspace e menu da conta; gaveta
   <768px). Contexto de workspace: seletor só com >1 (senão texto estático fora do Tab), papel
   como **badge** (não select), e `switchWorkspace` = a **barreira CLIENTE contra vazamento**
   (`cancelQueries` → `clear()` cache inteiro → reset → grava wsId; testes 5.5/5.6 provam que
