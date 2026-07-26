@@ -1,5 +1,6 @@
 import { queryClient } from '../queryClient'
 import { useWorkspaceStore } from '../../store/workspaceStore'
+import { purgeQueryCache } from '../query/persist'
 
 // app-shell-navigation 5.4 (§3.10, D-A) — a troca de workspace é a ÚNICA barreira
 // CLIENTE contra vazamento entre tenants. Ordem FIXA e obrigatória:
@@ -25,6 +26,11 @@ export async function switchWorkspace(id: string): Promise<void> {
 
   await queryClient.cancelQueries()
   queryClient.clear()
+  // offline-pwa — o snapshot persistido acompanha o `clear()`: sem isto, o cache
+  // de leitura do workspace anterior sobreviveria no disco e um reload o
+  // reidrataria (vazamento entre tenants no dispositivo). O novo workspace
+  // repovoa e repersiste ao carregar.
+  void purgeQueryCache()
   resets.forEach((fn) => fn())
   useWorkspaceStore.getState().selectWorkspace(id)
 }

@@ -133,9 +133,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   // app-shell-navigation 2.3 (D-E) — sair DESCARTA o cache do React Query junto,
   // como a troca de workspace (5.4): o próximo usuário na mesma aba nunca vê o
   // dado do anterior. A requisição seguinte sai sem `Authorization`.
+  // offline-pwa — o descarte precisa alcançar o DISCO: o snapshot persistido em
+  // IndexedDB é apagado junto, senão o cache de leitura do dono anterior
+  // sobreviveria a um reload. Import dinâmico evita o ciclo persist ↔ authStore.
   logout: () => {
     get().clearSession()
     queryClient.clear()
+    void import('../lib/query/persist').then((m) => m.purgeQueryCache())
   },
   setAuth: (tokens, user) => get().setSession(tokens.accessToken, user, { remember: true }),
 }))

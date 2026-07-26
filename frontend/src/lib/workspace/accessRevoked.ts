@@ -1,5 +1,6 @@
 import { toast } from 'sonner'
 import { queryClient } from '../queryClient'
+import { persistQueryCacheNow } from '../query/persist'
 import { useWorkspaceStore } from '../../store/workspaceStore'
 import { inviteText } from '../i18n/invitations'
 
@@ -57,6 +58,10 @@ export function handleAccessRevoked(workspaceId: string, options: { workspaceNam
   store.setWorkspaces(restantes)
 
   queryClient.removeQueries({ queryKey: ['ws', workspaceId] })
+  // offline-pwa — o disco acompanha a remoção IMEDIATAMENTE (não espera o throttle
+  // do persister): o snapshot persistido não pode reter as leituras do workspace
+  // cujo acesso foi revogado.
+  void persistQueryCacheNow(queryClient)
 
   const proprio = restantes.find((w) => w.role === 'owner') ?? restantes[0]
   if (proprio) {

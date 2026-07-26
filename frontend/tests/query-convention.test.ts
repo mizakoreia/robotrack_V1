@@ -11,9 +11,13 @@ import { installQueryKeyGuard } from '../src/lib/query/guard'
 describe('defaults do QueryClient (D9)', () => {
   const opts = queryClient.getDefaultOptions()
 
-  it('staleTime 30s, gcTime 5min, refetchOnWindowFocus off, query retry 1', () => {
+  // `gcTime` 24h é intencional (offline-pwa, cache de leitura offline): o snapshot
+  // reidratado do IndexedDB não pode ser coletado no meio de uma sessão em modo
+  // avião. A FRESCOR (o que dispara refetch) segue nos 30s do `staleTime` — o
+  // `gcTime` só governa retenção em memória de query ociosa, não staleness.
+  it('staleTime 30s, gcTime 24h, refetchOnWindowFocus off, query retry 1', () => {
     expect(opts.queries?.staleTime).toBe(1000 * 30)
-    expect(opts.queries?.gcTime).toBe(1000 * 60 * 5)
+    expect(opts.queries?.gcTime).toBe(1000 * 60 * 60 * 24)
     expect(opts.queries?.refetchOnWindowFocus).toBe(false)
     expect(opts.queries?.retry).toBe(1)
   })

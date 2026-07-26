@@ -384,7 +384,11 @@ Não há dado a migrar — não existe fila anterior. Há **dívida de template*
 3. **Persistir o cache de leitura do React Query em IndexedDB** para navegação offline
    mais rica. Atraente, mas precisa de política de descarte na troca de workspace tão
    rigorosa quanto a de `app-shell-navigation`, sob pena de vazar dado entre tenants no
-   dispositivo. Deliberadamente adiado.
+   dispositivo. Deliberadamente adiado. **[FECHADO por `fix:` pós-D7]** — implementado em
+   `src/lib/query/persist.ts` (+ `QueryPersistGate`): snapshot escopado à SESSÃO (hash do
+   token, descartado quando o token não bate) num IndexedDB separado, com purga nos
+   descartes de tenant (logout, troca de workspace, revogação). Ver o bullet "Fix
+   offline-pwa (2)" no `CONTINUIDADE.md`.
 4. **Telemetria de fila** (profundidade, taxa de quarentena, idade do item mais antigo)
    — depende de `delivery-and-observability` decidir o transporte de métricas do cliente.
 
@@ -394,5 +398,6 @@ Priorizado para caber em 35 tarefas — acima do alvo de 30, e conscientemente: 
 capacidade é a ponta do caminho crítico e absorve quatro comportamentos que o Firestore
 dava de graça. Coberto: o cenário canônico (criar robô + avanço offline),
 idempotência, poison/cascata, SW, storage bloqueado e coordenação entre abas. **Fora**:
-persistência do cache de leitura (aberta nº 3), reconciliação de 409 em lote (aberta
-nº 2), Background Sync (D7-9) e telemetria (aberta nº 4).
+persistência do cache de leitura (aberta nº 3 — **FECHADA depois, por `fix:` pós-D7**;
+ver a aberta nº 3 acima), reconciliação de 409 em lote (aberta nº 2), Background Sync
+(D7-9) e telemetria (aberta nº 4).

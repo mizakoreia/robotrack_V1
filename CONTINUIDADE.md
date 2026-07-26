@@ -49,6 +49,26 @@ está em [PROMPT DE RETOMADA](#prompt-de-retomada), no fim.
   `serviceWorker.test.ts` (precache) + `ProtectedRoute.offline.test.tsx` (novo). **Login/
   registro offline seguem impossíveis por natureza.** Arquivos de túnel da demo
   (`vite.config.ts`, `lib/api/client.ts`) continuam **sem commit**.
+- **Fix offline-pwa (2) — leitura offline vem do cache (`fix:`, no `main`).** Fecha a
+  "questão aberta nº 3" do design de `offline-pwa` (persistência do cache de leitura,
+  deliberadamente adiada na D7). Com a casca já abrindo offline (fix 1), o dono viu a
+  Visão Geral cair em **"Não foi possível carregar a Visão Geral"** — o cache do React
+  Query nascia VAZIO no reload. Causa: nada persistia/reidratava o cache de leitura.
+  Conserto: **persister próprio** (`src/lib/query/persist.ts`, `idb` — sem dep nova, sem
+  tocar o banco da fila) que desidrata as queries de sucesso para um IndexedDB SEPARADO
+  (`robotrack-query-cache`) e as reidrata no boot via `QueryPersistGate` (antes das
+  queries rodarem). `gcTime` 24h para o snapshot não ser coletado no meio da sessão
+  offline; frescor segue no `staleTime` 30s (offline a refetch fica PAUSADA e o dado do
+  cache continua à mostra). **Segurança (a razão de o design ter adiado):** o snapshot é
+  ESCOPADO À SESSÃO (hash do token) — outra pessoa logando descarta o cache anterior; e
+  os descartes de tenant (logout, troca de workspace, revogação de acesso) purgam o disco
+  junto com o `queryClient.clear()`/`removeQueries`. `report` e `search` não são
+  persistidos. **Bônus:** o papel "Editor" degradado que aparecia offline vira "Dono"
+  correto — o índice `['workspaces']` reidrata e re-deriva o papel. Prova: Playwright
+  `setOffline` — login → Visão Geral popula → offline+reload → Visão Geral COM dados (hub
+  "Projetos ativos 1", papel "Dono"), sem erro. Testes: `persist.test.ts` (round-trip +
+  escopo de sessão + exclusões) e `query-convention.test.ts` (gcTime 24h). Onde nunca
+  houve cache (tela nunca vista online), o estado "sem conexão" honesto segue valendo.
 - **Feature `robot-task-grouping` (change nova, TODOS os grupos FECHADOS no `main`).**
   Pedido do dono. Marcador: `git tag pre-task-grouping` @ `0f84014`. **G1:** categorias
   na tela do robô viraram **grupos colapsáveis** (prefixo A./B./C., contagem, estado

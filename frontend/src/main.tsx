@@ -6,6 +6,7 @@ import App from './app/App'
 import { queryClient } from './lib/queryClient'
 import { installQueryKeyGuard } from './lib/query/guard'
 import { registerServiceWorker } from './lib/pwa/register'
+import { QueryPersistGate } from './lib/query/QueryPersistGate'
 import './styles/globals.css'
 import './styles/tokens-campfire.css'
 
@@ -22,9 +23,13 @@ registerServiceWorker()
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
+      {/* offline-pwa — reidrata o cache de leitura (IndexedDB) antes das queries
+          rodarem, para telas já vistas online abrirem OFFLINE com os dados. */}
+      <QueryPersistGate>
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
+      </QueryPersistGate>
     </QueryClientProvider>
   </React.StrictMode>,
 )
