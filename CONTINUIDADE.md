@@ -13,6 +13,21 @@ está em [PROMPT DE RETOMADA](#prompt-de-retomada), no fim.
   `owner-only-card-delete`, mais os fixes de UI da demo — responsividade mobile
   (`705a0c2`), swipe-to-reveal no repouso (`cd9722d`), remoção da luz ambiente
   (`bac3535`) e a lixeira dos cards no desktop (`6625be6`) — ver as seções abaixo).
+- **Fix in-app-notifications — o DONO recebe avanços do próprio workspace (`fix:`, no
+  `main`).** Gap do dono: "não recebo notificação quando alguém edita o workspace". O
+  pipeline só notificava os RESPONSÁVEIS da tarefa (menos o autor); dono não-responsável
+  recebia zero. Conserto **sem migração** (reusa `progress`/`done`): em
+  `Notifications::CreateService#for_advance`, o dono do workspace vira destinatário dos
+  AVANÇOS de qualquer tarefa do ws dele. Preserva as regras da casa: autor nunca se
+  notifica (`owner == actor` sai), dedup por `uniq` (dono também responsável → 1 linha),
+  dono sem `Person` → nil, RLS/tenant intactos. **Fronteira registrada:** `assign` NÃO foi
+  estendido (string 2ª pessoa "atribuiu você" mentiria pro dono → precisaria de novo
+  `type` = migração) e as mudanças estruturais (criar/editar/excluir projeto/célula/robô/
+  tarefa) não emitem evento hoje → também exigem migração; **parado no limite de migração,
+  aguardando OK.** Prova: 4 casos novos em `spec/notifications/create_service_spec.rb`;
+  `spec/notifications/` + `spec/requests/notifications_spec.rb` verde (38/0). Detalhe em
+  `openspec/changes/in-app-notifications/EXECUCAO.md` §EXTENSÃO. Arquivos de túnel da demo
+  (`vite.config.ts`, `lib/api/client.ts`) seguem **sem commit**.
 - **Rodada `impeccable-remediation` (change nova, EM ANDAMENTO grupo a grupo).**
   Formaliza a `CRITICA_IMPECCABLE.md` (69 achados) como UMA change OpenSpec com 6
   grupos ordenados por dor do operador (mapa em `openspec/changes/impeccable-remediation/`).

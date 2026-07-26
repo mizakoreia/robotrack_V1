@@ -111,3 +111,40 @@ Postgres/Redis quando preciso) → marcar tasks → `npx --yes
 @fission-ai/openspec@1.6.0 validate in-app-notifications --strict` → UM commit
 `G<n>:` → fast-forward `main` + push → resumo pt-BR client-friendly → seguir.
 Migrations como robotrack_migrator.
+
+## EXTENSÃO — o DONO recebe avanços do próprio workspace (pós-fechamento)
+
+**Gap relatado pelo dono:** "não recebo notificação quando alguém edita o
+workspace". Diagnóstico: o pipeline só notifica os RESPONSÁVEIS da tarefa (§2.7,
+`RecipientResolver`) menos o autor. Se o dono não é responsável pela tarefa que um
+membro `edit` avançou, ele recebia ZERO. Além disso, criar/editar/excluir
+projeto/célula/robô/tarefa não emite evento algum hoje (só `task.advanced` e
+`task.assignees_changed` existem).
+
+**Feito (sem migração — reusa os tipos `progress`/`done`):** em
+`Notifications::CreateService#for_advance`, o DONO do workspace passa a ser
+destinatário dos AVANÇOS (progress e done) de qualquer tarefa do workspace dele,
+mesmo sem ser responsável. Regras da casa preservadas:
+- **Autor nunca se notifica** — `with_owner` sai cedo quando `owner == actor`.
+- **Dedup** — `uniq` quando o dono também é responsável → uma linha só (não duas).
+- **Dono sem `Person`** (conta sem identidade de domínio no ws) → nil, sem ruído.
+- **RLS/tenant** — `Person.find_by(user_id:)` é WorkspaceScoped, roda no contexto
+  do job (workspace da tarefa). Sem vazamento cross-tenant.
+
+**Decisão de fronteira (registrada, não em silêncio):** por que SÓ avanço agora?
+- `assign` **não** foi estendido ao dono: a string é 2ª pessoa (`%{author}
+  atribuiu **você**…`) e mentiria para um dono que não é o atribuído. Notificar o
+  dono de atribuições exigiria uma string nova → novo `type` no enum
+  `notification_type` → **migração** (ALTER TYPE ADD VALUE, reversão não-trivial).
+- As mudanças **estruturais** (criar/editar/excluir projeto/célula/robô/tarefa)
+  **não emitem evento** hoje e não têm `type` de notificação. Cobri-las exige
+  novos eventos + novos valores de enum → **migração**. Parado no limite de
+  migração conforme o protocolo do dono; aguardando OK para o próximo passo.
+
+**Prova:** `spec/notifications/create_service_spec.rb` — 4 casos novos: (1) membro
+avança tarefa sem o dono responsável → dono recebe 1 (recipient=dono, actor=membro,
+read=false); (2) dedup quando o dono também é responsável → 1 linha; (3) o próprio
+dono avança → 0 (não se auto-notifica); (4) `done` também notifica o dono. Suíte
+`spec/notifications/` + `spec/requests/notifications_spec.rb` verde (38/0). Sem
+mudança de esquema, i18n ou frontend (o centro de notificações já é escopado ao
+destinatário — o sino do dono mostra a linha nova sem alteração de UI).

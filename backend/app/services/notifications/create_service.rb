@@ -18,6 +18,7 @@ module Notifications
 
       current = ::TaskAssignee.where(task_id: task.id).pluck(:person_id).map(&:to_s)
       recipients = RecipientResolver.resolve(type: type, actor_person_id: advance.by.to_s, current_assignees: current)
+      recipients = with_owner(recipients, task, advance.by)
 
       insert_for(task: task, type: type, actor_id: advance.by, author_name: advance.author_name_snapshot,
                  recipients: recipients, recorded_at: advance.recorded_at,
@@ -41,6 +42,28 @@ module Notifications
       return value if value.is_a?(Time) || value.is_a?(ActiveSupport::TimeWithZone)
 
       Time.zone.parse(value.to_s)
+    end
+
+    # O DONO do workspace recebe os AVANÇOS (progress/done) de tarefas do próprio
+    # workspace mesmo quando NÃO é responsável — é o "alguém editou meu workspace".
+    # Regras da casa preservadas: nunca notifica o autor (owner == actor sai) e
+    # deduplica (uniq) quando o dono também é responsável → uma linha só. NÃO vale
+    # para `assign`, cujo texto é em 2ª pessoa ("atribuiu você") e mentiria para o
+    # dono que não é o atribuído. `recipients` já vem sem o autor e deduplicado.
+    def with_owner(recipients, task, actor_id)
+      owner_id = owner_person_id(task)
+      return recipients if owner_id.nil? || owner_id == actor_id.to_s
+
+      (recipients + [owner_id]).uniq
+    end
+
+    # Person do dono NESTE workspace (Person é WorkspaceScoped → escopo do tenant do
+    # job). Dono sem Person (conta sem identidade de domínio) → nil, sem notificação.
+    def owner_person_id(task)
+      owner_user_id = ::Workspace.where(id: task.workspace_id).pick(:owner_user_id)
+      return nil if owner_user_id.nil?
+
+      ::Person.find_by(user_id: owner_user_id)&.id&.to_s
     end
 
     # ── interno ────────────────────────────────────────────────────────────────
