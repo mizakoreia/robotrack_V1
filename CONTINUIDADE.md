@@ -32,6 +32,23 @@ está em [PROMPT DE RETOMADA](#prompt-de-retomada), no fim.
   border-faixa lateral → tinte. G6: Badge nowrap, notificação lida sem opacity-60, loaders
   honestos, busca ≥32px. Arquivos de túnel (`vite.config.ts`, `lib/api/client.ts`) seguem
   **sem commit** de propósito.
+- **Fix offline-pwa — usuário já logado abre o app em modo avião (`fix:`, no `main`).**
+  Sintoma do dono: no BUILD de produção (SW ativo), ao entrar em modo avião o app "ficava
+  tentando registrar e não saía" até a rede voltar. Causa raiz: o `public/sw.js` era
+  network-first PURO, **sem precache** — só cacheava o que passasse por ele DEPOIS de
+  assumir o controle. No fluxo real (login → Visão Geral por rota de cliente, sem reload
+  cheio) o documento e os bundles com hash NUNCA passavam pelo SW; o primeiro reload
+  offline caía em `ERR_FAILED` (documento fora do cache) e o app nem bootava. Conserto,
+  só em `public/sw.js`: **precache do shell + assets same-origin no `install`** (ainda
+  online) e **`ignoreVary: true`** nas leituras do cache (os assets vêm com `Vary: Origin`
+  e os módulos carregam com `crossorigin`/CORS — sem ignorar o Vary o `match` errava a
+  cópia e o shell abria SEM os bundles). O `ProtectedRoute` já era tolerante a rede
+  ausente (sessão local reidrata, `me()` que falha por rede NÃO desloga; só 401 explícito
+  desloga) — confirmado por teste. Provado ponta a ponta com Playwright `setOffline(true)`
+  (root após login + deep link → abre na casca, navegável, "Sem conexão"). Testes:
+  `serviceWorker.test.ts` (precache) + `ProtectedRoute.offline.test.tsx` (novo). **Login/
+  registro offline seguem impossíveis por natureza.** Arquivos de túnel da demo
+  (`vite.config.ts`, `lib/api/client.ts`) continuam **sem commit**.
 - **Feature `robot-task-grouping` (change nova, TODOS os grupos FECHADOS no `main`).**
   Pedido do dono. Marcador: `git tag pre-task-grouping` @ `0f84014`. **G1:** categorias
   na tela do robô viraram **grupos colapsáveis** (prefixo A./B./C., contagem, estado
@@ -542,7 +559,8 @@ está em `/opt/rbenv/versions/3.2.3` COM as gems instaladas (`bundle check` ok, 
 - **`offline-pwa`** (G0..G8, COMPLETA, full-stack, Onda D7) — o que o Firestore dava de
   graça, agora de primeira classe. `safeStorage` com NÍVEIS (persistent/session-only/
   memory-only) + sonda de boot + aviso D7-11; service worker (`public/sw.js` network-first,
-  guarda de não-interceptação, CACHE_NAME por plugin do Vite, aviso de nova versão); FILA
+  guarda de não-interceptação, **precache do shell + assets do build no `install`** [fix
+  offline pós-D7 — ver bullet no topo], CACHE_NAME por plugin do Vite, aviso de nova versão); FILA
   de mutations em IndexedDB (`idb`; log de comandos, `depends_on`, `recorded_at` no
   enfileiramento, teto 500/5MB); grafo de dependência + drenagem sequencial (1 em voo,
   sonda `HEAD /api/v1/health`); classificação D7-5 (retry/permanente/conflito/auth, DELETE

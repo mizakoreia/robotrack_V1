@@ -12,8 +12,15 @@ const SW_SOURCE = readFileSync(resolve(__dirname, '../../../../public/sw.js'), '
 
 class FakeCache {
   store = new Map<string, Response>()
-  put = vi.fn(async (req: { url: string }, res: Response) => {
-    this.store.set(req.url, res)
+  put = vi.fn(async (req: { url: string } | string, res: Response) => {
+    const url = typeof req === 'string' ? req : req.url
+    this.store.set(url, res)
+  })
+  // `Cache.add` busca a URL e grava a resposta. No sandbox não há fetch acessível
+  // aqui, então registramos o alvo com um marcador — o teste de precache afere
+  // QUAIS assets o SW tentou pré-cachear, não o corpo deles.
+  add = vi.fn(async (url: string) => {
+    this.store.set(url, new Response('precached', { status: 200 }))
   })
   match = vi.fn(async (req: { url: string } | string) => {
     const url = typeof req === 'string' ? req : req.url
@@ -161,9 +168,60 @@ describe('service worker — activate purga caches antigos (2.1)', () => {
 })
 
 describe('service worker — install (2.1)', () => {
+  const installEvent = () => {
+    let done: Promise<unknown> = Promise.resolve()
+    return { event: { waitUntil: (p: Promise<unknown>) => (done = p) }, get done() { return done } }
+  }
+
   it('chama skipWaiting', () => {
-    const { handlers, self } = loadSw(vi.fn())
-    handlers.install({})
+    const { handlers, self } = loadSw(vi.fn(async () => new Response('', { status: 200 })))
+    handlers.install(installEvent().event)
+    expect(self.skipWaiting).toHaveBeenCalled()
+  })
+
+  // fix offline-pwa — o install pré-cacheia o shell e os assets same-origin que ele
+  // referencia, ONLINE, para que o primeiro reload em modo avião não caia em
+  // ERR_FAILED (documento fora do cache). Sem este precache o usuário já logado
+  // ficava preso numa tela morta até a rede voltar.
+  it('pré-cacheia /index.html e os assets same-origin do shell', async () => {
+    const html = [
+      '<!doctype html><html><head>',
+      '<script type="module" src="/assets/index-abc123.js"></script>',
+      '<link rel="modulepreload" href="/assets/react-vendor-def456.js">',
+      '<link rel="stylesheet" href="/assets/index-ghi789.css">',
+      '<link rel="preconnect" href="https://fonts.googleapis.com">',
+      '<link rel="icon" href="/vite.svg">',
+      '</head><body></body></html>',
+    ].join('')
+    const netFetch = vi.fn(async (url: string) =>
+      url.includes('/index.html') ? new Response(html, { status: 200 }) : new Response('asset', { status: 200 }),
+    )
+    const { handlers, caches } = loadSw(netFetch as unknown as typeof fetch)
+    const it2 = installEvent()
+    handlers.install(it2.event)
+    await it2.done
+
+    const cache = await caches.open('__CACHE_NAME__')
+    // o shell, sob a chave que o fallback de navegação procura
+    expect(cache.store.has('/index.html')).toBe(true)
+    // os assets same-origin (js/css) referenciados
+    expect(cache.add).toHaveBeenCalledWith('/assets/index-abc123.js')
+    expect(cache.add).toHaveBeenCalledWith('/assets/react-vendor-def456.js')
+    expect(cache.add).toHaveBeenCalledWith('/assets/index-ghi789.css')
+    // cross-origin (Google Fonts) e o favicon .svg NÃO entram no precache
+    const added = cache.add.mock.calls.map((c) => c[0])
+    expect(added.some((u) => u.includes('fonts.googleapis.com'))).toBe(false)
+    expect(added).not.toContain('/vite.svg')
+  })
+
+  it('offline no install (fetch lança) → não quebra o boot do SW', async () => {
+    const netFetch = vi.fn(async () => {
+      throw new Error('offline')
+    })
+    const { handlers, self } = loadSw(netFetch as unknown as typeof fetch)
+    const it2 = installEvent()
+    expect(() => handlers.install(it2.event)).not.toThrow()
+    await expect(it2.done).resolves.toBeUndefined()
     expect(self.skipWaiting).toHaveBeenCalled()
   })
 })

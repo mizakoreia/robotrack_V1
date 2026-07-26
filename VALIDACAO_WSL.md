@@ -175,9 +175,19 @@ npx vite preview --port 4173   # serve o dist/ (produção)
 
 No Chrome, abra `http://localhost:4173`:
 - DevTools → Application → Service Workers: deve haver um SW ativo (`sw.js`).
-- DevTools → Network → marque **Offline** → recarregue uma rota (`/robo/...`):
-  a navegação deve responder do shell (200), não a tela do dinossauro.
-- Application → Cache Storage: deve haver `robotrack-cache-<hash>`.
+- **Faça LOGIN online primeiro** (o SW pré-cacheia o shell + assets no `install`, ainda
+  online — sem isso não há o que abrir offline).
+- Application → Cache Storage → `robotrack-cache-<hash>`: deve conter **`/index.html` E os
+  `/assets/*.js` / `/assets/*.css`** do build (não só o índice). Se só houver o documento,
+  o precache do `install` não rodou e o app abrirá offline EM BRANCO.
+- DevTools → Network → marque **Offline** → recarregue uma rota (`/robo/...` OU a raiz `/`):
+  o app tem de **ABRIR na casca e ficar navegável** (usuário já logado, estado "Sem
+  conexão" honesto) — não basta o shell responder 200; o antigo bug era responder o shell
+  e mesmo assim ficar em branco/preso porque os bundles não estavam no cache
+  (`ERR_FAILED`). A tela do dinossauro ou uma página em branco = REGRESSÃO.
+- Prova automatizável (headless, sem DevTools): Playwright/Chromium com
+  `context.setOffline(true)` após o login, recarregando raiz e deep link — o `body` deve
+  conter a casca (nav + "Sem conexão"), nunca vazio nem o formulário de "Entrar".
 - Rebuild com uma mudança + preview de novo → deve aparecer o aviso "Nova versão".
 
 ### 4.3 Headers de cache do nginx (delivery-and-observability 3.3)
