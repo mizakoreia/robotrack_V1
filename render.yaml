@@ -14,10 +14,14 @@
 #  - Sem disco persistente, sem numInstances/autoscaling no free → nenhum é usado.
 #
 # Decisões de topologia (justificadas em DEPLOY_RENDER.md):
-#  - Modelo de 2 papéis de banco: o usuário PRIMÁRIO do Render é o DONO/migrator; o
-#    runtime conecta como `robotrack_app` (2º usuário, criado no painel, NÃO-dono).
-#    O app RECUSA subir como dono (guard de imutabilidade), então isso é obrigatório.
-#    RLS forçada vale para os dois (usuário do Render é NOSUPERUSER/NOBYPASSRLS).
+#  - Modelo de 2 papéis de banco, SEM passo manual: o usuário PRIMÁRIO do Render é o
+#    DONO/migrator (ligado via `fromDatabase`); o runtime conecta como `robotrack_app`
+#    (2º usuário, NÃO-dono). A UI do Render NÃO cria usuário nomeado não-dono, então o
+#    APP cria o `robotrack_app` sozinho no 1º boot (roles.sql, como o dono) com a senha
+#    `APP_DB_PASSWORD` (generateValue), e o `bin/render-web-start` deriva o DATABASE_URL
+#    de runtime dessa senha. O app RECUSA subir como dono (guard de imutabilidade), então
+#    o runtime NÃO-dono é obrigatório. RLS forçada vale para os dois (o usuário do Render
+#    é NOSUPERUSER/NOBYPASSRLS — logo nem consegue conferir esses poderes ao robotrack_app).
 #  - 1 Key Value + 3 dbs: o guard de topologia aborta o boot se cache/fila/cable
 #    resolverem para o MESMO (host,porta,db). Dbs distintos (/0,/1,/2) na mesma
 #    instância satisfazem o guard; bin/render-web-start deriva as 3 URLs do
@@ -28,14 +32,17 @@
 #    auth é JWT Bearer e o cable usa ticket, então CORS cobre o cross-origin sem
 #    precisar de proxy de WebSocket (que CDN/Static Site não fazem).
 #
-# Valores gerados pelo Render (generateValue) e ligados por referência (fromService)
-# NÃO precisam ser digitados. Os `sync: false` são os que o dono cola no painel —
-# ver a tabela em DEPLOY_RENDER.md. NENHUM segredo real vive neste arquivo.
+# Valores gerados pelo Render (generateValue) e ligados por referência (fromDatabase/
+# fromService) NÃO precisam ser digitados. Sobra UM único campo manual por serviço (a
+# URL pública do OUTRO serviço, que o Render não tem como ligar sozinho) — ver a tabela
+# em DEPLOY_RENDER.md. NENHUM segredo real vive neste arquivo.
 
 # ── Segredos/URLs compartilhados ─────────────────────────────────────────────
 # Definidos UMA vez num grupo para não repetir. Como o Sidekiq roda dentro do web
 # service, há um único consumidor — mas o grupo mantém os segredos gerados
-# (generateValue) coesos e fáceis de referenciar num só lugar.
+# (generateValue) coesos e fáceis de referenciar num só lugar. As referências de
+# banco (fromDatabase) e a senha do app (generateValue de banco) ficam NO SERVIÇO,
+# não aqui: grupos só aceitam value/generateValue/sync — não fromDatabase.
 envVarGroups:
   - name: robotrack-shared
     envVars:
@@ -54,22 +61,18 @@ envVarGroups:
         generateValue: true
       - key: METRICS_TOKEN
         generateValue: true
-      # Colados pelo dono no painel (ver DEPLOY_RENDER.md):
-      - key: DATABASE_URL            # robotrack_app (runtime, NÃO-dono)
-        sync: false
-      - key: MIGRATION_DATABASE_URL  # usuário primário do Render (dono/migrator)
-        sync: false
-      - key: ACTION_CABLE_URL        # wss://<backend>.onrender.com/cable
-        sync: false
+      # ÚNICO campo manual do backend: a URL pública do FRONTEND (o Render não liga a
+      # URL externa de um serviço a outro). Dela o bin/render-web-start deriva também
+      # CORS_ORIGINS. ACTION_CABLE_URL e DATABASE_URL de runtime são derivados no start
+      # (RENDER_EXTERNAL_URL e a senha do banco) — não se cola nada de banco.
       - key: APP_URL                 # https://<frontend>.onrender.com
-        sync: false
-      - key: CORS_ORIGINS            # https://<frontend>.onrender.com
         sync: false
 
 databases:
   - name: robotrack-db
     databaseName: robotrack
-    # Usuário PRIMÁRIO = dono/migrator. O runtime robotrack_app é adicionado à mão.
+    # Usuário PRIMÁRIO = dono/migrator (ligado ao backend via fromDatabase). O runtime
+    # robotrack_app NÃO é criado no painel — o app o cria sozinho no 1º boot (roles.sql).
     user: robotrack
     plan: free
     region: oregon
@@ -110,6 +113,18 @@ services:
     dockerCommand: bin/render-web-start
     envVars:
       - fromGroup: robotrack-shared
+      # DONO/migrator: a Internal URL do Postgres, ligada automaticamente pelo Render.
+      # bin/render-web-start migra com ela E deriva o DATABASE_URL de runtime
+      # (robotrack_app) dela + APP_DB_PASSWORD. Nenhuma URL de banco é colada à mão.
+      - key: MIGRATION_DATABASE_URL
+        fromDatabase:
+          name: robotrack-db
+          property: connectionString
+      # Senha do robotrack_app: gerada pelo Render. roles.sql (como o dono) cria/atualiza
+      # o robotrack_app com ela; bin/render-web-start a embute no DATABASE_URL de runtime.
+      # generateValue = valor aleatório do Render, NUNCA um segredo fixo no repo.
+      - key: APP_DB_PASSWORD
+        generateValue: true
       # ÚNICA Key Value do free. bin/render-web-start deriva REDIS_CACHE_URL (/0),
       # REDIS_QUEUE_URL (/1) e REDIS_CABLE_URL (/2) desta base antes do boot — dbs
       # distintos satisfazem o guard de topologia. NÃO ligue REDIS_*_URL aqui: o
@@ -144,16 +159,17 @@ services:
   - type: web
     name: robotrack-frontend
     runtime: static
-    buildCommand: npm --prefix frontend ci && npm --prefix frontend run build
+    # VITE_WS_URL é derivado de VITE_API_URL no próprio build (wss:// + host), então o
+    # dono cola UMA só URL (a do backend). Vite expõe process.env VITE_* ao bundle.
+    buildCommand: npm --prefix frontend ci && VITE_WS_URL="wss://${VITE_API_URL#https://}" npm --prefix frontend run build
     staticPublishPath: frontend/dist
     pullRequestPreviewsEnabled: false
     envVars:
       - key: NODE_VERSION
         value: "20"
-      # Base da API e do WebSocket = URL pública do BACKEND (colar no painel):
+      # ÚNICO campo manual do frontend: a URL pública do BACKEND (o Render não liga a
+      # URL externa de um serviço a outro). VITE_WS_URL sai dela no buildCommand acima.
       - key: VITE_API_URL   # https://<backend>.onrender.com
-        sync: false
-      - key: VITE_WS_URL    # wss://<backend>.onrender.com
         sync: false
     # SPA: qualquer rota inexistente cai no index.html (arquivos reais — assets,
     # sw.js — são servidos direto, o rewrite é só fallback de roteamento no cliente).

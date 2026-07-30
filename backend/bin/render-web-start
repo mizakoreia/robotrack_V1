@@ -1,19 +1,29 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Start do backend web no PLANO FREE do Render. Concentra três coisas que o free
-# não deixa fazer em serviços separados: o release (sem preDeployCommand), a
-# separação de Redis por função (só 1 Key Value permitida) e o Sidekiq (sem
-# Background Worker). Ordem:
+# Start do backend web no PLANO FREE do Render. Concentra o que o free não deixa
+# fazer em serviços separados: o release (sem preDeployCommand), a separação de
+# Redis por função (só 1 Key Value permitida) e o Sidekiq (sem Background Worker).
+# Também DERIVA, sem passo manual, tudo que o Render não liga sozinho no banco.
+# Ordem:
 #  0. Deriva REDIS_CACHE_URL (/0), REDIS_QUEUE_URL (/1) e REDIS_CABLE_URL (/2) da
 #     ÚNICA Key Value (REDIS_URL). Dbs distintos satisfazem o guard de topologia
 #     (redis_topology.rb chaveia por host,porta,db) sem 3 instâncias. Precisa vir
 #     ANTES do release: bin/release também boota o Rails e dispara o guard.
+#  0b. Deriva o DATABASE_URL de RUNTIME (robotrack_app) da MIGRATION_DATABASE_URL
+#     (dono) trocando user:senha por robotrack_app:APP_DB_PASSWORD, mesmo host/db.
+#     O Render NÃO cria usuário nomeado não-dono pela UI, então o app cria o
+#     robotrack_app sozinho (roles.sql, passo 2) e monta a URL dele aqui — zero
+#     passo manual de banco. APP_DB_PASSWORD é gerada pelo Render (generateValue).
+#  0c. Deriva ACTION_CABLE_URL do RENDER_EXTERNAL_URL (a própria URL pública deste
+#     backend, injetada pelo Render) e CORS_ORIGINS do APP_URL (URL do frontend, o
+#     único endereço que o Render não tem como ligar sozinho — ver DEPLOY_RENDER.md).
 #  1. Migra COMO O MIGRATOR: DATABASE_URL é sobrescrito APENAS para o bin/release,
 #     apontando ao usuário DONO do banco (MIGRATION_DATABASE_URL). Migrations e
 #     objetos novos nascem com o dono/migrator.
 #  2. Reconcilia papéis/REVOKE do robotrack_app (roles.sql) conectado também como
-#     o migrator — concede DML e re-aplica os REVOKE append-only.
+#     o migrator — CRIA o robotrack_app + senha (APP_DB_PASSWORD via -v app_pw),
+#     concede DML e re-aplica os REVOKE append-only.
 #  3. Sobe o SIDEKIQ EMBUTIDO em background (free não tem Background Worker). Herda
 #     o mesmo env: Redis por função (derivado no passo 0) e DATABASE_URL do runtime
 #     (robotrack_app). Enfileiramento e processamento acontecem no mesmo container.
@@ -43,9 +53,37 @@ export REDIS_QUEUE_URL="${base}/1"
 export REDIS_CABLE_URL="${base}/2"
 echo "[render-start] Redis por função derivado da Key Value única (cache=/0, queue=/1, cable=/2)"
 
+# 0b. DATABASE_URL de runtime (robotrack_app) derivado da URL do DONO. Mantém
+# scheme/host/porta/db da MIGRATION_DATABASE_URL e só troca user:senha. O corte usa
+# o ÚLTIMO '@' (guloso): o host não contém '@' e a senha do dono, se tivesse um,
+# viria %-encodada pelo Render — então isto isola o userinfo com segurança.
+mig="${MIGRATION_DATABASE_URL:?MIGRATION_DATABASE_URL ausente (ligue via fromDatabase no render.yaml)}"
+app_pw="${APP_DB_PASSWORD:?APP_DB_PASSWORD ausente (declare generateValue no render.yaml)}"
+scheme="${mig%%://*}"        # postgresql
+after="${mig#*://}"          # user:senha@host:porta/db?params
+hostpart="${after##*@}"      # host:porta/db?params (guloso: último @)
+# APP_DB_PASSWORD é base64 (generateValue) e pode conter + / = — %-encoda os três
+# para não quebrar o parse da URL (o pg/libpq decodifica %XX de volta ao valor cru
+# que o roles.sql grava). Só esses três chars aparecem no alfabeto base64.
+enc="${app_pw//+/%2B}"; enc="${enc//\//%2F}"; enc="${enc//=/%3D}"
+export DATABASE_URL="${scheme}://robotrack_app:${enc}@${hostpart}"
+echo "[render-start] DATABASE_URL de runtime derivado (robotrack_app @ host do dono)"
+
+# 0c. URLs públicas: ACTION_CABLE_URL sai da própria URL deste backend
+# (RENDER_EXTERNAL_URL, injetada pelo Render) → wss://.../cable. CORS_ORIGINS
+# espelha APP_URL (URL do frontend, único endereço manual — ver DEPLOY_RENDER.md).
+if [ -n "${RENDER_EXTERNAL_URL:-}" ]; then
+  export ACTION_CABLE_URL="wss://${RENDER_EXTERNAL_URL#https://}/cable"
+  echo "[render-start] ACTION_CABLE_URL derivado de RENDER_EXTERNAL_URL"
+fi
+if [ -n "${APP_URL:-}" ]; then
+  export CORS_ORIGINS="${APP_URL%/}"
+  echo "[render-start] CORS_ORIGINS espelhado de APP_URL"
+fi
+
 echo "[render-start] release: migrate como MIGRATOR + roles/REVOKE do robotrack_app"
 DATABASE_URL="$MIGRATION_DATABASE_URL" bin/release
-psql "$MIGRATION_DATABASE_URL" -v ON_ERROR_STOP=1 -f config/deploy/render/roles.sql
+psql "$MIGRATION_DATABASE_URL" -v ON_ERROR_STOP=1 -v app_pw="$app_pw" -f config/deploy/render/roles.sql
 
 echo "[render-start] subindo Sidekiq EMBUTIDO em background (free não tem worker)"
 bundle exec sidekiq -C config/sidekiq.yml &

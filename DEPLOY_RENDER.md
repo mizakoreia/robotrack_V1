@@ -27,9 +27,11 @@ fim, o app fica no ar numa URL pública.
 **Por que 1 Redis com 3 dbs e 2 usuários de banco?** É exigência do próprio app (ele
 recusa subir com topologia insegura ou como dono do banco). No free só se pode ter
 **uma** Key Value por workspace, então cache, fila e broadcast dividem a mesma
-instância em **bancos lógicos distintos** (o app deriva isso sozinho). Está explicado
-no final, em "Decisões técnicas". Você não precisa entender para seguir — só precisa
-nomear um usuário de banco exatamente `robotrack_app` no passo 4.
+instância em **bancos lógicos distintos** (o app deriva isso sozinho). O segundo
+usuário de banco (`robotrack_app`) o **app cria sozinho no primeiro boot** — você
+**não** mexe em banco no painel. Está explicado no final, em "Decisões técnicas".
+Você não precisa entender para seguir: **o único trabalho manual é colar uma URL em
+cada serviço** (a URL pública do outro), no passo 4.
 
 ---
 
@@ -51,97 +53,89 @@ nomear um usuário de banco exatamente `robotrack_app` no passo 4.
 4. Dê um nome ao grupo (ex.: `robotrack`) e clique **Apply** / **Create**.
 
 O Render começa a criar tudo. **É NORMAL o `robotrack-backend` FALHAR neste primeiro
-deploy** — ele ainda não tem o usuário de banco `robotrack_app` (você cria no passo
-4) nem os endereços que faltam (passo 5). Siga em frente.
+deploy** — faltam as duas URLs públicas que só existem depois que os serviços nascem
+(você cola no passo 4). O banco o app resolve sozinho. Siga em frente.
 
 ---
 
 ## 3. Pegar as URLs públicas
 
-Depois do Apply, cada serviço ganha uma URL. Anote as duas que vamos usar (no painel,
-abra cada serviço e copie o endereço no topo, algo como `https://...onrender.com`):
+Depois do Apply, cada serviço ganha uma URL. Anote as duas (no painel, abra cada
+serviço e copie o endereço no topo, algo como `https://...onrender.com`):
 
 - **Backend** → `https://robotrack-backend-XXXX.onrender.com`  → chamaremos de **URL-BACKEND**
 - **Frontend** → `https://robotrack-frontend-XXXX.onrender.com` → chamaremos de **URL-FRONTEND**
 
 (O sufixo `-XXXX` varia; use o que o painel mostrar.)
 
----
-
-## 4. Criar o 2º usuário do banco (`robotrack_app`)
-
-O Render entrega o banco com **um** usuário (o dono). O app precisa de um **segundo**
-usuário, sem poderes de dono, para o dia a dia.
-
-1. No painel, abra **`robotrack-db`**.
-2. Vá em **Access Control** (ou "Database Users" / "Credentials", conforme a versão
-   do painel) → **Add User**.
-3. No nome do usuário, digite **exatamente**: `robotrack_app`  ← (esse nome importa)
-4. Salve. O Render mostra as **conexões** desse usuário. Copie a **Internal Database
-   URL** dele → chamaremos de **URL-APP** (começa com `postgresql://robotrack_app:...`).
-5. Ainda em `robotrack-db`, copie também a **Internal Database URL do usuário
-   principal** (o dono, chamado `robotrack`) → chamaremos de **URL-DONO**.
-
-> Use sempre a **Internal** URL (rede interna do Render), não a External.
+> **Você NÃO mexe no banco.** Não há passo de criar usuário nem de copiar URL de
+> Postgres. O Render entrega o banco com um usuário (o dono) e liga a URL dele ao
+> backend **automaticamente**; o segundo usuário (`robotrack_app`) o app cria sozinho
+> no primeiro boot. (Por isso a UI do Render **não** serve aqui: ela só cria cópias do
+> dono, não um usuário não-dono de verdade — daí o app fazer isso por conta própria.)
 
 ---
 
-## 5. Preencher os valores que faltam (copiar-colar)
+## 4. Colar as duas URLs que faltam (copiar-colar)
 
-Estes são os únicos campos manuais. Todo o resto (senhas, tokens, Redis) o Render
-gera e liga sozinho.
+São os **únicos** campos manuais: cada serviço precisa saber o endereço público do
+**outro** (o Render não liga a URL externa de um serviço a outro). Todo o resto —
+senhas, tokens, Redis, **e todas as URLs de banco e de WebSocket** — o Render gera e o
+app deriva sozinho.
 
-### 5a. No **`robotrack-backend`** → Environment (aba "Environment"):
+### 4a. No **`robotrack-backend`** → aba **Environment**:
 
 | Campo | Valor a colar |
 |---|---|
-| `DATABASE_URL` | **URL-APP** (do `robotrack_app`, passo 4) |
-| `MIGRATION_DATABASE_URL` | **URL-DONO** (do usuário principal, passo 4) |
-| `ACTION_CABLE_URL` | `wss://` + URL-BACKEND sem `https://` + `/cable`  → ex.: `wss://robotrack-backend-XXXX.onrender.com/cable` |
-| `APP_URL` | **URL-FRONTEND** (ex.: `https://robotrack-frontend-XXXX.onrender.com`) |
-| `CORS_ORIGINS` | **URL-FRONTEND** (a mesma de cima, sem barra no fim) |
+| `APP_URL` | **URL-FRONTEND** (ex.: `https://robotrack-frontend-XXXX.onrender.com`, sem barra no fim) |
 
-> Esses 5 campos aparecem porque estão num grupo compartilhado (`robotrack-shared`).
-> Se o painel os mostrar dentro do grupo em vez do serviço, edite-os lá — o efeito é
-> o mesmo (o backend herda).
+> Só isso. `CORS_ORIGINS` (mesma origem do frontend) e `ACTION_CABLE_URL` (o
+> `/cable` deste próprio backend) são **derivados no start**; `DATABASE_URL` e
+> `MIGRATION_DATABASE_URL` o Render/app resolvem sozinhos. Se o painel mostrar
+> `APP_URL` dentro do grupo `robotrack-shared` em vez do serviço, edite-o lá — o
+> efeito é o mesmo (o backend herda).
 
-### 5b. No **`robotrack-frontend`** → Environment:
+### 4b. No **`robotrack-frontend`** → aba **Environment**:
 
 | Campo | Valor a colar |
 |---|---|
 | `VITE_API_URL` | **URL-BACKEND** (ex.: `https://robotrack-backend-XXXX.onrender.com`) |
-| `VITE_WS_URL` | `wss://` + URL-BACKEND sem `https://`  → ex.: `wss://robotrack-backend-XXXX.onrender.com` |
+
+> `VITE_WS_URL` (a versão `wss://` da mesma URL) é derivada no build — não se cola.
 
 Salve nos dois serviços.
 
 ---
 
-## 6. Subir de verdade (redeploy)
+## 5. Subir de verdade (redeploy)
 
 1. **`robotrack-backend`** → **Manual Deploy** → **Deploy latest commit**.
    - **Não há passo de "pre-deploy".** No plano free o Render não permite pre-deploy,
-     então o release (migrar o banco + conceder os acessos ao `robotrack_app`)
-     acontece **no início do próprio serviço**, toda vez que o backend sobe.
+     então o release **e a criação do 2º usuário do banco** acontecem **no início do
+     próprio serviço**, toda vez que o backend sobe.
    - Por isso o **primeiro boot demora um pouco mais**: antes do app atender, ele
-     roda as migrations (como o usuário dono/migrator) e reaplica os papéis. Só
-     depois o Puma sobe como `robotrack_app`.
+     **cria o `robotrack_app`** (conectado como o dono), roda as migrations (como o
+     dono/migrator) e reaplica os papéis/REVOKE. Só depois o Puma sobe como
+     `robotrack_app`.
    - Acompanhe em **Logs** (aba **Logs** do `robotrack-backend`). Você verá as linhas
-     `[render-start] Redis por função derivado ...`, `[render-start] release: ...`,
-     `[render-start] subindo Sidekiq EMBUTIDO ...` e `[render-start] release
-     concluído — subindo Puma ...`; em seguida o serviço fica **Live** (bolinha
-     verde). O Sidekiq (tarefas em segundo plano) sobe **no mesmo processo** — não há
-     serviço de worker separado para acompanhar.
+     `[render-start] Redis por função derivado ...`, `[render-start] DATABASE_URL de
+     runtime derivado ...`, `[render-start] ACTION_CABLE_URL derivado ...`,
+     `[render-start] release: migrate como MIGRATOR + roles/REVOKE do robotrack_app`
+     e `[render-start] release concluído — subindo Puma como robotrack_app`; em
+     seguida o serviço fica **Live** (bolinha verde). O Sidekiq (tarefas em segundo
+     plano) sobe **no mesmo processo** — não há worker separado para acompanhar.
 2. **`robotrack-frontend`** → **Manual Deploy** → **Deploy latest commit** (para o
    site ser reconstruído já com `VITE_API_URL`/`VITE_WS_URL`).
 
 > **Nota (cold start no free):** como o release roda no start, cada vez que o backend
-> acorda de hibernar ele repete migrate + papéis. É **idempotente** (migrate e os
-> GRANT/REVOKE podem rodar de novo sem efeito colateral), só adiciona alguns segundos
-> ao primeiro request após dormir. No free é 1 instância, então não há corrida.
+> acorda de hibernar ele repete a criação do papel + migrate. É **idempotente** (o
+> `CREATE ROLE` só roda se faltar, e migrate/GRANT/REVOKE re-aplicam sem efeito
+> colateral), só adiciona alguns segundos ao primeiro request após dormir. No free é 1
+> instância, então não há corrida.
 
 ---
 
-## 7. Validar que subiu
+## 6. Validar que subiu
 
 1. **Saúde do backend:** abra `URL-BACKEND/health/ready` no navegador → deve
    responder um JSON de "ok/ready" (status 200). Se responder, banco e Redis estão
@@ -157,15 +151,22 @@ Se `/health/ready` responder erro, veja **Logs** do `robotrack-backend`:
   start deriva `/0`, `/1`, `/2`). Confira que a Key Value `robotrack-kv` existe e
   está ligada ao backend (`REDIS_URL`), e que você **não** colou um `REDIS_*_URL`
   manual no painel sobrescrevendo a derivação.
-- "papel corrente tem privilégio UPDATE sobre audit_logs" → o `DATABASE_URL` está
-  apontando para o **dono** em vez do `robotrack_app`. Corrija o `DATABASE_URL`
-  (passo 5a) e redeploy.
-- erro de conexão/`role ... does not exist` → o usuário `robotrack_app` não foi
-  criado com esse nome exato (passo 4) ou as URLs estão trocadas.
+- "papel corrente tem privilégio UPDATE sobre audit_logs" → o runtime subiu como o
+  **dono** em vez do `robotrack_app`. Não deveria acontecer (o `DATABASE_URL` é
+  derivado no start); se acontecer, confira nos Logs a linha `DATABASE_URL de runtime
+  derivado ...` e que você **não** colou um `DATABASE_URL` manual sobrescrevendo-a.
+- `permission denied to create role` / `must have CREATEROLE` → o usuário primário do
+  Render não tem CREATEROLE e **não** consegue criar o `robotrack_app`. É a única
+  dependência dura deste desenho (ver "Decisões técnicas", § banco). Me avise: o
+  plano B é criar o `robotrack_app` uma vez via **psql** (Admin App/console) e então
+  o app só reaplica os GRANTs a cada boot.
+- `role "robotrack_app" does not exist` → o release não chegou a rodar o `roles.sql`
+  (provável boot abortado antes, por `APP_URL` ausente — passo 4a). Cole `APP_URL` e
+  redeploy; o start cria o papel.
 
 ---
 
-## 8. Avisos honestos sobre o plano FREE
+## 7. Avisos honestos sobre o plano FREE
 
 O free é ótimo para demonstrar, mas tem limites reais:
 
@@ -210,7 +211,7 @@ que precisar, incrementalmente.
 
 ---
 
-## 9. A demo do Mac e o Render convivem
+## 8. A demo do Mac e o Render convivem
 
 - São **ambientes separados**: bancos diferentes, Redis diferente, URLs diferentes.
 - Criar dados no Render **não afeta** a demo do Mac e vice-versa.
@@ -220,7 +221,7 @@ que precisar, incrementalmente.
 
 ---
 
-## 10. Google login (opcional)
+## 9. Google login (opcional)
 
 O login por **e-mail/senha e por código de convite funciona sem configurar nada**. O
 botão "Entrar com Google" só funciona se você cadastrar as credenciais do Google
@@ -230,7 +231,7 @@ Se quiser, me avise que eu preparo esse passo à parte.
 
 ---
 
-## 11. Manutenção (para quem for mexer no código depois)
+## 10. Manutenção (para quem for mexer no código depois)
 
 - **`Dockerfile.backend` espelha os estágios de backend do `./Dockerfile`.** Se um dia
   o `./Dockerfile` mudar (versão do Ruby, pacotes, etc.), replique no `Dockerfile.backend`.
@@ -244,16 +245,25 @@ Se quiser, me avise que eu preparo esse passo à parte.
 
 ---
 
-## 12. Decisões técnicas (por que a topologia é essa)
+## 11. Decisões técnicas (por que a topologia é essa)
 
-- **Dois papéis de banco.** O app **recusa** rodar conectado como o dono do banco: um
-  guard de imutabilidade aborta o boot se o papel do runtime puder alterar o log de
-  auditoria. Por isso o runtime usa o `robotrack_app` (2º usuário, sem posse), e as
-  migrations usam o usuário dono do Render. O **requisito inegociável** — o runtime
-  **nunca** contorna a segurança por linha (RLS) — está garantido: o usuário do Render
-  é sem-superusuário e sem-BYPASSRLS, e a RLS é **forçada** (vale até para o dono).
-  O único ponto que o Render não automatiza é **criar/colar** o 2º usuário (passos 4–5)
-  — daí o passo manual.
+- **Dois papéis de banco, criados sozinhos.** O app **recusa** rodar conectado como o
+  dono do banco: um guard de imutabilidade aborta o boot se o papel do runtime puder
+  alterar o log de auditoria. Por isso o runtime usa o `robotrack_app` (2º usuário, sem
+  posse), e as migrations usam o dono do Render. Como a UI do Render **não** cria um
+  usuário nomeado não-dono (só "default credentials", que são cópias do dono), o próprio
+  app cria o `robotrack_app` no 1º boot: o `bin/render-web-start` roda o `roles.sql`
+  conectado como o dono (via `MIGRATION_DATABASE_URL`, ligado por `fromDatabase`), que
+  faz `CREATE ROLE robotrack_app` com a senha `APP_DB_PASSWORD` (gerada pelo Render), e
+  então deriva o `DATABASE_URL` de runtime dessa senha — **nenhuma URL de banco é colada
+  à mão**. O **requisito inegociável** — o runtime **nunca** contorna a RLS — está
+  garantido por construção: o dono do Render é sem-superusuário e sem-BYPASSRLS, então
+  **não consegue conferir** SUPERUSER/BYPASSRLS ao `robotrack_app`; a RLS é **forçada**
+  (vale até para o dono). **Única dependência dura:** o dono do Render precisa ter
+  `CREATEROLE` (o Postgres gerenciado concede — a doc do Render descreve criar usuários
+  por `CREATE USER` via SQL). Se algum dia não tiver, o `roles.sql` falha nomeando o
+  privilégio, e o plano B é criar o `robotrack_app` uma vez via psql (Admin App) — o
+  resto do release segue idêntico.
 - **Redis separado por função (1 instância no free, 3 dbs).** O app separa cache
   (pode descartar dados sob pressão) de fila e broadcast (não podem). Um guard aborta
   o boot se dois resolverem para o mesmo `(host, porta, db)`. No free só há **uma**

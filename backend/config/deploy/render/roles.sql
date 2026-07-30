@@ -6,19 +6,38 @@
 -- que é o DONO do banco e das tabelas, ou seja, faz o papel do `robotrack_migrator`
 -- — via MIGRATION_DATABASE_URL.
 --
--- NÃO cria papel nem define senha: o papel de runtime `robotrack_app` é criado
--- pelo dono no painel do Render (Database → Access Control) com esse nome EXATO
--- (o Render entrega 1 usuário; o segundo é adicionado à mão). Aqui só concedemos
--- os privilégios de runtime e reaplicamos os REVOKE append-only.
+-- CRIA o papel de runtime `robotrack_app` e define a senha: o Render entrega o
+-- Postgres com UM usuário (o dono/primário) e a UI NÃO permite criar um usuário
+-- nomeado não-dono. Então o próprio app cria `robotrack_app` no primeiro boot,
+-- conectado como o dono via MIGRATION_DATABASE_URL. A senha vem de
+-- `APP_DB_PASSWORD` (psql -v app_pw="$APP_DB_PASSWORD"), gerada pelo Render
+-- (generateValue) — nunca fixa neste arquivo. O `bin/render-web-start` deriva o
+-- DATABASE_URL de runtime dessa mesma senha.
 --
 -- Modelo (tenant-isolation / design D-11): runtime = robotrack_app, NÃO-dono,
 -- sujeito à RLS FORÇADA, SEM UPDATE/DELETE nas tabelas append-only. O usuário do
--- Render é NOSUPERUSER e NOBYPASSRLS (plataforma gerenciada), então tanto o dono
--- quanto o app respeitam a RLS — `FORCE ROW LEVEL SECURITY` vincula até o dono.
--- Por isso o isolamento por workspace continua valendo mesmo sem superusuário.
+-- Render é NOSUPERUSER e NOBYPASSRLS (plataforma gerenciada) — logo NÃO pode
+-- conferir SUPERUSER nem BYPASSRLS a quem cria: `robotrack_app` nasce NOSUPERUSER
+-- NOBYPASSRLS por construção (defaults inforjáveis por um não-superusuário). Tanto
+-- o dono quanto o app respeitam a RLS — `FORCE ROW LEVEL SECURITY` vincula até o
+-- dono. Por isso o isolamento por workspace vale mesmo sem superusuário.
 --
 -- Idempotente: pode rodar em todo deploy. Cada deploy roda migrate (pode criar
 -- tabelas novas) e ENTÃO este arquivo (re-concede em ALL TABLES, cobrindo as novas).
+
+-- ── Papel de runtime robotrack_app (cria-se se ausente; senha a cada boot) ────
+-- CREATE ROLE não tem IF NOT EXISTS: usa-se \gexec para criar só quando falta. O
+-- ALTER seguinte (re)define LOGIN e a SENHA idempotentemente. Exige que o usuário
+-- primário do Render tenha CREATEROLE (o managed PG concede — a doc do Render
+-- descreve criar usuários por `CREATE USER` via SQL). Se NÃO tiver, este passo
+-- falha aqui nomeando o privilégio (é a decisão bloqueante — ver DEPLOY_RENDER.md).
+-- SUPERUSER/BYPASSRLS são OMITIDOS de propósito: o dono, sendo não-superusuário,
+-- não pode conferi-los, e os defaults (NOSUPERUSER NOBYPASSRLS NOCREATEDB
+-- NOCREATEROLE) são exatamente o que queremos.
+SELECT 'CREATE ROLE robotrack_app LOGIN'
+ WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'robotrack_app')
+\gexec
+ALTER ROLE robotrack_app WITH LOGIN PASSWORD :'app_pw';
 
 -- Conectar ao banco e enxergar o schema.
 DO $$
