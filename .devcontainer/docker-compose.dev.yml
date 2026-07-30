@@ -1,0 +1,79 @@
+# Ambiente de DESENVOLVIMENTO do RoboTrack para GitHub Codespaces / Dev Containers.
+#
+# NÃO é o compose de produção nem de staging (docker-compose.staging.yml). Aqui:
+#   - app      → onde você trabalha (Ruby 3.2.3 + Node vêm das `features`)
+#   - postgres → Postgres 16; superusuário SÓ para bootstrap. Os DOIS papéis reais
+#                (robotrack_migrator dono/DDL, robotrack_app runtime sem SUPERUSER
+#                e sem BYPASSRLS) são criados pelo post-create rodando backend/db/
+#                roles.sql — a MESMA segurança do resto do projeto (RLS forçada).
+#   - redis    → uma instância; isolamento por FUNÇÃO via dbs lógicos /0../3,
+#                espelhando o Render (cache/fila/cable separados).
+#
+# Segredos aqui são valores de DEV, descartáveis — NUNCA credenciais de produção.
+
+services:
+  app:
+    image: mcr.microsoft.com/devcontainers/base:bookworm
+    command: sleep infinity
+    volumes:
+      - ../..:/workspaces:cached
+    environment:
+      RAILS_ENV: development
+      # Runtime conecta como robotrack_app (não-super, sob RLS). As MIGRATIONS
+      # rodam com override inline para o migrator (ver post-create.sh) — o
+      # database.yml lê DATABASE_URL tanto para runtime quanto para o migrate.
+      DATABASE_URL: postgres://robotrack_app:app_dev_pw@postgres:5432/robotrack_dev
+      # Redis por função com dbs distintos (paridade com Render). Em dev não é
+      # obrigatório, mas mantém a topologia realista.
+      REDIS_URL: redis://redis:6379/0
+      REDIS_CACHE_URL: redis://redis:6379/1
+      REDIS_QUEUE_URL: redis://redis:6379/2
+      REDIS_CABLE_URL: redis://redis:6379/3
+      # Valores de DEV (não são segredos de produção).
+      SECRET_KEY_BASE: dev_secret_key_base_nao_use_em_producao
+      INVITATION_CODE_PEPPER: dev_invitation_pepper_nao_use_em_producao
+      RAILS_LOG_TO_STDOUT: "true"
+      # Superusuário de bootstrap do Postgres, para o post-create criar os papéis
+      # e os bancos via psql. Correspondem ao serviço `postgres` abaixo.
+      PGHOST: postgres
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGPASSWORD: postgres_bootstrap_pw
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      # Superusuário SÓ para bootstrap; os papéis REAIS vêm do roles.sql. NÃO
+      # usamos POSTGRES_USER: robotrack_app (a imagem o criaria como SUPERUSER e
+      # a RLS viraria decoração — mesmo motivo do BUG 10 no compose de staging).
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_bootstrap_pw
+      POSTGRES_DB: postgres
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  pg_data:
+  redis_data:

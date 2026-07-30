@@ -1,0 +1,45 @@
+{
+  "name": "RoboTrack — Rails + React + Postgres(2 papéis) + Redis",
+
+  // Ambiente COMPLETO de dev via docker-compose: o container `app` (onde você
+  // trabalha) + Postgres + Redis como serviços irmãos. Nada aqui toca produção:
+  // o Render builda pelo Dockerfile.backend (copia só backend/) e o frontend
+  // estático via `vite build` (usa vite.config.ts, não o de Codespaces).
+  "dockerComposeFile": "docker-compose.dev.yml",
+  "service": "app",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+
+  // Ruby EXATO 3.2.3 (o Gemfile trava `ruby '3.2.3'`; uma 3.2.x diferente
+  // reprova o bundle). Node LTS + npm. gh CLI para abrir PR de dentro do Codespace.
+  "features": {
+    "ghcr.io/devcontainers/features/ruby:1": { "version": "3.2.3" },
+    "ghcr.io/devcontainers/features/node:1": { "version": "lts" },
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+
+  // 3000 (Rails API) e 5173 (Vite). No Codespace viram URLs
+  // `https://<nome>-3000.app.github.dev` e `-5173` automaticamente. Ficam
+  // privadas (só você, autenticado) por padrão — o app é acessado pela de 5173.
+  "forwardPorts": [3000, 5173],
+  "portsAttributes": {
+    "3000": { "label": "backend — Rails API", "onAutoForward": "silent" },
+    "5173": { "label": "frontend — Vite (abra esta)", "onAutoForward": "openBrowser" }
+  },
+
+  // Provisiona uma vez ao criar; imprime as URLs a cada retomada.
+  "postCreateCommand": "bash .devcontainer/scripts/post-create.sh",
+  "postStartCommand": "bash .devcontainer/scripts/post-start.sh",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "Shopify.ruby-lsp",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss"
+      ]
+    }
+  },
+
+  "remoteUser": "vscode"
+}
