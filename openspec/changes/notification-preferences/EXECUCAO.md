@@ -100,6 +100,16 @@ O-1 default · O-2 herança · O-3 owner-tudo×mute · O-4 assign×mute · O-5 v
 O-6 item 1 sem enum · O-7 alvo workspace · O-8 quais ações estruturais. Cada uma com recomendação
 no `design.md`.
 
+## EXECUÇÃO por grupo (parte reversível — G6 DEFERIDO)
+
+- **G1 ✅** — enum `notification_subscription_state`, tabela `notification_subscriptions` (FKs
+  compostas, CHECK um-alvo, RLS forçada, 3 únicos parciais + 3 lookup), model
+  `NotificationSubscription` (`WorkspaceScoped`, validação uma-de-três). Migração aplicada em DEV
+  **e** TEST como `robotrack_migrator`; `structure.sql` regenerado. Spec `spec/db/
+  notification_subscriptions_schema_spec.rb` **9/0** (CHECK, enum, FK cross-ws, único, CASCADE, RLS).
+- **G6 ⏸️ DEFERIDO** — eventos estruturais + `ALTER TYPE ADD VALUE 'structure'` NÃO executado
+  (reversão não-trivial); aguardando OK separado do dono. tasks.md §6 marcado.
+
 ## Baseline
 
 `in-app-notifications` COMPLETO e verde. `notification_subscriptions` não existe. Frontend com

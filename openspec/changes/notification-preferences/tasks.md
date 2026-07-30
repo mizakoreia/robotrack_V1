@@ -11,22 +11,22 @@
 
 ## 1. Esquema `notification_subscriptions` (G1) 🟡 — MIGRAÇÃO
 
-- [ ] 1.1 Criar o enum `notification_subscription_state` (`follow`, `mute`) e a tabela
+- [x] 1.1 Criar o enum `notification_subscription_state` (`follow`, `mute`) e a tabela
   `notification_subscriptions` com as colunas de D-P1, a CHECK `chk_notif_sub_one_scope`
   (`num_nonnulls(scope_project_id, scope_cell_id, scope_robot_id) = 1`), e as FKs compostas por
   `workspace_id` (person → `people(workspace_id, id)`; project/cell/robot → `x(id, workspace_id)`).
   (§D-P1 — INSERT com dois alvos falha na CHECK; alvo de outro workspace falha na FK composta)
-- [ ] 1.2 Adicionar RLS **forçada** no idioma exato das demais tabelas (`ENABLE` + `FORCE` +
+- [x] 1.2 Adicionar RLS **forçada** no idioma exato das demais tabelas (`ENABLE` + `FORCE` +
   policy `tenant_isolation` com `NULLIF(current_setting('app.current_workspace_id', true), '')::uuid`)
   e o índice `index_notification_subscriptions_on_workspace_id`. (§D2 — `SET app.current_workspace_id`
   do WS A e `SELECT` não retorna linha do WS B)
-- [ ] 1.3 Criar os três índices únicos parciais por alvo (`uq_notif_sub_person_{project,cell,robot}`)
+- [x] 1.3 Criar os três índices únicos parciais por alvo (`uq_notif_sub_person_{project,cell,robot}`)
   e os três índices de lookup do resolver (`idx_notif_sub_by_{project,cell,robot}`). (§D-P1/D-P5 —
   segunda preferência da mesma pessoa para o mesmo alvo é rejeitada; o lookup por galho usa índice)
-- [ ] 1.4 Model `NotificationSubscription` com `include WorkspaceScoped` (auto `workspace_id`,
+- [x] 1.4 Model `NotificationSubscription` com `include WorkspaceScoped` (auto `workspace_id`,
   default_scope) e as associações/validações de ergonomia (uma-de-três, enum). Regenerar
   `structure.sql`. (§D-P1 — o model dá 422 legível; a garantia é o banco)
-- [ ] 1.5 Spec de banco por **SQL cru** exercitando 1.1–1.3 (CHECK de um-alvo, FK composta
+- [x] 1.5 Spec de banco por **SQL cru** exercitando 1.1–1.3 (CHECK de um-alvo, FK composta
   cross-workspace, único parcial, RLS forçada). (§D2/D-P1 — as invariantes de esquema não dependem
   do ActiveRecord)
 
@@ -89,7 +89,12 @@
   recebe; seguidor com `mute` no robô não recebe; grep-guard da string observadora. (§D-P7 — os dois
   textos coexistem por destinatário)
 
-## 6. Eventos estruturais — item pendente 2 (G6) 🔴 — MIGRAÇÃO (reversão NÃO-trivial)
+## 6. Eventos estruturais — item pendente 2 (G6) 🔴 — MIGRAÇÃO (reversão NÃO-trivial) — **DEFERIDO**
+
+> **DEFERIDO por decisão do dono (2026-07-30):** este grupo é o único com migração de reversão
+> **NÃO-trivial** (`ALTER TYPE notification_type ADD VALUE 'structure'` — Postgres não tem
+> `DROP VALUE`). Fica ABERTO aguardando aprovação separada. Os grupos reversíveis (G1–G5, G7)
+> foram executados sem ele. Retomar só com OK explícito.
 
 - [ ] 6.1 Migration `disable_ddl_transaction!` com `ALTER TYPE notification_type ADD VALUE IF NOT
   EXISTS 'structure'`; `down` levanta `IrreversibleMigration` com a nota de que remover valor de

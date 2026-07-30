@@ -58,6 +58,16 @@ CREATE TYPE public.membership_role AS ENUM (
 
 
 --
+-- Name: notification_subscription_state; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE public.notification_subscription_state AS ENUM (
+    'follow',
+    'mute'
+);
+
+
+--
 -- Name: notification_type; Type: TYPE; Schema: public; Owner: -
 --
 
@@ -736,6 +746,26 @@ ALTER TABLE ONLY public.memberships FORCE ROW LEVEL SECURITY;
 
 
 --
+-- Name: notification_subscriptions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.notification_subscriptions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    workspace_id uuid NOT NULL,
+    person_id uuid NOT NULL,
+    scope_project_id uuid,
+    scope_cell_id uuid,
+    scope_robot_id uuid,
+    state public.notification_subscription_state NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT chk_notif_sub_one_scope CHECK ((num_nonnulls(scope_project_id, scope_cell_id, scope_robot_id) = 1))
+);
+
+ALTER TABLE ONLY public.notification_subscriptions FORCE ROW LEVEL SECURITY;
+
+
+--
 -- Name: notifications; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1060,28 +1090,28 @@ ALTER TABLE ONLY public.workspaces FORCE ROW LEVEL SECURITY;
 -- Name: audit_logs_2026_07; Type: TABLE ATTACH; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.audit_logs ATTACH PARTITION public.audit_logs_2026_07 FOR VALUES FROM ('2026-07-01 00:00:00+00') TO ('2026-08-01 00:00:00+00');
+ALTER TABLE ONLY public.audit_logs ATTACH PARTITION public.audit_logs_2026_07 FOR VALUES FROM ('2026-06-30 21:00:00-03') TO ('2026-07-31 21:00:00-03');
 
 
 --
 -- Name: audit_logs_2026_08; Type: TABLE ATTACH; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.audit_logs ATTACH PARTITION public.audit_logs_2026_08 FOR VALUES FROM ('2026-08-01 00:00:00+00') TO ('2026-09-01 00:00:00+00');
+ALTER TABLE ONLY public.audit_logs ATTACH PARTITION public.audit_logs_2026_08 FOR VALUES FROM ('2026-07-31 21:00:00-03') TO ('2026-08-31 21:00:00-03');
 
 
 --
 -- Name: audit_logs_2026_09; Type: TABLE ATTACH; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.audit_logs ATTACH PARTITION public.audit_logs_2026_09 FOR VALUES FROM ('2026-09-01 00:00:00+00') TO ('2026-10-01 00:00:00+00');
+ALTER TABLE ONLY public.audit_logs ATTACH PARTITION public.audit_logs_2026_09 FOR VALUES FROM ('2026-08-31 21:00:00-03') TO ('2026-09-30 21:00:00-03');
 
 
 --
 -- Name: audit_logs_2026_10; Type: TABLE ATTACH; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.audit_logs ATTACH PARTITION public.audit_logs_2026_10 FOR VALUES FROM ('2026-10-01 00:00:00+00') TO ('2026-11-01 00:00:00+00');
+ALTER TABLE ONLY public.audit_logs ATTACH PARTITION public.audit_logs_2026_10 FOR VALUES FROM ('2026-09-30 21:00:00-03') TO ('2026-10-31 21:00:00-03');
 
 
 --
@@ -1240,6 +1270,14 @@ ALTER TABLE ONLY public.membership_revocations
 
 ALTER TABLE ONLY public.memberships
     ADD CONSTRAINT memberships_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: notification_subscriptions notification_subscriptions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.notification_subscriptions
+    ADD CONSTRAINT notification_subscriptions_pkey PRIMARY KEY (id);
 
 
 --
@@ -1476,6 +1514,27 @@ CREATE UNIQUE INDEX idx_memberships_one_per_invitation ON public.memberships USI
 
 
 --
+-- Name: idx_notif_sub_by_cell; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_notif_sub_by_cell ON public.notification_subscriptions USING btree (scope_cell_id) WHERE (scope_cell_id IS NOT NULL);
+
+
+--
+-- Name: idx_notif_sub_by_project; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_notif_sub_by_project ON public.notification_subscriptions USING btree (scope_project_id) WHERE (scope_project_id IS NOT NULL);
+
+
+--
+-- Name: idx_notif_sub_by_robot; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_notif_sub_by_robot ON public.notification_subscriptions USING btree (scope_robot_id) WHERE (scope_robot_id IS NOT NULL);
+
+
+--
 -- Name: idx_notifications_assign_idempotency; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1655,6 +1714,13 @@ CREATE INDEX index_memberships_on_workspace_id_and_person_id ON public.membershi
 --
 
 CREATE UNIQUE INDEX index_memberships_on_workspace_id_and_user_id ON public.memberships USING btree (workspace_id, user_id);
+
+
+--
+-- Name: index_notification_subscriptions_on_workspace_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_notification_subscriptions_on_workspace_id ON public.notification_subscriptions USING btree (workspace_id);
 
 
 --
@@ -1861,6 +1927,27 @@ CREATE UNIQUE INDEX index_workspaces_on_owner_user_id ON public.workspaces USING
 
 
 --
+-- Name: uq_notif_sub_person_cell; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uq_notif_sub_person_cell ON public.notification_subscriptions USING btree (person_id, scope_cell_id) WHERE (scope_cell_id IS NOT NULL);
+
+
+--
+-- Name: uq_notif_sub_person_project; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uq_notif_sub_person_project ON public.notification_subscriptions USING btree (person_id, scope_project_id) WHERE (scope_project_id IS NOT NULL);
+
+
+--
+-- Name: uq_notif_sub_person_robot; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uq_notif_sub_person_robot ON public.notification_subscriptions USING btree (person_id, scope_robot_id) WHERE (scope_robot_id IS NOT NULL);
+
+
+--
 -- Name: audit_logs_2026_07_pkey; Type: INDEX ATTACH; Schema: public; Owner: -
 --
 
@@ -2044,6 +2131,38 @@ ALTER TABLE ONLY public.memberships
 
 
 --
+-- Name: notification_subscriptions fk_notif_sub_cell; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.notification_subscriptions
+    ADD CONSTRAINT fk_notif_sub_cell FOREIGN KEY (scope_cell_id, workspace_id) REFERENCES public.cells(id, workspace_id) ON DELETE CASCADE;
+
+
+--
+-- Name: notification_subscriptions fk_notif_sub_person; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.notification_subscriptions
+    ADD CONSTRAINT fk_notif_sub_person FOREIGN KEY (workspace_id, person_id) REFERENCES public.people(workspace_id, id) ON DELETE CASCADE;
+
+
+--
+-- Name: notification_subscriptions fk_notif_sub_project; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.notification_subscriptions
+    ADD CONSTRAINT fk_notif_sub_project FOREIGN KEY (scope_project_id, workspace_id) REFERENCES public.projects(id, workspace_id) ON DELETE CASCADE;
+
+
+--
+-- Name: notification_subscriptions fk_notif_sub_robot; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.notification_subscriptions
+    ADD CONSTRAINT fk_notif_sub_robot FOREIGN KEY (scope_robot_id, workspace_id) REFERENCES public.robots(id, workspace_id) ON DELETE CASCADE;
+
+
+--
 -- Name: robots fk_robots_cell_same_workspace; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2169,6 +2288,14 @@ ALTER TABLE ONLY public.memberships
 
 ALTER TABLE ONLY public.memberships
     ADD CONSTRAINT memberships_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id);
+
+
+--
+-- Name: notification_subscriptions notification_subscriptions_workspace_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.notification_subscriptions
+    ADD CONSTRAINT notification_subscriptions_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE;
 
 
 --
@@ -2372,6 +2499,12 @@ ALTER TABLE public.membership_revocations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.memberships ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: notification_subscriptions; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.notification_subscriptions ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: notifications; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -2522,6 +2655,13 @@ CREATE POLICY tenant_isolation ON public.membership_revocations USING (((workspa
 --
 
 CREATE POLICY tenant_isolation ON public.memberships USING (((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid) OR (user_id = (NULLIF(current_setting('app.current_user_id'::text, true), ''::text))::uuid))) WITH CHECK ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid));
+
+
+--
+-- Name: notification_subscriptions tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.notification_subscriptions USING ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid)) WITH CHECK ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid));
 
 
 --
@@ -2699,6 +2839,7 @@ ALTER TABLE public.workspaces ENABLE ROW LEVEL SECURITY;
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260726120001'),
 ('20260724120001'),
 ('20260724110002'),
 ('20260724110001'),
