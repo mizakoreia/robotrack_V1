@@ -145,6 +145,96 @@ no `design.md`.
 - **G6 ⏸️ DEFERIDO** — eventos estruturais + `ALTER TYPE ADD VALUE 'structure'` NÃO executado
   (reversão não-trivial); aguardando OK separado do dono. tasks.md §6 marcado.
 
+## G6 — REABERTURA (reconciliação G0 do grupo deferido) — 2026-07-30
+
+Retomada autorizada pelo dono. Escrito ANTES de qualquer código do G6. Nenhuma migração aplicada
+ainda; nenhum push. Reconcilia o design §D-P8 com a realidade ATUAL do repo (mudou desde o
+deferimento — container novo, `owner-only-card-delete` já entrou, `assign_observer` do G5 já é o
+molde de destinatário observador).
+
+### Realidade confirmada (lida no código, não no design)
+
+- **Enum atual** `public.notification_type` = `('assign','progress','done')` (`structure.sql:74`).
+  Coluna `notifications.type` NOT NULL usa o enum. **G6 acrescenta `'structure'`** — coarse, um só
+  valor; ação e entidade vão no TEXTO (design §D-P8.3).
+- **Disparo pós-commit já é o idioma da casa:** `TaskAdvances::CreateService#publish_event`
+  (`create_service.rb:139`) chama `ActiveSupport::Notifications.instrument('task.advanced', …)`
+  **depois** do commit, com `rescue` que só loga (best-effort). Os subscribers em
+  `config/initializers/notification_subscribers.rb` enfileiram `NotifyTaskEventJob`
+  (fila `:notifications`, `workspace_id` como 1º arg para o middleware de tenant). **G6 copia esse
+  formato**: `structure.changed` pós-commit → subscriber → `NotifyStructureEventJob`.
+- **Destinatário observador já existe (G5):** `CreateService.assign_observers` monta
+  `dono + seguidores do galho − atribuídos − autor`, honrando `mute`, com `default = "é o dono"`
+  via `SubscriptionResolver.wants?`. **Os recipientes estruturais são o MESMO cálculo** menos o
+  recorte de "atribuídos" (estrutural não tem atribuído): `dono + seguidores − autor`, honrando mute.
+- **Message por locale já existe:** `insert_rows` congela a `msg` no locale de CADA destinatário
+  (cache por locale). `MessageBuilder.build(type:, …)` monta a chave `notifications.v1.<type>`.
+- **Pontos de create/delete single (onde instrumentar), todos pós-commit:**
+  - Projeto/célula/robô: `Hierarchy::CrudService#create` (ramo `:created`) e `#destroy` (após o
+    `model.transaction do … end` fechar). Base única → os três níveis cobertos de uma vez.
+  - Tarefa: `Tasks::CreateService#call` (após `task.save` ok) e `Tasks::DeleteService#call` (após a
+    transação de soft-delete fechar).
+
+### Decisões de execução do G6 (registradas — o design deixou em aberto)
+
+- **DE-G6.1 — Escopo v1 = SINGLE create/delete apenas.** Batch fica FORA do v1 e é registrado como
+  follow-up:
+  - `Robots::BatchCreateService` (lote 1–50) NÃO instrumenta — um colaborador `edit` criando 50
+    robôs geraria 50 notificações ao dono (ruído). Precisaria de mensagem AGREGADA
+    (`structure_robots_batch_created` com contagem) — deixado para v2 sob pedido.
+  - Materialização das tarefas-base (no batch de robô, via `insert_all`) NÃO passa por
+    `Tasks::CreateService` → não dispara, e não deve mesmo (é maquinário interno, não "alguém criou
+    uma tarefa").
+  - `Tasks::BulkDeleteService` (exclusão em lote) é **owner-only** (`owner-only-card-delete`): o
+    ator é sempre o dono → o dono se auto-exclui → **zero** notificação de qualquer jeito. Não
+    instrumentar (nenhum ganho, mantém consistência com o batch de robô). Registrado.
+  - **Consequência importante do domínio:** montar hierarquia é quase sempre o DONO (ator = dono →
+    excluído). As notificações estruturais só têm efeito real quando um colaborador `edit`
+    cria/exclui — o que naturalmente limita o volume. É por isso que single-only já entrega o valor
+    do pedido ("saber quando alguém edita meu workspace") sem inundar.
+- **DE-G6.2 — `update` (renomear) NÃO instrumenta** (decisão O-8 do design: começar por create/delete;
+  update tende a ruído). Fica para pedido explícito.
+- **DE-G6.3 — Chaves de locale:** `notifications.v1.structure.<entidade>.<ação>` — 8 chaves
+  (`project|cell|robot|task` × `created|deleted`), 3ª pessoa, PT **e** EN. Vars: `author`, `label`
+  (nome da entidade), `parent` (rótulo do pai — projeto da célula, célula do robô, robô da tarefa;
+  ausente no projeto). Enum na coluna continua `'structure'`; o `MessageBuilder` ganha um caminho
+  que aceita a subchave estrutural. Grep-guard das strings estendido (mesma regra do `assign_observer`).
+- **DE-G6.4 — Payload do evento carrega o TEXTO-fonte, não a referência.** Como o delete é
+  soft-delete e o job roda ASSÍNCRONO, re-buscar a entidade excluída no job é frágil. Então o
+  `instrument('structure.changed', …)` já materializa e passa: `workspace_id`, `actor_person_id`,
+  `author_name_snapshot` (nome do ator no momento), `entity`, `action`, `label`, `parent_label`,
+  `ctx` (project/cell/robot/task ids do galho). O job só resolve destinatários (dono + seguidores −
+  autor, honrando mute — ainda existem) e insere. `recorded_at` é fixado no enfileiramento (como o
+  `for_assign`), para um retry não deslocar o carimbo.
+- **DE-G6.5 — Sem novo índice de idempotência.** O caminho de avanço (`progress`/`done`) já é
+  best-effort sem índice único (retry de job pode, em teoria, duplicar). Estrutural segue a MESMA
+  semântica — não acrescento índice para não ampliar a superfície da migração (que já é a parte
+  irreversível). Registrado.
+- **DE-G6.6 — Ator sem `Person`** (não deveria ocorrer para um membro agindo): o job resolve
+  `actor_person_id`; nil → não instrumenta/insere (best-effort, mesmo idioma do resto).
+
+### Migração — o ponto 🔴 (reversão NÃO-trivial)
+
+`ALTER TYPE public.notification_type ADD VALUE IF NOT EXISTS 'structure'`, com
+`disable_ddl_transaction!` (Postgres não roda `ADD VALUE` dentro de transação que já usa o valor).
+`down` levanta `ActiveRecord::IrreversibleMigration` com a nota de que remover valor de enum PG
+exige recriar o tipo. **Aditiva** (nenhuma coluna nova, nenhum dado reescrito) — o risco é só a
+ausência de `DROP VALUE`. `structure.sql` regenerado.
+
+**Fronteira de ambiente (honesta):** no **sandbox** e na **branch de feature**, a migração toca só
+o banco local (recriável) — reversível na prática. A **irreversibilidade real só morde ao chegar na
+`main`**, onde o Render roda a migração no boot em PRODUÇÃO. Portanto: a aplicação em produção
+(merge/deploy na `main`) é um passo SEPARADO que exige autorização explícita à parte — este trabalho
+vive na branch `claude/robotrack-mobile-dev-s3puaf` e não vai à `main` sem seu OK.
+
+### Baseline (reconferido)
+
+`in-app-notifications` + G1–G5/G7 desta change COMPLETOS e no `main`. `notification_type` ainda
+SEM `'structure'`. `NotifyStructureEventJob` e as chaves `structure.*` NÃO existem. Container atual
+é bare (Postgres sem os papéis `robotrack_migrator`/`robotrack_app`) — provisionar via
+`backend/db/PROVISIONING.md` antes de rodar os specs. NADA do G6 aplicado — esta seção é só o G0 de
+reabertura.
+
 ## Baseline
 
 `in-app-notifications` COMPLETO e verde. `notification_subscriptions` não existe. Frontend com
