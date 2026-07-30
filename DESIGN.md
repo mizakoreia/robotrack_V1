@@ -97,9 +97,18 @@ propriedade (`text-success` não compila — D-DS-2).
 
 - **App-shell** permanente: sidebar de 3 destinos (Visão Geral / Minhas Tarefas /
   Relatório) por **preenchimento tintado** (nunca faixa lateral), topbar com contexto
-  de workspace + sino + menu da conta, rodapé com card de usuário (o indicador de
-  gravação só aparece acima dele quando há erro/pendência — no repouso o canto fica
-  limpo). Gaveta abaixo de 768px. Navegar entre destinos NÃO remonta o shell.
+  de workspace + **"?" de Ajuda** + sino + menu da conta, rodapé com card de usuário
+  (o indicador de gravação só aparece acima dele quando há erro/pendência — no repouso
+  o canto fica limpo). Gaveta abaixo de 768px. Navegar entre destinos NÃO remonta o shell.
+- **Tela de Ajuda** (`ajuda-screen`, rota `/ajuda`, frontend-only): explicação geral
+  de como o RoboTrack funciona, para operador + dono. Acesso pelo `IconButton` **"?"**
+  da topbar (glifo `help` novo no sprite, currentColor/sem emoji) — **ponto único** de
+  acesso, sempre visível, sem duplicar o nome acessível "Ajuda" (regra G). Layout:
+  índice navegável (âncoras `#id`) fixo no desktop (`grid-cols-1 lg:grid-cols-[13rem_1fr]`,
+  regra H) e como lista de atalhos no mobile; seções e TOC saem da MESMA lista de dados
+  (não divergem). Prosa em medida contida (~68ch) e `text-text-main` (sem cinza-claro).
+  As duas métricas nomeadas vêm de `lib/i18n/progress.ts`, a porta por código de
+  `lib/i18n/invitations.ts` (chaves, não literais — respeita os sweeps D14).
 - Grades de card responsivas; `items-stretch` para cards de mesma altura. Todo grid
   que salta de coluna em `sm:`/`lg:` **começa em `grid-cols-1`** no base — sem a
   coluna base `minmax(0,1fr)`, a trilha implícita `auto` estica no `min-content` do

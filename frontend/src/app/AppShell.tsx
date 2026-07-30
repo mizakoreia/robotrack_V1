@@ -320,6 +320,11 @@ function Topbar({
       {/* indicador de transporte (7.3): só aparece em degraded/offline */}
       <ConnectionIndicator />
 
+      {/* ajuda-screen — o "?" leva à tela de Ajuda. Único ponto de acesso
+          (sempre visível, para operador e dono): não duplica o nome acessível em
+          outro controle da casca (regra G). */}
+      <IconButton icon="help" label="Ajuda" size="sm" onClick={() => onNavigate('/ajuda')} />
+
       {/* slot nomeado de notificações — o sino abre o NotificationCenter (6.2) */}
       <div data-slot="notifications" className="flex h-9 w-9 items-center justify-center">
         <NotificationBell />

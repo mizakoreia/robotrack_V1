@@ -174,6 +174,23 @@ describe('AppShell (§3.10, D-F)', () => {
     expect(screen.getByText(inviteText.joinByCodeAs('ana@ex.com'))).toBeInTheDocument()
   })
 
+  // ajuda-screen — o "?" da topbar é o ponto de acesso à Ajuda, sempre visível.
+  it('a topbar tem o botão "Ajuda" que navega para /ajuda', async () => {
+    render(
+      <Providers initial="/">
+        <Routes>
+          <Route element={<AppShell />}>
+            <Route path="/" element={<div>conteúdo visão geral</div>} />
+            <Route path="/ajuda" element={<div>conteúdo da ajuda</div>} />
+          </Route>
+        </Routes>
+      </Providers>,
+    )
+    const help = screen.getByRole('button', { name: 'Ajuda' })
+    act(() => help.click())
+    expect(await screen.findByText('conteúdo da ajuda')).toBeInTheDocument()
+  })
+
   it('o card de usuário usa o e-mail como fallback quando o nome é vazio', () => {
     useAuthStore.setState({ user: { id: 'u2', name: '  ', email: 'sem-nome@ex.com' } })
     render(<Shell />)

@@ -291,6 +291,39 @@ por ser a única migração de reversão não-trivial (`ALTER TYPE ADD VALUE`).
   (`vite.config.ts`, `client.ts`) **sem commit**.
 - **G6 DEFERIDO:** `tasks.md §6` marcado; retomar só com OK explícito do dono.
 
+## Feature NOVA: `ajuda-screen` (tela de Ajuda — frontend-only, PUBLICADA em `main`)
+
+Pedido do dono: uma **seção de Ajuda** no app explicando, para o público real (operador
+de chão de fábrica + dono/gestor), como o RoboTrack funciona e como usar. 100% frontend,
+**sem banco, sem migração, reversível**. Descreve o app REAL no estado atual — nada
+inventado.
+
+- **Tela/rota:** `AjudaPage` em `/ajuda` (dentro do `AppShell`/`ProtectedRoute`). Acesso
+  pelo **"?" da topbar** (`IconButton` `help`, glifo novo no sprite — currentColor, sem
+  emoji): **ponto único**, sempre visível para operador e dono, sem duplicar o nome
+  acessível "Ajuda" (regra G). Índice navegável (âncoras) fixo no desktop / lista de
+  atalhos no mobile; TOC + seções da MESMA lista de dados.
+- **Cobre (com fatos verificados no código):** o que é o RoboTrack; hierarquia
+  Workspace→Projeto→Célula→Robô→Tarefa e o rollup de baixo pra cima + as duas métricas
+  nomeadas (chaves de `progress.ts`); papéis Dono/Editor/Visualizador (tabela); navegação
+  das telas; montar estrutura (Novo Projeto/Nova célula/Adicionar robôs, lote 1–50,
+  tarefas-base/Sincronizar); registrar avanço (modal, comentário obrigatório <100%,
+  status, cálculo); atribuir responsáveis; **convite por CÓDIGO** (`XXXX-XXXX`) + entrar
+  em outro workspace por código (chave de `invitations.ts` — sem literal; **link não é
+  mencionado**); notificações (sino + seguir/silenciar, mais-específico-vence, dono recebe
+  o ws); offline/PWA (cache de leitura + fila de escrita; login exige rede); excluir
+  (owner-only, swipe no mobile, confirmação); relatório A4.
+- **Suítes:** `AjudaPage.test.tsx` (índice↔âncoras, cobertura dos assuntos, matriz de
+  papéis) + `AppShell.test.tsx` (o "?" navega a `/ajuda`). `vitest` inteiro **verde** fora
+  do flaky pré-existente `queue.test.ts` D7-12 (passa isolado — confirmado). `tsc`/`lint`
+  limpos; sweeps convenção (regras F/G/H) + i18n (convite/progresso) + no-emoji + contraste
+  **verdes**. **Verificado no navegador** (build de prod na demo :5173): render desktop +
+  mobile 375px, âncoras, tabela de papéis, "?" na topbar, zero erro de console.
+- **Docs:** `DESIGN.md` atualizado (App-shell ganhou o "?"; nova subseção da tela + glifo
+  `help`). Build de prod recompilado (`npm run build`) para a demo servir a Ajuda — basta
+  refresh (abrir online 1× pega o build novo). Túneis (`vite.config.ts`, `client.ts`)
+  seguem **sem commit**.
+
 ## Campanha de deploy (par com o agente da WSL — 24/07/2026)
 
 Depois de fechar o domínio, o **primeiro deploy real** virou uma sessão de par: o

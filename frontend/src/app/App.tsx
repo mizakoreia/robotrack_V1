@@ -17,6 +17,7 @@ import { CellPage } from '@/app/pages/CellPage'
 import { RobotRouteKey } from '@/app/pages/RobotRouteKey'
 import { MyTasksPage } from '@/app/pages/MyTasksPage'
 import { ReportPage } from '@/app/pages/ReportPage'
+import { AjudaPage } from '@/app/pages/AjudaPage'
 import { DashboardPage } from '@/app/pages/DashboardPage'
 import { UsersPage } from '@/app/pages/UsersPage'
 import { ProfilePage } from '@/app/pages/ProfilePage'
@@ -57,6 +58,8 @@ function App() {
             <Route path="/robo/:id" element={<RobotRouteKey />} />
             <Route path="/minhas-tarefas" element={<MyTasksPage />} />
             <Route path="/relatorio" element={<ReportPage />} />
+            {/* ajuda-screen — tela de Ajuda; alcançável pelo "?" da topbar. */}
+            <Route path="/ajuda" element={<AjudaPage />} />
             <Route path="dashboard" element={<DashboardPage />} />
             <Route path="users" element={<UsersPage />} />
             <Route path="profile" element={<ProfilePage />} />
