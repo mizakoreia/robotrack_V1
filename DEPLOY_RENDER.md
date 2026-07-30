@@ -14,16 +14,22 @@ fim, o app fica no ar numa URL pública.
 
 | Serviço | O que é | Plano |
 |---|---|---|
-| `robotrack-backend` | API Rails (o cérebro) | free |
-| `robotrack-worker` | Sidekiq (tarefas em segundo plano) | free |
+| `robotrack-backend` | API Rails (o cérebro) **+ Sidekiq embutido** (tarefas em segundo plano) | free |
 | `robotrack-frontend` | Site React (a tela) | free (Static Site) |
 | `robotrack-db` | Postgres gerenciado | free |
-| `robotrack-kv-cache` / `-queue` / `-cable` | 3 Redis (Key Value) | free |
+| `robotrack-kv` | 1 Redis (Key Value), com 3 dbs lógicos (cache/fila/cable) | free |
 
-**Por que 3 Redis e 2 usuários de banco?** É exigência do próprio app (ele recusa
-subir com topologia insegura ou como dono do banco). Está explicado no final, em
-"Decisões técnicas". Você não precisa entender para seguir — só precisa nomear um
-usuário de banco exatamente `robotrack_app` no passo 4.
+> **Sem worker separado no free.** O plano gratuito do Render **não** oferece
+> Background Worker. Então o Sidekiq (tarefas em segundo plano) roda **dentro** do
+> `robotrack-backend`, no mesmo processo. Nada a configurar — o start do backend já
+> sobe os dois. Detalhes e o caminho para separá-los no plano pago estão no final.
+
+**Por que 1 Redis com 3 dbs e 2 usuários de banco?** É exigência do próprio app (ele
+recusa subir com topologia insegura ou como dono do banco). No free só se pode ter
+**uma** Key Value por workspace, então cache, fila e broadcast dividem a mesma
+instância em **bancos lógicos distintos** (o app deriva isso sozinho). Está explicado
+no final, em "Decisões técnicas". Você não precisa entender para seguir — só precisa
+nomear um usuário de banco exatamente `robotrack_app` no passo 4.
 
 ---
 
@@ -97,7 +103,7 @@ gera e liga sozinho.
 
 > Esses 5 campos aparecem porque estão num grupo compartilhado (`robotrack-shared`).
 > Se o painel os mostrar dentro do grupo em vez do serviço, edite-os lá — o efeito é
-> o mesmo (web e worker herdam).
+> o mesmo (o backend herda).
 
 ### 5b. No **`robotrack-frontend`** → Environment:
 
@@ -120,10 +126,11 @@ Salve nos dois serviços.
      roda as migrations (como o usuário dono/migrator) e reaplica os papéis. Só
      depois o Puma sobe como `robotrack_app`.
    - Acompanhe em **Logs** (aba **Logs** do `robotrack-backend`). Você verá as linhas
-     `[render-start] release: ...` e `[render-start] release concluído — subindo
-     Puma ...`; em seguida o serviço fica **Live** (bolinha verde). O
-     `robotrack-worker` sobe junto (pode reiniciar 1–2 vezes até o backend terminar o
-     release e conceder os grants — normal).
+     `[render-start] Redis por função derivado ...`, `[render-start] release: ...`,
+     `[render-start] subindo Sidekiq EMBUTIDO ...` e `[render-start] release
+     concluído — subindo Puma ...`; em seguida o serviço fica **Live** (bolinha
+     verde). O Sidekiq (tarefas em segundo plano) sobe **no mesmo processo** — não há
+     serviço de worker separado para acompanhar.
 2. **`robotrack-frontend`** → **Manual Deploy** → **Deploy latest commit** (para o
    site ser reconstruído já com `VITE_API_URL`/`VITE_WS_URL`).
 
@@ -146,8 +153,10 @@ Salve nos dois serviços.
    a outra deve refletir (é o WebSocket `/cable`).
 
 Se `/health/ready` responder erro, veja **Logs** do `robotrack-backend`:
-- "topologia de Redis insegura" → algum `REDIS_*_URL` ficou igual (não deveria, com
-  as 3 instâncias). Confira que as 3 Key Value existem.
+- "topologia de Redis insegura" → os dbs derivados ficaram iguais (não deveria: o
+  start deriva `/0`, `/1`, `/2`). Confira que a Key Value `robotrack-kv` existe e
+  está ligada ao backend (`REDIS_URL`), e que você **não** colou um `REDIS_*_URL`
+  manual no painel sobrescrevendo a derivação.
 - "papel corrente tem privilégio UPDATE sobre audit_logs" → o `DATABASE_URL` está
   apontando para o **dono** em vez do `robotrack_app`. Corrija o `DATABASE_URL`
   (passo 5a) e redeploy.
@@ -160,22 +169,44 @@ Se `/health/ready` responder erro, veja **Logs** do `robotrack-backend`:
 
 O free é ótimo para demonstrar, mas tem limites reais:
 
-- **O Postgres free EXPIRA.** O Render remove bancos de dados gratuitos depois de um
-  período (o painel mostra a **data de expiração** exata na página do `robotrack-db`).
-  Quando expira, **os dados somem**. Para algo que precisa durar, troque o banco para
-  um plano pago (a partir de poucos dólares/mês — o preço atual aparece no painel).
-- **Web/worker free HIBERNAM.** Depois de ~15 min sem acesso, o serviço "dorme". O
+- **O Postgres free EXPIRA.** O Render permite **um** Postgres free por workspace, com
+  **1 GB** e **expiração em ~30 dias** (14 dias de carência para migrar). O painel
+  mostra a **data de expiração** exata na página do `robotrack-db`. Quando expira,
+  **os dados somem**. Para algo que precisa durar, troque o banco para um plano pago
+  (a partir de poucos dólares/mês — o preço atual aparece no painel).
+- **O backend free HIBERNA.** Depois de ~15 min sem acesso, o serviço "dorme". O
   próximo acesso acorda o serviço e demora **~30–60s** (o "cold start"). Não é bug —
-  é o free. Para ficar **sempre ligado**, suba `robotrack-backend` (e idealmente o
-  `robotrack-worker`) para o plano **Starter** (poucos dólares/mês cada).
-- **Os Redis (Key Value) free NÃO persistem.** Se reiniciam, perdem o conteúdo. Para
-  a demo tudo bem (cache/fila/broadcast são recriados). Se for produção séria, vale
-  plano pago com persistência na fila.
-- **O Static Site (frontend) é grátis e não hiberna** — só o backend/worker dormem.
+  é o free. Para ficar **sempre ligado**, suba `robotrack-backend` para o plano
+  **Starter** (poucos dólares/mês).
+- **Tarefas agendadas podem não rodar enquanto o backend hiberna.** Como o Sidekiq
+  roda **dentro** do backend e o processo dorme quando ocioso, jobs *agendados por
+  tempo* (ex.: expurgo de convite expirado) podem **atrasar ou pular** enquanto
+  ninguém usa o app. **Não é crítico no beta:** as notificações são disparadas por
+  **ação do usuário** — e essa ação acorda o serviço, que então processa a fila.
+- **Só existe UMA Key Value free por workspace.** Por isso cache, fila e broadcast
+  dividem `robotrack-kv` em dbs lógicos distintos, com `noeviction` (a fila e o
+  broadcast nunca perdem dados; o cache degrada como "miss" sob pressão). Isso é
+  seguro para o beta. **Não persiste**: se reiniciar, perde o conteúdo (cache/fila/
+  broadcast são recriados). Produção séria: ver "Plano pago" abaixo.
+- **O Static Site (frontend) é grátis e não hiberna** — só o backend dorme.
 
-**Resumo do custo para "sempre ligado, dados que duram":** backend Starter + banco
-pago (e, se quiser, worker Starter). É a decisão de custo que depende de você — dá
-para começar tudo free e migrar só o que precisar depois, sem recriar nada.
+### Plano pago (quando o beta virar produção)
+
+Nada precisa ser recriado — é só subir de plano o que precisar:
+
+- **Sempre ligado + dados que duram:** `robotrack-backend` em **Starter** + Postgres
+  em plano pago.
+- **Worker Sidekiq dedicado** (tira a fila de dentro do web): reative o bloco
+  `robotrack-worker` (comentado em `render.yaml`) num plano pago **e** remova o start
+  do Sidekiq de `backend/bin/render-web-start` — senão os dois processariam a fila.
+- **Isolamento real de Redis** (cache evictável numa instância à parte de fila/
+  cable): crie Key Values pagas separadas e aponte `REDIS_CACHE_URL` /
+  `REDIS_QUEUE_URL` / `REDIS_CABLE_URL` a hosts distintos (aí não se usa mais a
+  derivação por db do start). O guard de topologia aceita tanto hosts distintos
+  quanto dbs distintos.
+
+É a decisão de custo que depende de você — dá para começar tudo free e migrar só o
+que precisar, incrementalmente.
 
 ---
 
@@ -223,9 +254,16 @@ Se quiser, me avise que eu preparo esse passo à parte.
   é sem-superusuário e sem-BYPASSRLS, e a RLS é **forçada** (vale até para o dono).
   O único ponto que o Render não automatiza é **criar/colar** o 2º usuário (passos 4–5)
   — daí o passo manual.
-- **Três Redis.** O app separa cache (pode descartar dados sob pressão) de fila e
-  broadcast (não podem). Um guard aborta o boot se dois compartilharem a mesma
-  instância. Três instâncias free resolvem sem truque.
+- **Redis separado por função (1 instância no free, 3 dbs).** O app separa cache
+  (pode descartar dados sob pressão) de fila e broadcast (não podem). Um guard aborta
+  o boot se dois resolverem para o mesmo `(host, porta, db)`. No free só há **uma**
+  Key Value por workspace, então o start (`bin/render-web-start`) deriva três URLs da
+  mesma instância em **dbs lógicos** distintos (`/0` cache, `/1` fila, `/2` cable) —
+  o guard passa. Escolhemos `noeviction` na instância para que fila e broadcast
+  **nunca** percam dados; o hazard que o guard persegue (um cache `allkeys-lru`
+  evictando jobs) fica neutralizado. O isolamento por **instância** separada existe
+  no plano pago (ver "Plano pago") — no free, dbs distintos são a alternativa mínima
+  que respeita o guard **sem afrouxar a segurança**.
 - **Frontend cross-origin.** A autenticação é por token (Bearer) e o tempo real usa
   ticket, então o site pode falar com o backend em outro domínio via CORS — sem
   precisar de proxy de WebSocket (que CDN de site estático não faz).

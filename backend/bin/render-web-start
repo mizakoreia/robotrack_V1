@@ -1,28 +1,54 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Fase de release NO START do backend web (o plano FREE do Render NÃO suporta
-# preDeployCommand — "pre-deploy command is not supported for free tier services").
-#
-# Faz o mesmo que o antigo preDeployCommand, só que na inicialização do serviço:
+# Start do backend web no PLANO FREE do Render. Concentra três coisas que o free
+# não deixa fazer em serviços separados: o release (sem preDeployCommand), a
+# separação de Redis por função (só 1 Key Value permitida) e o Sidekiq (sem
+# Background Worker). Ordem:
+#  0. Deriva REDIS_CACHE_URL (/0), REDIS_QUEUE_URL (/1) e REDIS_CABLE_URL (/2) da
+#     ÚNICA Key Value (REDIS_URL). Dbs distintos satisfazem o guard de topologia
+#     (redis_topology.rb chaveia por host,porta,db) sem 3 instâncias. Precisa vir
+#     ANTES do release: bin/release também boota o Rails e dispara o guard.
 #  1. Migra COMO O MIGRATOR: DATABASE_URL é sobrescrito APENAS para o bin/release,
 #     apontando ao usuário DONO do banco (MIGRATION_DATABASE_URL). Migrations e
 #     objetos novos nascem com o dono/migrator.
 #  2. Reconcilia papéis/REVOKE do robotrack_app (roles.sql) conectado também como
 #     o migrator — concede DML e re-aplica os REVOKE append-only.
-#  3. SÓ ENTÃO `exec` o Puma, que herda o DATABASE_URL do env (o runtime
+#  3. Sobe o SIDEKIQ EMBUTIDO em background (free não tem Background Worker). Herda
+#     o mesmo env: Redis por função (derivado no passo 0) e DATABASE_URL do runtime
+#     (robotrack_app). Enfileiramento e processamento acontecem no mesmo container.
+#  4. SÓ ENTÃO `exec` o Puma, que herda o DATABASE_URL do env (o runtime
 #     robotrack_app, NÃO-dono, sem BYPASSRLS). Como migrar e servir usam conexões
 #     DISTINTAS, o AuditLog::ImmutabilityGuard NÃO aborta o boot.
 #
 # `exec` faz o Puma virar PID do processo (recebe os sinais do Render diretamente).
+# O Sidekiq é filho: num SIGTERM de shutdown o Render encerra o container; jobs em
+# voo são retentados (at-least-once via Redis). Aceitável para o beta.
+#
+# LIMITE DO FREE: 1 processo que HIBERNA após ~15 min ocioso. Jobs agendados/cron
+# (ex.: expurgo de convite expirado) podem NÃO rodar de forma confiável enquanto
+# hiberna — não é crítico no beta: as notificações são disparadas por AÇÃO do
+# usuário, que acorda o serviço e processa a fila. Ver DEPLOY_RENDER.md.
 #
 # Idempotente por design: db:migrate é idempotente e roles.sql também (GRANT/REVOKE
 # re-aplicáveis). No free é 1 instância; rodar o release a cada boot/cold-start é
 # seguro — só custa alguns segundos a mais no primeiro request após hibernar.
 
+# 0. Redis por função a partir da única Key Value do free (db /0, /1, /2).
+base="${REDIS_URL:?REDIS_URL ausente (ligue a Key Value robotrack-kv ao serviço)}"
+base="${base%/}"                 # tira barra final, se houver
+base="${base%/[0-9]*}"           # tira um sufixo /<db> pré-existente (defensivo)
+export REDIS_CACHE_URL="${base}/0"
+export REDIS_QUEUE_URL="${base}/1"
+export REDIS_CABLE_URL="${base}/2"
+echo "[render-start] Redis por função derivado da Key Value única (cache=/0, queue=/1, cable=/2)"
+
 echo "[render-start] release: migrate como MIGRATOR + roles/REVOKE do robotrack_app"
 DATABASE_URL="$MIGRATION_DATABASE_URL" bin/release
 psql "$MIGRATION_DATABASE_URL" -v ON_ERROR_STOP=1 -f config/deploy/render/roles.sql
+
+echo "[render-start] subindo Sidekiq EMBUTIDO em background (free não tem worker)"
+bundle exec sidekiq -C config/sidekiq.yml &
 
 echo "[render-start] release concluído — subindo Puma como robotrack_app"
 exec bundle exec puma -C config/puma.rb

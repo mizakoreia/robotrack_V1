@@ -1,16 +1,29 @@
 # RoboTrack — Blueprint do Render (Infra as Code).
 #
-# Sobe a stack inteira: backend Rails (API-only), worker Sidekiq, Postgres
-# gerenciado, 3 instâncias Key Value (Redis/Valkey) e o frontend React como Static
-# Site. O passo a passo para o dono está em DEPLOY_RENDER.md (leia-o antes).
+# Sobe a stack inteira no PLANO FREE do Render: backend Rails (API-only) com o
+# Sidekiq EMBUTIDO no mesmo processo, Postgres gerenciado, UMA instância Key Value
+# (Redis/Valkey) multiplexada por db lógico, e o frontend React como Static Site.
+# O passo a passo para o dono está em DEPLOY_RENDER.md (leia-o antes).
+#
+# Restrições do plano FREE que moldam este arquivo (Render docs, conferidas):
+#  - Background Worker, Cron Job e Private Service NÃO existem no free. Por isso o
+#    Sidekiq roda DENTRO do web service (ver bin/render-web-start), não num worker.
+#  - Só UMA instância Key Value free e UM Postgres free por workspace. Por isso há 1
+#    Key Value (não 3) e a separação cache/fila/cable é por DB LÓGICO (/0, /1, /2).
+#  - Sem preDeployCommand no free → o release roda no START (bin/render-web-start).
+#  - Sem disco persistente, sem numInstances/autoscaling no free → nenhum é usado.
 #
 # Decisões de topologia (justificadas em DEPLOY_RENDER.md):
 #  - Modelo de 2 papéis de banco: o usuário PRIMÁRIO do Render é o DONO/migrator; o
 #    runtime conecta como `robotrack_app` (2º usuário, criado no painel, NÃO-dono).
 #    O app RECUSA subir como dono (guard de imutabilidade), então isso é obrigatório.
 #    RLS forçada vale para os dois (usuário do Render é NOSUPERUSER/NOBYPASSRLS).
-#  - 3 Key Value: o guard de topologia aborta o boot se cache/fila/cable dividirem
-#    (host,porta,db). 3 instâncias = 3 hosts distintos, resolvido sem colar URLs.
+#  - 1 Key Value + 3 dbs: o guard de topologia aborta o boot se cache/fila/cable
+#    resolverem para o MESMO (host,porta,db). Dbs distintos (/0,/1,/2) na mesma
+#    instância satisfazem o guard; bin/render-web-start deriva as 3 URLs do
+#    REDIS_URL. maxmemoryPolicy=noeviction protege fila/cable (o hazard que o guard
+#    persegue — cache allkeys-lru evictando jobs — fica neutralizado). O isolamento
+#    POR INSTÂNCIA (3 Key Value separadas) só existe no plano pago — ver DEPLOY_RENDER.md.
 #  - Frontend Static Site cross-origin (VITE_API_URL/VITE_WS_URL apontam ao backend):
 #    auth é JWT Bearer e o cable usa ticket, então CORS cobre o cross-origin sem
 #    precisar de proxy de WebSocket (que CDN/Static Site não fazem).
@@ -19,9 +32,10 @@
 # NÃO precisam ser digitados. Os `sync: false` são os que o dono cola no painel —
 # ver a tabela em DEPLOY_RENDER.md. NENHUM segredo real vive neste arquivo.
 
-# ── Segredos/URLs compartilhados entre web e worker ──────────────────────────
-# Definidos UMA vez aqui para que web e worker recebam O MESMO valor (se cada um
-# usasse generateValue, gerariam segredos DIFERENTES e o PEPPER/HMAC divergiria).
+# ── Segredos/URLs compartilhados ─────────────────────────────────────────────
+# Definidos UMA vez num grupo para não repetir. Como o Sidekiq roda dentro do web
+# service, há um único consumidor — mas o grupo mantém os segredos gerados
+# (generateValue) coesos e fáceis de referenciar num só lugar.
 envVarGroups:
   - name: robotrack-shared
     envVars:
@@ -63,25 +77,20 @@ databases:
     ipAllowList: []   # só rede interna do Render (sem acesso externo)
 
 services:
-  # ── Redis / Key Value: 3 instâncias (cache evictável; fila e cable NÃO) ──────
+  # ── Redis / Key Value: 1 instância (free = 1 por workspace), 3 dbs lógicos ───
+  # O free do Render permite só UMA Key Value por workspace, então cache/fila/cable
+  # dividem esta instância por DB lógico (/0, /1, /2) — bin/render-web-start deriva
+  # as 3 URLs do REDIS_URL abaixo, e o guard de topologia passa (dbs distintos).
+  # maxmemoryPolicy=noeviction: fila (Sidekiq) e cable NUNCA podem perder dados. O
+  # cache convive na mesma instância; sob pressão o RedisCacheStore degrada como
+  # "miss" (ele já rescueia erros de Redis), então noeviction é a escolha segura.
+  # Isolamento por instância separada (cache evictável à parte) = plano pago.
   - type: keyvalue
-    name: robotrack-kv-cache
-    plan: free
-    region: oregon
-    maxmemoryPolicy: allkeys-lru
-    ipAllowList: []
-  - type: keyvalue
-    name: robotrack-kv-queue
-    plan: free
-    region: oregon
-    maxmemoryPolicy: noeviction
-    ipAllowList: []
-  - type: keyvalue
-    name: robotrack-kv-cable
+    name: robotrack-kv
     plan: free
     region: oregon
     maxmemoryPolicy: noeviction
-    ipAllowList: []
+    ipAllowList: []   # só rede interna do Render (sem acesso externo)
 
   # ── Backend Rails (Web Service, API-only) ────────────────────────────────────
   - type: web
@@ -94,68 +103,42 @@ services:
     healthCheckPath: /health/ready
     # Fase de release NO START (o plano FREE do Render NÃO suporta preDeployCommand).
     # bin/render-web-start migra COMO O MIGRATOR (DATABASE_URL sobrescrito só para o
-    # bin/release), reconcilia papéis/REVOKE do robotrack_app e SÓ ENTÃO `exec`a o
-    # Puma — que sobe como robotrack_app (NÃO-dono). Migrar e servir usam conexões
-    # distintas, então o guard de imutabilidade não aborta. Idempotente a cada boot.
+    # bin/release), reconcilia papéis/REVOKE do robotrack_app, sobe o SIDEKIQ EMBUTIDO
+    # (free não tem Background Worker) e SÓ ENTÃO `exec`a o Puma — que sobe como
+    # robotrack_app (NÃO-dono). Migrar e servir usam conexões distintas, então o guard
+    # de imutabilidade não aborta. Idempotente a cada boot.
     dockerCommand: bin/render-web-start
     envVars:
       - fromGroup: robotrack-shared
-      - key: REDIS_URL          # base/fallback do env_schema
-        fromService:
-          type: keyvalue
-          name: robotrack-kv-cache
-          property: connectionString
-      - key: REDIS_CACHE_URL
-        fromService:
-          type: keyvalue
-          name: robotrack-kv-cache
-          property: connectionString
-      - key: REDIS_QUEUE_URL
-        fromService:
-          type: keyvalue
-          name: robotrack-kv-queue
-          property: connectionString
-      - key: REDIS_CABLE_URL
-        fromService:
-          type: keyvalue
-          name: robotrack-kv-cable
-          property: connectionString
-
-  # ── Worker Sidekiq (Background Worker, mesma imagem) ─────────────────────────
-  # NÃO roda release: as migrations/roles rodam no START do backend web
-  # (bin/render-web-start). O worker pode reiniciar algumas vezes no 1º deploy até
-  # o release do web conceder os grants ao robotrack_app — o Render o reinicia
-  # sozinho até subir. Free = sem preDeployCommand em nenhum serviço.
-  - type: worker
-    name: robotrack-worker
-    runtime: docker
-    dockerfilePath: ./Dockerfile.backend
-    dockerContext: .
-    dockerCommand: bundle exec sidekiq -C config/sidekiq.yml
-    plan: free
-    region: oregon
-    envVars:
-      - fromGroup: robotrack-shared
+      # ÚNICA Key Value do free. bin/render-web-start deriva REDIS_CACHE_URL (/0),
+      # REDIS_QUEUE_URL (/1) e REDIS_CABLE_URL (/2) desta base antes do boot — dbs
+      # distintos satisfazem o guard de topologia. NÃO ligue REDIS_*_URL aqui: o
+      # connectionString não tem sufixo de db e ligá-los daria (host,porta,db) igual.
       - key: REDIS_URL
         fromService:
           type: keyvalue
-          name: robotrack-kv-cache
+          name: robotrack-kv
           property: connectionString
-      - key: REDIS_CACHE_URL
-        fromService:
-          type: keyvalue
-          name: robotrack-kv-cache
-          property: connectionString
-      - key: REDIS_QUEUE_URL
-        fromService:
-          type: keyvalue
-          name: robotrack-kv-queue
-          property: connectionString
-      - key: REDIS_CABLE_URL
-        fromService:
-          type: keyvalue
-          name: robotrack-kv-cable
-          property: connectionString
+
+  # ── Worker Sidekiq — DESATIVADO NO FREE ──────────────────────────────────────
+  # O plano FREE do Render não oferece Background Worker ("service type is not
+  # available for this plan"). O Sidekiq roda EMBUTIDO no web service acima (ver
+  # bin/render-web-start). Para separar num worker dedicado (plano PAGO), reative o
+  # bloco abaixo E remova o start do Sidekiq de bin/render-web-start — senão os dois
+  # processariam a mesma fila. Ver DEPLOY_RENDER.md (§ "Plano pago").
+  #
+  # - type: worker
+  #   name: robotrack-worker
+  #   runtime: docker
+  #   dockerfilePath: ./Dockerfile.backend
+  #   dockerContext: .
+  #   dockerCommand: bundle exec sidekiq -C config/sidekiq.yml
+  #   plan: starter            # worker não existe no free
+  #   region: oregon
+  #   envVars:
+  #     - fromGroup: robotrack-shared
+  #     - key: REDIS_URL       # no pago, aponte cada função a uma Key Value própria
+  #       fromService: { type: keyvalue, name: robotrack-kv, property: connectionString }
 
   # ── Frontend React (Static Site, CDN) ────────────────────────────────────────
   - type: web
