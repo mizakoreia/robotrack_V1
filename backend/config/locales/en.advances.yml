@@ -1,0 +1,13 @@
+# progress-advances (D14) — en strings for the advance record, centralised.
+# The 422 message for the `comment` field comes from here, not from the raw
+# Postgres message.
+en:
+  activerecord:
+    errors:
+      models:
+        task_advance:
+          attributes:
+            comment:
+              required_below_100: "is required when the logged progress is below 100%"
+            by:
+              required_unless_legacy: "may only be null on a legacy entry (previous note)"

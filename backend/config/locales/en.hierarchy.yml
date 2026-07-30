@@ -1,0 +1,12 @@
+en:
+  hierarchy:
+    search:
+      # hierarchy-screens 3.2 (§3.7, D14) — the search path labels, assembled ON
+      # THE SERVER with a versioned format string. The cell-orphan robot
+      # (defensive: the FK prevents it in practice) falls back to the short
+      # label, never "Robot · in  · ".
+      path:
+        project: "Project"
+        cell: "Cell · in %{project}"
+        robot: "Robot · in %{cell} · %{project}"
+        robot_orphan: "Robot"

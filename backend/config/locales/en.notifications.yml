@@ -1,0 +1,10 @@
+# in-app-notifications 2.1 (§2.7 / D14). Block v1 — the three EXACT format
+# strings. `%{n}%%` renders "45%" (the %% becomes a literal %, with no space
+# before it). Moving any of these strings to a .rb breaks CI (grep-guard of 2.3).
+en:
+  notifications:
+    v1:
+      assign: '%{author} assigned you to the task "%{task}" (robot %{robot})'
+      assign_observer: '%{author} assigned %{assignee} to the task "%{task}" (robot %{robot})'
+      progress: '%{author} logged %{n}%% on the task "%{task}" (robot %{robot}): %{comment}'
+      done: 'Task "%{task}" (robot %{robot}) was completed by %{author}'

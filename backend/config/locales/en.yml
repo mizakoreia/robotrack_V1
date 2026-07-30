@@ -1,0 +1,11 @@
+en:
+  hello: "Hello"
+  activerecord:
+    errors:
+      messages:
+        record_invalid: "Invalid record: %{errors}"
+  errors:
+    messages:
+      blank: "can't be blank"
+      invalid: "is invalid"
+      taken: "has already been taken"

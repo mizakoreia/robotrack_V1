@@ -1,0 +1,11 @@
+# progress-rollup 6.1 (D15/D14) — the labels of the TWO progress metrics, as
+# versioned format strings. Single source in the backend; no label literal lives
+# outside here (the progress_label_lint_spec lint fails otherwise). The mirror in
+# the frontend is frontend/src/lib/i18n/progress.ts.
+en:
+  progress:
+    metrics:
+      weighted:
+        label: "Weighted progress"
+      raw_count:
+        label: "Task completion"

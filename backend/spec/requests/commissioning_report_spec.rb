@@ -60,6 +60,27 @@ RSpec.describe 'Protocolo de Comissionamento — GET /api/v1/commissioning_repor
       expect(body['metadata']['counts']).to eq('projects' => 1, 'cells' => 1, 'robots' => 1, 'tasks' => 2)
     end
 
+    # internationalization G5 — o Protocolo é resolvido no locale do LEITOR (header
+    # X-Locale). O documento assinado em papel não muda; a re-emissão digital honra o
+    # idioma corrente. O valor de dado (`Solda Ponto`) NÃO é traduzido pelo servidor —
+    # é exibição do cliente (dataLabels, G4); o servidor traduz só os RÓTULOS fixos.
+    it 'X-Locale: en → cabeçalho e rótulos do documento saem em inglês' do
+      owner_person
+      seed_project(tasks: 1)
+      get '/api/v1/commissioning_report?scope=all', headers: headers.merge('X-Locale' => 'en')
+      expect(response).to have_http_status(:ok)
+      body = JSON.parse(response.body)
+      expect(body['header']['title']).to eq('COMMISSIONING PROTOCOL')
+      expect(body['status_distribution'].map { |d| d['label'] }).to include('Completed', 'Pending')
+    end
+
+    it 'sem X-Locale → default pt-BR (não regride)' do
+      owner_person
+      seed_project(tasks: 1)
+      get '/api/v1/commissioning_report?scope=all', headers: headers
+      expect(JSON.parse(response.body)['header']['title']).to eq('PROTOCOLO DE COMISSIONAMENTO')
+    end
+
     it 'scope=project conta apenas o escopo emitido' do
       owner_person
       alvo = seed_project(name: 'Linha B', tasks: 3, pos: 0)

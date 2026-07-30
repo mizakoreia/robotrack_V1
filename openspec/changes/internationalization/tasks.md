@@ -99,19 +99,26 @@ pt-BR + en de uma vez, então G3 já entrega os dois idiomas nas superfícies mi
   `tsc` limpo. O relatório (dado no documento) fica para o G5, que resolve o locale do
   leitor no servidor. Prova visual real no deploy do Render.
 
-## 5. Backend en.*.yml + resolução de locale (G5) 🟢 — **depende do glossário**
+## 5. Backend en.*.yml + resolução de locale (G5) 🟢 — FECHADO
 
-- [ ] 5.1 Criar `config/locales/en.*.yml` espelhando os 10 `pt-BR.*.yml` (incl.
-  `report.v1.*`, `notifications.v1.*`, `audit.*.vN`). (Prova: um sweep de paridade de
-  chaves pt-BR↔en verde; nenhum `missing_translation` sob `:en`.)
-- [ ] 5.2 Resolução de locale por requisição (`around_action`/middleware +
-  `I18n.with_locale`) a partir da conta e, subsidiariamente, `Accept-Language`.
-  (Prova: requisição de conta en renderiza texto server-side em en.)
-- [ ] 5.3 `CommissioningReportService#t` resolve `report.v1.*` no locale do leitor na
-  geração (timezone permanece independente do idioma). (Prova: Protocolo emitido por
-  leitor en sai com rótulos em en; `document_id`/horário inalterados.)
-- [ ] 5.4 Verificação do grupo: specs de request cobrindo pt-BR e en; sweep de literal
-  do relatório estendido a en.
+- [x] 5.1 Criados os 10 `config/locales/en.*.yml` espelhando os `pt-BR.*.yml` (incl.
+  `report.v1.*`, `notifications.v1.*`, `audit.*.v1`), com paridade de chaves e de
+  interpolação (`%{...}`/`%%`) verificada. Glossário: report `Concluído`→**Completed**,
+  título→"COMMISSIONING PROTOCOL", `raw_count`→"Task completion", papéis Owner/Can edit/
+  Can view. (Prova: boot em test carrega `:en`; renderização en confirmada.)
+- [x] 5.2 `app/middleware/locale_middleware.rb` — resolve o locale por requisição
+  (`X-Locale` do seletor → `Accept-Language` → default pt-BR) e embrulha em
+  `I18n.with_locale` (restaura ao sair). Registrado em `config/application.rb`; fallback
+  `en → pt-BR`. Frontend: `lib/api/client.ts` envia `X-Locale` = `rt-lang` em toda
+  requisição. (Prova: `spec/middleware/locale_middleware_spec.rb` 6/6 — prioridade,
+  fallback, não-vazamento entre requisições.)
+- [x] 5.3 `CommissioningReportService#t` (já usava `I18n.t` sem locale) passa a resolver
+  `report.v1.*` no locale da requisição; `document_id`/timezone independem do idioma.
+  (Prova: `commissioning_report_spec` — `X-Locale: en` → título "COMMISSIONING PROTOCOL"
+  e distribuição "Completed/Pending"; sem header → pt-BR, não regride.)
+- [x] 5.4 Verificação do grupo: middleware + report **17/17**; specs sensíveis a i18n
+  (audit/format-guard, notificações, erros, autorização) **130/130** (2 pending
+  pré-existentes de superuser). pt-BR.*.yml intactos; nenhuma versão `vN` sobrescrita.
 
 ## 6. Preferência na conta + congelamento server-side (G6) 🟡 — MIGRAÇÃO (a única)
 

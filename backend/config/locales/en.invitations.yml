@@ -1,0 +1,41 @@
+# workspace-invitations 6.4 / D14 — en messages for invitation, team and
+# revocation.
+#
+# The API responds with stable CODES (`invitation_expired`, `already_member`, …),
+# not phrases: the client decides the text, and the code is the contract —
+# changing the phrase must not break anyone. This file is the pair of the single
+# frontend module (`src/lib/i18n/invitations.ts`): each code has its official
+# wording here, for e-mail, operational logs, support and any server surface that
+# may render text (reports, future mailers).
+#
+# No literal of these messages should exist scattered through the code — that is
+# why CI checks with grep.
+en:
+  invitations:
+    errors:
+      invitation_not_found: "Invitation not found. Check the link or request a new one."
+      invitation_already_used: "This invitation has already been used."
+      invitation_expired: "This invitation has expired. Ask the workspace administrator for a new one."
+      invitation_workspace_mismatch: "This invitation does not belong to the given workspace."
+      invitation_email_mismatch: "This invitation is for a different e-mail. Sign in with the invited account to accept it."
+      invitation_already_pending: "There is already a pending invitation for this e-mail. Revoke the previous one to create another."
+      unexpected_parameter: "Parameter not allowed in this request."
+      invalid_role: "Invalid role. An invitation only grants view or edit."
+      invalid_email: "Enter a valid e-mail of up to 254 characters."
+      already_member: "This person is already part of the workspace."
+      person_email_conflict: "The invitation e-mail is already linked to another account in this workspace."
+      forbidden: "Only the workspace owner can invite, change roles or remove members."
+    memberships:
+      errors:
+        membership_not_found: "Member not found in this workspace."
+        owner_is_immutable: "The workspace owner does not change role."
+        cannot_remove_owner: "The owner cannot be removed: a workspace with no owner is unrecoverable."
+        workspace_access_revoked: "Your access to this workspace was removed by the owner."
+    roles:
+      view: "Can view"
+      edit: "Can edit"
+      owner: "Owner"
+    status:
+      pending: "Pending"
+      expired: "Expired"
+      used: "Used"

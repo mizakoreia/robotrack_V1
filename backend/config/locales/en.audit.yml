@@ -1,0 +1,14 @@
+# audit-log 3.2 (D14/Decision 5) — the audit-log texts as VERSIONED format
+# strings. Hard rule: a published version (`vN`) is NEVER edited — changing the
+# text creates `vN+1` and increments `AuditLog::FORMAT_VERSIONS`. The rendered
+# text is FROZEN into the row at INSERT (Decision 4); editing here does not
+# rewrite history (and the guard spec compares against the frozen snapshot). The
+# `%%` is a literal `%` (I18n reserves `%{...}` for interpolation).
+en:
+  audit:
+    task_completed:
+      v1: 'In [%{robot}], %{assignees} completed the task "%{task}" at 100%%.'
+    workspace_reset:
+      v1: '%{by_name} ran the workspace factory reset. Projects removed: %{projects_count}.'
+    legacy_rollback:
+      v1: 'Legacy import rollback (run %{run_id}) reverted: %{projects_count} project(s) archived.'

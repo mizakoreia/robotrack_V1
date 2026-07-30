@@ -2,6 +2,9 @@
 
 require_relative 'boot'
 require 'rails/all'
+# internationalization G5 — o middleware de locale é referenciado no boot (antes do
+# autoload do Zeitwerk), então carregado explicitamente aqui.
+require_relative '../app/middleware/locale_middleware'
 
 Bundler.require(*Rails.groups)
 
@@ -14,7 +17,14 @@ module Robotrack
     config.time_zone = 'Brasilia'
     config.i18n.default_locale = :'pt-BR'
     config.i18n.available_locales = %i[pt-BR en]
-    config.i18n.fallbacks = { 'pt-BR' => [:en] }
+    # internationalization G5 — en cai em pt-BR se faltar chave (os arquivos en são
+    # completos, mas o fallback é a rede de segurança em produção); pt-BR segue como o
+    # default canônico.
+    config.i18n.fallbacks = { en: [:'pt-BR'], 'pt-BR' => %i[pt-BR] }
+
+    # internationalization G5 — resolve o locale da requisição (X-Locale → Accept-Language
+    # → pt-BR) e embrulha a ação em I18n.with_locale.
+    config.middleware.use LocaleMiddleware
 
     # Enable cookies and sessions (required by OmniAuth)
     config.middleware.use ActionDispatch::Cookies

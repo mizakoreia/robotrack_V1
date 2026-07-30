@@ -1,0 +1,10 @@
+# authorization-policies 2.4 (D14). The BODY of denials uses the single key
+# `error` (D3.12) and does not include these strings — they exist for the UI
+# (app-shell-navigation) to show English messages from the error code, and for
+# logs/reports. None mentions a required role, policy or action.
+en:
+  authorization:
+    unauthorized: "Session missing or expired. Please sign in again."
+    forbidden: "You do not have permission for this action in this workspace."
+    not_found: "Resource not found."
+    internal_error: "Internal server error."

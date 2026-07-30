@@ -3,6 +3,7 @@ import { useWorkspaceStore } from '../../store/workspaceStore'
 import { useAuthStore } from '../../store/authStore'
 import { useRealtimeStore } from '../../store/realtimeStore'
 import { queryClient } from '../queryClient'
+import { getLang } from '../i18n/lang'
 
 export const API_URL = import.meta.env.VITE_API_URL || (() => {
   try {
@@ -74,6 +75,10 @@ class ApiClient {
           // em 60 em vez de piscar). Não é fronteira de segurança — é anti-flicker.
           config.headers['X-RoboTrack-Origin'] = useRealtimeStore.getState().originId
         }
+        // internationalization G5 — o idioma escolhido (rt-lang) viaja em X-Locale em
+        // TODA requisição (inclusive as públicas): o middleware do servidor resolve o
+        // locale da renderização síncrona (Protocolo, corpos de erro, busca).
+        config.headers['X-Locale'] = getLang()
         return config
       },
       (error) => Promise.reject(error),
