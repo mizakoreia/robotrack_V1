@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { newId } from '../../lib/ids'
 import { Button } from '@/components/ui/Button'
+import { applicationLabel } from '@/lib/i18n/dataLabels'
 import { useRobotApplications } from '../catalog/useTaskTemplates'
 import { useBatchCreateRobots, clampQuantity } from './useBatchRobots'
 
@@ -93,7 +94,7 @@ export function BatchRobotWizard({ cellId, onDone }: { cellId: string; onDone?: 
           >
             {appList.map((app) => (
               <option key={app} value={app}>
-                {app}
+                {applicationLabel(app)}
               </option>
             ))}
           </select>

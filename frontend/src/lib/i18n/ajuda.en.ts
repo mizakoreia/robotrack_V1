@@ -202,7 +202,7 @@ export const ajudaTextEn: AjudaText = {
             ' at 0%, ',
             { b: 'In Progress' },
             ' between 1% and 99% and ',
-            { b: 'Complete' },
+            { b: 'Done' },
             ' at 100%. Changing the status also goes through the same progress window.',
           ],
         },

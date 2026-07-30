@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button'
 import { Icon } from '@/components/icons/Icon'
 import { useMyTasks, useMyTasksLive, isPersonMissing, type MyTaskRowDTO } from '@/features/my-tasks/useMyTasks'
 import { myTasksText } from '@/lib/i18n/myTasks'
+import { statusLabel, baseTaskLabel } from '@/lib/i18n/dataLabels'
 import { useMediaQuery } from '@/lib/useMediaQuery'
 
 // my-tasks-view 6.x (§3.6, D-MTV-8/9) — a lista pessoal do viewer. LEITURA PURA:
@@ -100,14 +101,14 @@ function TaskRow({ row }: { row: MyTaskRowDTO }) {
       <td className="px-4 py-3">
         <a
           href={taskHref(row)}
-          aria-label={myTasksText.openTaskAria(row.description, row.robot_name)}
+          aria-label={myTasksText.openTaskAria(baseTaskLabel(row.description), row.robot_name)}
           className="flex min-h-[40px] items-center font-medium text-text-main hover:underline"
         >
-          {row.description}
+          {baseTaskLabel(row.description)}
         </a>
       </td>
       <td className="px-4 py-3">
-        <Badge status={STATUS_COLOR[row.status]}>{row.status}</Badge>
+        <Badge status={STATUS_COLOR[row.status]}>{statusLabel(row.status)}</Badge>
       </td>
       <td className="px-4 py-3 tabular-nums">{row.progress}%</td>
       <td className="px-4 py-3 text-text-muted">{row.robot_name}</td>

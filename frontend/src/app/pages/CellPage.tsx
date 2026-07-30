@@ -17,6 +17,7 @@ import { useWorkspaceStore } from '@/store/workspaceStore'
 import { qk } from '@/lib/query/keys'
 import { hierarchyText } from '@/lib/i18n/hierarchy'
 import { pagesText } from '@/lib/i18n/pages'
+import { applicationLabel } from '@/lib/i18n/dataLabels'
 import { NotificationPreferenceControl } from '@/features/notifications/NotificationPreferenceControl'
 
 // hierarchy-screens 5.3/5.4/5.5 (§3.4) — a tela de Célula: hub da célula + grade de
@@ -97,7 +98,7 @@ export function CellPage() {
                 icon="file"
                 onClick={() => navigate(`/robo/${robot.id}`)}
                 // badge = APLICAÇÃO (não a contagem de tarefas), §3.4
-                badge={<Badge status="accent">{robot.application}</Badge>}
+                badge={<Badge status="accent">{applicationLabel(robot.application)}</Badge>}
                 ring={<ProgressRing value={robot.weighted_progress.value} metric="weighted" size={56} />}
                 onSwipeDelete={isOwner ? () => setRemoving(robot) : undefined}
                 footer={

@@ -10,6 +10,7 @@ import {
   type TaskTemplateDTO,
 } from '@/features/catalog/useTaskTemplates'
 import { settingsText as T } from '@/lib/i18n/settings'
+import { categoryLabel, baseTaskLabel, applicationLabel } from '@/lib/i18n/dataLabels'
 
 // workspace-settings 3.2–3.5 (§3.9, §1.3, D-CATALOG-FILTER) — a tela do catálogo de
 // tarefas-base (o CRUD é de task-catalog; aqui a TELA). Tabela agrupada por categoria
@@ -73,8 +74,8 @@ export function CatalogPanel({ canWrite }: { canWrite: boolean }) {
             {grouped.map(([category, rows]) =>
               rows.map((tpl, i) => (
                 <tr key={tpl.id} className="border-t align-top">
-                  <td className="px-2 py-1 text-text-muted">{i === 0 ? category : ''}</td>
-                  <td className="px-2 py-1 text-text-main">{tpl.desc}</td>
+                  <td className="px-2 py-1 text-text-muted">{i === 0 ? categoryLabel(category) : ''}</td>
+                  <td className="px-2 py-1 text-text-main">{baseTaskLabel(tpl.desc)}</td>
                   <td className="px-2 py-1">
                     {canWrite && editId === tpl.id ? (
                       <FilterEditor
@@ -90,7 +91,7 @@ export function CatalogPanel({ canWrite }: { canWrite: boolean }) {
                         aria-label={canWrite ? T.edit : undefined}
                         className="text-left text-text-muted enabled:hover:text-text-main"
                       >
-                        {tpl.appFilters.length === 0 ? T.filterAll : tpl.appFilters.join(', ')}
+                        {tpl.appFilters.length === 0 ? T.filterAll : tpl.appFilters.map(applicationLabel).join(', ')}
                       </button>
                     )}
                   </td>
@@ -104,7 +105,7 @@ export function CatalogPanel({ canWrite }: { canWrite: boolean }) {
                           <button type="button" onClick={() => setConfirmId(null)} className="text-text-muted">{T.deleteNo}</button>
                         </span>
                       ) : (
-                        <button type="button" onClick={() => setConfirmId(tpl.id)} aria-label={`${T.remove} ${tpl.desc}`} className="text-text-muted hover:text-danger-ink">
+                        <button type="button" onClick={() => setConfirmId(tpl.id)} aria-label={`${T.remove} ${baseTaskLabel(tpl.desc)}`} className="text-text-muted hover:text-danger-ink">
                           <Icon name="trash" className="h-4 w-4" />
                         </button>
                       )}
@@ -147,7 +148,7 @@ export function FilterEditor({ apps, value, onChange }: { apps: string[]; value:
         const checked = app === MISTO ? mistoChecked : value.includes(app)
         return (
           <label key={app} className="flex items-center gap-1.5 text-sm text-text-main">
-            <input type="checkbox" checked={checked} onChange={() => toggle(app)} aria-label={app} />
+            <input type="checkbox" checked={checked} onChange={() => toggle(app)} aria-label={applicationLabel(app)} />
             {app === MISTO ? T.filterAll : app}
           </label>
         )

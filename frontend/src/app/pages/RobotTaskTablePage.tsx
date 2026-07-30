@@ -22,6 +22,7 @@ import { useWorkspaceStore } from '@/store/workspaceStore'
 import { robotTaskText } from '@/lib/i18n/robotTasks'
 import { pagesText } from '@/lib/i18n/pages'
 import { metricLabel } from '@/lib/i18n/progress'
+import { applicationLabel, categoryLabel, baseTaskLabel } from '@/lib/i18n/dataLabels'
 import { NotificationPreferenceControl } from '@/features/notifications/NotificationPreferenceControl'
 
 // robot-task-table 1.4/1.5 (§3.5) — a casca da tela operacional do robô: cabeçalho,
@@ -104,7 +105,7 @@ export function RobotTaskTablePage() {
           <h1 id="robot-title" className="title truncate">
             {robotName}
           </h1>
-          {header.data && <Badge status="accent">{header.data.application}</Badge>}
+          {header.data && <Badge status="accent">{applicationLabel(header.data.application)}</Badge>}
         </div>
         {header.data && (
           <div className="flex items-center gap-2">
@@ -367,7 +368,7 @@ function CategoryToggle({
         className={'shrink-0 transition-transform ' + (collapsed ? '-rotate-90' : '')}
       />
       <span className="tabular text-text-main">{letter}.</span>
-      <span className="min-w-0 truncate">{cat}</span>
+      <span className="min-w-0 truncate">{categoryLabel(cat)}</span>
       <span className="label-sm tabular shrink-0 text-text-muted">({count})</span>
     </button>
   )
@@ -393,12 +394,12 @@ const TaskRow = memo(function TaskRow({ robotId, task, canEdit, isOwner, selecta
             type="checkbox"
             className="h-5 w-5 accent-accent"
             checked={selected}
-            aria-label={robotTaskText.selectAria(task.desc)}
+            aria-label={robotTaskText.selectAria(baseTaskLabel(task.desc))}
             onChange={() => onSelect?.(task.id)}
           />
         </td>
       )}
-      <td className="px-4 py-3">{task.desc}</td>
+      <td className="px-4 py-3">{baseTaskLabel(task.desc)}</td>
       <td className="px-4 py-3 align-middle">
         <StatusCell robotId={robotId} task={task} />
       </td>
@@ -438,11 +439,11 @@ const MobileTaskCard = memo(function MobileTaskCard({ robotId, task, canEdit, is
               type="checkbox"
               className="mt-0.5 h-5 w-5 shrink-0 accent-accent"
               checked={selected}
-              aria-label={robotTaskText.selectAria(task.desc)}
+              aria-label={robotTaskText.selectAria(baseTaskLabel(task.desc))}
               onChange={() => onSelect?.(task.id)}
             />
           )}
-          <h3 className="min-w-0 font-medium">{task.desc}</h3>
+          <h3 className="min-w-0 font-medium">{baseTaskLabel(task.desc)}</h3>
         </div>
         {canEdit && <AcoesCell robotId={robotId} task={task} canDelete={isOwner} />}
       </div>

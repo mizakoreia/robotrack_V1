@@ -4,6 +4,7 @@ import { Badge, type BadgeStatus } from '@/components/ui/Badge'
 import { AdvanceModal } from '@/features/advances/AdvanceModal'
 import { deriveStatusTarget, type TaskStatus } from '@/features/advances/statusTarget'
 import { useWorkspaceStore } from '@/store/workspaceStore'
+import { statusLabel, baseTaskLabel } from '@/lib/i18n/dataLabels'
 import type { TaskDTO } from '@/lib/api/endpoints'
 
 // robot-task-table 2.1 (§3.5, §2.2) — a célula de Status: o StatusSelect do
@@ -24,9 +25,11 @@ export const STATUS_COLOR: Record<TaskStatus, BadgeStatus> = {
   'N/A': 'na',
 }
 
-const STATUS_OPTIONS: StatusOption[] = (
-  ['Pendente', 'Em Andamento', 'Concluído', 'N/A'] as TaskStatus[]
-).map((s) => ({ value: s, label: s }))
+// internationalization G4/D-I4 — o VALUE continua o valor pt-BR do enum (é o que vai
+// ao servidor); só o LABEL é traduzido na exibição. Construído no render (o remount por
+// idioma re-executa) — um const de módulo congelaria em pt-BR.
+const STATUS_VALUES: TaskStatus[] = ['Pendente', 'Em Andamento', 'Concluído', 'N/A']
+const statusOptions = (): StatusOption[] => STATUS_VALUES.map((s) => ({ value: s, label: statusLabel(s) }))
 
 export function StatusCell({ robotId, task }: { robotId: string; task: TaskDTO }) {
   const role = useWorkspaceStore((s) => s.currentRoleLabel)
@@ -35,7 +38,7 @@ export function StatusCell({ robotId, task }: { robotId: string; task: TaskDTO }
   const wrapRef = useRef<HTMLSpanElement>(null)
 
   if (!canEdit) {
-    return <Badge status={STATUS_COLOR[task.status]}>{task.status}</Badge>
+    return <Badge status={STATUS_COLOR[task.status]}>{statusLabel(task.status)}</Badge>
   }
 
   function close() {
@@ -48,8 +51,8 @@ export function StatusCell({ robotId, task }: { robotId: string; task: TaskDTO }
       <StatusSelect
         value={task.status}
         status={STATUS_COLOR[task.status]}
-        options={STATUS_OPTIONS}
-        aria-label={`Status de ${task.desc}`}
+        options={statusOptions()}
+        aria-label={`Status de ${baseTaskLabel(task.desc)}`}
         onChange={(next) => {
           if (next !== task.status) setPending(next as TaskStatus)
         }}

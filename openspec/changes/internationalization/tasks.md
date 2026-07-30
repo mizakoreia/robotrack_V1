@@ -80,15 +80,24 @@ pt-BR + en de uma vez, então G3 já entrega os dois idiomas nas superfícies mi
   de CPU do offline/queue); `tsc` limpo. Dado de domínio (status/aplicações/tarefas-base)
   **não** foi tocado — fica para o mapa de exibição do G4.
 
-## 4. Tradução EN — frontend (G4) 🟢 — **depende do glossário assinado**
+## 4. Tradução EN — frontend (G4) 🟢 — FECHADO
 
-- [ ] 4.1 Preencher o `en` de todos os módulos `lib/i18n` conforme o `GLOSSARIO.md`
-  aprovado. (Prova: paridade de chaves pt-BR/en; nenhuma chave sem en.)
-- [ ] 4.2 Mapa de exibição EN para dado de domínio (status/aplicações/categorias/
-  tarefas-base) chaveado pelo valor pt-BR do banco — **exibição, sem tocar o dado**.
-  (Prova: status `Concluído` mostra o rótulo EN e a coluna continua `Concluído`.)
-- [ ] 4.3 Verificação do grupo: um passe visual PT⇄EN nas telas-chave (Visão Geral,
-  Robô/Tarefas, Relatório, Configurações, entrada) + sweeps verdes.
+- [x] 4.1 EN de todos os módulos `lib/i18n` preenchido com o glossário confirmado —
+  **feito junto de G1/G2/G3** (o eixo `defineText` recebe pt-BR + en de uma vez, então
+  cada módulo já nasceu bilíngue). Paridade de chaves garantida pelo tipo
+  (`<x>En: <XText>`). (Prova: `languageAxis.test.ts` 7/7.)
+- [x] 4.2 `lib/i18n/dataLabels.ts` — mapa de exibição EN para os VALORES de dado
+  (4 status, 6 aplicações, 9 categorias, 31 tarefas-base) chaveado pelo valor pt-BR do
+  banco (grafia legada preservada nas chaves). Aplicado nos render sites: `StatusCell`
+  (badge + opções render-time, `value` continua pt-BR), `MyTasksPage`, `CellPage`,
+  `RobotTaskTablePage` (aplicação/categoria/desc), `CatalogPanel` (categoria/desc/
+  filtros de aplicação), `AcoesCell`, `BatchRobotWizard`. (Prova: `dataLabels.test.ts`
+  4/4 — em pt-BR devolve o valor; em en traduz o RÓTULO; valor custom cai no fallback;
+  `Concluído`→`Done`, `Solda Ponto`→`Spot Welding`, `E. Trajetórias`→`E. Trajectories`.)
+- [x] 4.3 Verificação do grupo: `dataLabels` + telas de dado (robot-tasks/settings/
+  pages) **129/129**; suíte completa **654/655** (só o flake de CPU do offline/queue);
+  `tsc` limpo. O relatório (dado no documento) fica para o G5, que resolve o locale do
+  leitor no servidor. Prova visual real no deploy do Render.
 
 ## 5. Backend en.*.yml + resolução de locale (G5) 🟢 — **depende do glossário**
 

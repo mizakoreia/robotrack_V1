@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { useUpdateTaskDesc, useDeleteTask } from './useTaskCrud'
 import { robotTaskText } from '@/lib/i18n/robotTasks'
+import { baseTaskLabel } from '@/lib/i18n/dataLabels'
 import type { TaskDTO } from '@/lib/api/endpoints'
 
 // robot-task-table 4.3 (§3.5, §4.1) — a coluna Ações: editar a descrição e excluir
@@ -106,7 +107,7 @@ export function AcoesCell({ robotId, task, canDelete }: { robotId: string; task:
           </>
         }
       >
-        <p className="text-text-muted">{robotTaskText.deleteConfirm(task.desc)}</p>
+        <p className="text-text-muted">{robotTaskText.deleteConfirm(baseTaskLabel(task.desc))}</p>
       </Modal>
     </div>
   )
