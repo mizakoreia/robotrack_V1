@@ -113,12 +113,24 @@ Salve nos dois serviços.
 ## 6. Subir de verdade (redeploy)
 
 1. **`robotrack-backend`** → **Manual Deploy** → **Deploy latest commit**.
-   - Agora o release migra o banco e concede os acessos ao `robotrack_app`.
-   - Acompanhe em **Logs**. No fim você deve ver o release concluir e o serviço
-     ficar **Live** (bolinha verde). O `robotrack-worker` sobe junto (pode reiniciar
-     1–2 vezes até o backend terminar o release — normal).
+   - **Não há passo de "pre-deploy".** No plano free o Render não permite pre-deploy,
+     então o release (migrar o banco + conceder os acessos ao `robotrack_app`)
+     acontece **no início do próprio serviço**, toda vez que o backend sobe.
+   - Por isso o **primeiro boot demora um pouco mais**: antes do app atender, ele
+     roda as migrations (como o usuário dono/migrator) e reaplica os papéis. Só
+     depois o Puma sobe como `robotrack_app`.
+   - Acompanhe em **Logs** (aba **Logs** do `robotrack-backend`). Você verá as linhas
+     `[render-start] release: ...` e `[render-start] release concluído — subindo
+     Puma ...`; em seguida o serviço fica **Live** (bolinha verde). O
+     `robotrack-worker` sobe junto (pode reiniciar 1–2 vezes até o backend terminar o
+     release e conceder os grants — normal).
 2. **`robotrack-frontend`** → **Manual Deploy** → **Deploy latest commit** (para o
    site ser reconstruído já com `VITE_API_URL`/`VITE_WS_URL`).
+
+> **Nota (cold start no free):** como o release roda no start, cada vez que o backend
+> acorda de hibernar ele repete migrate + papéis. É **idempotente** (migrate e os
+> GRANT/REVOKE podem rodar de novo sem efeito colateral), só adiciona alguns segundos
+> ao primeiro request após dormir. No free é 1 instância, então não há corrida.
 
 ---
 

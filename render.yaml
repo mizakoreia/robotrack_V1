@@ -92,10 +92,12 @@ services:
     plan: free
     region: oregon
     healthCheckPath: /health/ready
-    # Fase de release: migra COMO O MIGRATOR (DATABASE_URL sobrescrito só neste
-    # comando) e reconcilia os papéis/REVOKE do robotrack_app. Roda antes do web
-    # e do worker atenderem tráfego.
-    preDeployCommand: 'DATABASE_URL="$MIGRATION_DATABASE_URL" bin/release && psql "$MIGRATION_DATABASE_URL" -v ON_ERROR_STOP=1 -f config/deploy/render/roles.sql'
+    # Fase de release NO START (o plano FREE do Render NÃO suporta preDeployCommand).
+    # bin/render-web-start migra COMO O MIGRATOR (DATABASE_URL sobrescrito só para o
+    # bin/release), reconcilia papéis/REVOKE do robotrack_app e SÓ ENTÃO `exec`a o
+    # Puma — que sobe como robotrack_app (NÃO-dono). Migrar e servir usam conexões
+    # distintas, então o guard de imutabilidade não aborta. Idempotente a cada boot.
+    dockerCommand: bin/render-web-start
     envVars:
       - fromGroup: robotrack-shared
       - key: REDIS_URL          # base/fallback do env_schema
@@ -120,9 +122,10 @@ services:
           property: connectionString
 
   # ── Worker Sidekiq (Background Worker, mesma imagem) ─────────────────────────
-  # Sem preDeployCommand: as migrations rodam UMA vez, no release do backend. O
-  # worker pode reiniciar algumas vezes no 1º deploy até o release conceder os
-  # grants ao robotrack_app — o Render o reinicia sozinho até subir.
+  # NÃO roda release: as migrations/roles rodam no START do backend web
+  # (bin/render-web-start). O worker pode reiniciar algumas vezes no 1º deploy até
+  # o release do web conceder os grants ao robotrack_app — o Render o reinicia
+  # sozinho até subir. Free = sem preDeployCommand em nenhum serviço.
   - type: worker
     name: robotrack-worker
     runtime: docker

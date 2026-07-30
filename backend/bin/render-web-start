@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Fase de release NO START do backend web (o plano FREE do Render NÃO suporta
+# preDeployCommand — "pre-deploy command is not supported for free tier services").
+#
+# Faz o mesmo que o antigo preDeployCommand, só que na inicialização do serviço:
+#  1. Migra COMO O MIGRATOR: DATABASE_URL é sobrescrito APENAS para o bin/release,
+#     apontando ao usuário DONO do banco (MIGRATION_DATABASE_URL). Migrations e
+#     objetos novos nascem com o dono/migrator.
+#  2. Reconcilia papéis/REVOKE do robotrack_app (roles.sql) conectado também como
+#     o migrator — concede DML e re-aplica os REVOKE append-only.
+#  3. SÓ ENTÃO `exec` o Puma, que herda o DATABASE_URL do env (o runtime
+#     robotrack_app, NÃO-dono, sem BYPASSRLS). Como migrar e servir usam conexões
+#     DISTINTAS, o AuditLog::ImmutabilityGuard NÃO aborta o boot.
+#
+# `exec` faz o Puma virar PID do processo (recebe os sinais do Render diretamente).
+#
+# Idempotente por design: db:migrate é idempotente e roles.sql também (GRANT/REVOKE
+# re-aplicáveis). No free é 1 instância; rodar o release a cada boot/cold-start é
+# seguro — só custa alguns segundos a mais no primeiro request após hibernar.
+
+echo "[render-start] release: migrate como MIGRATOR + roles/REVOKE do robotrack_app"
+DATABASE_URL="$MIGRATION_DATABASE_URL" bin/release
+psql "$MIGRATION_DATABASE_URL" -v ON_ERROR_STOP=1 -f config/deploy/render/roles.sql
+
+echo "[render-start] release concluído — subindo Puma como robotrack_app"
+exec bundle exec puma -C config/puma.rb

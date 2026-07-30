@@ -1,9 +1,10 @@
 -- Reconciliação de papéis para o Postgres GERENCIADO do Render.
 --
--- Roda no `preDeployCommand` do render.yaml, DEPOIS do `bin/release` (migrate),
--- conectado como o usuário PRIMÁRIO do Render — que é o DONO do banco e das
--- tabelas, ou seja, faz o papel do `robotrack_migrator` — via
--- MIGRATION_DATABASE_URL.
+-- Roda no START do backend web (`bin/render-web-start`), DEPOIS do `bin/release`
+-- (migrate) — o plano free do Render não suporta preDeployCommand, então o release
+-- foldou na inicialização do serviço. Conecta como o usuário PRIMÁRIO do Render —
+-- que é o DONO do banco e das tabelas, ou seja, faz o papel do `robotrack_migrator`
+-- — via MIGRATION_DATABASE_URL.
 --
 -- NÃO cria papel nem define senha: o papel de runtime `robotrack_app` é criado
 -- pelo dono no painel do Render (Database → Access Control) com esse nome EXATO
