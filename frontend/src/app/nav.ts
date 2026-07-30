@@ -4,8 +4,12 @@ import type { IconName } from '@/components/icons/sprite'
 // três destinos. Constante FECHADA: nenhum item de configuração entra aqui (mora
 // no rodapé). `matches` mantém "Visão Geral" ativo em toda a subárvore da
 // hierarquia (`/projeto/8f2a/celula/1c9b`), não só na raiz exata.
+// internationalization G3 — o RÓTULO agora vem de `lib/i18n/shell.ts` por `key`,
+// resolvido no RENDER (o AppShell lê `shellText.nav[key]`); um `label` fixo aqui
+// congelaria em pt-BR no load do módulo. `label` fica só como fallback estático.
 export interface NavDestination {
   to: string
+  key: 'overview' | 'myTasks' | 'report'
   label: string
   icon: IconName
   matches: (pathname: string) => boolean
@@ -14,18 +18,21 @@ export interface NavDestination {
 export const NAV_DESTINATIONS: readonly NavDestination[] = [
   {
     to: '/',
+    key: 'overview',
     label: 'Visão Geral',
     icon: 'home',
     matches: (p) => p === '/' || p.startsWith('/projeto') || p.startsWith('/celula') || p.startsWith('/robo'),
   },
   {
     to: '/minhas-tarefas',
+    key: 'myTasks',
     label: 'Minhas Tarefas',
     icon: 'list',
     matches: (p) => p.startsWith('/minhas-tarefas'),
   },
   {
     to: '/relatorio',
+    key: 'report',
     label: 'Relatório',
     icon: 'file',
     matches: (p) => p.startsWith('/relatorio'),

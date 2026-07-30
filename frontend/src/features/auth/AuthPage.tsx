@@ -9,6 +9,7 @@ import { oauthState } from '../../lib/auth/oauthState'
 import { inviteStore } from '../../lib/auth/invite'
 import { formatInviteCode, isCompleteInviteCode, normalizeInviteCode } from '../../lib/auth/code'
 import { inviteText } from '../../lib/i18n/invitations'
+import { authText } from '../../lib/i18n/auth'
 import { LanguageSelect } from '../../components/LanguageSelect'
 
 type Mode = 'login' | 'signup'
@@ -47,7 +48,7 @@ export function AuthPage() {
     ev.preventDefault()
     const alvoEmail = codeEmail.trim() || email.trim()
     if (!EMAIL_RE.test(alvoEmail)) {
-      setCodeError('Informe o e-mail do convite.')
+      setCodeError(authText.codeEmailRequired)
       return
     }
     if (!isCompleteInviteCode(codeInput)) {
@@ -90,9 +91,9 @@ export function AuthPage() {
 
   function validate(): FieldErrors {
     const e: FieldErrors = {}
-    if (isSignup && name.trim().length < 2) e.name = 'Informe seu nome (mínimo 2 caracteres).'
-    if (!EMAIL_RE.test(email)) e.email = 'Informe um e-mail válido.'
-    if (password.length < MIN_PASSWORD) e.password = `A senha precisa ter ao menos ${MIN_PASSWORD} caracteres.`
+    if (isSignup && name.trim().length < 2) e.name = authText.nameTooShort
+    if (!EMAIL_RE.test(email)) e.email = authText.emailInvalid
+    if (password.length < MIN_PASSWORD) e.password = authText.passwordTooShort(MIN_PASSWORD)
     return e
   }
 
@@ -103,12 +104,12 @@ export function AuthPage() {
     if (status === 401) {
       // Credenciais inválidas: limpa APENAS a senha, mantém o e-mail.
       setPassword('')
-      setErrors({ password: 'E-mail ou senha inválidos.' })
+      setErrors({ password: authText.invalidCredentials })
       return
     }
     if (status === 409) {
       // E-mail já cadastrado: mensagem no campo de e-mail, senha preservada.
-      setErrors({ email: 'Este e-mail já está cadastrado.' })
+      setErrors({ email: authText.emailTaken })
       return
     }
     if (status === 422 && body?.errors) {
@@ -116,10 +117,10 @@ export function AuthPage() {
       if (body.errors.name) fe.name = String([].concat(body.errors.name)[0])
       if (body.errors.email) fe.email = String([].concat(body.errors.email)[0])
       if (body.errors.password) fe.password = String([].concat(body.errors.password)[0])
-      setErrors(Object.keys(fe).length ? fe : { form: 'Não foi possível concluir. Verifique os dados.' })
+      setErrors(Object.keys(fe).length ? fe : { form: authText.checkData })
       return
     }
-    setErrors({ form: 'Algo deu errado. Tente novamente.' })
+    setErrors({ form: authText.genericError })
   }
 
   async function onSubmit(ev: React.FormEvent) {
@@ -145,7 +146,7 @@ export function AuthPage() {
         return useAuthStore.getState().memoryOnly
       })
       if (timedOut || useAuthStore.getState().memoryOnly) {
-        toast.warning('Sua sessão não vai persistir neste navegador.')
+        toast.warning(authText.sessionWontPersist)
       }
 
       await handleInviteAfterAuth()
@@ -164,14 +165,14 @@ export function AuthPage() {
       <div className="absolute right-4 top-4">
         <LanguageSelect />
       </div>
-      <form onSubmit={onSubmit} noValidate className="w-full max-w-sm space-y-4" aria-label={isSignup ? 'Cadastro' : 'Login'}>
+      <form onSubmit={onSubmit} noValidate className="w-full max-w-sm space-y-4" aria-label={isSignup ? authText.ariaSignup : authText.ariaLogin}>
         <h1 className="text-2xl font-semibold text-center">
-          {isSignup ? 'Criar conta' : 'Entrar'}
+          {isSignup ? authText.createAccount : authText.signIn}
         </h1>
 
         {isSignup && (
           <div>
-            <label htmlFor="name" className="block text-sm font-medium">Nome</label>
+            <label htmlFor="name" className="block text-sm font-medium">{authText.nameLabel}</label>
             <input
               id="name"
               ref={nameRef}
@@ -188,7 +189,7 @@ export function AuthPage() {
         )}
 
         <div>
-          <label htmlFor="email" className="block text-sm font-medium">E-mail</label>
+          <label htmlFor="email" className="block text-sm font-medium">{authText.emailLabel}</label>
           <input
             id="email"
             type="email"
@@ -202,7 +203,7 @@ export function AuthPage() {
         </div>
 
         <div>
-          <label htmlFor="password" className="block text-sm font-medium">Senha</label>
+          <label htmlFor="password" className="block text-sm font-medium">{authText.passwordLabel}</label>
           <input
             id="password"
             type="password"
@@ -217,13 +218,13 @@ export function AuthPage() {
 
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
-          Manter conectado
+          {authText.rememberMe}
         </label>
 
         {errors.form && <p role="alert" className="text-sm text-danger-ink">{errors.form}</p>}
 
         <button type="submit" disabled={loading} className="w-full rounded bg-accent-solid px-3 py-2 text-white transition hover:brightness-110 disabled:opacity-60">
-          {loading ? 'Enviando…' : isSignup ? 'Criar conta' : 'Entrar'}
+          {loading ? authText.sending : isSignup ? authText.createAccount : authText.signIn}
         </button>
 
         <a
@@ -231,17 +232,17 @@ export function AuthPage() {
           onClick={() => oauthState.setRemember(remember)}
           className="block w-full rounded border px-3 py-2 text-center"
         >
-          Entrar com Google
+          {authText.signInWithGoogle}
         </a>
 
         <p className="text-center text-sm">
           {isSignup ? (
             <button type="button" onClick={() => switchMode('login')} className="underline">
-              Já tenho conta — Entrar
+              {authText.haveAccountSignIn}
             </button>
           ) : (
             <button type="button" onClick={() => switchMode('signup')} className="underline">
-              Criar conta
+              {authText.createAccount}
             </button>
           )}
         </p>

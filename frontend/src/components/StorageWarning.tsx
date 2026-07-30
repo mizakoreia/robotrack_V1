@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { probeStorageLevel, safeStorage, type StorageLevel } from '@/lib/safeStorage'
+import { pagesText } from '@/lib/i18n/pages'
 
 // Aviso de armazenamento bloqueado (offline-pwa 1.3 / D7-11). Persistente e
 // dispensável-POR-SESSÃO: aparece em `session-only` e `memory-only`, some quando
@@ -16,12 +17,10 @@ import { probeStorageLevel, safeStorage, type StorageLevel } from '@/lib/safeSto
 
 const DISMISS_KEY = 'robotrack.storage_warning_dismissed'
 
-const BASE = 'Seu navegador está bloqueando o armazenamento. Você pode usar o RoboTrack normalmente, mas a sessão não vai persistir ao fechar'
-const MEMORY_SUFFIX = ', e alterações feitas sem conexão não serão salvas'
-
 function messageFor(level: StorageLevel): string | null {
   if (level === 'persistent') return null
-  return level === 'memory-only' ? `${BASE}${MEMORY_SUFFIX}.` : `${BASE}.`
+  const base = pagesText.storage.baseMessage
+  return level === 'memory-only' ? `${base}${pagesText.storage.memorySuffix}.` : `${base}.`
 }
 
 export function StorageWarning() {
@@ -47,10 +46,10 @@ export function StorageWarning() {
       <button
         type="button"
         onClick={dismiss}
-        aria-label="Dispensar aviso"
+        aria-label={pagesText.storage.dismissAria}
         className="flex min-h-[2rem] shrink-0 items-center rounded px-2 text-text-muted hover:text-text-main"
       >
-        Dispensar
+        {pagesText.storage.dismiss}
       </button>
     </div>
   )

@@ -20,6 +20,7 @@ import { useMediaQuery } from '@/lib/useMediaQuery'
 import { AdvanceControls } from '@/features/advances/AdvanceControls'
 import { useWorkspaceStore } from '@/store/workspaceStore'
 import { robotTaskText } from '@/lib/i18n/robotTasks'
+import { pagesText } from '@/lib/i18n/pages'
 import { metricLabel } from '@/lib/i18n/progress'
 import { NotificationPreferenceControl } from '@/features/notifications/NotificationPreferenceControl'
 
@@ -29,12 +30,15 @@ import { NotificationPreferenceControl } from '@/features/notifications/Notifica
 // compõe o StatusSelect→modal; a de Progresso COMPÕE `<AdvanceControls>` de
 // progress-advances (D-RTT-5 — `persisted` da query, `draft` local, ± do persistido).
 // Responsáveis/Trilha/Ações continuam leitura até os grupos 3–4. A rota é montada
-// com `key={robotId}` em App.tsx.
-const FILTERS: { key: TaskFilter; label: string }[] = [
-  { key: 'all', label: 'Todos' },
-  { key: 'pending', label: 'Pendentes' },
-  { key: 'done', label: 'Concluídos' },
-]
+// com `key={robotId}` em App.tsx. Os rótulos das abas são CHROME (não os valores de
+// status do banco) — resolvidos por `pagesText` no render (o remount por idioma relê).
+function filterOptions(): { key: TaskFilter; label: string }[] {
+  return [
+    { key: 'all', label: pagesText.robotTask.filterAll },
+    { key: 'pending', label: pagesText.robotTask.filterPending },
+    { key: 'done', label: pagesText.robotTask.filterDone },
+  ]
+}
 
 // robot-task-grouping G3 — a seleção múltipla existe só para o dono (`null` para os
 // demais → sem checkboxes nem barra de ação). O servidor é a garantia (403).
@@ -89,11 +93,11 @@ export function RobotTaskTablePage() {
   if (isError || !tasks) return <TableError onRetry={() => void refetch()} />
 
   const visible = applyFilter(tasks, filter)
-  const robotName = header.data?.name ?? 'Robô'
+  const robotName = header.data?.name ?? pagesText.robotTask.robotFallback
 
   return (
     <section aria-labelledby="robot-title" className="mx-auto max-w-6xl space-y-6">
-      <BackLink label="Voltar à célula" onClick={() => navigate(header.data ? `/celula/${header.data.cell_id}` : '/')} />
+      <BackLink label={pagesText.robotTask.backToCell} onClick={() => navigate(header.data ? `/celula/${header.data.cell_id}` : '/')} />
 
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
@@ -125,8 +129,8 @@ export function RobotTaskTablePage() {
       {/* filtro + ações do cabeçalho. As ações (Adicionar/Sincronizar) só existem
           para owner/edit (4.4, D-RTT-9) — `view` não vê alvo desabilitado. */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div role="tablist" aria-label="Filtro de tarefas" className="surface-panel inline-flex gap-1 rounded-lg border p-1">
-          {FILTERS.map((f) => (
+        <div role="tablist" aria-label={pagesText.robotTask.filterLabel} className="surface-panel inline-flex gap-1 rounded-lg border p-1">
+          {filterOptions().map((f) => (
             <button
               key={f.key}
               role="tab"
@@ -278,13 +282,13 @@ function TaskTable({ robotId, tasks, canEdit, isOwner, sel }: { robotId: string;
       <table className="w-full border-collapse text-left">
         <thead>
           <tr className="label-sm text-text-muted">
-            {sel && <th className="w-10 px-4 py-2 font-medium"><span className="sr-only">Selecionar</span></th>}
-            <th className="px-4 py-2 font-medium">Tarefa</th>
-            <th className="px-4 py-2 font-medium">Status</th>
-            <th className="px-4 py-2 font-medium">Progresso</th>
-            <th className="px-4 py-2 font-medium">Responsáveis</th>
-            <th className="px-4 py-2 font-medium">Trilha</th>
-            {canEdit && <th className="px-4 py-2 font-medium">Ações</th>}
+            {sel && <th className="w-10 px-4 py-2 font-medium"><span className="sr-only">{pagesText.robotTask.select}</span></th>}
+            <th className="px-4 py-2 font-medium">{pagesText.robotTask.colTask}</th>
+            <th className="px-4 py-2 font-medium">{pagesText.robotTask.colStatus}</th>
+            <th className="px-4 py-2 font-medium">{pagesText.robotTask.colProgress}</th>
+            <th className="px-4 py-2 font-medium">{pagesText.robotTask.colAssignees}</th>
+            <th className="px-4 py-2 font-medium">{pagesText.robotTask.colTrail}</th>
+            {canEdit && <th className="px-4 py-2 font-medium">{pagesText.robotTask.colActions}</th>}
           </tr>
         </thead>
         {groups.map((g, i) => {
@@ -443,16 +447,16 @@ const MobileTaskCard = memo(function MobileTaskCard({ robotId, task, canEdit, is
         {canEdit && <AcoesCell robotId={robotId} task={task} canDelete={isOwner} />}
       </div>
       <dl className="space-y-2">
-        <CardRow label="Status">
+        <CardRow label={pagesText.robotTask.colStatus}>
           <StatusCell robotId={robotId} task={task} />
         </CardRow>
-        <CardRow label="Progresso">
+        <CardRow label={pagesText.robotTask.colProgress}>
           <AdvanceControls robotId={robotId} taskId={task.id} />
         </CardRow>
-        <CardRow label="Responsáveis">
+        <CardRow label={pagesText.robotTask.colAssignees}>
           <ResponsaveisCell robotId={robotId} task={task} />
         </CardRow>
-        <CardRow label="Trilha">
+        <CardRow label={pagesText.robotTask.colTrail}>
           <TrilhaCell robotId={robotId} task={task} />
         </CardRow>
       </dl>
@@ -472,10 +476,8 @@ function CardRow({ label, children }: { label: string; children: React.ReactNode
 function TableEmpty({ robotName }: { robotName: string }) {
   return (
     <div className="surface-panel flex flex-col items-center rounded-lg border p-10 text-center">
-      <h2 className="panel-header mb-2">Nenhuma tarefa em {robotName}</h2>
-      <p className="max-w-md text-text-muted">
-        Adicione tarefas ou sincronize as tarefas-base para começar o comissionamento deste robô.
-      </p>
+      <h2 className="panel-header mb-2">{pagesText.robotTask.emptyTitle(robotName)}</h2>
+      <p className="max-w-md text-text-muted">{pagesText.robotTask.emptyBody}</p>
     </div>
   )
 }
@@ -484,9 +486,9 @@ function TableError({ onRetry }: { onRetry: () => void }) {
   return (
     <div className="surface-panel mx-auto mt-6 flex max-w-md flex-col items-center rounded-lg border p-10 text-center">
       <Icon name="alert" size="md" className="mb-2 text-danger-ink" />
-      <p className="mb-4 text-text-muted">Não foi possível carregar as tarefas do robô.</p>
+      <p className="mb-4 text-text-muted">{pagesText.robotTask.errorBody}</p>
       <Button variant="outline" onClick={onRetry}>
-        Tentar novamente
+        {pagesText.common.retry}
       </Button>
     </div>
   )
@@ -494,7 +496,7 @@ function TableError({ onRetry }: { onRetry: () => void }) {
 
 function TableSkeleton() {
   return (
-    <section className="mx-auto max-w-6xl space-y-6" aria-busy="true" aria-label="Carregando">
+    <section className="mx-auto max-w-6xl space-y-6" aria-busy="true" aria-label={pagesText.common.loading}>
       <div className="surface-panel h-8 w-48 animate-pulse rounded-lg border" />
       <div className="surface-panel h-64 animate-pulse rounded-lg border" />
     </section>

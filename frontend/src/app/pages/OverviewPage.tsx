@@ -22,6 +22,7 @@ import { SearchResults } from '@/features/hierarchy/SearchResults'
 import { useWorkspaceStore } from '@/store/workspaceStore'
 import { qk } from '@/lib/query/keys'
 import { hierarchyText } from '@/lib/i18n/hierarchy'
+import { pagesText } from '@/lib/i18n/pages'
 
 // hierarchy-screens 4.1–4.6 (§3.2, D-A, D-G, D-H) — a tela Visão Geral. As DUAS
 // métricas na mesma dobra: o hub usa a CONTAGEM CRUA (§3.2, "de progresso físico
@@ -49,7 +50,7 @@ export function OverviewPage() {
           posição inconsistente entre níveis). Só aparece com projetos carregados. */}
       <div className="flex items-center justify-between gap-4">
         <h1 id="ov-title" className="title">
-          Visão Geral
+          {pagesText.overview.title}
         </h1>
         {canCreate && !isSearching && !isLoading && data && data.projects.length > 0 && (
           <Button onClick={() => setCreating(true)}>
@@ -73,7 +74,7 @@ export function OverviewPage() {
         <>
           <OverviewHub counts={data.counts} raw={data.raw_completion} />
           {/* legenda única da grade (D-B): o anel não repete rótulo por card */}
-          <p className="label-sm text-text-muted">Anéis: progresso ponderado por peso de tarefa</p>
+          <p className="label-sm text-text-muted">{pagesText.common.ringsLegend}</p>
           <div className="grid grid-cols-1 items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {data.projects.map((p) => (
               <ProjectCard
@@ -104,7 +105,7 @@ function OverviewHub({
   const t = hierarchyText.overview.hub
   const pct = Math.max(0, Math.min(100, Math.round(raw.percent)))
   return (
-    <section aria-label="Resumo do workspace" className="surface-panel rounded-lg border p-4">
+    <section aria-label={pagesText.overview.summaryLabel} className="surface-panel rounded-lg border p-4">
       <div className="grid grid-cols-3 gap-4">
         <Stat label={t.activeProjects} value={String(counts.active_projects)} />
         <Stat label={t.analyzedRobots} value={String(counts.analyzed_robots)} />
@@ -162,7 +163,7 @@ function ProjectCard({
         <div className="flex w-full items-center justify-between">
           <span className="label-sm text-text-muted">{t.cardFooterMacro}</span>
           {canDelete && (
-            <IconButton icon="trash" label={`Excluir ${project.name}`} size="sm" onClick={onDelete} />
+            <IconButton icon="trash" label={pagesText.common.deleteAria(project.name)} size="sm" onClick={onDelete} />
           )}
         </div>
       }
@@ -181,10 +182,10 @@ function DeleteProjectDialog({ project, onClose }: { project: OverviewProjectCar
       <p className="mb-4 text-text-muted">{t.body(project.name)}</p>
       <div className="flex justify-end gap-2">
         <Button variant="ghost" onClick={onClose}>
-          Cancelar
+          {pagesText.common.cancel}
         </Button>
         <Button variant="destructive" disabled={remove.isPending} onClick={() => remove.mutate(project.id, { onSuccess: onClose })}>
-          Excluir
+          {pagesText.common.delete}
         </Button>
       </div>
     </Modal>
@@ -222,7 +223,7 @@ function OverviewError({ onRetry }: { onRetry: () => void }) {
 
 function OverviewSkeleton() {
   return (
-    <section className="mx-auto max-w-6xl space-y-6" aria-busy="true" aria-label="Carregando">
+    <section className="mx-auto max-w-6xl space-y-6" aria-busy="true" aria-label={pagesText.common.loading}>
       <div className="surface-panel h-24 animate-pulse rounded-lg border" />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {[0, 1, 2].map((i) => (
@@ -262,16 +263,16 @@ function NewProjectDialog({ open, onClose }: { open: boolean; onClose: () => voi
         <Input
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Nome do projeto"
-          aria-label="Nome do projeto"
+          placeholder={pagesText.overview.projectNamePlaceholder}
+          aria-label={pagesText.overview.projectNamePlaceholder}
           autoFocus
         />
         <div className="flex justify-end gap-2">
           <Button type="button" variant="ghost" onClick={onClose}>
-            Cancelar
+            {pagesText.common.cancel}
           </Button>
           <Button type="submit" disabled={!name.trim() || create.isPending}>
-            Criar
+            {pagesText.common.create}
           </Button>
         </div>
       </form>

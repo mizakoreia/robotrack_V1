@@ -16,6 +16,7 @@ import { BackLink, LevelEmpty, LevelError, LevelSkeleton } from '@/features/hier
 import { useWorkspaceStore } from '@/store/workspaceStore'
 import { qk } from '@/lib/query/keys'
 import { hierarchyText } from '@/lib/i18n/hierarchy'
+import { pagesText } from '@/lib/i18n/pages'
 import { NotificationPreferenceControl } from '@/features/notifications/NotificationPreferenceControl'
 
 // hierarchy-screens 5.3/5.4/5.5 (§3.4) — a tela de Célula: hub da célula + grade de
@@ -87,7 +88,7 @@ export function CellPage() {
             percent={data.raw_completion.percent}
             caption={hierarchyText.levelPhysicalCaption(Math.round(data.raw_completion.percent))}
           />
-          <p className="label-sm text-text-muted">Anéis: progresso ponderado por peso de tarefa</p>
+          <p className="label-sm text-text-muted">{pagesText.common.ringsLegend}</p>
           <div className="grid grid-cols-1 items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {data.robots.map((robot) => (
               <EntityCard
@@ -103,7 +104,7 @@ export function CellPage() {
                   <div className="flex w-full items-center justify-between">
                     <span className="label-sm text-text-muted">{hierarchyText.tasksFooter(robot.tasks_count)}</span>
                     {isOwner && (
-                      <IconButton icon="trash" label={`Excluir ${robot.name}`} size="sm" onClick={() => setRemoving(robot)} />
+                      <IconButton icon="trash" label={pagesText.common.deleteAria(robot.name)} size="sm" onClick={() => setRemoving(robot)} />
                     )}
                   </div>
                 }
@@ -145,10 +146,10 @@ function DeleteRobotDialog({
       <p className="mb-4 text-text-muted">{t.body(robot.name)}</p>
       <div className="flex justify-end gap-2">
         <Button variant="ghost" onClick={onClose}>
-          Cancelar
+          {pagesText.common.cancel}
         </Button>
         <Button variant="destructive" disabled={remove.isPending} onClick={() => remove.mutate(robot.id, { onSuccess: onClose })}>
-          Excluir
+          {pagesText.common.delete}
         </Button>
       </div>
     </Modal>

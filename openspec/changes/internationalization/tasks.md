@@ -61,14 +61,24 @@
   i18n sweeps 31/31; suíte completa 650/651 (só o flake de CPU do offline/queue); tsc
   limpo. Prova visual real virá no deploy do Render (build da `main`).
 
-## 3. Extração dos literais inline → `lib/i18n` (G3) 🟢
+## 3. Extração dos literais inline → `lib/i18n` (G3) 🟢 — FECHADO
 
-- [ ] 3.1 Extrair o chrome do `AppShell` (itens de menu, aria-labels do topbar/nav) e
-  a `AuthPage` (login/cadastro/validações) para módulos `lib/i18n`, **ainda em pt-BR**.
-- [ ] 3.2 Extrair `AjudaPage` (476 linhas de prosa) e as telas Visão Geral/hierarquia/
-  gráficos/`StorageWarning` para `lib/i18n`, **ainda em pt-BR**.
-- [ ] 3.3 Verificação do grupo: um sweep novo confirma que as superfícies migradas não
-  têm mais literal pt-BR de UI inline (na fronteira coberta).
+Feito **com o EN já traduzido** (glossário confirmado) — o eixo `defineText` recebe
+pt-BR + en de uma vez, então G3 já entrega os dois idiomas nas superfícies migradas.
+
+- [x] 3.1 Chrome do `AppShell` → `lib/i18n/shell.ts` (nav/menu da conta/topbar/gaveta;
+  `nav.ts` ganhou `key` e o rótulo é resolvido no render por `shellText.nav[key]`).
+  `AuthPage` → `lib/i18n/auth.ts` (login/cadastro/validações/erros 401/409/422). (Prova:
+  regra G verde — "Convidar pessoa" resolve ao mesmo valor pt-BR da allowlist; AppShell
+  13/13; auth 25/25.)
+- [x] 3.2 `AjudaPage` (476 linhas) → `lib/i18n/ajuda.ts` (modelo rico: seções/TOC da
+  MESMA lista de dados, âncoras `#id` preservadas). Telas Visão Geral/Projeto/Célula/
+  Robô-Tarefas/`StorageWarning`/gráficos → `lib/i18n/pages.ts`. (Prova: 82 testes de
+  páginas/componentes verdes; AjudaPage 4/4.)
+- [x] 3.3 Verificação do grupo: `no-emoji` + `convention-sweep` + `progress-label` +
+  `report/literalSweep` + provas i18n **39/39**; suíte completa **654/655** (só o flake
+  de CPU do offline/queue); `tsc` limpo. Dado de domínio (status/aplicações/tarefas-base)
+  **não** foi tocado — fica para o mapa de exibição do G4.
 
 ## 4. Tradução EN — frontend (G4) 🟢 — **depende do glossário assinado**
 

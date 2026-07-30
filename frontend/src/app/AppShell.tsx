@@ -9,6 +9,7 @@ import { SaveIndicator, saveStateNeedsAttention } from '@/components/ui/SaveIndi
 import { PortalMenu } from '@/components/menu/PortalMenu'
 import { useMenu } from '@/components/menu/useMenu'
 import { LanguageSelect } from '@/components/LanguageSelect'
+import { shellText } from '@/lib/i18n/shell'
 import { NAV_DESTINATIONS } from './nav'
 import { WorkspaceContext } from './WorkspaceContext'
 import { useAuthStore } from '@/store/authStore'
@@ -224,7 +225,7 @@ function Sidebar({
         ref={asideRef}
         role={drawerActive ? 'dialog' : undefined}
         aria-modal={drawerActive || undefined}
-        aria-label={drawerActive ? 'Navegação' : undefined}
+        aria-label={drawerActive ? shellText.drawerNav : undefined}
         {...(drawerInert ? { inert: '' } : {})}
         className={cn(
           'surface-nav z-sidebar flex w-60 shrink-0 flex-col border-r',
@@ -234,7 +235,7 @@ function Sidebar({
       >
         <div className="panel-header px-4 py-4 font-semibold">RoboTrack</div>
 
-        <nav className="flex flex-col gap-1 px-2" aria-label="Navegação principal">
+        <nav className="flex flex-col gap-1 px-2" aria-label={shellText.navAria}>
           {NAV_DESTINATIONS.map((d) => {
             const active = d.matches(pathname)
             return (
@@ -249,7 +250,7 @@ function Sidebar({
                 )}
               >
                 <Icon name={d.icon} size="sm" className={active ? 'text-accent' : undefined} />
-                {d.label}
+                {shellText.nav[d.key]}
               </Link>
             )
           })}
@@ -274,7 +275,7 @@ function Sidebar({
               sendo o card. */}
           <button
             {...menu.triggerProps}
-            aria-label={`Conta: ${primary}`}
+            aria-label={shellText.account.aria(primary)}
             className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left hover:bg-accent/10"
           >
             <span className="grid h-8 w-8 shrink-0 place-content-center rounded-full bg-accent/15 text-accent-ink">
@@ -294,12 +295,12 @@ function Sidebar({
             anchorRef={menu.anchorRef}
             open={menu.open}
             onClose={menu.close}
-            label="Conta"
+            label={shellText.account.menuLabel}
             items={[
               // workspace-settings 6.x — a tela existe; os destinos fantasma
               // (/logs, /backup) viraram a própria tela de Configurações.
-              { label: 'Configurações do workspace', onSelect: () => navigate('/configuracoes') },
-              { label: 'Equipe e convites', onSelect: () => navigate('/configuracoes/equipe') },
+              { label: shellText.account.settings, onSelect: () => navigate('/configuracoes') },
+              { label: shellText.account.team, onSelect: () => navigate('/configuracoes/equipe') },
               // join-workspace-by-code — participar de OUTRO workspace por código.
               // Junto das ações de composição de time; sempre acessível (não
               // depende do seletor de workspace, que só existe com mais de um).
@@ -307,8 +308,8 @@ function Sidebar({
               // send-feedback — canal do beta, sempre disponível no menu da conta
               // (discreto, sem poluir a topbar).
               { label: feedbackText.menuItem, onSelect: onSendFeedback },
-              { label: 'Alternar tema', onSelect: () => toggleTheme() },
-              { label: 'Sair', onSelect: () => void performLogout((p) => navigate(p)) },
+              { label: shellText.account.toggleTheme, onSelect: () => toggleTheme() },
+              { label: shellText.account.logout, onSelect: () => void performLogout((p) => navigate(p)) },
             ]}
           />
         </div>
@@ -337,7 +338,7 @@ function Topbar({
 
   return (
     <header className="surface-panel z-sticky flex h-14 items-center gap-3 border-b px-3">
-      <IconButton icon="menu" label="Abrir menu" size="sm" className="md:hidden" onClick={onOpenDrawer} />
+      <IconButton icon="menu" label={shellText.openMenu} size="sm" className="md:hidden" onClick={onOpenDrawer} />
 
       {/* contexto do workspace à esquerda (5.2/5.3) */}
       <div className="min-w-0 flex-1">
@@ -359,7 +360,7 @@ function Topbar({
       {/* ajuda-screen — o "?" leva à tela de Ajuda. Único ponto de acesso
           (sempre visível, para operador e dono): não duplica o nome acessível em
           outro controle da casca (regra G). */}
-      <IconButton icon="help" label="Ajuda" size="sm" onClick={() => onNavigate('/ajuda')} />
+      <IconButton icon="help" label={shellText.help} size="sm" onClick={() => onNavigate('/ajuda')} />
 
       {/* slot nomeado de notificações — o sino abre o NotificationCenter (6.2) */}
       <div data-slot="notifications" className="flex h-9 w-9 items-center justify-center">
@@ -381,11 +382,11 @@ function Topbar({
           type="button"
           variant="outline"
           size="sm"
-          aria-label="Convidar pessoa"
+          aria-label={shellText.invitePerson}
           onClick={() => onNavigate('/configuracoes/equipe?convidar=1')}
         >
           <Icon name="plus" size="sm" />
-          <span className="ml-1.5 hidden md:inline">Convidar pessoa</span>
+          <span className="ml-1.5 hidden md:inline">{shellText.invitePerson}</span>
         </Button>
       )}
     </header>

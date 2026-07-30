@@ -14,6 +14,7 @@ import { LevelHub } from '@/features/hierarchy/LevelHub'
 import { BackLink, LevelEmpty, LevelError, LevelSkeleton } from '@/features/hierarchy/LevelChrome'
 import { useWorkspaceStore } from '@/store/workspaceStore'
 import { hierarchyText } from '@/lib/i18n/hierarchy'
+import { pagesText } from '@/lib/i18n/pages'
 import { NotificationPreferenceControl } from '@/features/notifications/NotificationPreferenceControl'
 
 // hierarchy-screens 5.1/5.2/5.5 (§3.3) — a tela de Projeto: hub do projeto + grade
@@ -76,7 +77,7 @@ export function ProjectPage() {
             percent={data.raw_completion.percent}
             caption={hierarchyText.levelPhysicalCaption(Math.round(data.raw_completion.percent))}
           />
-          <p className="label-sm text-text-muted">Anéis: progresso ponderado por peso de tarefa</p>
+          <p className="label-sm text-text-muted">{pagesText.common.ringsLegend}</p>
           <div className="grid grid-cols-1 items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {data.cells.map((cell) => (
               <EntityCard
@@ -93,10 +94,10 @@ export function ProjectPage() {
                     {(canEdit || isOwner) && (
                       <div className="flex items-center gap-1">
                         {canEdit && (
-                          <IconButton icon="edit" label={`Renomear ${cell.name}`} size="sm" onClick={() => setRenaming(cell)} />
+                          <IconButton icon="edit" label={pagesText.common.renameAria(cell.name)} size="sm" onClick={() => setRenaming(cell)} />
                         )}
                         {isOwner && (
-                          <IconButton icon="trash" label={`Excluir ${cell.name}`} size="sm" onClick={() => setRemoving(cell)} />
+                          <IconButton icon="trash" label={pagesText.common.deleteAria(cell.name)} size="sm" onClick={() => setRemoving(cell)} />
                         )}
                       </div>
                     )}
@@ -154,13 +155,13 @@ function CellNameDialog({
   return (
     <Modal open onClose={onClose} title={title}>
       <form onSubmit={submit} className="space-y-4">
-        <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nome da célula" aria-label="Nome da célula" autoFocus />
+        <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={pagesText.project.cellNamePlaceholder} aria-label={pagesText.project.cellNamePlaceholder} autoFocus />
         <div className="flex justify-end gap-2">
           <Button type="button" variant="ghost" onClick={onClose}>
-            Cancelar
+            {pagesText.common.cancel}
           </Button>
           <Button type="submit" disabled={!name.trim() || pending}>
-            {mode === 'create' ? 'Criar' : 'Salvar'}
+            {mode === 'create' ? pagesText.common.create : pagesText.common.save}
           </Button>
         </div>
       </form>
@@ -176,10 +177,10 @@ function DeleteCellDialog({ projectId, cell, onClose }: { projectId: string; cel
       <p className="mb-4 text-text-muted">{t.body(cell.name)}</p>
       <div className="flex justify-end gap-2">
         <Button variant="ghost" onClick={onClose}>
-          Cancelar
+          {pagesText.common.cancel}
         </Button>
         <Button variant="destructive" disabled={remove.isPending} onClick={() => remove.mutate(cell.id, { onSuccess: onClose })}>
-          Excluir
+          {pagesText.common.delete}
         </Button>
       </div>
     </Modal>
