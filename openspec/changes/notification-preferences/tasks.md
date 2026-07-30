@@ -115,9 +115,9 @@
 
 ## 7. Fechamento (G7) 🟢
 
-- [ ] 7.1 Rodar a suíte completa da change (banco SQL cru, resolver/filtro, API/negações, UI, assign
+- [x] 7.1 Rodar a suíte completa da change (banco SQL cru, resolver/filtro, API/negações, UI, assign
   observador, estrutural) e registrar o resultado. (Método da casa — verde exige simultaneamente:
   RLS isola, mais-específico-vence, dono recebe 3ª pessoa, silenciador responsável some)
-- [ ] 7.2 Atualizar `CONTINUIDADE.md` (estado/suítes/tip) e a EXTENSÃO de
+- [x] 7.2 Atualizar `CONTINUIDADE.md` (estado/suítes/tip) e a EXTENSÃO de
   `in-app-notifications/EXECUCAO.md` (os dois itens pendentes agora fechados), e validar
   `validate notification-preferences --strict`. (Regra da casa — doc é parte do push)

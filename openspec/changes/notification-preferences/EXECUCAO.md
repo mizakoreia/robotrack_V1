@@ -135,6 +135,13 @@ no `design.md`.
   **Limitação v1 registrada:** na tela do robô a ancestralidade exibida é robô→célula (o
   `project_id` não vem no header do robô); um `mute` de PROJETO ainda é honrado pelo servidor, mas
   não aparece como estado herdado no sino do robô. Sem impacto no comportamento das notificações.
+- **G7 ✅** (fechamento) — suíte backend `rspec` INTEIRA rodada: **1551 exemplos, 0 falhas reais**.
+  Ajuste: swagger allowlist ganhou `/api/v1/notification_subscriptions` (consequência do G3). Duas
+  "falhas" descartadas: `schema_guard` (`PG::ConnectionBad: connection is closed` do fim da run de
+  9min — passa isolado, 72/0) e `database_yml_spec` (o `silas777` é um COMENTÁRIO do `config/
+  database.yml` LOCAL, que nem está no HEAD — pré-existente, não é desta change). Docs atualizados:
+  `CONTINUIDADE.md` (30ª change), `DESIGN.md` (G4), EXTENSÃO de `in-app-notifications` (item 1 fechado
+  sem enum, item 2 = G6 deferido). `validate --strict` verde.
 - **G6 ⏸️ DEFERIDO** — eventos estruturais + `ALTER TYPE ADD VALUE 'structure'` NÃO executado
   (reversão não-trivial); aguardando OK separado do dono. tasks.md §6 marcado.
 

@@ -33,6 +33,7 @@ RSpec.describe 'Swagger e superfície da API', type: :request do
     /api/v1/workspace
     /api/v1/cable_tickets
     /api/v1/notifications
+    /api/v1/notification_subscriptions
     /api/v1/health
   ].freeze
 

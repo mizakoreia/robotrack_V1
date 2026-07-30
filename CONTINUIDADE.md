@@ -256,6 +256,41 @@ também** entra no owner-only (só o `destroy`; editar/atribuir seguem em owner+
   (`queue.test.ts` D7-12), que passa isolado; domínio `offline-pwa`, intocado.
 - **Execução E2E/axe em navegador:** HANDOFF (demo viva em :3000/:5173 — não repontar).
 
+## Change NOVA: `notification-preferences` (30ª change — parte reversível EXECUTADA, G6 DEFERIDO)
+
+**Preferências de notificação POR ENTIDADE da hierarquia, por pessoa** (pedido do dono:
+"que as pessoas escolham se querem receber notificações daquele robô, célula ou projeto").
+Cada membro **segue** (recebe mesmo sem ser responsável) ou **silencia** (não recebe) um
+nível. Junta os 2 itens pendentes da EXTENSÃO de `in-app-notifications`. O dono aprovou
+executar **só a parte reversível** (G1–G5, G7); o **G6 (eventos estruturais) fica DEFERIDO**
+por ser a única migração de reversão não-trivial (`ALTER TYPE ADD VALUE`).
+
+- **G1 (migração reversível):** `notification_subscriptions` — enum `follow`/`mute`, alvo por
+  3 colunas FK (projeto/célula/robô, CHECK um-alvo), FKs compostas por `workspace_id`, RLS
+  **forçada**, 3 únicos parciais + 3 lookup. Model `NotificationSubscription`. Aplicada em
+  DEV **e** TEST como `robotrack_migrator`; `structure.sql` regenerado. Reverte por `DROP`.
+- **G2+G5:** `SubscriptionResolver` (puro, 1 query, mais-específico-vence) filtra o pipeline
+  em `CreateService` — seguidor entra, silenciador sai, dono-mute sobrepõe owner-tudo. `assign`
+  ganha observadores (dono+seguidores) em 3ª pessoa (`assign_observer`, `type='assign'`, **SEM
+  migração de enum**). Invariantes preservadas (dedup, nunca-o-autor, best-effort, RLS, msg≤500);
+  notificação-do-dono intacta.
+- **G3:** action `manage_own_subscription` na matriz + `NotificationSubscriptionPolicy` +
+  `GET`/`PUT` (`default` apaga; não aceita `person_id` → sem editar a alheia). Route-sweep OK.
+- **G4 (impeccable):** sino **seguir/silenciar** (`bell`/`bell-off`, `PortalMenu` Padrão/Seguir/
+  Silenciar ≥40px, estado efetivo com origem) nos cabeçalhos robô/célula/projeto; hook otimista
+  `useNotificationSubscriptions`; `DESIGN.md` atualizado.
+- **Decisões O-1..O-8** adotadas conforme recomendação do design (O-8/estrutural → G6 deferido).
+- **Suítes:** backend `rspec` INTEIRA **1551 exemplos, 0 falhas reais** (swagger allowlist ganhou
+  `/api/v1/notification_subscriptions`; a falha de `schema_guard` foi `connection closed` do
+  fim da run, passa isolado; `database_yml` é o `silas777` num comentário do `database.yml`
+  local, pré-existente e fora do HEAD). Frontend `vitest` **618/619** (flaky pré-existente
+  `queue.test.ts` D7-12, passa isolado). `tsc`/`lint`/sweeps limpos.
+- **Git:** commits `G0..G4` + `G7` **locais na `main`** — o `git push origin main` está
+  **BLOQUEADO pelo classificador de permissão** do ambiente (mesma classe do `push --delete`
+  documentado). Aguardando o dono empurrar ou liberar a permissão Bash. Túneis
+  (`vite.config.ts`, `client.ts`) **sem commit**.
+- **G6 DEFERIDO:** `tasks.md §6` marcado; retomar só com OK explícito do dono.
+
 ## Campanha de deploy (par com o agente da WSL — 24/07/2026)
 
 Depois de fechar o domínio, o **primeiro deploy real** virou uma sessão de par: o

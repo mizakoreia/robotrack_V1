@@ -141,6 +141,15 @@ mesmo sem ser responsável. Regras da casa preservadas:
   novos eventos + novos valores de enum → **migração**. Parado no limite de
   migração conforme o protocolo do dono; aguardando OK para o próximo passo.
 
+**ATUALIZAÇÃO (2026-07-30) — os dois itens pendentes:** a change
+`notification-preferences` fechou o **item 1** (notificar atribuição a terceiros) SEM
+migração de enum — a `msg` é materializada por destinatário, então basta a chave de
+locale `assign_observer` em 3ª pessoa mantendo `type='assign'` (dono + seguidores do
+galho recebem; o atribuído segue em 2ª pessoa). O **item 2** (eventos estruturais)
+continua **DEFERIDO** como o G6 daquela change — é o único que exige `ALTER TYPE
+notification_type ADD VALUE 'structure'` (reversão não-trivial), aguardando OK
+separado. Ver `openspec/changes/notification-preferences/`.
+
 **Prova:** `spec/notifications/create_service_spec.rb` — 4 casos novos: (1) membro
 avança tarefa sem o dono responsável → dono recebe 1 (recipient=dono, actor=membro,
 read=false); (2) dedup quando o dono também é responsável → 1 linha; (3) o próprio
