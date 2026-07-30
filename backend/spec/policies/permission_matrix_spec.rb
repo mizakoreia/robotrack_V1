@@ -22,6 +22,9 @@ RSpec.describe PermissionMatrix do
       create_log:             %i[owner edit],
       # §4.1 L6: "marcar a própria notificação como lida" — owner, edit, view
       mark_notification_read: %i[owner edit view],
+      # notification-preferences D-P6: "gerir a PRÓPRIA preferência de notificação
+      # (seguir/silenciar entidade)" — owner, edit, view (config pessoal, self-scoped)
+      manage_own_subscription: %i[owner edit view],
       # §4.1 L7: "convidar, alterar papel, remover membro" — owner
       manage_membership:      %i[owner],
       # §4.1 L8: "excluir workspace / reset de fábrica" — owner

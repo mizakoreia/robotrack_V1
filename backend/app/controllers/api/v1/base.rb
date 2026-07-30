@@ -55,6 +55,9 @@ module Api
       # Centro de notificações (in-app-notifications 5.1/5.2)
       mount Api::V1::Notifications
 
+      # Preferências de notificação por entidade (notification-preferences D-P6)
+      mount Api::V1::NotificationSubscriptions
+
       # Sonda de saúde da fila offline (offline-pwa 4.3) — pública, sem tenant
       mount Api::V1::Health
 

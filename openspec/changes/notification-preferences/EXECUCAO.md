@@ -114,6 +114,15 @@ no `design.md`.
   mute — O-4). `MessageBuilder` aceita `assignee:`. Locale `assign_observer` adicionado; grep-guard
   estendido para `à tarefa "`. Specs: `subscription_filter_spec.rb` 13/0; suíte de notificações
   inteira **52/0** (sem regressão da notificação-do-dono nem das invariantes 4/8).
+- **G3 ✅** — action `manage_own_subscription` na `PermissionMatrix` (owner/edit/view) +
+  reafirmação nos specs `permission_matrix_spec` e `matrix_conformance_spec` (24→27 células).
+  `NotificationSubscriptionPolicy` (matriz primeiro, fail-closed p/ papel nulo; posse por simetria
+  com `mark_read?`). Controller `Api::V1::NotificationSubscriptions` (`GET` lista as próprias; `PUT`
+  upsert por `scope_type`/`scope_id`/`state`; `default` apaga) — **não aceita `person_id`**, então
+  editar a alheia é impossível por construção. Entity `NotificationSubscription`. Montado no `base.rb`.
+  Specs: request `notification_subscriptions_spec` (upsert idempotente, default apaga, view gere a
+  própria, GET só as próprias, não-membro barrado). Suíte autorização/tenancy/policy **294/0** (7
+  pending pré-existentes); route-sweep valida a nova rota.
 - **G6 ⏸️ DEFERIDO** — eventos estruturais + `ALTER TYPE ADD VALUE 'structure'` NÃO executado
   (reversão não-trivial); aguardando OK separado do dono. tasks.md §6 marcado.
 

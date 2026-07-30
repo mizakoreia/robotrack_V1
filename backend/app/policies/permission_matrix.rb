@@ -21,6 +21,7 @@ module PermissionMatrix
     manage_catalog:         %i[owner edit],
     create_log:             %i[owner edit],
     mark_notification_read: %i[owner edit view],
+    manage_own_subscription: %i[owner edit view],
     manage_membership:      %i[owner],
     destroy_workspace:      %i[owner]
   }.freeze

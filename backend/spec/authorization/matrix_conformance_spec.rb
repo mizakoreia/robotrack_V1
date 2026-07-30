@@ -19,6 +19,7 @@ RSpec.describe 'Conformidade papel × ação com a §4.1', :tenancy, type: :requ
       manage_catalog:         { owner: true,  edit: true,  view: false },
       create_log:             { owner: true,  edit: true,  view: false },
       mark_notification_read: { owner: true,  edit: true,  view: true  },
+      manage_own_subscription: { owner: true, edit: true,  view: true  },
       manage_membership:      { owner: true,  edit: false, view: false },
       destroy_workspace:      { owner: true,  edit: false, view: false }
     }.freeze

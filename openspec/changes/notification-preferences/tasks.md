@@ -46,16 +46,16 @@
 
 ## 3. API pessoal + autorização (G3) 🟢
 
-- [ ] 3.1 Adicionar a action `manage_own_subscription` à `PermissionMatrix` (`owner`/`edit`/`view`)
+- [x] 3.1 Adicionar a action `manage_own_subscription` à `PermissionMatrix` (`owner`/`edit`/`view`)
   e ao spec que reafirma a matriz literalmente. (§D-P6 — a matriz muda nos dois lugares de propósito)
-- [ ] 3.2 `NotificationSubscriptionPolicy < BasePolicy` exigindo `person_id == context.person.id`
+- [x] 3.2 `NotificationSubscriptionPolicy < BasePolicy` exigindo `person_id == context.person.id`
   para escrever/apagar (idioma do `mark_read?`), e `GET` escopado à própria pessoa. (§D-P6 — Ana
   editando a preferência de Bruno é negada)
-- [ ] 3.3 Endpoints Grape `GET /api/v1/notification_subscriptions` e `PUT` (upsert; `state:'default'`
+- [x] 3.3 Endpoints Grape `GET /api/v1/notification_subscriptions` e `PUT` (upsert; `state:'default'`
   apaga), com `route_setting :policy` e entity `Api::Entities::NotificationSubscription`; registrar
   no route-sweep de D3. (§D-P6 — upsert idempotente; voltar ao padrão apaga a linha; sweep acha a
   policy)
-- [ ] 3.4 Specs de request: listagem só das próprias, upsert idempotente, `default` apaga, edição
+- [x] 3.4 Specs de request: listagem só das próprias, upsert idempotente, `default` apaga, edição
   alheia negada, isolamento cross-tenant. (§4.1 inv. 1/4 — negações obrigatórias)
 
 ## 4. UX — sino seguir/silenciar nas telas (G4) 🟢
