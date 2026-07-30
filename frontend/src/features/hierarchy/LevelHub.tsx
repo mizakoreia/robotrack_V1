@@ -29,6 +29,7 @@ export function LevelHub({
       </div>
       <div
         role="progressbar"
+        aria-label={caption}
         aria-valuenow={pct}
         aria-valuemin={0}
         aria-valuemax={100}

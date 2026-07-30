@@ -21,4 +21,8 @@ export const shellTextEn: ShellText = {
   openMenu: 'Open menu',
   help: 'Help',
   invitePerson: 'Invite person',
+  notifications: {
+    bell: 'Notifications',
+    bellUnread: (n: number) => `Notifications (${n} unread)`,
+  },
 }

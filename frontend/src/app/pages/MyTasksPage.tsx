@@ -122,12 +122,12 @@ function MobileCard({ row }: { row: MyTaskRowDTO }) {
   return (
     <a
       href={taskHref(row)}
-      aria-label={myTasksText.openTaskAria(row.description, row.robot_name)}
+      aria-label={myTasksText.openTaskAria(baseTaskLabel(row.description), row.robot_name)}
       className="surface-panel block rounded-lg border p-4 hover:bg-accent/5"
     >
       <div className="flex items-start justify-between gap-2">
-        <span className="font-medium text-text-main">{row.description}</span>
-        <Badge status={STATUS_COLOR[row.status]}>{row.status}</Badge>
+        <span className="font-medium text-text-main">{baseTaskLabel(row.description)}</span>
+        <Badge status={STATUS_COLOR[row.status]}>{statusLabel(row.status)}</Badge>
       </div>
       <div className="mt-1 tabular-nums text-text-muted">{row.progress}%</div>
       {/* caminho projeto/célula/robô como linha secundária (§6.5) */}

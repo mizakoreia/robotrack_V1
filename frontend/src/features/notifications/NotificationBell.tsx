@@ -1,6 +1,7 @@
 import { Icon } from '@/components/icons/Icon'
 import { useMenu } from '@/components/menu/useMenu'
 import { PortalPopover } from '@/components/menu/PortalPopover'
+import { shellText } from '@/lib/i18n/shell'
 import { useNotifications } from './useNotifications'
 import { NotificationCenter } from './NotificationCenter'
 
@@ -15,7 +16,7 @@ export function NotificationBell() {
   const menu = useMenu()
   const { unreadCount } = useNotifications()
 
-  const label = unreadCount > 0 ? `Notificações (${unreadCount} não lidas)` : 'Notificações'
+  const label = unreadCount > 0 ? shellText.notifications.bellUnread(unreadCount) : shellText.notifications.bell
 
   return (
     <>
@@ -38,7 +39,7 @@ export function NotificationBell() {
           </span>
         )}
       </button>
-      <PortalPopover anchorRef={menu.anchorRef} open={menu.open} onClose={menu.close} label="Notificações">
+      <PortalPopover anchorRef={menu.anchorRef} open={menu.open} onClose={menu.close} label={shellText.notifications.bell}>
         <div className="w-80 max-w-[90vw] p-3">
           <NotificationCenter />
         </div>

@@ -390,13 +390,16 @@ const TaskRow = memo(function TaskRow({ robotId, task, canEdit, isOwner, selecta
     >
       {selectable && (
         <td className="px-4 py-3 align-middle">
-          <input
-            type="checkbox"
-            className="h-5 w-5 accent-accent"
-            checked={selected}
-            aria-label={robotTaskText.selectAria(baseTaskLabel(task.desc))}
-            onChange={() => onSelect?.(task.id)}
-          />
+          {/* impeccable critique — alvo de luva ≥32px em volta do checkbox de 20px. */}
+          <label className="flex min-h-[2rem] min-w-[2rem] cursor-pointer items-center justify-center">
+            <input
+              type="checkbox"
+              className="h-5 w-5 accent-accent"
+              checked={selected}
+              aria-label={robotTaskText.selectAria(baseTaskLabel(task.desc))}
+              onChange={() => onSelect?.(task.id)}
+            />
+          </label>
         </td>
       )}
       <td className="px-4 py-3">{baseTaskLabel(task.desc)}</td>
@@ -405,7 +408,7 @@ const TaskRow = memo(function TaskRow({ robotId, task, canEdit, isOwner, selecta
       </td>
       <td className="px-4 py-3 align-middle">
         {/* leitura % + − slider + vivem no AdvanceControls (D-RTT-5) */}
-        <AdvanceControls robotId={robotId} taskId={task.id} />
+        <AdvanceControls robotId={robotId} taskId={task.id} taskLabel={baseTaskLabel(task.desc)} />
       </td>
       <td className="px-4 py-3">
         <ResponsaveisCell robotId={robotId} task={task} />
@@ -435,13 +438,15 @@ const MobileTaskCard = memo(function MobileTaskCard({ robotId, task, canEdit, is
       <div className="mb-3 flex items-start justify-between gap-2">
         <div className="flex min-w-0 items-start gap-2">
           {selectable && (
-            <input
-              type="checkbox"
-              className="mt-0.5 h-5 w-5 shrink-0 accent-accent"
-              checked={selected}
-              aria-label={robotTaskText.selectAria(baseTaskLabel(task.desc))}
-              onChange={() => onSelect?.(task.id)}
-            />
+            <label className="flex min-h-[2rem] min-w-[2rem] shrink-0 cursor-pointer items-center justify-center">
+              <input
+                type="checkbox"
+                className="h-5 w-5 accent-accent"
+                checked={selected}
+                aria-label={robotTaskText.selectAria(baseTaskLabel(task.desc))}
+                onChange={() => onSelect?.(task.id)}
+              />
+            </label>
           )}
           <h3 className="min-w-0 font-medium">{baseTaskLabel(task.desc)}</h3>
         </div>
@@ -452,7 +457,7 @@ const MobileTaskCard = memo(function MobileTaskCard({ robotId, task, canEdit, is
           <StatusCell robotId={robotId} task={task} />
         </CardRow>
         <CardRow label={pagesText.robotTask.colProgress}>
-          <AdvanceControls robotId={robotId} taskId={task.id} />
+          <AdvanceControls robotId={robotId} taskId={task.id} taskLabel={baseTaskLabel(task.desc)} />
         </CardRow>
         <CardRow label={pagesText.robotTask.colAssignees}>
           <ResponsaveisCell robotId={robotId} task={task} />
