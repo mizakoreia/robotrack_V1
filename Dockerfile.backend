@@ -1,0 +1,59 @@
+# Dockerfile SÓ do backend, para o Render (Web Service + Worker Sidekiq).
+#
+# POR QUE ESTE ARQUIVO EXISTE (e não usamos o ./Dockerfile principal): o Render
+# NÃO suporta escolher o estágio-alvo (`--target`) de um Dockerfile multi-stage no
+# render.yaml — ele SEMPRE builda o ÚLTIMO estágio. No ./Dockerfile o último
+# estágio é `frontend-nginx`, então apontar o serviço backend para lá subiria um
+# nginx servindo o React, não o Rails. Aqui o ÚLTIMO estágio É a imagem de
+# produção do backend, então `runtime: docker` do Render builda o certo.
+#
+# Este arquivo ESPELHA os estágios `backend-base` e `backend-prod` do ./Dockerfile
+# (o validado pela campanha de deploy: não-root, HEALTHCHECK, bash p/ bin/release,
+# tmp/pids). Ao mexer num, mexa no outro — ver DEPLOY_RENDER.md §"Manutenção".
+# O frontend no Render é um Static Site (não usa imagem Docker), então os estágios
+# de frontend do ./Dockerfile não têm equivalente aqui.
+
+FROM ruby:3.2.3-alpine AS backend-base
+
+RUN apk add --no-cache \
+    build-base \
+    postgresql-dev \
+    postgresql-client \
+    tzdata \
+    nodejs \
+    npm \
+    git
+
+WORKDIR /app
+
+COPY backend/Gemfile backend/Gemfile.lock ./
+RUN bundle config set --local deployment 'true' && \
+    bundle config set --local without 'development test' && \
+    bundle install
+
+# Estágio de produção — DEVE ser o último (o Render builda o último estágio).
+FROM backend-base AS backend-prod
+
+# API-only (sem pipeline de assets), roda como usuário NÃO-root, HEALTHCHECK de
+# liveness. `bash` é obrigatório: bin/release tem shebang bash + `set -euo pipefail`
+# (o `ash` do Alpine não serve). `curl` para a sonda.
+RUN apk add --no-cache bash curl && \
+    addgroup -S app && adduser -S app -G app
+
+COPY backend/ .
+
+# Puma grava tmp/pids/server.pid no boot; o .dockerignore exclui backend/tmp, então
+# recriamos os diretórios que produção exige.
+RUN mkdir -p tmp/pids tmp/cache tmp/sockets
+RUN chown -R app:app /app
+USER app
+
+EXPOSE 3000
+
+# Liveness (NÃO checa Postgres/Redis — isso é /health/ready, do orquestrador).
+# O Puma escuta em ENV['PORT'] (config/puma.rb); no Render $PORT é injetado, mas o
+# processo também responde em 3000 dentro do container para o HEALTHCHECK local.
+HEALTHCHECK --interval=30s --timeout=3s --start-period=20s --retries=3 \
+  CMD curl -fsS "http://localhost:${PORT:-3000}/health/live" || exit 1
+
+CMD ["bundle", "exec", "puma", "-C", "config/puma.rb"]

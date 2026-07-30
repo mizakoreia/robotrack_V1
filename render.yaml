@@ -1,0 +1,189 @@
+# RoboTrack — Blueprint do Render (Infra as Code).
+#
+# Sobe a stack inteira: backend Rails (API-only), worker Sidekiq, Postgres
+# gerenciado, 3 instâncias Key Value (Redis/Valkey) e o frontend React como Static
+# Site. O passo a passo para o dono está em DEPLOY_RENDER.md (leia-o antes).
+#
+# Decisões de topologia (justificadas em DEPLOY_RENDER.md):
+#  - Modelo de 2 papéis de banco: o usuário PRIMÁRIO do Render é o DONO/migrator; o
+#    runtime conecta como `robotrack_app` (2º usuário, criado no painel, NÃO-dono).
+#    O app RECUSA subir como dono (guard de imutabilidade), então isso é obrigatório.
+#    RLS forçada vale para os dois (usuário do Render é NOSUPERUSER/NOBYPASSRLS).
+#  - 3 Key Value: o guard de topologia aborta o boot se cache/fila/cable dividirem
+#    (host,porta,db). 3 instâncias = 3 hosts distintos, resolvido sem colar URLs.
+#  - Frontend Static Site cross-origin (VITE_API_URL/VITE_WS_URL apontam ao backend):
+#    auth é JWT Bearer e o cable usa ticket, então CORS cobre o cross-origin sem
+#    precisar de proxy de WebSocket (que CDN/Static Site não fazem).
+#
+# Valores gerados pelo Render (generateValue) e ligados por referência (fromService)
+# NÃO precisam ser digitados. Os `sync: false` são os que o dono cola no painel —
+# ver a tabela em DEPLOY_RENDER.md. NENHUM segredo real vive neste arquivo.
+
+# ── Segredos/URLs compartilhados entre web e worker ──────────────────────────
+# Definidos UMA vez aqui para que web e worker recebam O MESMO valor (se cada um
+# usasse generateValue, gerariam segredos DIFERENTES e o PEPPER/HMAC divergiria).
+envVarGroups:
+  - name: robotrack-shared
+    envVars:
+      - key: RAILS_ENV
+        value: production
+      - key: RAILS_LOG_TO_STDOUT
+        value: "true"
+      # Render termina TLS na borda e redireciona http->https lá. force_ssl no app
+      # faria a sonda de health (http interno) tomar 301 e reprovar o deploy.
+      - key: FORCE_SSL
+        value: "false"
+      # Gerados pelo Render (não digitar):
+      - key: SECRET_KEY_BASE
+        generateValue: true
+      - key: INVITATION_CODE_PEPPER
+        generateValue: true
+      - key: METRICS_TOKEN
+        generateValue: true
+      # Colados pelo dono no painel (ver DEPLOY_RENDER.md):
+      - key: DATABASE_URL            # robotrack_app (runtime, NÃO-dono)
+        sync: false
+      - key: MIGRATION_DATABASE_URL  # usuário primário do Render (dono/migrator)
+        sync: false
+      - key: ACTION_CABLE_URL        # wss://<backend>.onrender.com/cable
+        sync: false
+      - key: APP_URL                 # https://<frontend>.onrender.com
+        sync: false
+      - key: CORS_ORIGINS            # https://<frontend>.onrender.com
+        sync: false
+
+databases:
+  - name: robotrack-db
+    databaseName: robotrack
+    # Usuário PRIMÁRIO = dono/migrator. O runtime robotrack_app é adicionado à mão.
+    user: robotrack
+    plan: free
+    region: oregon
+    postgresMajorVersion: "16"
+    ipAllowList: []   # só rede interna do Render (sem acesso externo)
+
+services:
+  # ── Redis / Key Value: 3 instâncias (cache evictável; fila e cable NÃO) ──────
+  - type: keyvalue
+    name: robotrack-kv-cache
+    plan: free
+    region: oregon
+    maxmemoryPolicy: allkeys-lru
+    ipAllowList: []
+  - type: keyvalue
+    name: robotrack-kv-queue
+    plan: free
+    region: oregon
+    maxmemoryPolicy: noeviction
+    ipAllowList: []
+  - type: keyvalue
+    name: robotrack-kv-cable
+    plan: free
+    region: oregon
+    maxmemoryPolicy: noeviction
+    ipAllowList: []
+
+  # ── Backend Rails (Web Service, API-only) ────────────────────────────────────
+  - type: web
+    name: robotrack-backend
+    runtime: docker
+    dockerfilePath: ./Dockerfile.backend
+    dockerContext: .
+    plan: free
+    region: oregon
+    healthCheckPath: /health/ready
+    # Fase de release: migra COMO O MIGRATOR (DATABASE_URL sobrescrito só neste
+    # comando) e reconcilia os papéis/REVOKE do robotrack_app. Roda antes do web
+    # e do worker atenderem tráfego.
+    preDeployCommand: 'DATABASE_URL="$MIGRATION_DATABASE_URL" bin/release && psql "$MIGRATION_DATABASE_URL" -v ON_ERROR_STOP=1 -f config/deploy/render/roles.sql'
+    envVars:
+      - fromGroup: robotrack-shared
+      - key: REDIS_URL          # base/fallback do env_schema
+        fromService:
+          type: keyvalue
+          name: robotrack-kv-cache
+          property: connectionString
+      - key: REDIS_CACHE_URL
+        fromService:
+          type: keyvalue
+          name: robotrack-kv-cache
+          property: connectionString
+      - key: REDIS_QUEUE_URL
+        fromService:
+          type: keyvalue
+          name: robotrack-kv-queue
+          property: connectionString
+      - key: REDIS_CABLE_URL
+        fromService:
+          type: keyvalue
+          name: robotrack-kv-cable
+          property: connectionString
+
+  # ── Worker Sidekiq (Background Worker, mesma imagem) ─────────────────────────
+  # Sem preDeployCommand: as migrations rodam UMA vez, no release do backend. O
+  # worker pode reiniciar algumas vezes no 1º deploy até o release conceder os
+  # grants ao robotrack_app — o Render o reinicia sozinho até subir.
+  - type: worker
+    name: robotrack-worker
+    runtime: docker
+    dockerfilePath: ./Dockerfile.backend
+    dockerContext: .
+    dockerCommand: bundle exec sidekiq -C config/sidekiq.yml
+    plan: free
+    region: oregon
+    envVars:
+      - fromGroup: robotrack-shared
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: robotrack-kv-cache
+          property: connectionString
+      - key: REDIS_CACHE_URL
+        fromService:
+          type: keyvalue
+          name: robotrack-kv-cache
+          property: connectionString
+      - key: REDIS_QUEUE_URL
+        fromService:
+          type: keyvalue
+          name: robotrack-kv-queue
+          property: connectionString
+      - key: REDIS_CABLE_URL
+        fromService:
+          type: keyvalue
+          name: robotrack-kv-cable
+          property: connectionString
+
+  # ── Frontend React (Static Site, CDN) ────────────────────────────────────────
+  - type: web
+    name: robotrack-frontend
+    runtime: static
+    buildCommand: npm --prefix frontend ci && npm --prefix frontend run build
+    staticPublishPath: frontend/dist
+    pullRequestPreviewsEnabled: false
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      # Base da API e do WebSocket = URL pública do BACKEND (colar no painel):
+      - key: VITE_API_URL   # https://<backend>.onrender.com
+        sync: false
+      - key: VITE_WS_URL    # wss://<backend>.onrender.com
+        sync: false
+    # SPA: qualquer rota inexistente cai no index.html (arquivos reais — assets,
+    # sw.js — são servidos direto, o rewrite é só fallback de roteamento no cliente).
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    # Contrato de cache do PWA (espelha frontend/nginx.conf): o SW e o shell sempre
+    # revalidam; assets com hash no nome são imutáveis por 1 ano.
+    headers:
+      - path: /sw.js
+        name: Cache-Control
+        value: "no-store, must-revalidate"
+      - path: /index.html
+        name: Cache-Control
+        value: "no-store, must-revalidate"
+      - path: /assets/*
+        name: Cache-Control
+        value: "public, max-age=31536000, immutable"
