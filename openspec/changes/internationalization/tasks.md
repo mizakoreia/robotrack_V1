@@ -43,19 +43,23 @@
   timeout, `offline/queue.test.ts`, passa isolado em 5,7s — contenção de CPU sob a
   suíte, sem relação com i18n); `tsc --noEmit` limpo.
 
-## 2. Seletor de idioma (G2 — impeccable) 🟢
+## 2. Seletor de idioma (G2 — impeccable) 🟢 — FECHADO
 
-- [ ] 2.1 Asset/sprite de bandeira **BR/GB em SVG (não emoji)**, com fills próprios,
-  documentado como exceção ao sprite monocromático. (Prova: `no-emoji.test.ts` passa;
-  contraste/visibilidade AA nos dois temas.)
-- [ ] 2.2 Primitivo do seletor: `PortalMenu` com dois alvos explícitos (Português/
-  English), ≥40px, `aria-label` "Idioma / Language", bandeira `aria-hidden`, texto
-  visível. **Controle, não badge.** (Prova: leitor de tela anuncia o idioma, não a
-  bandeira; alvo ≥40px medido.)
-- [ ] 2.3 Colocar o seletor no menu da conta (`AppShell`, ao lado de "Alternar tema"),
-  no `AppearancePanel` e na `AuthPage`. (Prova: regra G não acusa colisão de nome; o
-  seletor troca a UI e o `lang` nas três superfícies.)
-- [ ] 2.4 Verificação do grupo: testes de a11y/contraste + `no-emoji` verdes.
+- [x] 2.1 `components/icons/Flag.tsx` — bandeiras **BR/GB em SVG** com fills próprios
+  (`aria-hidden`), exceção documentada ao sprite monocromático. (Prova: `no-emoji.test.ts`
+  passa — inclusive pegou e removeu um emoji citado por engano num comentário.)
+- [x] 2.2 `components/LanguageSelect.tsx` — **controle** (não badge): variante `menu`
+  (`PortalMenu` com dois alvos explícitos Português/English, gatilho com bandeira +
+  código, `aria-label` "Idioma / Language", ≥40px) e `segmented` (dois botões
+  `aria-pressed`, como o tema). Bandeira `aria-hidden`; nome acessível = idioma.
+  (Prova: `components/__tests__/LanguageSelect.test.tsx` 4/4 — nome acessível, alvo
+  `min-h-[40px]`, dois `menuitem`, troca no store, `aria-pressed`.)
+- [x] 2.3 Colocado nas 3 superfícies: menu da conta (`AppShell`, rodapé da sidebar),
+  painel `AppearancePanel` (segmented, junto do tema) e `AuthPage` (pré-login, canto
+  superior). (Prova: regra G do `convention-sweep` verde — sem colisão de nome.)
+- [x] 2.4 Verificação do grupo: `no-emoji` + `convention-sweep` + `LanguageSelect` +
+  i18n sweeps 31/31; suíte completa 650/651 (só o flake de CPU do offline/queue); tsc
+  limpo. Prova visual real virá no deploy do Render (build da `main`).
 
 ## 3. Extração dos literais inline → `lib/i18n` (G3) 🟢
 

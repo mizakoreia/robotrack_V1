@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { SaveIndicator, saveStateNeedsAttention } from '@/components/ui/SaveIndicator'
 import { PortalMenu } from '@/components/menu/PortalMenu'
 import { useMenu } from '@/components/menu/useMenu'
+import { LanguageSelect } from '@/components/LanguageSelect'
 import { NAV_DESTINATIONS } from './nav'
 import { WorkspaceContext } from './WorkspaceContext'
 import { useAuthStore } from '@/store/authStore'
@@ -255,6 +256,11 @@ function Sidebar({
         </nav>
 
         <div className="mt-auto border-t px-3 py-3">
+          {/* internationalization D-I7 — o seletor de idioma vive na área da conta,
+              sempre acessível. Controle com bandeira (não emoji), aria bilíngue. */}
+          <div className="mb-2 flex justify-end">
+            <LanguageSelect />
+          </div>
           {/* O indicador de gravação só ocupa o canto quando há algo a saber
               (erro/pendente/bloqueado). No repouso ("Salvo") nada é desenhado — sem
               espaçador órfão. Por isso a margem só existe quando ele aparece. */}

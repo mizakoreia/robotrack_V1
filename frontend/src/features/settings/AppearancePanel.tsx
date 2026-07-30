@@ -1,6 +1,8 @@
 import { useMemo } from 'react'
 import { Button } from '@/components/ui/Button'
 import { settingsText as T } from '@/lib/i18n/settings'
+import { languageText as L } from '@/lib/i18n/language'
+import { LanguageSelect } from '@/components/LanguageSelect'
 import { useThemeStore } from '@/store/themeStore'
 import { probeStorageLevel } from '@/lib/safeStorage'
 
@@ -44,6 +46,14 @@ export function AppearancePanel() {
           </Button>
         </div>
         {blocked && <p className="text-sm text-text-muted" role="status">{T.storageBlocked}</p>}
+
+        {/* internationalization D-I7 — idioma junto do tema (mesma natureza: preferência
+            de aparência por dispositivo). Controle segmentado com bandeira, não emoji. */}
+        <div className="space-y-1 border-t pt-3">
+          <p className="label-md text-text-main">{L.panelLabel}</p>
+          <p className="label-sm text-text-muted">{L.panelHint}</p>
+          <LanguageSelect layout="segmented" className="pt-1" />
+        </div>
       </div>
     </section>
   )

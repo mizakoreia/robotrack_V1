@@ -9,6 +9,7 @@ import { oauthState } from '../../lib/auth/oauthState'
 import { inviteStore } from '../../lib/auth/invite'
 import { formatInviteCode, isCompleteInviteCode, normalizeInviteCode } from '../../lib/auth/code'
 import { inviteText } from '../../lib/i18n/invitations'
+import { LanguageSelect } from '../../components/LanguageSelect'
 
 type Mode = 'login' | 'signup'
 type FieldErrors = { name?: string; email?: string; password?: string; form?: string }
@@ -157,7 +158,12 @@ export function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background px-4 py-8">
+    <div className="relative min-h-screen flex flex-col items-center justify-center gap-4 bg-background px-4 py-8">
+      {/* internationalization D-I7 — seletor pré-login: o primeiro EN consegue ler a
+          tela de entrada. Canto superior, sempre visível. */}
+      <div className="absolute right-4 top-4">
+        <LanguageSelect />
+      </div>
       <form onSubmit={onSubmit} noValidate className="w-full max-w-sm space-y-4" aria-label={isSignup ? 'Cadastro' : 'Login'}>
         <h1 className="text-2xl font-semibold text-center">
           {isSignup ? 'Criar conta' : 'Entrar'}
