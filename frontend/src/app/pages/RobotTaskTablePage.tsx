@@ -21,6 +21,7 @@ import { AdvanceControls } from '@/features/advances/AdvanceControls'
 import { useWorkspaceStore } from '@/store/workspaceStore'
 import { robotTaskText } from '@/lib/i18n/robotTasks'
 import { metricLabel } from '@/lib/i18n/progress'
+import { NotificationPreferenceControl } from '@/features/notifications/NotificationPreferenceControl'
 
 // robot-task-table 1.4/1.5 (§3.5) — a casca da tela operacional do robô: cabeçalho,
 // filtro segmentado (reset na navegação, D-RTT-1), tabela agrupada por categoria e os
@@ -102,13 +103,22 @@ export function RobotTaskTablePage() {
           {header.data && <Badge status="accent">{header.data.application}</Badge>}
         </div>
         {header.data && (
-          <span
-            className="label-md text-text-muted"
-            aria-label={`${metricLabel('weighted')}: ${header.data.weighted_progress.value}%`}
-          >
-            <span className="title tabular text-text-main">{header.data.weighted_progress.value}%</span>{' '}
-            {metricLabel('weighted')}
-          </span>
+          <div className="flex items-center gap-2">
+            <span
+              className="label-md text-text-muted"
+              aria-label={`${metricLabel('weighted')}: ${header.data.weighted_progress.value}%`}
+            >
+              <span className="title tabular text-text-main">{header.data.weighted_progress.value}%</span>{' '}
+              {metricLabel('weighted')}
+            </span>
+            <NotificationPreferenceControl
+              scope="robot"
+              ancestry={[
+                { type: 'robot', id: header.data.id },
+                { type: 'cell', id: header.data.cell_id },
+              ]}
+            />
+          </div>
         )}
       </header>
 

@@ -815,3 +815,26 @@ export const notificationsApi = {
     apiClient.post<NotificationDTO>(`/api/v1/notifications/${encodeURIComponent(id)}/read`),
   markAllRead: () => apiClient.post<{ ok: boolean }>('/api/v1/notifications/read_all'),
 }
+
+// notification-preferences D-P6 — preferência PESSOAL de notificação por entidade
+// (seguir/silenciar projeto/célula/robô). `state: 'default'` no PUT apaga a linha.
+export type SubscriptionScopeType = 'project' | 'cell' | 'robot'
+export type SubscriptionState = 'follow' | 'mute'
+
+export interface NotificationSubscriptionDTO {
+  id: string
+  scope_type: SubscriptionScopeType
+  scope_id: string
+  state: SubscriptionState
+  created_at: string
+  updated_at: string
+}
+
+export const notificationSubscriptionsApi = {
+  list: () => apiClient.get<NotificationSubscriptionDTO[]>('/api/v1/notification_subscriptions'),
+  set: (scope_type: SubscriptionScopeType, scope_id: string, state: SubscriptionState | 'default') =>
+    apiClient.put<NotificationSubscriptionDTO | { ok: boolean; state: 'default' }>(
+      '/api/v1/notification_subscriptions',
+      { scope_type, scope_id, state },
+    ),
+}

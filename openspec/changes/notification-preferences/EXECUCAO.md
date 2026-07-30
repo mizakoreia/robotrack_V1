@@ -123,6 +123,18 @@ no `design.md`.
   Specs: request `notification_subscriptions_spec` (upsert idempotente, default apaga, view gere a
   própria, GET só as próprias, não-membro barrado). Suíte autorização/tenancy/policy **294/0** (7
   pending pré-existentes); route-sweep valida a nova rota.
+- **G4 ✅** (frontend) — `bell-off` no sprite (currentColor, sem emoji); `qk.subscriptions`;
+  `notificationSubscriptionsApi` (endpoints); `i18n/notifications.ts` (rótulos, sem literal solto).
+  Hook `useNotificationSubscriptions` (query key `['ws',wsId,'subscriptions']`, upsert OTIMISTA,
+  `resolveEffective` mais-específico-vence + origem). Componente `NotificationPreferenceControl`
+  (`IconButton` sino → `PortalMenu` Padrão/Seguir/Silenciar, ≥40px, teclado, estado efetivo com
+  origem) montado nos cabeçalhos de `RobotTaskTablePage`/`CellPage`/`ProjectPage`. `DESIGN.md`
+  atualizado. Specs: `NotificationPreferenceControl.test` 6/0; sweeps (query-convention, no-emoji,
+  convention, contrast) verdes; `tsc`/`lint` limpos; suíte frontend **618/619** (a única falha é o
+  flaky pré-existente `queue.test.ts` D7-12, que passa isolado — domínio offline, intocado).
+  **Limitação v1 registrada:** na tela do robô a ancestralidade exibida é robô→célula (o
+  `project_id` não vem no header do robô); um `mute` de PROJETO ainda é honrado pelo servidor, mas
+  não aparece como estado herdado no sino do robô. Sem impacto no comportamento das notificações.
 - **G6 ⏸️ DEFERIDO** — eventos estruturais + `ALTER TYPE ADD VALUE 'structure'` NÃO executado
   (reversão não-trivial); aguardando OK separado do dono. tasks.md §6 marcado.
 

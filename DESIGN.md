@@ -78,6 +78,14 @@ propriedade (`text-success` não compila — D-DS-2).
 - **StatusSelect**, **Chip**, **IconButton** (a11y na assinatura de tipo — `label`
   obrigatório), **SaveIndicator**, **FilterBar**, **LiveRegions** (`#rt-status`
   polite / `#rt-alerts` assertive), **NotificationBell** (sino + badge de não-lidas).
+  - **NotificationPreferenceControl** (notification-preferences) — sino de **seguir/
+    silenciar** por entidade (projeto/célula/robô) no cabeçalho de cada tela. `IconButton`
+    (sino `bell` cheio/accent quando **Seguindo**, `bell-off` quando **Silenciado**, contorno
+    mudo no **Padrão**) → `PortalMenu` com três alvos explícitos (Padrão/Seguir/Silenciar,
+    ≥40px) — **não** um toggle que cicla no toque (ambíguo sob luva). Exibe o **estado efetivo
+    com origem** (`aria-label` "Silenciado pela célula" quando herdado de um ancestral — estado
+    honesto, Princípio 2). Novo glifo `bell-off` no sprite (currentColor, sem emoji). Rótulos em
+    `lib/i18n/notifications.ts` (sem literal solto).
   - **SaveIndicator** só desenha quando há algo a saber/agir: `error`, `pendente`,
     `bloqueado` (`saveStateNeedsAttention`). Os estados de repouso/feliz (`saved`,
     `saving`) **não renderizam nada** — um "Salvo" parado no canto é decoração, não

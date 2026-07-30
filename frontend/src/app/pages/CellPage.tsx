@@ -16,6 +16,7 @@ import { BackLink, LevelEmpty, LevelError, LevelSkeleton } from '@/features/hier
 import { useWorkspaceStore } from '@/store/workspaceStore'
 import { qk } from '@/lib/query/keys'
 import { hierarchyText } from '@/lib/i18n/hierarchy'
+import { NotificationPreferenceControl } from '@/features/notifications/NotificationPreferenceControl'
 
 // hierarchy-screens 5.3/5.4/5.5 (§3.4) — a tela de Célula: hub da célula + grade de
 // cards de Robô (badge = APLICAÇÃO, anel ponderado, rodapé `N tarefas`, "Abrir" →
@@ -52,12 +53,21 @@ export function CellPage() {
         <h1 id="cell-title" className="title min-w-0">
           {data.name}
         </h1>
-        {canEdit && !empty && (
-          <Button onClick={() => setAdding(true)}>
-            <Icon name="plus" size="sm" className="mr-1" />
-            {t.addRobots}
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          <NotificationPreferenceControl
+            scope="cell"
+            ancestry={[
+              { type: 'cell', id: cellId ?? '' },
+              { type: 'project', id: data.project_id },
+            ]}
+          />
+          {canEdit && !empty && (
+            <Button onClick={() => setAdding(true)}>
+              <Icon name="plus" size="sm" className="mr-1" />
+              {t.addRobots}
+            </Button>
+          )}
+        </div>
       </div>
 
       {empty ? (

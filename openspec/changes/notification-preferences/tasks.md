@@ -60,19 +60,19 @@
 
 ## 4. UX — sino seguir/silenciar nas telas (G4) 🟢
 
-- [ ] 4.1 Adicionar `bell-off` ao sprite (`<symbol id="i-bell-off">` + `ICON_NAMES`), sem emoji,
+- [x] 4.1 Adicionar `bell-off` ao sprite (`<symbol id="i-bell-off">` + `ICON_NAMES`), sem emoji,
   currentColor; criar `src/lib/i18n/notifications.ts` com os rótulos (Padrão/Seguir/Silenciar +
   descrições + textos de origem "pelo projeto"/"pela célula"). (DESIGN.md — nenhum literal solto,
   nenhum emoji)
-- [ ] 4.2 Hook `useNotificationSubscriptions` (query key `qk.subscriptions(wsId)` adicionada em
+- [x] 4.2 Hook `useNotificationSubscriptions` (query key `qk.subscriptions(wsId)` adicionada em
   `keys.ts`; passa no `query-convention` sweep) com upsert otimista (molde de `useDeleteRobot`),
   invalidando a chave específica; e um seletor que resolve o **estado efetivo + origem** de uma
   entidade a partir das linhas. (D9 — nenhum `useEffect + apiClient`; sem `window.location.reload`)
-- [ ] 4.3 Componente `NotificationPreferenceControl` (IconButton sino → `PortalMenu` com Padrão/
+- [x] 4.3 Componente `NotificationPreferenceControl` (IconButton sino → `PortalMenu` com Padrão/
   Seguir/Silenciar, alvo ≥40px, teclado, `prefers-reduced-motion`) e montá-lo nos cabeçalhos de
   `RobotTaskTablePage`, `CellPage`, `ProjectPage`. (impeccable/product — controle ≠ badge; três
   alvos explícitos, não um toggle que cicla)
-- [ ] 4.4 Teste de componente: estado efetivo (próprio e herdado com origem), alternância
+- [x] 4.4 Teste de componente: estado efetivo (próprio e herdado com origem), alternância
   otimista sem reload, e a11y (aria-label, foco, `bell-off` sem emoji). (DESIGN.md — estado honesto
   com origem; §regra de sweep de ícone/emoji)
 

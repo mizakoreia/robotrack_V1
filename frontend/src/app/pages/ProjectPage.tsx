@@ -14,6 +14,7 @@ import { LevelHub } from '@/features/hierarchy/LevelHub'
 import { BackLink, LevelEmpty, LevelError, LevelSkeleton } from '@/features/hierarchy/LevelChrome'
 import { useWorkspaceStore } from '@/store/workspaceStore'
 import { hierarchyText } from '@/lib/i18n/hierarchy'
+import { NotificationPreferenceControl } from '@/features/notifications/NotificationPreferenceControl'
 
 // hierarchy-screens 5.1/5.2/5.5 (§3.3) — a tela de Projeto: hub do projeto + grade
 // de cards de Célula (badge N robô(s), anel ponderado, rodapé "Status global /
@@ -46,12 +47,15 @@ export function ProjectPage() {
         <h1 id="proj-title" className="title">
           {data.name}
         </h1>
-        {canEdit && !empty && (
-          <Button onClick={() => setCreating(true)}>
-            <Icon name="plus" size="sm" className="mr-1" />
-            {t.newCell}
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          <NotificationPreferenceControl scope="project" ancestry={[{ type: 'project', id: projectId ?? '' }]} />
+          {canEdit && !empty && (
+            <Button onClick={() => setCreating(true)}>
+              <Icon name="plus" size="sm" className="mr-1" />
+              {t.newCell}
+            </Button>
+          )}
+        </div>
       </div>
 
       {empty ? (
