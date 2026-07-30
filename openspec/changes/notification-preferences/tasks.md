@@ -32,14 +32,14 @@
 
 ## 2. Resolução e filtro no pipeline (G2) 🟢
 
-- [ ] 2.1 `Notifications::SubscriptionResolver` — objeto puro `wants?(person_id, ctx, default:)`
+- [x] 2.1 `Notifications::SubscriptionResolver` — objeto puro `wants?(person_id, ctx, default:)`
   (mais-específico-vence: robô > célula > projeto; sem linha → `default`) + carregador que traz as
   linhas do galho numa única query (D-P5). (§D-P3 — tabela-verdade dos casos: follow-em-mute,
   mute-em-follow, herança de nível, ausência → default)
-- [ ] 2.2 Ligar o filtro no `CreateService#insert_for` na ordem de D-P4 (candidatos ∪ seguidores →
+- [x] 2.2 Ligar o filtro no `CreateService#insert_for` na ordem de D-P4 (candidatos ∪ seguidores →
   `uniq` → −actor → `select { wants? }`), sem tocar em `RecipientResolver` (segue puro). (§D-P4 —
   seguidor não-autor entra; silenciador responsável sai; dedup e "nunca o autor" preservados)
-- [ ] 2.3 Spec de tabela do resolver + spec de integração do `CreateService`: seguidor recebe,
+- [x] 2.3 Spec de tabela do resolver + spec de integração do `CreateService`: seguidor recebe,
   seguidor-autor não, silenciador responsável não, tabela vazia = comportamento de hoje, falha de
   leitura não derruba o avanço. (§D-P3/D-P4 — os cinco casos-limite; a tabela vazia é a prova de
   não-regressão)
@@ -78,14 +78,14 @@
 
 ## 5. Atribuição a terceiros — item pendente 1 (G5) 🟢
 
-- [ ] 5.1 Adicionar a chave `pt-BR.notifications.v1.assign_observer` (3ª pessoa,
+- [x] 5.1 Adicionar a chave `pt-BR.notifications.v1.assign_observer` (3ª pessoa,
   `%{author} atribuiu %{assignee} à tarefa "%{task}" (robô %{robot})`) e ensinar o `MessageBuilder`
   a renderizá-la por destinatário. (§D-P7 — a string 3ª pessoa fica no locale versionado, não inline)
-- [ ] 5.2 Estender o caminho `assign` do `CreateService` para incluir dono + seguidores do galho
+- [x] 5.2 Estender o caminho `assign` do `CreateService` para incluir dono + seguidores do galho
   (menos atribuído e autor) como destinatários **observadores**, materializando a `msg` por
   destinatário (2ª pessoa ao atribuído, 3ª aos observadores), mantendo `type = 'assign'`. (§D-P7 —
   sem migração de enum; idempotência de assign preservada)
-- [ ] 5.3 Specs: dono recebe 3ª pessoa e atribuído recebe 2ª pessoa na mesma atribuição; autor não
+- [x] 5.3 Specs: dono recebe 3ª pessoa e atribuído recebe 2ª pessoa na mesma atribuição; autor não
   recebe; seguidor com `mute` no robô não recebe; grep-guard da string observadora. (§D-P7 — os dois
   textos coexistem por destinatário)
 

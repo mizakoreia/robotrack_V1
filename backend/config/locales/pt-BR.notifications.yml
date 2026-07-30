@@ -5,5 +5,6 @@ pt-BR:
   notifications:
     v1:
       assign: '%{author} atribuiu você à tarefa "%{task}" (robô %{robot})'
+      assign_observer: '%{author} atribuiu %{assignee} à tarefa "%{task}" (robô %{robot})'
       progress: '%{author} registrou %{n}%% na tarefa "%{task}" (robô %{robot}): %{comment}'
       done: 'Tarefa "%{task}" (robô %{robot}) foi concluída por %{author}'

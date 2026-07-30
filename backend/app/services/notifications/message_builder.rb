@@ -14,9 +14,9 @@ module Notifications
     module_function
 
     # Devolve { msg:, format_version: }.
-    def build(type:, author:, task:, robot:, n: nil, comment: nil)
+    def build(type:, author:, task:, robot:, n: nil, comment: nil, assignee: nil)
       key = "notifications.v#{FORMAT_VERSION}.#{type}"
-      vars = { author: author, task: task, robot: robot, n: n, comment: comment }.compact
+      vars = { author: author, task: task, robot: robot, n: n, comment: comment, assignee: assignee }.compact
 
       msg = render(key, vars)
       if msg.length > MAX_LEN && comment

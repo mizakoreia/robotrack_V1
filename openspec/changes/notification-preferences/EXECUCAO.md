@@ -107,6 +107,13 @@ no `design.md`.
   `NotificationSubscription` (`WorkspaceScoped`, validação uma-de-três). Migração aplicada em DEV
   **e** TEST como `robotrack_migrator`; `structure.sql` regenerado. Spec `spec/db/
   notification_subscriptions_schema_spec.rb` **9/0** (CHECK, enum, FK cross-ws, único, CASCADE, RLS).
+- **G2+G5 ✅** (acoplados no `create_service.rb`) — `SubscriptionResolver` (puro, 1 query,
+  mais-específico-vence). `CreateService#for_advance` filtra candidatos (seguidor entra, silenciador
+  sai, dono-mute sobrepõe owner-tudo). `for_assign` ganha observadores em 3ª pessoa
+  (`assign_observer`, `type='assign'`, SEM migração de enum; atribuído segue 2ª pessoa e isento de
+  mute — O-4). `MessageBuilder` aceita `assignee:`. Locale `assign_observer` adicionado; grep-guard
+  estendido para `à tarefa "`. Specs: `subscription_filter_spec.rb` 13/0; suíte de notificações
+  inteira **52/0** (sem regressão da notificação-do-dono nem das invariantes 4/8).
 - **G6 ⏸️ DEFERIDO** — eventos estruturais + `ALTER TYPE ADD VALUE 'structure'` NÃO executado
   (reversão não-trivial); aguardando OK separado do dono. tasks.md §6 marcado.
 

@@ -42,11 +42,21 @@ RSpec.describe Notifications::MessageBuilder do
     end
   end
 
-  describe 'grep-guard (2.3 / D14)' do
-    it 'a string de assign não aparece fora de config/locales e de specs' do
+  describe 'assign_observer 3ª pessoa (notification-preferences D-P7)' do
+    it 'renderiza o texto observador com o nome do atribuído' do
+      msg = described_class.build(type: 'assign_observer', author: 'Carla', task: 'Backup do programa',
+                                  robot: 'R01 - Solda', assignee: 'Diego')[:msg]
+      expect(msg).to eq('Carla atribuiu Diego à tarefa "Backup do programa" (robô R01 - Solda)')
+    end
+  end
+
+  describe 'grep-guard (2.3 / D14 + D-P7)' do
+    it 'as strings de notificação não aparecem fora de config/locales e de specs' do
       root = Rails.root
+      # `à tarefa "` cobre tanto o assign 2ª pessoa quanto o assign_observer 3ª —
+      # ambos vivem só no locale versionado; inliná-los num .rb quebra o CI.
       offenders = Dir.glob(root.join('{app,lib,config}/**/*.rb')).select do |f|
-        File.read(f).include?('atribuiu você à tarefa')
+        File.read(f).include?('à tarefa "')
       end
       expect(offenders).to be_empty, "string de notificação fora do locale: #{offenders.join(', ')}"
     end
