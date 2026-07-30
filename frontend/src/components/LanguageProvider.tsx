@@ -1,5 +1,6 @@
 import React, { Fragment } from 'react'
 import { useLanguage } from '@/hooks/useLanguage'
+import { useAccountLocaleSync } from '@/hooks/useAccountLocaleSync'
 
 // internationalization D-I2 — espelho do `ThemeProvider`. Aplica o idioma e força o
 // remount da árvore autenticada por `key={lang}` quando o idioma troca, para que toda
@@ -11,5 +12,9 @@ interface LanguageProviderProps {
 
 export function LanguageProvider({ children }: LanguageProviderProps) {
   const { lang } = useLanguage()
+  // internationalization G6 — a sincronia conta↔dispositivo vive AQUI (no corpo do
+  // provider, que persiste entre trocas de idioma; só a árvore-filha remonta pelo
+  // `key`), então os refs de hidratação não se perdem a cada troca.
+  useAccountLocaleSync()
   return <Fragment key={lang}>{children}</Fragment>
 }

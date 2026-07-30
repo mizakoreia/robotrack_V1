@@ -120,24 +120,31 @@ pt-BR + en de uma vez, então G3 já entrega os dois idiomas nas superfícies mi
   (audit/format-guard, notificações, erros, autorização) **130/130** (2 pending
   pré-existentes de superuser). pt-BR.*.yml intactos; nenhuma versão `vN` sobrescrita.
 
-## 6. Preferência na conta + congelamento server-side (G6) 🟡 — MIGRAÇÃO (a única)
+## 6. Preferência na conta + congelamento server-side (G6) 🟡 — MIGRAÇÃO (a única) — FECHADO
 
-- [ ] 6.0 **Backup/rollback:** a migração é aditiva e reverte por `DROP COLUMN`;
-  registrar o `down` explícito antes de aplicar (tarefa destrutiva exige rollback
-  imediatamente antes — aqui o `down` é o próprio rollback).
-- [ ] 6.1 Migração aditiva `users.locale text NOT NULL DEFAULT 'pt-BR'` +
-  `CHECK locale IN ('pt-BR','en')`. Regenerar `structure.sql`. (Prova: `INSERT` com
-  `locale='es'` falha no CHECK; default preserva usuários existentes em pt-BR.)
-- [ ] 6.2 `PATCH /users/me` que altera **só o próprio** locale (política, não UI); o
-  cliente sincroniza `rt-lang` ↔ conta no login/troca. (Prova de negação: não há rota
-  que altere locale de outra pessoa.)
-- [ ] 6.3 `MessageBuilder`/`CreateService` congelam a `msg` no locale do **destinatário**
-  (deixa de fixar `LOCALE=:'pt-BR'`); `RecordService` congela no locale do **ator**.
-  Trigger de notificações e imutabilidade de auditoria **intactos**. (Prova: dois
-  destinatários em idiomas diferentes → duas msg congeladas; UPDATE de `audit_logs.msg`
-  ainda levanta exceção.)
-- [ ] 6.4 Verificação do grupo: specs de notificação (idioma por destinatário) e
-  auditoria (idioma por ator, imutabilidade preservada) verdes.
+- [x] 6.0 **Rollback:** a migração é aditiva; o `down` (`DROP CONSTRAINT` + `DROP
+  COLUMN`) é o próprio rollback — não há ponto de reversão não-trivial.
+- [x] 6.1 Migração `20260730130001_add_locale_to_users` — `users.locale text NOT NULL
+  DEFAULT 'pt-BR'` + `CHECK locale IN ('pt-BR','en')`. Aplicada em dev+test como
+  `robotrack_migrator`; `structure.sql` regenerado. (Prova: coluna + `chk_users_locale`
+  no `structure.sql`; default preserva os usuários existentes.)
+- [x] 6.2 `PATCH /auth/v1/me { locale }` altera **só o próprio** (o sujeito é o token;
+  não há parâmetro de "quem"). `update_column` evita o campo minado de validações
+  legadas do model User; `values:` do Grape + CHECK garantem o par. Entity expõe
+  `locale` (login/me carregam). Frontend: `useAccountLocaleSync` hidrata o `rt-lang` do
+  `users.locale` no login e persiste a troca (PATCH) — montado no `LanguageProvider`.
+  (Prova: `me_locale_spec` 4/4 — GET/PATCH/`400` inválido/`401` sem token = sem caminho
+  para locale alheio.)
+- [x] 6.3 `MessageBuilder.build(locale:)` + `CreateService#insert_rows` congelam a `msg`
+  no locale de **cada destinatário** (Person → user_id → `users.locale`; sem conta →
+  default pt-BR); constrói uma vez por locale distinto. Trigger de notificações
+  **intacto**. Auditoria: já congela no locale do **ator** via o middleware do G5 (a
+  requisição do ator carrega `X-Locale`), sem tocar `RecordService` nem a imutabilidade.
+  (Prova: create_service_spec — dois destinatários en/pt na mesma emissão → duas msg em
+  idiomas diferentes.)
+- [x] 6.4 Verificação do grupo: notificações + auth + autorização + audit + report +
+  middleware **542 exemplos, 0 falhas** (7 pending pré-existentes de superuser/rotas
+  futuras); frontend 654/655 (só o flake de CPU do offline/queue); tsc limpo.
 
 ## 7. Documentação (parte de cada push, não posterior)
 

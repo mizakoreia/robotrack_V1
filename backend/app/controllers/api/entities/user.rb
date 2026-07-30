@@ -11,6 +11,10 @@ module Api
       expose :name
       expose :email
       expose :avatar_url
+      # internationalization G6 — a preferência de idioma da conta viaja no payload de
+      # login/me, para o cliente hidratar o `rt-lang` já na entrada (segue a pessoa
+      # entre dispositivos).
+      expose :locale
     end
   end
 end

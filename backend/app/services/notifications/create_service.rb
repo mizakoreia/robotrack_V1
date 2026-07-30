@@ -31,10 +31,10 @@ module Notifications
       recipients = SubscriptionResolver.filter(recipients, index, advance.by)
       return 0 if recipients.empty?
 
-      built = MessageBuilder.build(type: type.to_s, author: advance.author_name_snapshot, task: task.desc,
-                                   robot: robot_label, n: advance.to_progress, comment: advance.comment)
+      build_args = { type: type.to_s, author: advance.author_name_snapshot, task: task.desc,
+                     robot: robot_label, n: advance.to_progress, comment: advance.comment }
       insert_rows(task: task, type: type, actor_id: advance.by, author_name: advance.author_name_snapshot,
-                  recipients: recipients, recorded_at: advance.recorded_at, ctx: ctx, built: built)
+                  recipients: recipients, recorded_at: advance.recorded_at, ctx: ctx, build_args: build_args)
     end
 
     # Evento de atribuição: `added` é o delta (novos responsáveis). Dois grupos de
@@ -61,19 +61,19 @@ module Notifications
       # 2ª pessoa ao atribuído (delta − autor). Isento de mute (O-4).
       assignees = RecipientResolver.resolve(type: :assign, actor_person_id: actor, current_assignees: added)
       if assignees.any?
-        built = MessageBuilder.build(type: 'assign', author: author, task: task.desc, robot: robot_label)
+        build_args = { type: 'assign', author: author, task: task.desc, robot: robot_label }
         created += insert_rows(task: task, type: :assign, actor_id: actor_person_id, author_name: author,
-                               recipients: assignees, recorded_at: when_at, ctx: ctx, built: built)
+                               recipients: assignees, recorded_at: when_at, ctx: ctx, build_args: build_args)
       end
 
       # 3ª pessoa aos observadores (dono + seguidores − atribuídos − autor), honrando mute.
       observers = assign_observers(task, ctx, added, actor)
       if observers.any?
         assignee_names = person_names(added)
-        built = MessageBuilder.build(type: 'assign_observer', author: author, task: task.desc,
-                                     robot: robot_label, assignee: assignee_names)
+        build_args = { type: 'assign_observer', author: author, task: task.desc,
+                       robot: robot_label, assignee: assignee_names }
         created += insert_rows(task: task, type: :assign, actor_id: actor_person_id, author_name: author,
-                               recipients: observers, recorded_at: when_at, ctx: ctx, built: built)
+                               recipients: observers, recorded_at: when_at, ctx: ctx, build_args: build_args)
       end
 
       created
@@ -138,12 +138,30 @@ module Notifications
       [ctx, robot_label]
     end
 
-    def insert_rows(task:, type:, actor_id:, author_name:, recipients:, recorded_at:, ctx:, built:)
+    # internationalization G6 (D-I5a) — a msg é CONGELADA no locale de CADA
+    # destinatário. Constrói uma vez por locale distinto (cache) e insere a linha
+    # daquele destinatário com o texto do idioma dele. A idempotência/savepoint por
+    # linha do `insert_one` seguem intactos.
+    def insert_rows(task:, type:, actor_id:, author_name:, recipients:, recorded_at:, ctx:, build_args:)
+      locales = recipient_locales(recipients)
+      cache = {}
       created = 0
       recipients.each do |recipient_id|
+        loc = locales[recipient_id.to_s] || MessageBuilder::LOCALE
+        built = (cache[loc] ||= MessageBuilder.build(**build_args, locale: loc))
         created += 1 if insert_one(task, type, actor_id, recipient_id, author_name, recorded_at, built, ctx)
       end
       created
+    end
+
+    # Locale de cada destinatário: Person → user_id → User.locale. Pessoa sem conta
+    # (snapshot histórico) ou sem locale → nil (o chamador aplica o default pt-BR).
+    def recipient_locales(ids)
+      return {} if ids.empty?
+
+      people = ::Person.where(id: ids).pluck(:id, :user_id)
+      user_locales = ::User.where(id: people.map(&:last).compact).pluck(:id, :locale).to_h
+      people.to_h { |pid, uid| [pid.to_s, uid && user_locales[uid]] }
     end
 
     def insert_one(task, type, actor_id, recipient_id, author_name, recorded_at, built, ctx)

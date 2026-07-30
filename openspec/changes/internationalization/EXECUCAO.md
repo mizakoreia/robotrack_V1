@@ -130,8 +130,31 @@ Postgres up) rodam AQUI — os gates de G1–G6 são reais, não handoff de WSL.
   deixados de propósito (registrado em D-I3/tasks 1.4).
 - **Gates:** sweeps 28/28 · suíte 640/640 (flake de CPU isolado passa) · `tsc` limpo.
 
-## PENDÊNCIAS / PRÓXIMO
+## EXECUÇÃO — G2..G6 (TODOS FECHADOS, verdes neste ambiente)
 
-- G2 (seletor bandeira BR/GB SVG), G3 (extrair inline → chaves, já em EN), G4.2 (mapa
-  de exibição de status/aplicações/tarefas-base), G5 (backend `en.*.yml` + locale por
-  requisição), G6 (`users.locale` + congelamento). Backend roda aqui → sem handoff WSL.
+- **G2 (seletor):** `Flag.tsx` (BR/GB SVG, `aria-hidden`, exceção documentada ao sprite
+  monocromático) + `LanguageSelect.tsx` (controle, não badge; menu com dois alvos +
+  segmented; ≥40px; aria bilíngue). Nas 3 superfícies (menu da conta, Aparência,
+  AuthPage). `no-emoji` verde (pegou até um emoji citado por engano num comentário).
+- **G3 (extração):** `shell.ts` (AppShell/nav), `auth.ts` (AuthPage), `pages.ts` (Visão
+  Geral/Projeto/Célula/Robô/StorageWarning/gráficos), `ajuda.ts` (a tela de Ajuda) —
+  todos com o EN já traduzido. Regra G resolvida (allowlist de "Convidar pessoa").
+- **G4 (dado):** `dataLabels.ts` traduz na EXIBIÇÃO os 4 status, 6 aplicações, 9
+  categorias e 31 tarefas-base (chaveado pelo valor pt-BR, grafia legada preservada;
+  valor custom → fallback). Aplicado em StatusCell/MyTasks/CellPage/RobotTaskTable/
+  CatalogPanel/AcoesCell/BatchRobotWizard — o `value` dos controles segue pt-BR.
+- **G5 (backend locale):** 10 `en.*.yml` (report `Concluído`→**Completed**), middleware
+  `X-Locale → Accept-Language → pt-BR` com `I18n.with_locale`, `client.ts` envia
+  `X-Locale`. Relatório e erros saem no locale do leitor.
+- **G6 (conta + congelamento — a única migração):** `users.locale` (aditiva, reverte por
+  `DROP`), `PATCH /auth/v1/me` (só o próprio), `MessageBuilder(locale:)` +
+  `CreateService` congelam a notificação no locale do **destinatário**; a auditoria já
+  congela no locale do **ator** pelo middleware do G5. `useAccountLocaleSync` sincroniza
+  `rt-lang` ↔ conta. **Nenhuma tabela congelada tocada; nenhum ponto 🔴.**
+
+## COMMITS
+
+G0 `53eddaa` · G1 `2d6a2bb` · G2 `096e883` · G3 `fc418fa` · G4 `e0bf612` · G5 `4a88ac4`
+· G6 (este). Todos com `validate --strict` verde e push na `main` (Render auto-deploy).
+Os 2 arquivos de túnel (`vite.config.ts`, `lib/api/client.ts` — só o override de
+baseURL) seguem **sem commit** (o X-Locale do `client.ts` foi commitado à parte).

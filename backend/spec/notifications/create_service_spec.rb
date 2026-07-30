@@ -147,4 +147,38 @@ RSpec.describe Notifications::CreateService, :tenancy do
       end.not_to raise_error
     end
   end
+
+  # internationalization G6 (D-I5a) — a `msg` é CONGELADA no locale do DESTINATÁRIO no
+  # INSERT. Dois responsáveis de idiomas diferentes na MESMA emissão → duas linhas em
+  # idiomas diferentes. Pessoa sem conta/locale → default pt-BR.
+  describe 'congela a msg no locale do destinatário' do
+    it 'destinatário en recebe inglês; pt-BR recebe português, na mesma emissão' do
+      en_user = create(:user, name: 'Ann')
+      en_user.update!(locale: 'en')
+      pt_user = create(:user, name: 'Ana') # default pt-BR
+
+      w = in_workspace(ws) do
+        en_person = Person.create!(name: 'Ann', user_id: en_user.id)
+        pt_person = Person.create!(name: 'Ana', user_id: pt_user.id)
+        actor = Person.create!(name: 'Bruno')
+        project = Project.create!(name: 'L', position: 0)
+        cell = Cell.create!(project_id: project.id, name: 'C', position: 0)
+        robot = Robot.create!(cell_id: cell.id, name: 'R03', application: 'Handling', position: 0)
+        task = create_task(robot, desc: 'Ajuste de TCP')
+        TaskAssignee.create!(task_id: task.id, person_id: en_person.id, workspace_id: ws.id)
+        TaskAssignee.create!(task_id: task.id, person_id: pt_person.id, workspace_id: ws.id)
+        { en: en_person.id, pt: pt_person.id, actor: actor.id, task: task.id }
+      end
+
+      in_workspace(ws) do
+        advance = TaskAdvance.create!(task_id: w[:task], by: w[:actor], author_name_snapshot: 'Bruno',
+                                      from_progress: 0, to_progress: 45, comment: 'ok', legacy: false,
+                                      recorded_at: Time.current)
+        described_class.for_advance(advance_id: advance.id)
+
+        expect(Notification.find_by(recipient_person_id: w[:en]).msg).to include('logged 45% on the task "Ajuste de TCP"')
+        expect(Notification.find_by(recipient_person_id: w[:pt]).msg).to include('registrou 45% na tarefa "Ajuste de TCP"')
+      end
+    end
+  end
 end

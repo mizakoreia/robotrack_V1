@@ -16,6 +16,9 @@ export interface AuthUser {
   name?: string
   email?: string
   avatar_url?: string | null
+  // internationalization G6 — a preferência de idioma da conta (default 'pt-BR'). O
+  // cliente hidrata o rt-lang a partir dela no login e a atualiza (PATCH) ao trocar.
+  locale?: 'pt-BR' | 'en'
   // Campos herdados do template, lidos por telas legadas (Dashboard/Users/Topbar/
   // Profile). Fora do escopo de identity-and-auth (a entidade do servidor expõe
   // só id/name/email/avatar_url); mantidos opcionais para compat de compilação.

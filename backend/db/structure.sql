@@ -1064,6 +1064,8 @@ CREATE TABLE public.users (
     plan_id integer,
     credit_card_brand character varying,
     encrypted_password character varying DEFAULT ''::character varying NOT NULL,
+    locale text DEFAULT 'pt-BR'::text NOT NULL,
+    CONSTRAINT chk_users_locale CHECK ((locale = ANY (ARRAY['pt-BR'::text, 'en'::text]))),
     CONSTRAINT users_credential_present CHECK (((provider IS NOT NULL) OR ((encrypted_password)::text <> ''::text))),
     CONSTRAINT users_name_min_length CHECK ((char_length(btrim((name)::text)) >= 2))
 );
@@ -2908,6 +2910,7 @@ ALTER TABLE public.workspaces ENABLE ROW LEVEL SECURITY;
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260730130001'),
 ('20260730120001'),
 ('20260726120001'),
 ('20260724120001'),
