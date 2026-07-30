@@ -20,6 +20,10 @@ const advanceTextPtBR = {
   decrease: '−10%',
   increase: '+10%',
   progressLabel: 'Progresso da tarefa',
+  // impeccable critique P1 — o slider é o controle mais importante da linha e era
+  // anônimo para o leitor de tela ("Progresso, slider" em toda linha). Nomeado por
+  // tarefa, o operador sabe QUAL tarefa está avançando (D15 — métrica nomeada para SR).
+  progressLabelFor: (task: string) => `Progresso de "${task}"`,
   readOnlyHint: 'Só quem edita pode registrar avanço.',
 
   // Modal

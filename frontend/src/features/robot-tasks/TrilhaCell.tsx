@@ -46,7 +46,8 @@ export function TrilhaCell({ robotId, task }: { robotId: string; task: TaskDTO }
             type="button"
             onClick={() => setShowHistory(true)}
             aria-label={robotTaskText.trailCountAria(task.advances_count, task.desc)}
-            className="label-sm inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-accent-ink hover:bg-accent/10"
+            // impeccable critique P2 — alvo de luva ≥32px (era ~20px com py-0.5).
+            className="label-sm inline-flex min-h-[2rem] items-center gap-1 rounded-md px-2 py-0.5 text-accent-ink hover:bg-accent/10"
           >
             <Icon name="list" size="sm" />
             {task.advances_count}
@@ -59,7 +60,8 @@ export function TrilhaCell({ robotId, task }: { robotId: string; task: TaskDTO }
               ref={recordRef}
               type="button"
               onClick={() => setRecording(true)}
-              className="label-md inline-flex items-center gap-1 rounded-md py-0.5 font-medium text-warning-ink hover:underline"
+              // impeccable critique P2 — alvo de luva ≥32px (era ~20px com py-0.5).
+              className="label-md inline-flex min-h-[2rem] items-center gap-1 rounded-md py-0.5 font-medium text-warning-ink hover:underline"
             >
               <Icon name="alert" size="sm" />
               {robotTaskText.trailWarning}

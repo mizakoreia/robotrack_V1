@@ -31,6 +31,12 @@ const shellTextPtBR = {
   openMenu: 'Abrir menu',
   help: 'Ajuda',
   invitePerson: 'Convidar pessoa',
+  // impeccable critique P1 — o sino tinha o rótulo acessível pt-BR hard-coded, então
+  // no modo EN o leitor de tela ainda ouvia "Notificações". Agora segue o eixo de idioma.
+  notifications: {
+    bell: 'Notificações',
+    bellUnread: (n: number) => `Notificações (${n} não lidas)`,
+  },
 }
 
 export type ShellText = typeof shellTextPtBR

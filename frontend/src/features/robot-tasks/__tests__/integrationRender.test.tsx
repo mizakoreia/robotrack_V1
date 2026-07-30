@@ -78,7 +78,7 @@ it('avançar a linha A não re-renderiza a linha B (§7.1)', async () => {
   const bBefore = renders.B
 
   // avança a linha A: arrasta o slider a 50 e solta (40→50) → abre a observação
-  const sliderA = screen.getAllByLabelText('Progresso da tarefa')[0]
+  const sliderA = screen.getAllByRole('slider')[0]
   fireEvent.change(sliderA, { target: { value: '50' } })
   fireEvent.pointerUp(sliderA)
   fireEvent.change(screen.getByLabelText(/Comentário/), { target: { value: 'passo A' } })

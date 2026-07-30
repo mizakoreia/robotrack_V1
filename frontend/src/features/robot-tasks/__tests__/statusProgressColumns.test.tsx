@@ -92,7 +92,7 @@ describe('coluna Status (2.1 — §2.2)', () => {
     await waitFor(() =>
       expect((screen.getByLabelText('Status de Fixar base') as HTMLSelectElement).value).toBe('Concluído'),
     )
-    expect((screen.getByLabelText('Progresso da tarefa') as HTMLInputElement).value).toBe('100')
+    expect((screen.getByRole('slider') as HTMLInputElement).value).toBe('100')
 
     // 2.3 (D-RTT-10) — invalidação dupla: tasks do robô E prefixo projects
     const keys = invalidate.mock.calls.map((c) => JSON.stringify(c[0]?.queryKey))
@@ -164,7 +164,7 @@ describe('coluna Progresso (2.2/2.3 — §2.4, D-RTT-5)', () => {
     renderPage()
 
     // arrasta a 30 e solta (20→30) → abre a observação
-    const slider1 = await screen.findByLabelText('Progresso da tarefa')
+    const slider1 = await screen.findByRole('slider')
     fireEvent.change(slider1, { target: { value: '30' } })
     fireEvent.pointerUp(slider1)
     expect(screen.getByRole('dialog')).toHaveTextContent('De 20% → Para 30%')
@@ -173,11 +173,11 @@ describe('coluna Progresso (2.2/2.3 — §2.4, D-RTT-5)', () => {
 
     // refetch pós-invalidação: o persistido agora é 30
     await waitFor(() =>
-      expect((screen.getByLabelText('Progresso da tarefa') as HTMLInputElement).value).toBe('30'),
+      expect((screen.getByRole('slider') as HTMLInputElement).value).toBe('30'),
     )
 
     // arrasta a 40 e solta (30→40) → abre de novo
-    const slider2 = screen.getByLabelText('Progresso da tarefa')
+    const slider2 = screen.getByRole('slider')
     fireEvent.change(slider2, { target: { value: '40' } })
     fireEvent.pointerUp(slider2)
     expect(screen.getByRole('dialog')).toHaveTextContent('De 30% → Para 40%')
@@ -187,7 +187,7 @@ describe('coluna Progresso (2.2/2.3 — §2.4, D-RTT-5)', () => {
     await waitFor(() => expect(create).toHaveBeenCalledTimes(2))
     expect(create.mock.calls[1][1]).toMatchObject({ progress: 40, lock_version: 1 })
     await waitFor(() =>
-      expect((screen.getByLabelText('Progresso da tarefa') as HTMLInputElement).value).toBe('40'),
+      expect((screen.getByRole('slider') as HTMLInputElement).value).toBe('40'),
     )
   })
 
@@ -196,7 +196,7 @@ describe('coluna Progresso (2.2/2.3 — §2.4, D-RTT-5)', () => {
     const create = vi.spyOn(taskAdvancesApi, 'create')
     renderPage()
 
-    const slider = (await screen.findByLabelText('Progresso da tarefa')) as HTMLInputElement
+    const slider = (await screen.findByRole('slider')) as HTMLInputElement
     fireEvent.change(slider, { target: { value: '70' } })
     expect(slider.value).toBe('70')
     fireEvent.pointerUp(slider) // solta → abre a observação
@@ -204,7 +204,7 @@ describe('coluna Progresso (2.2/2.3 — §2.4, D-RTT-5)', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
     expect(screen.queryByRole('dialog')).toBeNull()
-    expect((screen.getByLabelText('Progresso da tarefa') as HTMLInputElement).value).toBe('30')
+    expect((screen.getByRole('slider') as HTMLInputElement).value).toBe('30')
     expect(create).not.toHaveBeenCalled()
   })
 })

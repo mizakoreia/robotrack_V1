@@ -122,12 +122,12 @@ describe('E2E — cenários operacionais (7.2)', () => {
     mockApi([task({ id: 'a', desc: 'Fixar', progress: 30, status: 'Em Andamento' })])
     const create = vi.spyOn(taskAdvancesApi, 'create')
     renderAt()
-    const slider = await screen.findByLabelText('Progresso da tarefa')
+    const slider = await screen.findByRole('slider')
     fireEvent.change(slider, { target: { value: '70' } })
     expect((slider as HTMLInputElement).value).toBe('70')
     fireEvent.pointerUp(slider) // solta → abre a observação
     fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
-    expect((screen.getByLabelText('Progresso da tarefa') as HTMLInputElement).value).toBe('30')
+    expect((screen.getByRole('slider') as HTMLInputElement).value).toBe('30')
     expect(create).not.toHaveBeenCalled()
   })
 
@@ -140,7 +140,7 @@ describe('E2E — cenários operacionais (7.2)', () => {
     expect(screen.queryByRole('button', { name: 'Sincronizar tarefas-base' })).toBeNull()
     expect(screen.queryByRole('columnheader', { name: 'Ações' })).toBeNull()
     expect(screen.queryByLabelText('+10%')).toBeNull()
-    expect(screen.queryByLabelText('Progresso da tarefa')).toHaveAttribute('aria-disabled', 'true')
+    expect(screen.queryByRole('slider')).toHaveAttribute('aria-disabled', 'true')
   })
 })
 

@@ -20,13 +20,24 @@ import { AdvanceModal } from './AdvanceModal'
 // (arraste ao vivo); cancelar/`Esc` zera tudo e o slider VOLTA ao servidor sem
 // requisição nenhuma — e o foco retorna ao controle de origem.
 
-export function AdvanceControls({ robotId, taskId }: { robotId: string; taskId: string }) {
+export function AdvanceControls({
+  robotId,
+  taskId,
+  taskLabel,
+}: {
+  robotId: string
+  taskId: string
+  // impeccable critique P1 — o rótulo da tarefa nomeia o slider/readout para o
+  // leitor de tela. Opcional: sem ele, cai no rótulo genérico (retrocompatível).
+  taskLabel?: string
+}) {
   const role = useWorkspaceStore((s) => s.currentRoleLabel)
   const canEdit = role === 'owner' || role === 'edit'
   const draft = useAdvanceDraft(robotId, taskId)
   const originRef = useRef<HTMLElement | null>(null)
   // Valor ao vivo do arraste ANTES de o modal abrir (null = slider mostra o servidor).
   const [pending, setPending] = useState<number | null>(null)
+  const progressLabel = taskLabel ? advanceText.progressLabelFor(taskLabel) : advanceText.progressLabel
 
   // Enquanto o modal está aberto o valor mora no draft; antes, no `pending`.
   const sliderValue = draft.isOpen ? draft.value : pending ?? draft.serverProgress()
@@ -63,7 +74,7 @@ export function AdvanceControls({ robotId, taskId }: { robotId: string; taskId: 
         max={100}
         step={5} // robot-task-table 2.2 (§3.5) — arrastar uma posição a partir de 30 propõe 35
         value={sliderValue}
-        aria-label={advanceText.progressLabel}
+        aria-label={progressLabel}
         aria-disabled={!canEdit}
         disabled={!canEdit}
         // robot-task-table 6.2 — `pan-y`: arrastar o dedo na vertical ROLA a página

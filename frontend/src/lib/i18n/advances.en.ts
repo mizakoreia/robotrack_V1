@@ -6,6 +6,7 @@ export const advanceTextEn: AdvanceText = {
   decrease: '−10%',
   increase: '+10%',
   progressLabel: 'Task progress',
+  progressLabelFor: (task: string) => `Progress of "${task}"`,
   readOnlyHint: 'Only editors can log progress.',
 
   title: 'Log progress',
