@@ -2,11 +2,14 @@ import { useState } from 'react'
 import { useFeedbacks } from './useFeedback'
 import type { FeedbackDTO } from '@/lib/api/endpoints'
 import { feedbackText as T } from '@/lib/i18n/feedback'
+import { localeTag } from '@/lib/i18n/lang'
 
 // send-feedback — a caixa de leitura do DONO, montada owner-only na tela de
 // Configurações. Lista simples e legível (sem grade de cards idênticos — PRODUCT):
 // mensagem em destaque, autor + quando, e o contexto sob um disclosure.
-const WHEN = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+// internationalization D-I3 — recriado por chamada para seguir o locale corrente
+// (o remount por idioma não re-avalia um const de módulo).
+const whenFmt = () => new Intl.DateTimeFormat(localeTag(), { dateStyle: 'short', timeStyle: 'short' })
 
 export function FeedbackInbox() {
   const { data, isLoading, isError } = useFeedbacks()
@@ -60,7 +63,7 @@ function FeedbackItem({ feedback }: { feedback: FeedbackDTO }) {
         {email && <span className="break-all">{email}</span>}
         <span aria-hidden="true">·</span>
         <time dateTime={feedback.created_at} className="tabular-nums">
-          {WHEN.format(new Date(feedback.created_at))}
+          {whenFmt().format(new Date(feedback.created_at))}
         </time>
       </div>
       {entries.length > 0 && (

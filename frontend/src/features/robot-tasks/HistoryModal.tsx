@@ -1,6 +1,7 @@
 import { Modal } from '@/components/ui/Modal'
 import { useTaskTrail } from './useTaskTrail'
 import { robotTaskText } from '@/lib/i18n/robotTasks'
+import { localeTag } from '@/lib/i18n/lang'
 import type { TaskDTO } from '@/lib/api/endpoints'
 
 // robot-task-table 5.1/5.2 (§3.5, §2.4 item 3, D8) — a timeline completa de avanços.
@@ -43,7 +44,7 @@ export function HistoryModal({ task, onClose }: { task: TaskDTO; onClose: () => 
                 )}
               </div>
               <time className="label-sm text-text-muted" dateTime={a.recorded_at}>
-                {new Date(a.recorded_at).toLocaleString('pt-BR')}
+                {new Date(a.recorded_at).toLocaleString(localeTag())}
               </time>
               {/* marcador explícito de ausência: não herda o comentário do vizinho */}
               {a.comment ? (

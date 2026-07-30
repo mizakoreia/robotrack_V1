@@ -3,6 +3,7 @@ import { lazy, Suspense } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import { ThemeProvider } from '@/components/ThemeProvider'
+import { LanguageProvider } from '@/components/LanguageProvider'
 // quality-and-accessibility 8.4 (D-QA-7) — a landing de marketing arrasta o campfire
 // e o `gsap` (pesado); carregá-la EAGER punha `gsap` no chunk de entrada e estourava
 // o teto gzip. `lazy` a manda para um chunk próprio, alcançado só em `/apresentacao`.
@@ -32,6 +33,9 @@ function App() {
     <ThemeProvider>
       {/* design-system 3.2 — o sprite de ícones, renderizado UMA vez no topo. */}
       <IconSprite />
+      {/* internationalization D-I2 — o idioma envolve a árvore; trocar de idioma
+          remonta por `key={lang}` e as telas releem os módulos `lib/i18n`. */}
+      <LanguageProvider>
       <div className="min-h-screen bg-background font-sans antialiased">
         <Routes>
           {/* app-shell-navigation 4.1 — a landing de marketing do template sai de
@@ -73,6 +77,7 @@ function App() {
         </Routes>
         <Toaster />
       </div>
+      </LanguageProvider>
     </ThemeProvider>
   )
 }

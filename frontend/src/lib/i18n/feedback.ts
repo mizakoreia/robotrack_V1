@@ -1,6 +1,9 @@
+import { defineText } from './defineText'
+import { feedbackTextEn } from './feedback.en'
+
 // Módulo ÚNICO dos textos do canal de feedback do beta (send-feedback, D14). Sem
 // literal solto nas telas — o envio e a caixa do dono leem daqui.
-export const feedbackText = {
+const feedbackTextPtBR = {
   // Item do menu da conta + título do modal
   menuItem: 'Enviar feedback',
   title: 'Enviar feedback',
@@ -31,4 +34,9 @@ export const feedbackText = {
   inboxCount: (n: number) => (n === 1 ? '1 feedback' : `${n} feedbacks`),
   inboxAnon: 'Autor removido',
   contextLabel: 'Contexto',
-} as const
+}
+
+// internationalization D-I2 — SEM `as const`: o tipo alarga os literais para `string`
+// e `en` pode ter outro texto. Os sweeps leem o TEXTO do arquivo, não o tipo.
+export type FeedbackText = typeof feedbackTextPtBR
+export const feedbackText: FeedbackText = defineText(feedbackTextPtBR, feedbackTextEn)

@@ -109,9 +109,29 @@ migração, sem push, sem tocar em servidor/túnel. Os arquivos de túnel da dem
 via `chave+args` + backfill na tabela imutável) é **não-objetivo explícito** — a
 estratégia foi desenhada para não tocar as tabelas congeladas.
 
-## PENDÊNCIAS / HANDOFF
+## EXECUÇÃO — G1 (FECHADO, verde neste ambiente)
 
-- **Handoff ao dono (bloqueia G1+):** revisar/assinar o `GLOSSARIO.md`, em especial as
-  linhas ⚠️ de robótica/comissionamento (avanço, protocolo, status, aplicações,
-  categorias e as 31 tarefas-base). As 7 perguntas objetivas estão no fim do glossário.
-- Execução dos grupos (G1+) e qualquer teste WSL/E2E ficam para depois da assinatura.
+Glossário **aprovado pelo dono** (7 decisões, topo do `GLOSSARIO.md`) — execução
+liberada. Ambiente confirmado: frontend (vitest) **e** backend (rbenv 3.2.3, gems ok,
+Postgres up) rodam AQUI — os gates de G1–G6 são reais, não handoff de WSL.
+
+- **Fundação:** `store/languageStore.ts` (`rt-lang`, default pt-BR), `lib/i18n/lang.ts`
+  (idioma corrente + `localeTag`), `lib/i18n/defineText.ts` (Proxy do eixo),
+  `hooks/useLanguage.ts` + `components/LanguageProvider.tsx` (remount por `key={lang}`),
+  montado em `app/App.tsx`.
+- **Módulos:** os 11 `lib/i18n/*` ganharam `defineText(ptBR, en)` com `<x>.en.ts`
+  irmão; **mesmo nome de export** → 29 consumidores intactos. Tradução EN do glossário
+  já aplicada (adianta G4.1). Regra de ouro respeitada: nenhum VALOR de dado
+  (status/aplicação/tarefa-base) foi traduzido — isso é mapa de exibição do G4.2.
+- **Sweeps:** só a regra G mudou (exclui `.en.ts`); os demais passam intactos porque o
+  default pt-BR + a enumeração do Proxy preservam a forma lida. Prova nova:
+  `lib/i18n/__tests__/languageAxis.test.ts` (7/7).
+- **Formatação:** 3 sites de exibição por `localeTag()`; 2 semânticos e 1 legado
+  deixados de propósito (registrado em D-I3/tasks 1.4).
+- **Gates:** sweeps 28/28 · suíte 640/640 (flake de CPU isolado passa) · `tsc` limpo.
+
+## PENDÊNCIAS / PRÓXIMO
+
+- G2 (seletor bandeira BR/GB SVG), G3 (extrair inline → chaves, já em EN), G4.2 (mapa
+  de exibição de status/aplicações/tarefas-base), G5 (backend `en.*.yml` + locale por
+  requisição), G6 (`users.locale` + congelamento). Backend roda aqui → sem handoff WSL.

@@ -13,32 +13,35 @@
   + 9 categorias + 31 tarefas-base), com as linhas duvidosas marcadas ⚠️ para o dono.
 - [x] 0.3 Materializar a change (proposal/design/specs/tasks/EXECUCAO) e validar
   `--strict` verde antes de qualquer código.
-- [ ] 0.4 **Handoff ao dono:** revisar e confirmar o `GLOSSARIO.md` (especialmente
-  robótica/comissionamento). *Bloqueia G1+.*
+- [x] 0.4 **Handoff ao dono:** revisar e confirmar o `GLOSSARIO.md`. **APROVADO** —
+  7 decisões fechadas (ver topo do `GLOSSARIO.md`); execução liberada.
 
-## 1. Fundação de i18n no frontend (G1) 🟢
+## 1. Fundação de i18n no frontend (G1) 🟢 — FECHADO
 
-- [ ] 1.1 `useLanguageStore` (Zustand + `persist` → `localStorage['rt-lang']` via
-  `zustandStorage`, default `pt-BR`) e `useLanguage()` que aplica
-  `document.documentElement.lang`. Espelho exato do `themeStore`/`useTheme`.
-  (Prova: recarregar com `rt-lang='en'` abre em en; storage bloqueado mantém en só na
-  sessão.)
-- [ ] 1.2 Introduzir o eixo de idioma nos 11 módulos `lib/i18n` mantendo **literais
-  planos de uma linha** por chave, com resolvedor `L(...)`; ramo por idioma nas 41
-  funções de plural/interpolação (via `Intl.PluralRules`). *pt-BR e en convivem; en
-  ainda placeholder até o glossário.* (Prova: `metricLabel` e um plural retornam a
-  string do idioma corrente nos dois idiomas.)
-- [ ] 1.3 **Atualizar os parsers dos sweeps** para a nova forma: regra G do
-  `convention-sweep.test.ts` e `invitations.i18n.test.ts`/`feedback.i18n.test.ts`/
-  `progress-label.test.tsx`/`report/literalSweep.test.ts`. (Prova: os cinco sweeps
-  passam com a forma nova; a falha proposital de um literal inline ainda é pega.)
-- [ ] 1.4 Parametrizar por locale os 6 pontos de formatação (`report/format.ts`,
-  `feedback/FeedbackInbox.tsx`, `robot-tasks/HistoryModal.tsx`,
-  `robot-tasks/AssignmentModal.tsx`, `settings/CatalogPanel.tsx`,
-  `kpi/PerformanceIndicators.tsx`). (Prova: uma data e um número formatam conforme o
-  locale corrente.)
-- [ ] 1.5 Verificação do grupo: `npm test` dos sweeps + os testes de store/aplicador
-  verdes.
+- [x] 1.1 `useLanguageStore` (`store/languageStore.ts`, Zustand + `persist` →
+  `localStorage['rt-lang']` via `zustandStorage`, default `pt-BR`) + `useLanguage()`
+  (`hooks/useLanguage.ts`) e `LanguageProvider` (`components/LanguageProvider.tsx`,
+  remount por `key={lang}`) que aplicam `document.documentElement.lang`. Espelho do
+  `themeStore`/`useTheme`/`ThemeProvider`. (Prova: `languageAxis.test.ts` — `localeTag`
+  acompanha o idioma; store default pt-BR.)
+- [x] 1.2 Eixo de idioma nos 11 módulos `lib/i18n` via `defineText(ptBR, en)`
+  (`lib/i18n/defineText.ts` + `lang.ts`): Proxy que resolve a chave no idioma corrente
+  (string, função, plural, sub-objeto aninhado) mantendo o MESMO nome de export (os ~29
+  consumidores não mudaram). pt-BR canônico no módulo; en em `<x>.en.ts` (tradução do
+  glossário JÁ aplicada — cobre G4.1). (Prova: `languageAxis.test.ts` 7/7 — troca
+  pt-BR⇄en em string/função/plural/aninhado/gênero + enumeração preservada.)
+- [x] 1.3 Parser da **regra G** do `convention-sweep.test.ts` atualizado (exclui
+  `.en.ts`); os demais sweeps (`invitations`/`feedback`.i18n, `progress-label`,
+  `report/literalSweep`) passam sem mudança de parser porque o default pt-BR + a
+  enumeração do Proxy preservam a forma que eles leem. (Prova: sweeps 28/28.)
+- [x] 1.4 Parametrizados por locale os 3 pontos de EXIBIÇÃO (`report/format.ts`,
+  `feedback/FeedbackInbox.tsx`, `robot-tasks/HistoryModal.tsx`) via `localeTag()`. Os 2
+  semânticos (`AssignmentModal` `toLocaleLowerCase` de dedup; `CatalogPanel`
+  `localeCompare` de dado pt-BR) ficam FIXOS de propósito; `kpi/PerformanceIndicators`
+  é legado de template (fora do app). (Prova: `languageAxis.test.ts` cobre `localeTag`.)
+- [x] 1.5 Verificação do grupo: sweeps 28/28; suíte completa **640/640** (o único
+  timeout, `offline/queue.test.ts`, passa isolado em 5,7s — contenção de CPU sob a
+  suíte, sem relação com i18n); `tsc --noEmit` limpo.
 
 ## 2. Seletor de idioma (G2 — impeccable) 🟢
 

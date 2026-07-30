@@ -1,8 +1,11 @@
+import { defineText } from './defineText'
+import { myTasksTextEn } from './myTasks.en'
+
 // Módulo ÚNICO dos textos de "Minhas Tarefas" (my-tasks-view, D14). Os TRÊS
 // estados de D-MTV-8 têm strings distintas de propósito: colapsar o "409
 // identidade ausente" no estado vazio reintroduziria no cliente a falha silenciosa
 // que a capacidade inteira existe para matar (uma lista vazia enganosa).
-export const myTasksText = {
+const myTasksTextPtBR = {
   title: 'Minhas Tarefas',
 
   // Colunas
@@ -30,4 +33,7 @@ export const myTasksText = {
   errorBody: 'Verifique a conexão e tente novamente.',
 
   loading: 'Carregando…',
-} as const
+}
+
+export type MyTasksText = typeof myTasksTextPtBR
+export const myTasksText: MyTasksText = defineText(myTasksTextPtBR, myTasksTextEn)

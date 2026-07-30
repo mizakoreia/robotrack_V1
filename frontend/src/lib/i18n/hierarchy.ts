@@ -1,9 +1,16 @@
+import { defineText } from './defineText'
+import { hierarchyTextEn } from './hierarchy.en'
+
 // hierarchy-screens (D14/D-B) — módulo ÚNICO das strings das telas de hierarquia.
 // Nenhum literal de rótulo vive numa tela; o hub, os estados vazios e os rodapés
 // leem daqui. Os rótulos das DUAS métricas de progresso continuam em
 // `lib/i18n/progress.ts` (fonte deles); aqui ficam só os textos de contexto (ex.:
 // "de progresso físico global") e as ações.
-export const hierarchyText = {
+//
+// internationalization D-I2 — `hierarchyText` é o eixo de idioma (pt-BR + en) sob o
+// MESMO nome; os consumidores não mudam. O pt-BR canônico vive neste objeto (os
+// sweeps o leem); o en em `hierarchy.en.ts`.
+const hierarchyTextPtBR = {
   overview: {
     hub: {
       activeProjects: 'Projetos ativos',
@@ -73,4 +80,10 @@ export const hierarchyText = {
   cellsBadge: (n: number) => `${n} ${n === 1 ? 'célula' : 'células'}`,
   robotsBadge: (n: number) => `${n} ${n === 1 ? 'robô' : 'robôs'}`,
   tasksFooter: (n: number) => `${n} ${n === 1 ? 'tarefa' : 'tarefas'}`,
-} as const
+}
+
+// internationalization D-I2 — SEM `as const`: o tipo alarga os literais para `string`
+// e `en` pode ter outro texto. Os sweeps leem o TEXTO do arquivo, não o tipo — o
+// canônico pt-BR segue estático e verificável. O idioma é resolvido no runtime.
+export type HierarchyText = typeof hierarchyTextPtBR
+export const hierarchyText: HierarchyText = defineText(hierarchyTextPtBR, hierarchyTextEn)

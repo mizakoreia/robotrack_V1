@@ -183,8 +183,12 @@ describe('regra G: botão do SHELL não reusa nome de botão de outra tela', () 
   // Os rótulos vivem em `lib/i18n/*` (D14), então o botão do painel é
   // `<Button>{inviteText.inviteTitle}</Button>` — comparar só literais não veria
   // nada. Resolvemos chave→valor para o sweep enxergar o nome REAL.
+  // internationalization D-I2 — os módulos ganharam um eixo de idioma: o pt-BR
+  // canônico vive em `lib/i18n/<x>.ts` e o inglês em `<x>.en.ts`. A regra G resolve
+  // o NOME ACESSÍVEL pt-BR (o que o leitor de tela ouve no default), então varre só
+  // os arquivos pt-BR — excluir `.en.ts` evita que um valor en sobrescreva a chave.
   const I18N = new Map<string, string>()
-  for (const f of ALL.filter((x) => x.path.startsWith('lib/i18n/'))) {
+  for (const f of ALL.filter((x) => x.path.startsWith('lib/i18n/') && !x.path.endsWith('.en.ts'))) {
     for (const m of f.src.matchAll(/^\s{2,}([a-zA-Z][\w]*):\s*(['"])(.+?)\2\s*,?\s*$/gm)) {
       I18N.set(m[1], m[3])
     }

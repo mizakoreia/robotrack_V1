@@ -1,8 +1,11 @@
+import { defineText } from './defineText'
+import { reportTextEn } from './report.en'
+
 // Módulo ÚNICO dos textos da TELA do relatório (commissioning-report 8.3, D14).
 // Atenção à fronteira (D-R9): o texto DO DOCUMENTO (títulos de seção, colunas,
 // rodapé, assinaturas…) vem resolvido do servidor no payload — aqui só o chrome
 // da tela (seletor, estados) que NÃO sai no papel.
-export const reportText = {
+const reportTextPtBR = {
   title: 'Relatório',
   scopeLabel: 'Escopo do documento',
   scopeAll: 'Workspace inteiro',
@@ -19,3 +22,6 @@ export const reportText = {
   errorBody: 'O servidor falhou durante a montagem. Nenhuma seção parcial foi exibida.',
   retry: 'Tentar novamente',
 }
+
+export type ReportText = typeof reportTextPtBR
+export const reportText: ReportText = defineText(reportTextPtBR, reportTextEn)

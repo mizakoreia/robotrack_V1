@@ -1,10 +1,16 @@
+import { defineText } from './defineText'
+import { robotTaskTextEn } from './robotTasks.en'
+
 // Módulo ÚNICO dos textos da tabela de tarefas do robô (robot-task-table). Mesmo
 // princípio de `advances.ts`/`invitations.ts`: as strings que o operador lê no
 // galpão ficam num lugar só. Os DOIS avisos (D-RTT-6/7) e seus rótulos acessíveis
 // moram aqui — a condição que os dispara é derivada na célula, mas a PALAVRA é
 // spec traduzida, não literal solto no componente.
-
-export const robotTaskText = {
+//
+// internationalization D-I2 — `robotTaskText` é o eixo de idioma (pt-BR + en) sob o
+// MESMO nome; os consumidores não mudam. O pt-BR canônico vive neste objeto (os
+// sweeps o leem); o en em `robotTasks.en.ts`.
+const robotTaskTextPtBR = {
   // Célula Responsáveis
   noAssignees: 'Sem responsável',
   // Aviso "Atribuir…" (§3.5, D-RTT-7) — botão dentro da célula Responsáveis,
@@ -78,4 +84,10 @@ export const robotTaskText = {
   cancel: 'Cancelar',
 
   close: 'Fechar',
-} as const
+}
+
+// internationalization D-I2 — SEM `as const`: o tipo alarga os literais para `string`
+// e `en` pode ter outro texto. Os sweeps leem o TEXTO do arquivo, não o tipo — o
+// canônico pt-BR segue estático e verificável. O idioma é resolvido no runtime.
+export type RobotTaskText = typeof robotTaskTextPtBR
+export const robotTaskText: RobotTaskText = defineText(robotTaskTextPtBR, robotTaskTextEn)

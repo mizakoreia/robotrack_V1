@@ -1,9 +1,17 @@
-# GLOSSÁRIO pt-BR → EN — para revisão do DONO
+# GLOSSÁRIO pt-BR → EN — ✅ CONFIRMADO PELO DONO
 
-> **Este documento é o portão.** Nenhuma tradução em massa acontece antes de o dono
-> revisar e confirmar as linhas marcadas com ⚠️. O dono é o especialista de
-> robótica/comissionamento; as propostas de EN abaixo são um ponto de partida, não
-> uma decisão. Onde há dúvida, **está marcado** e a pergunta está explícita.
+> **PORTÃO LIBERADO.** O dono revisou e **aprovou** os termos (execução autorizada).
+> As 7 decisões que estavam em aberto foram fixadas assim (aplicadas no código):
+>
+> 1. **Avanço / Registrar avanço → Progress update / Log progress** ✅
+> 2. **Protocolo de Comissionamento → Commissioning Protocol** ✅
+> 3. **Concluído → Done (tela) / Completed (relatório)** ✅
+> 4. **Progresso físico → Task completion** (correção do dono; NÃO "Physical progress") ✅
+> 5. **Categoria E → Trajectories** (confirmado; NÃO "Paths") ✅
+> 6. **Solda Ponto / Solda MIG → Spot Welding / MIG Welding** ✅
+> 7. **31 tarefas-base, 9 categorias e aplicações → como propostas abaixo** ✅
+> **Todos os demais termos → aprovados.** As marcas ⚠️ abaixo ficam como histórico da
+> dúvida (já resolvida), não como pendência.
 >
 > **Regra dura de arquitetura (vale para todo este glossário):** os valores de
 > **status**, as **6 aplicações de robô** e as **31 tarefas-base / 9 categorias**
@@ -37,8 +45,8 @@ Legenda: ✅ tradução direta, baixa dúvida · ⚠️ **precisa da confirmaç�
 | pt-BR | EN proposto | Nota |
 |---|---|---|
 | Progresso ponderado | Weighted progress | ⚠️ confirmar: "Weighted progress" vs "Weighted completion". O termo que aparece no relatório assinado precisa ser o que o dono usa com o cliente. |
-| Progresso físico (tarefas concluídas) | Physical progress (completed tasks) | ⚠️ "físico" = contagem crua. Alternativas: "Task completion", "Raw completion (tasks done)". Qual o dono prefere no documento? |
-| Avanço / Registrar avanço | Progress update / Log progress | ⚠️ **termo-núcleo do operador.** "Advance" literal soa estranho em EN. Proponho substantivo "Progress update" e verbo "Log progress" (ou "Record progress"). **Confirmar com o dono** — é a palavra que o operário lê no galpão o dia todo. |
+| Progresso físico (tarefas concluídas) | **Task completion** ✅ | Decisão nº 4 do dono (NÃO "Physical progress"). |
+| Avanço / Registrar avanço | **Progress update / Log progress** ✅ | Decisão nº 1 do dono. |
 | Progresso | Progress | ✅ |
 | Anel de progresso | Progress ring | ✅ |
 
@@ -221,12 +229,17 @@ como exibição. **Todas ⚠️ para conferência do dono** (são termos de comi
 
 ---
 
-## Perguntas objetivas ao dono (as decisões que destravam a tradução)
+## Decisões do dono (FECHADAS — aplicadas no código)
 
-1. **"Avanço"** → "Progress update"/"Log progress" ou outro? (termo do operador, aparece o tempo todo)
-2. **"Protocolo de Comissionamento"** → "Commissioning Protocol", "Report" ou "Certificate"? (documento assinado, tem que casar com o que o cliente espera)
-3. **"Concluído"** → "Done" na UI e "Completed" no relatório, ou um único termo?
-4. **Progresso físico** → "Physical progress" ou "Task completion"?
-5. **Categoria E "Trajetórias"** → "Trajectories" ou "Paths"?
-6. **As 31 tarefas-base** marcadas ⚠️ — o dono valida o vocabulário de robótica de cada uma (especialmente C. cubos/esferas de segurança, D. cola/gripper, E. teach/descarte).
-7. **Solda Ponto / Solda MIG** → "Spot Welding / MIG Welding" confere? (MIG ou MAG?)
+1. **"Avanço" → Progress update / "Registrar avanço" → Log progress** ✅
+2. **"Protocolo de Comissionamento" → Commissioning Protocol** ✅
+3. **"Concluído" → Done (tela) / Completed (relatório)** ✅
+4. **Progresso físico → Task completion** (NÃO "Physical progress") ✅
+5. **Categoria E "Trajetórias" → Trajectories** (NÃO "Paths"; as tarefas de E usam
+   "Trajectory", não "Path", no mapa de exibição) ✅
+6. **31 tarefas-base / 9 categorias / aplicações → como propostas neste glossário** ✅
+7. **Solda Ponto / Solda MIG → Spot Welding / MIG Welding** ✅
+
+Todos os demais termos aprovados. Regra de ouro mantida: **status, aplicações e
+tarefas-base seguem gravados em pt-BR no banco; o EN é rótulo de EXIBIÇÃO** (mapa
+`pt-BR → EN` na tela, D-I4), nunca rename de dado.

@@ -1,15 +1,22 @@
+import { defineText } from './defineText'
+import { inviteTextEn } from './invitations.en'
+
 // Módulo ÚNICO de textos de convite, equipe e revogação (workspace-invitations
 // 6.4 / D14). Nenhum literal dessas mensagens deve existir fora daqui no
 // frontend — o CI verifica por grep. O motivo não é purismo de i18n: são as
 // mensagens que o usuário lê num momento de confusão (convite errado, acesso
 // perdido), e espalhá-las garante que uma delas fique dessincronizada das
 // outras.
+//
+// internationalization D-I2 — `inviteText` é o eixo de idioma (pt-BR + en) sob o
+// MESMO nome; os consumidores não mudam. O pt-BR canônico vive neste objeto (os
+// sweeps o leem); o en em `invitations.en.ts`.
 
-export const inviteText = {
+const inviteTextPtBR = {
   // Fluxo do convidado
   opening: 'Abrindo o convite…',
   previewTitle: 'Você foi convidado',
-  previewRole: (role: string) => (role === 'edit' ? 'com permissão para editar' : 'com permissão para visualizar'),
+  previewRole: (role: string): string => (role === 'edit' ? 'com permissão para editar' : 'com permissão para visualizar'),
   previewFor: (emailMasked: string) => `Convite para ${emailMasked}`,
   previewExpired: 'Este convite expirou. Peça um novo ao administrador do workspace.',
   previewUsed: 'Este convite já foi utilizado.',
@@ -109,4 +116,10 @@ export const inviteText = {
     workspaceName
       ? `Seu acesso a ${workspaceName} foi removido pelo dono do workspace.`
       : 'Seu acesso a este workspace foi removido pelo dono do workspace.',
-} as const
+}
+
+// internationalization D-I2 — SEM `as const`: o tipo alarga os literais para `string`
+// e `en` pode ter outro texto. Os sweeps leem o TEXTO do arquivo, não o tipo — o
+// canônico pt-BR segue estático e verificável. O idioma é resolvido no runtime.
+export type InviteText = typeof inviteTextPtBR
+export const inviteText: InviteText = defineText(inviteTextPtBR, inviteTextEn)

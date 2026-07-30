@@ -1,6 +1,9 @@
+import { defineText } from './defineText'
+import { settingsTextEn } from './settings.en'
+
 // Módulo ÚNICO dos textos da tela de Configurações (workspace-settings, D14). Aqui
 // só o chrome da tela; nomes de pessoa e horários NUNCA são literais.
-export const settingsText = {
+const settingsTextPtBR = {
   title: 'Configurações',
   // Painel de Equipe (§3.9)
   teamTitle: 'Responsáveis',
@@ -66,3 +69,8 @@ export const settingsText = {
   remove: 'Excluir',
   edit: 'Editar aplicações',
 }
+
+// internationalization D-I2 — SEM `as const`: o tipo alarga os literais para `string`
+// e `en` pode ter outro texto. Os sweeps leem o TEXTO do arquivo, não o tipo.
+export type SettingsText = typeof settingsTextPtBR
+export const settingsText: SettingsText = defineText(settingsTextPtBR, settingsTextEn)

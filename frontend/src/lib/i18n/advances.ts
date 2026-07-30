@@ -1,3 +1,6 @@
+import { defineText } from './defineText'
+import { advanceTextEn } from './advances.en'
+
 // Módulo ÚNICO dos textos do avanço de tarefa (progress-advances / D14). Nenhum
 // literal dessas mensagens vive fora daqui no frontend — o mesmo princípio de
 // `invitations.ts`: são as strings que o operador lê no galpão, num momento de
@@ -7,8 +10,12 @@
 // O RÓTULO DO COMENTÁRIO é condicional (§2.4 item 3, D14): abaixo de 100 o
 // comentário é obrigatório e o texto diz isso; a 100 é opcional. É a regra dura
 // da spec traduzida em palavra, não um `if` solto no componente.
-
-export const advanceText = {
+//
+// internationalization D-I2 — `advanceText` é o eixo de idioma (pt-BR + en) sob o
+// MESMO nome; os ~29 consumidores não mudam. O pt-BR canônico vive neste objeto (os
+// sweeps o leem); o en em `advances.en.ts`. "Avanço"→"Progress update",
+// "Registrar avanço"→"Log progress" (decisão do dono nº 1).
+const advanceTextPtBR = {
   // Controles da linha (−10/+10/slider)
   decrease: '−10%',
   increase: '+10%',
@@ -48,4 +55,10 @@ export const advanceText = {
   conflictWhen: (when: string) => `Em ${when}.`,
   recalculate: (value: number) => `Recalcular a partir de ${value}%`,
   discard: 'Descartar',
-} as const
+}
+
+// internationalization D-I2 — SEM `as const`: o tipo alarga os literais para `string`
+// e `en` pode ter outro texto. Os sweeps leem o TEXTO do arquivo, não o tipo — o
+// canônico pt-BR segue estático e verificável. O idioma é resolvido no runtime.
+export type AdvanceText = typeof advanceTextPtBR
+export const advanceText: AdvanceText = defineText(advanceTextPtBR, advanceTextEn)

@@ -1,6 +1,8 @@
 // notification-preferences D-P9 — os rótulos do controle seguir/silenciar. A
 // PALAVRA é spec traduzida, não literal solto no componente (regra da casa). pt-BR.
 import type { SubscriptionScopeType } from '@/lib/api/endpoints'
+import { defineText } from './defineText'
+import { notificationPrefsTextEn } from './notifications.en'
 
 const ENTITY_NOUN: Record<SubscriptionScopeType, string> = {
   project: 'projeto',
@@ -14,7 +16,7 @@ const ENTITY_ORIGIN: Record<SubscriptionScopeType, string> = {
   robot: 'pelo robô',
 }
 
-export const notificationPrefsText = {
+const notificationPrefsTextPtBR = {
   // rótulo acessível do gatilho, com o estado efetivo já resolvido
   trigger: (scope: SubscriptionScopeType, effective: 'default' | 'follow' | 'mute', origin?: SubscriptionScopeType) => {
     const noun = ENTITY_NOUN[scope]
@@ -47,4 +49,12 @@ export const notificationPrefsText = {
     default: 'Padrão',
   },
   inheritedFrom: (origin: SubscriptionScopeType) => ENTITY_ORIGIN[origin],
-} as const
+}
+
+// internationalization D-I2 — SEM `as const`: o tipo alarga os literais para `string`
+// e `en` pode ter outro texto. Os sweeps leem o TEXTO do arquivo, não o tipo.
+export type NotificationPrefsText = typeof notificationPrefsTextPtBR
+export const notificationPrefsText: NotificationPrefsText = defineText(
+  notificationPrefsTextPtBR,
+  notificationPrefsTextEn,
+)
