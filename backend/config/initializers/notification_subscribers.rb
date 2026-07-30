@@ -26,4 +26,23 @@ Rails.application.config.after_initialize do
   rescue StandardError => e
     Rails.logger.error({ event: 'notify_enqueue_failed', kind: 'assign', error: e.message }.to_json)
   end
+
+  # notification-preferences G6 (§D-P8) — evento estrutural (criar/excluir
+  # projeto/célula/robô/tarefa). `Notifications::StructureEvent.publish` já
+  # instrumenta DEPOIS do commit da operação de hierarquia; um rollback nunca
+  # chega a instrumentar, logo enfileira ZERO jobs. `recorded_at` é fixado AQUI,
+  # no enfileiramento (como o `assign`), para um retry do job não deslocar o
+  # carimbo. O payload carrega o texto-fonte materializado (label/parent/ctx).
+  ActiveSupport::Notifications.subscribe('structure.changed') do |*args|
+    payload = ActiveSupport::Notifications::Event.new(*args).payload
+    NotifyStructureEventJob.perform_later(
+      payload[:workspace_id],
+      { workspace_id: payload[:workspace_id], actor_person_id: payload[:actor_person_id],
+        author: payload[:author], entity: payload[:entity], action: payload[:action],
+        label: payload[:label], parent: payload[:parent], ctx: payload[:ctx],
+        recorded_at: Time.current.utc.iso8601 }
+    )
+  rescue StandardError => e
+    Rails.logger.error({ event: 'notify_enqueue_failed', kind: 'structure', error: e.message }.to_json)
+  end
 end

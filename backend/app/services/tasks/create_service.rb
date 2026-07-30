@@ -31,6 +31,9 @@ module Tasks
         # progress-rollup 2.3 — nova tarefa muda o ponderado do robô (uma Pendente
         # num robô 100% o derruba). Cascata na transação ambiente do request.
         ::Progress::CascadeRecompute.call(robot_id: task.robot_id)
+        # notification-preferences G6 (§D-P8) — evento estrutural pós-commit.
+        Notifications::StructureEvent.publish(entity: :task, action: :created,
+                                              record: task, actor_person: @context&.person)
         success_response({ record: task }, 201)
       else
         error_response('validation_error', 422, details: task.errors.messages)

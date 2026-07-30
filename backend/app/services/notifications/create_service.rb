@@ -79,6 +79,33 @@ module Notifications
       created
     end
 
+    # notification-preferences G6 (§D-P8) — evento ESTRUTURAL (criar/excluir
+    # projeto/célula/robô/tarefa). Roda no job, no contexto de tenant do
+    # `workspace_id`. Destinatários = dono + seguidores do galho − autor,
+    # honrando `mute` (o MESMO cálculo dos observadores de `assign`, sem o
+    # recorte de "atribuídos" — estrutural não tem atribuído). O `type` na coluna
+    # é sempre 'structure' (coarse); o texto vem da subchave `structure.<entity>.
+    # <action>` no locale de CADA destinatário. `ctx`/`label`/`parent`/`author`
+    # chegam MATERIALIZADOS na payload (o delete é soft-delete e o job é
+    # assíncrono — re-buscar a entidade excluída seria frágil, DE-G6.4).
+    def for_structure(workspace_id:, actor_person_id:, author:, entity:, action:, label:, ctx:,
+                      parent: nil, recorded_at: Time.current)
+      actor = actor_person_id.to_s
+      return 0 if actor.empty? # ator sem Person → best-effort (DE-G6.6)
+
+      ctx = ctx.symbolize_keys # payload volta do ActiveJob com chaves string
+      owner_id = owner_person_id_for(workspace_id)
+      index = SubscriptionResolver.load(ctx)
+      defaults = [owner_id].compact - [actor]
+      universe = (defaults + SubscriptionResolver.followers(index)).uniq - [actor]
+      recipients = universe.select { |pid| SubscriptionResolver.wants?(pid, index, default: defaults.include?(pid)) }
+      return 0 if recipients.empty?
+
+      build_args = { entity: entity.to_s, action: action.to_s, author: author.to_s, label: label.to_s, parent: parent }
+      insert_structure_rows(workspace_id: workspace_id, actor_id: actor_person_id, author_name: author.to_s,
+                            recipients: recipients, recorded_at: parse_time(recorded_at), ctx: ctx, build_args: build_args)
+    end
+
     def parse_time(value)
       return value if value.is_a?(Time) || value.is_a?(ActiveSupport::TimeWithZone)
 
@@ -100,7 +127,11 @@ module Notifications
     # Person do dono NESTE workspace (Person é WorkspaceScoped → escopo do tenant do
     # job). Dono sem Person (conta sem identidade de domínio) → nil, sem notificação.
     def owner_person_id(task)
-      owner_user_id = ::Workspace.where(id: task.workspace_id).pick(:owner_user_id)
+      owner_person_id_for(task.workspace_id)
+    end
+
+    def owner_person_id_for(workspace_id)
+      owner_user_id = ::Workspace.where(id: workspace_id).pick(:owner_user_id)
       return nil if owner_user_id.nil?
 
       ::Person.find_by(user_id: owner_user_id)&.id&.to_s
@@ -171,6 +202,36 @@ module Notifications
         ::Notification.create!(
           workspace_id: task.workspace_id, recipient_person_id: recipient_id, actor_person_id: actor_id,
           type: type.to_s, msg: built[:msg], author_name_snapshot: author_name, format_version: built[:format_version],
+          recorded_at: recorded_at, ts_local: recorded_at.strftime('%d/%m %H:%M'),
+          ctx_project_id: ctx[:project_id], ctx_cell_id: ctx[:cell_id],
+          ctx_robot_id: ctx[:robot_id], ctx_task_id: ctx[:task_id]
+        )
+      end
+      true
+    rescue ActiveRecord::RecordNotUnique
+      false
+    end
+
+    # G6 (§D-P8) — inserção do evento estrutural. Mesma disciplina de `insert_rows`
+    # (congela a msg no locale de CADA destinatário, savepoint por linha), mas com
+    # `workspace_id` explícito (não há `task`) e a msg vinda de `build_structure`.
+    def insert_structure_rows(workspace_id:, actor_id:, author_name:, recipients:, recorded_at:, ctx:, build_args:)
+      locales = recipient_locales(recipients)
+      cache = {}
+      created = 0
+      recipients.each do |recipient_id|
+        loc = locales[recipient_id.to_s] || MessageBuilder::LOCALE
+        built = (cache[loc] ||= MessageBuilder.build_structure(**build_args, locale: loc))
+        created += 1 if insert_structure_one(workspace_id, actor_id, recipient_id, author_name, recorded_at, built, ctx)
+      end
+      created
+    end
+
+    def insert_structure_one(workspace_id, actor_id, recipient_id, author_name, recorded_at, built, ctx)
+      ::Notification.transaction(requires_new: true) do
+        ::Notification.create!(
+          workspace_id: workspace_id, recipient_person_id: recipient_id, actor_person_id: actor_id,
+          type: 'structure', msg: built[:msg], author_name_snapshot: author_name, format_version: built[:format_version],
           recorded_at: recorded_at, ts_local: recorded_at.strftime('%d/%m %H:%M'),
           ctx_project_id: ctx[:project_id], ctx_cell_id: ctx[:cell_id],
           ctx_robot_id: ctx[:robot_id], ctx_task_id: ctx[:task_id]

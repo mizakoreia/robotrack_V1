@@ -32,6 +32,20 @@ module Notifications
       { msg: msg, format_version: FORMAT_VERSION }
     end
 
+    # notification-preferences G6 (§D-P8) — mensagem de evento ESTRUTURAL. O enum
+    # da coluna é sempre 'structure'; a subchave `structure.<entity>.<action>`
+    # escolhe o texto (ação + entidade no texto, não no enum). Sem `%{comment}` a
+    # truncar; ainda assim o rótulo é limitado a 500 por defesa contra a CHECK
+    # `msg_max_500` (nomes de entidade são ≤120, então a truncagem quase nunca
+    # dispara). `entity`/`action` já vêm normalizados pelo chamador.
+    def build_structure(entity:, action:, author:, label:, parent: nil, locale: LOCALE)
+      key = "notifications.v#{FORMAT_VERSION}.structure.#{entity}.#{action}"
+      vars = { author: author, label: label, parent: parent }.compact
+      msg = render(key, vars, locale)
+      msg = "#{msg[0, MAX_LEN - ELLIPSIS.length]}#{ELLIPSIS}" if msg.length > MAX_LEN
+      { msg: msg, format_version: FORMAT_VERSION }
+    end
+
     def render(key, vars, locale = LOCALE)
       I18n.t(key, locale: locale, **vars)
     end

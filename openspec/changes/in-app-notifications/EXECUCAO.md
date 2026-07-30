@@ -146,9 +146,12 @@ mesmo sem ser responsável. Regras da casa preservadas:
 migração de enum — a `msg` é materializada por destinatário, então basta a chave de
 locale `assign_observer` em 3ª pessoa mantendo `type='assign'` (dono + seguidores do
 galho recebem; o atribuído segue em 2ª pessoa). O **item 2** (eventos estruturais)
-continua **DEFERIDO** como o G6 daquela change — é o único que exige `ALTER TYPE
-notification_type ADD VALUE 'structure'` (reversão não-trivial), aguardando OK
-separado. Ver `openspec/changes/notification-preferences/`.
+foi **EXECUTADO em 2026-07-30** como o G6 daquela change, com OK do dono, na branch de
+feature `claude/robotrack-mobile-dev-s3puaf`: a migração `ALTER TYPE notification_type
+ADD VALUE 'structure'` (reversão não-trivial) rodou no SANDBOX, e criar/excluir
+projeto/célula/robô/tarefa passou a notificar o dono + seguidores do galho (menos o
+autor, honrando `mute`). **A ida à `main`/produção é passo separado, sob OK à parte.**
+Ver `openspec/changes/notification-preferences/EXECUCAO.md §"G6 — EXECUÇÃO"`.
 
 **Prova:** `spec/notifications/create_service_spec.rb` — 4 casos novos: (1) membro
 avança tarefa sem o dono responsável → dono recebe 1 (recipient=dono, actor=membro,

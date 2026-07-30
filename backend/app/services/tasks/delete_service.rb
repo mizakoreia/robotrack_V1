@@ -27,6 +27,11 @@ module Tasks
         # robô de 100 para 0 (robô sem tarefas), na mesma transação.
         ::Progress::CascadeRecompute.call(robot_id: task.robot_id)
       end
+      # notification-preferences G6 (§D-P8) — disparo pós-commit (fora da
+      # transação): um rollback do soft-delete nunca chega aqui. `task` segue em
+      # memória com desc/robot_id íntegros; o robô continua vivo.
+      Notifications::StructureEvent.publish(entity: :task, action: :deleted,
+                                            record: task, actor_person: @context&.person)
       success_response({}, 204)
     end
   end

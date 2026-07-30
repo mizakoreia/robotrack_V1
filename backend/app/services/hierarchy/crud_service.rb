@@ -36,6 +36,10 @@ module Hierarchy
       case result.outcome
       when :created
         cascade_after_create(result.record) # progress-rollup 2.4
+        # notification-preferences G6 (§D-P8) — evento estrutural pós-commit
+        # (best-effort; só o :created dispara, replay/conflito não são "criar").
+        Notifications::StructureEvent.publish(entity: entity_name, action: :created,
+                                              record: result.record, actor_person: @context&.person)
         success_response({ record: result.record }, 201)
       when :replay     then success_response({ record: result.record }, 200)
       when :conflict   then error_response('id_conflict', 409, details: snapshot(result.record))
@@ -78,6 +82,11 @@ module Hierarchy
         SoftDeleteService.call(record: record)
         cascade_after_destroy(parent) # progress-rollup 2.4
       end
+      # notification-preferences G6 (§D-P8) — disparo pós-commit (fora da
+      # transação): um rollback do soft-delete nunca chega aqui. `record` segue
+      # em memória com nome/ids íntegros; os pais (célula/projeto) continuam vivos.
+      Notifications::StructureEvent.publish(entity: entity_name, action: :deleted,
+                                            record: record, actor_person: @context&.person)
       success_response({}, 204)
     end
 
@@ -86,6 +95,9 @@ module Hierarchy
     def model = self.class::MODEL
     def parent_key = self.class::PARENT_KEY
     def parent_model = self.class::PARENT_MODEL
+
+    # :project / :cell / :robot — a entidade estrutural para o evento do G6.
+    def entity_name = model.name.underscore.to_sym
 
     # progress-rollup 2.4 — a cascata por nível. Criar um robô/célula vazio muda a
     # média do pai (§2.1: robô vazio arrasta a célula para baixo).

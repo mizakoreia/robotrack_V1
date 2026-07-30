@@ -793,7 +793,7 @@ export const taskAdvancesApi = {
 // do servidor; `ctx` são as quatro colunas para a navegação (6.3).
 export interface NotificationDTO {
   id: string
-  type: 'assign' | 'progress' | 'done'
+  type: 'assign' | 'progress' | 'done' | 'structure'
   msg: string
   author_name_snapshot: string
   recorded_at: string
