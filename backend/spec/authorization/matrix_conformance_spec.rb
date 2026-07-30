@@ -21,7 +21,10 @@ RSpec.describe 'Conformidade papel × ação com a §4.1', :tenancy, type: :requ
       mark_notification_read: { owner: true,  edit: true,  view: true  },
       manage_own_subscription: { owner: true, edit: true,  view: true  },
       manage_membership:      { owner: true,  edit: false, view: false },
-      destroy_workspace:      { owner: true,  edit: false, view: false }
+      destroy_workspace:      { owner: true,  edit: false, view: false },
+      # send-feedback: qualquer membro envia; só o dono lê a caixa.
+      submit_feedback:        { owner: true,  edit: true,  view: true  },
+      read_feedbacks:         { owner: true,  edit: false, view: false }
     }.freeze
 
     ESPERADO.each do |action, papeis|

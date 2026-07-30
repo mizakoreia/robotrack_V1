@@ -2,7 +2,7 @@
 
 # A matriz §4.1 da ESPECIFICACAO.md como DADO, não como código (D3.2).
 #
-# Nove chaves, uma por linha da tabela, NA MESMA ORDEM. Toda policy de recurso
+# Uma chave por linha da tabela, NA MESMA ORDEM. Toda policy de recurso
 # decide invocando `allows?` com uma destas actions; nenhuma policy compara
 # papel diretamente (o cop do grupo 6 reprova `role ==` fora deste arquivo).
 # O spec `spec/policies/permission_matrix_spec.rb` reafirma as linhas
@@ -23,7 +23,11 @@ module PermissionMatrix
     mark_notification_read: %i[owner edit view],
     manage_own_subscription: %i[owner edit view],
     manage_membership:      %i[owner],
-    destroy_workspace:      %i[owner]
+    destroy_workspace:      %i[owner],
+    # send-feedback: enviar feedback do beta é de QUALQUER membro (self-service);
+    # LER a caixa de feedbacks é do dono do workspace.
+    submit_feedback:        %i[owner edit view],
+    read_feedbacks:         %i[owner]
   }.freeze
 
   # Action desconhecida levanta KeyError — nunca `false` silencioso: um typo em

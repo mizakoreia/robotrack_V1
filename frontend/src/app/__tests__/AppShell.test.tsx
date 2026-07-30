@@ -8,6 +8,7 @@ import { workspacesApi } from '@/lib/api/endpoints'
 import { useAuthStore } from '@/store/authStore'
 import { useWorkspaceStore } from '@/store/workspaceStore'
 import { inviteText } from '@/lib/i18n/invitations'
+import { feedbackText } from '@/lib/i18n/feedback'
 
 // app-shell-navigation 4.6 (§3.10) — os testes da casca: 3 destinos, ausência de
 // faixa lateral (ativo é preenchimento, não borda), `aria-current` no corrente,
@@ -146,11 +147,23 @@ describe('AppShell (§3.10, D-F)', () => {
       'Configurações do workspace',
       'Equipe e convites',
       inviteText.joinByCodeMenu,
+      feedbackText.menuItem,
       'Alternar tema',
       'Sair',
     ]) {
       expect(within(menu).getByRole('menuitem', { name: label })).toBeInTheDocument()
     }
+  })
+
+  // send-feedback — o item do menu da conta abre o modal de feedback (?feedback=1),
+  // sempre disponível em qualquer rota autenticada.
+  it('escolher "Enviar feedback" abre o modal de feedback', () => {
+    render(<Shell />)
+    act(() => screen.getByRole('button', { name: /^Conta:/ }).click())
+    act(() => {
+      screen.getByRole('menuitem', { name: feedbackText.menuItem }).click()
+    })
+    expect(screen.getByRole('dialog', { name: feedbackText.title })).toBeInTheDocument()
   })
 
   // join-workspace-by-code — a porta para entrar noutro workspace por código vive

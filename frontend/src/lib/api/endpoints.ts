@@ -838,3 +838,24 @@ export const notificationSubscriptionsApi = {
       { scope_type, scope_id, state },
     ),
 }
+
+// send-feedback — canal de feedback do beta. `context` é o pacote automático
+// (rota/workspace/papel/dispositivo) capturado pelo cliente; `submitter` é o autor
+// (nulo se o usuário foi removido). Enviar é de qualquer membro; listar é do dono.
+export interface FeedbackContext {
+  [key: string]: unknown
+}
+
+export interface FeedbackDTO {
+  id: string
+  message: string
+  context: FeedbackContext
+  created_at: string
+  submitter: { name: string; email: string } | null
+}
+
+export const feedbackApi = {
+  create: (data: { message: string; context: FeedbackContext }) =>
+    apiClient.post<FeedbackDTO>('/api/v1/feedbacks', data),
+  list: () => apiClient.get<FeedbackDTO[]>('/api/v1/feedbacks'),
+}

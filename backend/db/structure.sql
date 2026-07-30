@@ -641,6 +641,24 @@ CREATE VIEW public.cell_weighted_progress WITH (security_invoker='true') AS
 
 
 --
+-- Name: feedbacks; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.feedbacks (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    workspace_id uuid NOT NULL,
+    user_id uuid,
+    message text NOT NULL,
+    context jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT chk_feedback_context_object CHECK ((jsonb_typeof(context) = 'object'::text)),
+    CONSTRAINT chk_feedback_message_len CHECK (((char_length(btrim(message)) >= 1) AND (char_length(btrim(message)) <= 4000)))
+);
+
+ALTER TABLE ONLY public.feedbacks FORCE ROW LEVEL SECURITY;
+
+
+--
 -- Name: jwt_denylist; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1225,6 +1243,14 @@ ALTER TABLE ONLY public.cells
 
 
 --
+-- Name: feedbacks feedbacks_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.feedbacks
+    ADD CONSTRAINT feedbacks_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: invitations invitations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1637,6 +1663,20 @@ CREATE INDEX index_cells_on_workspace_id ON public.cells USING btree (workspace_
 --
 
 CREATE INDEX index_cells_on_workspace_id_live ON public.cells USING btree (workspace_id) WHERE (deleted_at IS NULL);
+
+
+--
+-- Name: index_feedbacks_on_workspace_created; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_feedbacks_on_workspace_created ON public.feedbacks USING btree (workspace_id, created_at DESC);
+
+
+--
+-- Name: index_feedbacks_on_workspace_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_feedbacks_on_workspace_id ON public.feedbacks USING btree (workspace_id);
 
 
 --
@@ -2083,6 +2123,22 @@ ALTER TABLE ONLY public.cells
 
 
 --
+-- Name: feedbacks feedbacks_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.feedbacks
+    ADD CONSTRAINT feedbacks_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: feedbacks feedbacks_workspace_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.feedbacks
+    ADD CONSTRAINT feedbacks_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE;
+
+
+--
 -- Name: audit_logs fk_audit_author; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2469,6 +2525,12 @@ ALTER TABLE public.audit_logs_default ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.cells ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: feedbacks; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.feedbacks ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: invitations; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -2620,6 +2682,13 @@ CREATE POLICY tenant_isolation ON public.audit_logs_default FOR SELECT USING ((w
 --
 
 CREATE POLICY tenant_isolation ON public.cells USING ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid)) WITH CHECK ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid));
+
+
+--
+-- Name: feedbacks tenant_isolation; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY tenant_isolation ON public.feedbacks USING ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid)) WITH CHECK ((workspace_id = (NULLIF(current_setting('app.current_workspace_id'::text, true), ''::text))::uuid));
 
 
 --
@@ -2839,6 +2908,7 @@ ALTER TABLE public.workspaces ENABLE ROW LEVEL SECURITY;
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260730120001'),
 ('20260726120001'),
 ('20260724120001'),
 ('20260724110002'),

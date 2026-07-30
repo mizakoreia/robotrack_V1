@@ -21,7 +21,9 @@ import { useOsNotificationAlerts } from '@/features/notifications/useOsNotificat
 import { NotificationBell } from '@/features/notifications/NotificationBell'
 import { performLogout } from '@/lib/auth/session'
 import { JoinByCodeDialog } from '@/features/auth/JoinByCodeDialog'
+import { SendFeedbackDialog } from '@/features/feedback/SendFeedbackDialog'
 import { inviteText } from '@/lib/i18n/invitations'
+import { feedbackText } from '@/lib/i18n/feedback'
 import { registerRevocationNavigator } from '@/lib/workspace/accessRevoked'
 import { ConnectionIndicator } from '@/components/realtime/ConnectionIndicator'
 import { StorageWarning } from '@/components/StorageWarning'
@@ -57,6 +59,24 @@ export function AppShell() {
     setSearchParams(
       (prev) => {
         prev.delete('codigo')
+        return prev
+      },
+      { replace: true },
+    )
+
+  // send-feedback — o modal de feedback é endereçável por `?feedback=1` (mesmo
+  // padrão do `?codigo=1`): o item do menu da conta só acrescenta o param, fechar
+  // remove. Vive na casca, disponível em qualquer rota autenticada.
+  const feedbackOpen = searchParams.get('feedback') === '1'
+  const openFeedback = () =>
+    setSearchParams((prev) => {
+      prev.set('feedback', '1')
+      return prev
+    })
+  const closeFeedback = () =>
+    setSearchParams(
+      (prev) => {
+        prev.delete('feedback')
         return prev
       },
       { replace: true },
@@ -103,6 +123,7 @@ export function AppShell() {
         user={user}
         saveState={saveState}
         onJoinByCode={openJoinByCode}
+        onSendFeedback={openFeedback}
       />
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -123,6 +144,10 @@ export function AppShell() {
       {/* join-workspace-by-code — diálogo de entrada por código (Modal em portal),
           aberto por `?codigo=1` a partir do item do menu da conta. */}
       <JoinByCodeDialog open={joinByCodeOpen} onClose={closeJoinByCode} />
+
+      {/* send-feedback — modal de feedback do beta, aberto por `?feedback=1` a
+          partir do item do menu da conta. */}
+      <SendFeedbackDialog open={feedbackOpen} onClose={closeFeedback} />
     </div>
   )
 }
@@ -134,6 +159,7 @@ function Sidebar({
   user,
   saveState,
   onJoinByCode,
+  onSendFeedback,
 }: {
   open: boolean
   onClose: () => void
@@ -141,6 +167,7 @@ function Sidebar({
   user: { name?: string; email?: string } | null
   saveState: ReturnType<typeof selectSaveState>
   onJoinByCode: () => void
+  onSendFeedback: () => void
 }) {
   const menu = useMenu()
   const navigate = useNavigate()
@@ -271,6 +298,9 @@ function Sidebar({
               // Junto das ações de composição de time; sempre acessível (não
               // depende do seletor de workspace, que só existe com mais de um).
               { label: inviteText.joinByCodeMenu, onSelect: onJoinByCode },
+              // send-feedback — canal do beta, sempre disponível no menu da conta
+              // (discreto, sem poluir a topbar).
+              { label: feedbackText.menuItem, onSelect: onSendFeedback },
               { label: 'Alternar tema', onSelect: () => toggleTheme() },
               { label: 'Sair', onSelect: () => void performLogout((p) => navigate(p)) },
             ]}

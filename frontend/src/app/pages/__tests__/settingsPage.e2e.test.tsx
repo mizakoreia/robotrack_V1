@@ -5,7 +5,7 @@ import type { ReactNode } from 'react'
 import { SettingsPage } from '@/app/pages/SettingsPage'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import {
-  peopleApi, taskTemplatesApi, metaApi, backupApi, factoryResetApi, auditLogsApi,
+  peopleApi, taskTemplatesApi, metaApi, backupApi, factoryResetApi, auditLogsApi, feedbackApi,
   type PersonDTO, type AuditLogDTO,
 } from '@/lib/api/endpoints'
 import { flags } from '@/lib/flags'
@@ -57,6 +57,8 @@ beforeEach(() => {
   vi.spyOn(taskTemplatesApi, 'update').mockResolvedValue({} as any)
   vi.spyOn(metaApi, 'robotApplications').mockResolvedValue(['Misto / Geral', 'Handling', 'Sealing'])
   vi.spyOn(auditLogsApi, 'list').mockImplementation(async () => [...logs])
+  // send-feedback — a caixa owner-only monta na tela; sem dado no e2e da tela.
+  vi.spyOn(feedbackApi, 'list').mockResolvedValue([])
 })
 afterEach(() => {
   vi.restoreAllMocks()

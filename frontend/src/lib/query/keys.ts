@@ -26,6 +26,8 @@ export const qk = {
   notifications: (wsId: string) => ['ws', wsId, 'notifications'] as const,
   // notification-preferences D-P6 — as preferências (seguir/silenciar) da própria pessoa
   subscriptions: (wsId: string) => ['ws', wsId, 'subscriptions'] as const,
+  // send-feedback — a caixa de feedbacks do workspace (leitura do dono)
+  feedbacks: (wsId: string) => ['ws', wsId, 'feedbacks'] as const,
   search: (wsId: string, q: string) => ['ws', wsId, 'search', q] as const,
 } as const
 

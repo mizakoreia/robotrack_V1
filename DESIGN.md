@@ -109,6 +109,17 @@ propriedade (`text-success` não compila — D-DS-2).
   (não divergem). Prosa em medida contida (~68ch) e `text-text-main` (sem cinza-claro).
   As duas métricas nomeadas vêm de `lib/i18n/progress.ts`, a porta por código de
   `lib/i18n/invitations.ts` (chaves, não literais — respeita os sweeps D14).
+- **Enviar feedback** (`send-feedback`): item **"Enviar feedback"** no menu da conta
+  (rodapé da sidebar), junto de "Entrar em outro workspace com código" — discreto,
+  sempre disponível, **sem FAB e sem poluir a topbar** (Princípio 5). Abre um `Modal`
+  da casa (overlay/focus-trap/Esc), aberto por `?feedback=1` (espelha `?codigo=1`),
+  com uma `textarea` de fundo temático (`bg-bg-main`, regra F) e **captura automática
+  de contexto** (rota/workspace/papel/user-agent/idioma/viewport) sob um disclosure
+  "Ver o que será enviado" (estado honesto, Princípio 2). Sucesso = toast
+  `sonner` "Obrigado! Recebemos seu feedback." e fecha; erro fica inline
+  (`aria-live`). Textos em `lib/i18n/feedback.ts` (sem literal solto). O **dono** lê os
+  feedbacks recebidos num painel **owner-only** na tela de Configurações (lista legível,
+  sem grade de cards; mensagem + autor + quando + contexto sob disclosure).
 - Grades de card responsivas; `items-stretch` para cards de mesma altura. Todo grid
   que salta de coluna em `sm:`/`lg:` **começa em `grid-cols-1`** no base — sem a
   coluna base `minmax(0,1fr)`, a trilha implícita `auto` estica no `min-content` do

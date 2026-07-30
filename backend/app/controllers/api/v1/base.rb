@@ -58,6 +58,9 @@ module Api
       # Preferências de notificação por entidade (notification-preferences D-P6)
       mount Api::V1::NotificationSubscriptions
 
+      # Feedback do beta — enviar (qualquer membro) + ler (dono) (send-feedback)
+      mount Api::V1::Feedbacks
+
       # Sonda de saúde da fila offline (offline-pwa 4.3) — pública, sem tenant
       mount Api::V1::Health
 

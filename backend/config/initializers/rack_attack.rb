@@ -116,6 +116,15 @@ module Rack
       req.ip if req.post? && CODE_PREVIEW_PATH.match?(req.path)
     end
 
+    # send-feedback — teto leve no envio de feedback (por IP), para o canal do beta
+    # não virar spam. O envio já cai na classe `write` do throttle de domínio; este
+    # é o teto explícito e mais estreito (10/min). Localhost é safelisted (o demo e
+    # os specs comuns não colidem); o spec de rate-limit usa um IP não-local.
+    FEEDBACK_PATH = %r{\A/api/v1/feedbacks/?\z}
+    throttle('feedbacks/submit-ip', limit: 10, period: 1.minute) do |req|
+      req.ip if req.post? && FEEDBACK_PATH.match?(req.path)
+    end
+
     # ── Tetos por CLASSE de domínio (7.2/7.3), por minuto, por identidade ──────
     # Um throttle por classe; o discriminador devolve a chave só quando a
     # requisição pertence àquela classe, senão a ignora. `limit` é lido do ENV a

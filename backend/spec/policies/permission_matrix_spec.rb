@@ -28,7 +28,11 @@ RSpec.describe PermissionMatrix do
       # §4.1 L7: "convidar, alterar papel, remover membro" — owner
       manage_membership:      %i[owner],
       # §4.1 L8: "excluir workspace / reset de fábrica" — owner
-      destroy_workspace:      %i[owner]
+      destroy_workspace:      %i[owner],
+      # send-feedback: enviar feedback do beta é de qualquer membro; ler a caixa
+      # de feedbacks é do dono do workspace.
+      submit_feedback:        %i[owner edit view],
+      read_feedbacks:         %i[owner]
     )
   end
 

@@ -7,6 +7,7 @@ import { UtilitiesPanel } from '@/features/settings/UtilitiesPanel'
 import { QueueDiagnostics } from '@/components/offline/QueueDiagnostics'
 import { ReconciliationPanel } from '@/components/offline/ReconciliationPanel'
 import { AuditLogModal } from '@/features/audit/AuditLogModal'
+import { FeedbackInbox } from '@/features/feedback/FeedbackInbox'
 import { Button } from '@/components/ui/Button'
 import { settingsText as T } from '@/lib/i18n/settings'
 import { auditText } from '@/lib/i18n/audit'
@@ -45,6 +46,9 @@ export function SettingsPage() {
           <AuditLogModal open={auditOpen} onClose={() => setAuditOpen(false)} />
         </div>
       </section>
+      {/* send-feedback — a caixa de feedbacks do beta, owner-only (o servidor
+          garante 403 para não-dono; aqui só decidimos renderizar). */}
+      {role === 'owner' && <FeedbackInbox />}
       {role === 'owner' && <UtilitiesPanel />}
     </div>
   )

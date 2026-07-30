@@ -324,6 +324,48 @@ inventado.
   refresh (abrir online 1× pega o build novo). Túneis (`vite.config.ts`, `client.ts`)
   seguem **sem commit**.
 
+## Feature NOVA: `send-feedback` (canal de feedback do beta — full-stack, PUBLICADA em `main`)
+
+Pedido do dono: um caminho simples e descobrível para o beta tester **enviar feedback de
+dentro do app**, e o **dono ler** o que chegou. Método ágil (como `ajuda-screen`): commits
+`feat:` só dos arquivos da feature, docs no mesmo passo, migração reversível por `DROP`.
+
+- **Frontend (envio):** item **"Enviar feedback"** no menu da conta do `AppShell` (rodapé da
+  sidebar), aberto por `?feedback=1` (espelha `?codigo=1`). Modal sobre o primitivo `Modal`
+  (`features/feedback/SendFeedbackDialog.tsx`): `textarea` obrigatória de fundo temático +
+  **captura automática de contexto** (rota/workspace/papel/user-agent/idioma/viewport) sob
+  disclosure "Ver o que será enviado". Sucesso = toast `sonner` + fecha; erro inline
+  (`aria-live`). Hook `useSubmitFeedback` (`features/feedback/useFeedback.ts`), endpoint
+  `feedbackApi.create`, key `qk.feedbacks`. Textos em `lib/i18n/feedback.ts`.
+- **Frontend (leitura do dono):** `FeedbackInbox` montada **owner-only** na tela de
+  Configurações (`{role === 'owner' && …}`, como o `UtilitiesPanel`) — lista legível
+  (mensagem + autor + quando + contexto sob disclosure), hook `useFeedbacks`.
+- **Backend:** tabela `feedbacks` (migração `20260730120001`, **reverte por `DROP`**), RLS
+  FORÇADA idioma da casa (policy `tenant_isolation`). Endpoint Grape `Api::V1::Feedbacks`:
+  `POST` (qualquer membro, action `submit_feedback`) grava `workspace_id` do contexto e
+  `user_id` do bearer; `GET` (owner-only, action `read_feedbacks`) lista o workspace,
+  recentes primeiro. Duas actions novas na `PermissionMatrix` (+ conformidade nos 2 specs).
+  Rate-limit dedicado `feedbacks/submit-ip` (10/min) além da classe `write`. Swagger
+  allowlist +`/api/v1/feedbacks`.
+- **Divergências registradas (bom senso do brief):** (1) `workspace_id` **NOT NULL**, não
+  nullable — RLS forçada torna linha `NULL` invisível a todos (cemitério de dados). (2) Sem
+  `person_id`; uso `user_id` (FK global `ON DELETE SET NULL`) — FK composta a `people` não
+  pode `SET NULL` (workspace_id NOT NULL) e `CASCADE` destruiria o feedback ao arquivar a
+  pessoa. (3) **Sem FAB** — só o item de menu (Princípio 5, sem poluir a topbar).
+- **Suítes:** backend specs `feedbacks_schema_spec`/`feedbacks_spec` + matriz/swagger/route-
+  sweeps + guardas (schema_guard, role_comparison) **verdes** (377/0 dirigido + 179/0 guardas).
+  Frontend `vitest` da área **98/98** (dialog + inbox + i18n sweep + AppShell + settings e2e +
+  todos os sweeps); suíte inteira **639/640** (a única falha é o flaky pré-existente
+  `queue.test.ts` D7-12, passa isolado). `tsc`/`lint` limpos. Migração aplicada em DEV+TEST
+  como `robotrack_migrator`; `structure.sql` regenerado.
+- **Verificado no navegador** (build de prod na demo :5173, dono `demo@robotrack.local`):
+  item no menu → modal (desktop + mobile 375px sem estouro) → contexto capturado (route/
+  workspace/role/UA/idioma) → envio real → toast → o dono lê em Configurações (autor +
+  timestamp + contexto). Zero erro de console. Backend serviu `/api/v1/feedbacks` ao vivo (o
+  dev-mode do Rails :3000 recarregou o endpoint sem restart — envio provou ponta a ponta).
+- **Docs:** `DESIGN.md` atualizado (subseção "Enviar feedback" no App-shell). Build de prod
+  recompilado. Túneis (`vite.config.ts`, `client.ts`) seguem **sem commit**.
+
 ## Campanha de deploy (par com o agente da WSL — 24/07/2026)
 
 Depois de fechar o domínio, o **primeiro deploy real** virou uma sessão de par: o
