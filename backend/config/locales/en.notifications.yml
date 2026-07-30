@@ -8,3 +8,20 @@ en:
       assign_observer: '%{author} assigned %{assignee} to the task "%{task}" (robot %{robot})'
       progress: '%{author} logged %{n}%% on the task "%{task}" (robot %{robot}): %{comment}'
       done: 'Task "%{task}" (robot %{robot}) was completed by %{author}'
+      # notification-preferences G6 (§D-P8) — STRUCTURAL events, 3rd person. The
+      # column enum is always 'structure'; the action and entity live HERE, in
+      # the text. `label` = entity name; `parent` = parent label (absent on the
+      # project, which is the root).
+      structure:
+        project:
+          created: '%{author} created project "%{label}"'
+          deleted: '%{author} deleted project "%{label}"'
+        cell:
+          created: '%{author} created cell "%{label}" in project "%{parent}"'
+          deleted: '%{author} deleted cell "%{label}" in project "%{parent}"'
+        robot:
+          created: '%{author} added robot "%{label}" to cell "%{parent}"'
+          deleted: '%{author} removed robot "%{label}" from cell "%{parent}"'
+        task:
+          created: '%{author} created task "%{label}" on robot "%{parent}"'
+          deleted: '%{author} deleted task "%{label}" on robot "%{parent}"'

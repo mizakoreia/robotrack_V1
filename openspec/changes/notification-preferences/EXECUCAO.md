@@ -100,7 +100,7 @@ O-1 default · O-2 herança · O-3 owner-tudo×mute · O-4 assign×mute · O-5 v
 O-6 item 1 sem enum · O-7 alvo workspace · O-8 quais ações estruturais. Cada uma com recomendação
 no `design.md`.
 
-## EXECUÇÃO por grupo (parte reversível — G6 DEFERIDO)
+## EXECUÇÃO por grupo (parte reversível; G6 depois EXECUTADO — ver §"G6 — EXECUÇÃO")
 
 - **G1 ✅** — enum `notification_subscription_state`, tabela `notification_subscriptions` (FKs
   compostas, CHECK um-alvo, RLS forçada, 3 únicos parciais + 3 lookup), model
@@ -142,8 +142,9 @@ no `design.md`.
   database.yml` LOCAL, que nem está no HEAD — pré-existente, não é desta change). Docs atualizados:
   `CONTINUIDADE.md` (30ª change), `DESIGN.md` (G4), EXTENSÃO de `in-app-notifications` (item 1 fechado
   sem enum, item 2 = G6 deferido). `validate --strict` verde.
-- **G6 ⏸️ DEFERIDO** — eventos estruturais + `ALTER TYPE ADD VALUE 'structure'` NÃO executado
-  (reversão não-trivial); aguardando OK separado do dono. tasks.md §6 marcado.
+- **G6 ✅ EXECUTADO (2026-07-30, com OK do dono, na branch de feature)** — ver a seção "G6 —
+  EXECUÇÃO" abaixo. A migração foi aplicada no SANDBOX (DEV+TEST); a ida à `main`/produção é passo
+  separado sob OK à parte.
 
 ## G6 — REABERTURA (reconciliação G0 do grupo deferido) — 2026-07-30
 
@@ -234,6 +235,45 @@ SEM `'structure'`. `NotifyStructureEventJob` e as chaves `structure.*` NÃO exis
 é bare (Postgres sem os papéis `robotrack_migrator`/`robotrack_app`) — provisionar via
 `backend/db/PROVISIONING.md` antes de rodar os specs. NADA do G6 aplicado — esta seção é só o G0 de
 reabertura.
+
+## G6 — EXECUÇÃO (2026-07-30, sandbox, branch `claude/robotrack-mobile-dev-s3puaf`)
+
+Aplicado exatamente como o G0 de reabertura previu. Migração rodada no SANDBOX (DEV+TEST) como
+`robotrack_migrator`; `structure.sql` regenerado. **Produção/`main` NÃO tocada** — passo separado.
+
+**Entregue:**
+- **6.1 migração** `db/migrate/20260730140001_add_structure_to_notification_type.rb`:
+  `disable_ddl_transaction!` + `ALTER TYPE ... ADD VALUE IF NOT EXISTS 'structure'`; `down` levanta
+  `IrreversibleMigration`. Enum agora `('assign','progress','done','structure')` (`structure.sql:74`).
+- **6.2 locale** 8 chaves `notifications.v1.structure.<entidade>.<ação>` em PT **e** EN (3ª pessoa,
+  `%{author}`/`%{label}`/`%{parent}`); `MessageBuilder.build_structure` (subchave por entidade+ação;
+  trunca só por defesa da CHECK `msg_max_500`). Grep-guard estendido (2 fragmentos estruturais).
+- **6.3 instrumentação** `Notifications::StructureEvent.publish` (materializa ctx+rótulos e dispara
+  `structure.changed` **pós-commit**, best-effort) nos 4 pontos SINGLE: `Hierarchy::CrudService#create`
+  (ramo `:created`) e `#destroy` (após a transação fechar) — cobre projeto/célula/robô de uma vez —,
+  `Tasks::CreateService#call` e `Tasks::DeleteService#call`. Subscriber em `notification_subscribers.rb`
+  → `NotifyStructureEventJob` (fila `:notifications`, `recorded_at` fixado no enfileiramento).
+- **6.4 destinatários** `Notifications::CreateService.for_structure` = dono + seguidores do galho −
+  autor, honrando `mute` (reusa `SubscriptionResolver`, `default` = "é o dono"); insere `type='structure'`
+  com msg congelada no locale de CADA destinatário. `owner_person_id_for(workspace_id)` extraído.
+- **6.5 specs** `spec/notifications/structure_event_spec.rb` (dono recebe exclusão de robô, galho
+  silenciado não, autor não, seguidor recebe, msg por locale EN, disparo pós-commit: create ok
+  instrumenta / validação que falha não instrumenta, grep-guard) + `spec/db/notification_type_enum_spec.rb`
+  (aceita `structure`, recusa `mention`, preserva os 3 originais).
+
+**Decisões confirmadas na execução:** DE-G6.1..DE-G6.6 do G0 de reabertura seguidas à risca.
+Frontend: só o alargamento do union `NotificationDTO.type` para incluir `'structure'` (o centro
+renderiza pelo `msg` do servidor, sem switch por tipo). **Limitação v1 registrada:** o deep-link
+(`ctxToPath`) de uma notificação de EXCLUSÃO de robô/tarefa aponta para o recurso já removido (some
+como "não encontrado", honesto) — mesma classe do link morto que qualquer notificação ganha quando o
+alvo é excluído depois; não é regressão. Notificação de projeto/célula (sem `robot_id`) já não navega.
+
+**Resultado (sandbox):** `spec/notifications` + `spec/db` **162/0** (baseline 152 + 10 novos);
+hierarquia/tasks tocados por instrumentação **47/0**; `format_version_guard` **5/0**. Migração
+aplicada em DEV+TEST; `structure.sql` regenerado. Frontend (após `npm ci` do container bare):
+`tsc` limpo, `lint` limpo, `vitest` de notificações **19/19**, varreduras (convention/contrast/
+no-emoji/query/i18n/motion/stacking/tokens) **67/67**. `openspec validate notification-preferences
+--strict` verde.
 
 ## Baseline
 

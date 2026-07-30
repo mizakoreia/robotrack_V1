@@ -74,7 +74,8 @@ CREATE TYPE public.notification_subscription_state AS ENUM (
 CREATE TYPE public.notification_type AS ENUM (
     'assign',
     'progress',
-    'done'
+    'done',
+    'structure'
 );
 
 
@@ -2910,6 +2911,7 @@ ALTER TABLE public.workspaces ENABLE ROW LEVEL SECURITY;
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260730140001'),
 ('20260730130001'),
 ('20260730120001'),
 ('20260726120001'),

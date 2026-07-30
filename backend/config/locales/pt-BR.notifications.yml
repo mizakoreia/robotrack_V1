@@ -8,3 +8,20 @@ pt-BR:
       assign_observer: '%{author} atribuiu %{assignee} à tarefa "%{task}" (robô %{robot})'
       progress: '%{author} registrou %{n}%% na tarefa "%{task}" (robô %{robot}): %{comment}'
       done: 'Tarefa "%{task}" (robô %{robot}) foi concluída por %{author}'
+      # notification-preferences G6 (§D-P8) — eventos ESTRUTURAIS, 3ª pessoa. O
+      # enum na coluna é sempre 'structure'; a ação e a entidade moram AQUI, no
+      # texto. `label` = nome da entidade; `parent` = rótulo do pai (ausente no
+      # projeto, que é a raiz).
+      structure:
+        project:
+          created: '%{author} criou o projeto "%{label}"'
+          deleted: '%{author} excluiu o projeto "%{label}"'
+        cell:
+          created: '%{author} criou a célula "%{label}" no projeto "%{parent}"'
+          deleted: '%{author} excluiu a célula "%{label}" no projeto "%{parent}"'
+        robot:
+          created: '%{author} adicionou o robô "%{label}" à célula "%{parent}"'
+          deleted: '%{author} removeu o robô "%{label}" da célula "%{parent}"'
+        task:
+          created: '%{author} criou a tarefa "%{label}" no robô "%{parent}"'
+          deleted: '%{author} excluiu a tarefa "%{label}" do robô "%{parent}"'

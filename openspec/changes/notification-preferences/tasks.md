@@ -89,29 +89,35 @@
   recebe; seguidor com `mute` no robô não recebe; grep-guard da string observadora. (§D-P7 — os dois
   textos coexistem por destinatário)
 
-## 6. Eventos estruturais — item pendente 2 (G6) 🔴 — MIGRAÇÃO (reversão NÃO-trivial) — **DEFERIDO**
+## 6. Eventos estruturais — item pendente 2 (G6) 🔴 — MIGRAÇÃO (reversão NÃO-trivial) — **EXECUTADO**
 
-> **DEFERIDO por decisão do dono (2026-07-30):** este grupo é o único com migração de reversão
-> **NÃO-trivial** (`ALTER TYPE notification_type ADD VALUE 'structure'` — Postgres não tem
-> `DROP VALUE`). Fica ABERTO aguardando aprovação separada. Os grupos reversíveis (G1–G5, G7)
-> foram executados sem ele. Retomar só com OK explícito.
+> **EXECUTADO com OK do dono (2026-07-30):** o dono autorizou aplicar a migração no sandbox e
+> implementar o G6 na branch de feature `claude/robotrack-mobile-dev-s3puaf`. A migração
+> `ALTER TYPE notification_type ADD VALUE 'structure'` é o único ponto de reversão NÃO-trivial
+> (Postgres não tem `DROP VALUE`). **A ida à `main`/produção segue como passo separado, sob OK
+> à parte** — em produção o Render roda a migração no boot. Ver EXECUCAO §"G6 — EXECUÇÃO".
 
-- [ ] 6.1 Migration `disable_ddl_transaction!` com `ALTER TYPE notification_type ADD VALUE IF NOT
+- [x] 6.1 Migration `disable_ddl_transaction!` com `ALTER TYPE notification_type ADD VALUE IF NOT
   EXISTS 'structure'`; `down` levanta `IrreversibleMigration` com a nota de que remover valor de
   enum PG exige recriar o tipo. Regenerar `structure.sql`. (§D-P8 — 🔴 é o ponto onde a reversão
-  deixa de ser um `DROP` simples)
-- [ ] 6.2 Chaves de locale estruturais (`structure_<entidade>_<ação>`, 3ª pessoa) e o
+  deixa de ser um `DROP` simples) → `db/migrate/20260730140001_*`; enum `structure.sql:74-79`;
+  `spec/db/notification_type_enum_spec.rb`.
+- [x] 6.2 Chaves de locale estruturais (`structure.<entidade>.<ação>`, 3ª pessoa) e o
   `MessageBuilder`/serviço que as renderiza a partir da ação + rótulo da entidade. (§D-P8 — texto
-  materializado; ação/entidade no texto, não no enum)
-- [ ] 6.3 Instrumentar `structure.changed` pós-commit nos services de hierarquia (criar/editar/
+  materializado; ação/entidade no texto, não no enum) → 8 chaves PT+EN; `MessageBuilder.build_structure`.
+- [x] 6.3 Instrumentar `structure.changed` pós-commit nos services de hierarquia (criar/
   excluir projeto/célula/robô/tarefa) com `workspace_id`, `actor_person_id`, `ctx`, ação e rótulo;
   subscriber → `NotifyStructureEventJob` (fila `:notifications`). Escopo inicial: **create + delete**
-  (update sob decisão O-8). (§D-P8 — rollback não instrumenta; só create/delete no v1)
-- [ ] 6.4 Recipientes estruturais = dono + seguidores do galho − autor, honrando `mute` (reusa o
+  (update sob decisão O-8; batch fora do v1 — DE-G6.1). (§D-P8 — rollback não instrumenta; só
+  create/delete no v1) → `Notifications::StructureEvent.publish` nos 4 pontos single;
+  `notify_structure_event_job.rb`; subscriber em `notification_subscribers.rb`.
+- [x] 6.4 Recipientes estruturais = dono + seguidores do galho − autor, honrando `mute` (reusa o
   `SubscriptionResolver` com `default` = "é o dono"). (§D-P8 — dono recebe exclusão de robô; galho
-  silenciado não recebe; autor não se notifica)
-- [ ] 6.5 Specs: enum aceita `structure`/recusa arbitrário; dono recebe exclusão; galho silenciado
-  não; autor não; rollback não enfileira. (§D-P8 — cobre os cinco cenários do spec delta)
+  silenciado não recebe; autor não se notifica) → `Notifications::CreateService.for_structure`.
+- [x] 6.5 Specs: enum aceita `structure`/recusa arbitrário; dono recebe exclusão; galho silenciado
+  não; autor não; rollback não enfileira. (§D-P8 — cobre os cinco cenários do spec delta) →
+  `spec/notifications/structure_event_spec.rb` + `spec/db/notification_type_enum_spec.rb` (10/0);
+  suíte notif+db **162/0**; hierarquia/tasks **47/0**; format_version guard **5/0**.
 
 ## 7. Fechamento (G7) 🟢
 

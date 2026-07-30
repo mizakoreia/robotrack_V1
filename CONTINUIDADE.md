@@ -256,14 +256,16 @@ também** entra no owner-only (só o `destroy`; editar/atribuir seguem em owner+
   (`queue.test.ts` D7-12), que passa isolado; domínio `offline-pwa`, intocado.
 - **Execução E2E/axe em navegador:** HANDOFF (demo viva em :3000/:5173 — não repontar).
 
-## Change NOVA: `notification-preferences` (30ª change — parte reversível EXECUTADA, G6 DEFERIDO)
+## Change NOVA: `notification-preferences` (30ª change — G1–G7 no `main`; **G6 EXECUTADO em branch de feature, aguardando ida à `main`**)
 
 **Preferências de notificação POR ENTIDADE da hierarquia, por pessoa** (pedido do dono:
 "que as pessoas escolham se querem receber notificações daquele robô, célula ou projeto").
 Cada membro **segue** (recebe mesmo sem ser responsável) ou **silencia** (não recebe) um
 nível. Junta os 2 itens pendentes da EXTENSÃO de `in-app-notifications`. O dono aprovou
-executar **só a parte reversível** (G1–G5, G7); o **G6 (eventos estruturais) fica DEFERIDO**
-por ser a única migração de reversão não-trivial (`ALTER TYPE ADD VALUE`).
+executar **só a parte reversível** (G1–G5, G7) num primeiro momento; o G6 (eventos estruturais)
+ficou DEFERIDO por ser a única migração de reversão não-trivial (`ALTER TYPE ADD VALUE`).
+**→ SUPERADO em 2026-07-30: o G6 foi EXECUTADO com OK do dono na branch de feature — ver o bullet
+"G6 EXECUTADO" abaixo.**
 
 - **G1 (migração reversível):** `notification_subscriptions` — enum `follow`/`mute`, alvo por
   3 colunas FK (projeto/célula/robô, CHECK um-alvo), FKs compostas por `workspace_id`, RLS
@@ -279,7 +281,8 @@ por ser a única migração de reversão não-trivial (`ALTER TYPE ADD VALUE`).
 - **G4 (impeccable):** sino **seguir/silenciar** (`bell`/`bell-off`, `PortalMenu` Padrão/Seguir/
   Silenciar ≥40px, estado efetivo com origem) nos cabeçalhos robô/célula/projeto; hook otimista
   `useNotificationSubscriptions`; `DESIGN.md` atualizado.
-- **Decisões O-1..O-8** adotadas conforme recomendação do design (O-8/estrutural → G6 deferido).
+- **Decisões O-1..O-8** adotadas conforme recomendação do design (O-8/estrutural → G6, executado
+  em 2026-07-30 — ver bullet "G6 EXECUTADO").
 - **Suítes:** backend `rspec` INTEIRA **1551 exemplos, 0 falhas reais** (swagger allowlist ganhou
   `/api/v1/notification_subscriptions`; a falha de `schema_guard` foi `connection closed` do
   fim da run, passa isolado; `database_yml` é o `silas777` num comentário do `database.yml`
@@ -289,7 +292,20 @@ por ser a única migração de reversão não-trivial (`ALTER TYPE ADD VALUE`).
   **BLOQUEADO pelo classificador de permissão** do ambiente (mesma classe do `push --delete`
   documentado). Aguardando o dono empurrar ou liberar a permissão Bash. Túneis
   (`vite.config.ts`, `client.ts`) **sem commit**.
-- **G6 DEFERIDO:** `tasks.md §6` marcado; retomar só com OK explícito do dono.
+- **G6 EXECUTADO (2026-07-30, com OK do dono, na branch `claude/robotrack-mobile-dev-s3puaf`):**
+  eventos ESTRUTURAIS. Migração `20260730140001` `ALTER TYPE notification_type ADD VALUE 'structure'`
+  (🔴 sem `DROP VALUE`; `down` = `IrreversibleMigration`) aplicada no **SANDBOX** (DEV+TEST);
+  `structure.sql` regenerado. `Notifications::StructureEvent.publish` dispara `structure.changed`
+  pós-commit nos 4 pontos SINGLE (CrudService create/destroy → projeto/célula/robô; Tasks
+  create/delete) → `NotifyStructureEventJob` → `CreateService.for_structure` (dono + seguidores −
+  autor, honrando `mute`; msg por locale, `type='structure'`). 8 chaves de locale
+  `structure.<entidade>.<ação>` PT+EN. Escopo v1 = create/delete SINGLE; **batch** (robô em lote,
+  bulk-delete owner-only, materialização de tarefas-base) e **update/renomear** ficam FORA (DE-G6.1/2 —
+  evitam inundar o dono). Frontend: só o union `NotificationDTO.type` ganhou `'structure'` (o centro
+  renderiza pelo `msg`). Suítes: notif+db **162/0**, hierarquia/tasks **47/0**, guard **5/0**, front
+  vitest+sweeps **19/19 + 67/67**, `tsc`/`lint` limpos, `validate --strict` verde. **A ida à `main`/
+  produção é passo SEPARADO, sob OK à parte** (o Render roda a migração no boot). Detalhe em
+  `notification-preferences/EXECUCAO.md §"G6 — EXECUÇÃO"`.
 
 ## Feature NOVA: `ajuda-screen` (tela de Ajuda — frontend-only, PUBLICADA em `main`)
 
