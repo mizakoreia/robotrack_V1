@@ -4,22 +4,22 @@ require 'rails_helper'
 
 # in-app-notifications 2.2/2.3 — contrato das mensagens versionadas.
 RSpec.describe Notifications::MessageBuilder do
-  let(:base) { { author: 'Bruno', task: 'Ajuste de TCP', robot: 'R03 - Handling' } }
+  let(:base) { { author: 'Bruno', task: 'Ajuste de TCP', robot: 'R03 - Handling', project: 'Linha A', cell: 'Op10' } }
 
   describe 'contrato caractere-a-caractere (§2.7)' do
     it 'assign' do
       msg = described_class.build(type: 'assign', **base)[:msg]
-      expect(msg).to eq('Bruno atribuiu você à tarefa "Ajuste de TCP" (robô R03 - Handling)')
+      expect(msg).to eq('Bruno atribuiu você à tarefa "Ajuste de TCP" (projeto Linha A · célula Op10 · robô R03 - Handling)')
     end
 
     it 'progress (o %% rende % sem espaço antes)' do
       msg = described_class.build(type: 'progress', n: 45, comment: 'Calibrado eixo 6', **base)[:msg]
-      expect(msg).to eq('Bruno registrou 45% na tarefa "Ajuste de TCP" (robô R03 - Handling): Calibrado eixo 6')
+      expect(msg).to eq('Bruno registrou 45% na tarefa "Ajuste de TCP" (projeto Linha A · célula Op10 · robô R03 - Handling): Calibrado eixo 6')
     end
 
     it 'done' do
       msg = described_class.build(type: 'done', **base)[:msg]
-      expect(msg).to eq('Tarefa "Ajuste de TCP" (robô R03 - Handling) foi concluída por Bruno')
+      expect(msg).to eq('Tarefa "Ajuste de TCP" (projeto Linha A · célula Op10 · robô R03 - Handling) foi concluída por Bruno')
     end
   end
 
@@ -45,8 +45,8 @@ RSpec.describe Notifications::MessageBuilder do
   describe 'assign_observer 3ª pessoa (notification-preferences D-P7)' do
     it 'renderiza o texto observador com o nome do atribuído' do
       msg = described_class.build(type: 'assign_observer', author: 'Carla', task: 'Backup do programa',
-                                  robot: 'R01 - Solda', assignee: 'Diego')[:msg]
-      expect(msg).to eq('Carla atribuiu Diego à tarefa "Backup do programa" (robô R01 - Solda)')
+                                  robot: 'R01 - Solda', project: 'Linha B', cell: 'Op20', assignee: 'Diego')[:msg]
+      expect(msg).to eq('Carla atribuiu Diego à tarefa "Backup do programa" (projeto Linha B · célula Op20 · robô R01 - Solda)')
     end
   end
 

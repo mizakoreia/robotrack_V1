@@ -151,9 +151,9 @@ RSpec.describe 'Notifications preferências (filtro no pipeline)', :tenancy do
         assignee_note = Notification.find_by(recipient_person_id: w[:resp])
         owner_note = Notification.find_by(recipient_person_id: w[:owner])
         expect(assignee_note.type).to eq('assign')
-        expect(assignee_note.msg).to eq('Bruno atribuiu você à tarefa "Ajuste de TCP" (robô R03 - Handling)')
+        expect(assignee_note.msg).to eq('Bruno atribuiu você à tarefa "Ajuste de TCP" (projeto L · célula C · robô R03 - Handling)')
         expect(owner_note.type).to eq('assign')
-        expect(owner_note.msg).to eq('Bruno atribuiu Ana à tarefa "Ajuste de TCP" (robô R03 - Handling)')
+        expect(owner_note.msg).to eq('Bruno atribuiu Ana à tarefa "Ajuste de TCP" (projeto L · célula C · robô R03 - Handling)')
       end
     end
 
@@ -180,7 +180,7 @@ RSpec.describe 'Notifications preferências (filtro no pipeline)', :tenancy do
       assign!(w, added: [w[:resp]], actor: w[:author])
       in_workspace(ws) do
         note = Notification.find_by(recipient_person_id: w[:third])
-        expect(note.msg).to eq('Bruno atribuiu Ana à tarefa "Ajuste de TCP" (robô R03 - Handling)')
+        expect(note.msg).to eq('Bruno atribuiu Ana à tarefa "Ajuste de TCP" (projeto L · célula C · robô R03 - Handling)')
       end
     end
   end

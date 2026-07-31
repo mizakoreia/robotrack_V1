@@ -35,7 +35,7 @@ RSpec.describe Notifications::CreateService, :tenancy do
         described_class.for_assign(task_id: w[:task], added: [w[:recipient]], actor_person_id: w[:actor],
                                    recorded_at: Time.current)
         n = Notification.last
-        expect(n.msg).to eq('Bruno atribuiu você à tarefa "Ajuste de TCP" (robô R03 - Handling)')
+        expect(n.msg).to eq('Bruno atribuiu você à tarefa "Ajuste de TCP" (projeto L · célula C · robô R03 - Handling)')
         expect(n.ctx_task_id).to eq(w[:task])
         expect(n.read).to be(false)
       end
