@@ -7,6 +7,8 @@ Robotrack::Application.routes.draw do
   # Grape em '/', senão seriam engolidas. Públicas, sem auth.
   get '/health/live', to: 'health#live'
   get '/health/ready', to: 'health#ready'
+  # DIAGNÓSTICO TEMPORÁRIO do worker embutido (remover após diagnosticar).
+  get '/health/sidekiq', to: 'health#sidekiq_diag'
 
   # Métricas Prometheus (delivery-and-observability 4.4), protegidas por METRICS_TOKEN.
   get '/metrics', to: 'metrics#index'
