@@ -382,6 +382,11 @@ function Topbar({
           type="button"
           variant="outline"
           size="sm"
+          // impeccable adapt — no mobile a topbar ficava lotada e comia o nome+seletor
+          // do workspace (o contexto MAIS importante). O atalho de convite é ação de
+          // gestão (o dono trabalha mais no desktop) e segue acessível pelo menu da
+          // conta → "Equipe e convites". Escondido só abaixo de md.
+          className="max-md:hidden"
           aria-label={shellText.invitePerson}
           onClick={() => onNavigate('/configuracoes/equipe?convidar=1')}
         >
