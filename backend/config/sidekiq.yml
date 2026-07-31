@@ -1,7 +1,28 @@
+# Filas processadas pelo Sidekiq. NO FREE TIER o Sidekiq roda EMBUTIDO dentro do
+# web service (bin/render-web-start: `bundle exec sidekiq -C config/sidekiq.yml`).
+#
+# SEM a lista `:queues:` o Sidekiq processa APENAS a fila `default` — e os jobs de
+# notificação usam `queue_as :notifications` (NotifyTaskEventJob e
+# NotifyStructureEventJob). Sem esta lista eles ficam parados no Redis e as
+# notificações (avanço, atribuição, eventos estruturais) NUNCA chegam. A ordem da
+# lista é a prioridade: `notifications` primeiro (é o que o usuário vê na hora).
+:queues:
+  - notifications
+  - default
+
+:concurrency: 5
+:timeout: 25
+
 worker:
   :concurrency: 5
   :timeout: 25
-  
+  :queues:
+    - notifications
+    - default
+
 production:
   :concurrency: 25
   :timeout: 25
+  :queues:
+    - notifications
+    - default
