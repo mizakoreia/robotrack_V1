@@ -18,9 +18,11 @@ module Notifications
     module_function
 
     # Devolve { msg:, format_version: }. `locale` = idioma do destinatário (default pt-BR).
-    def build(type:, author:, task:, robot:, n: nil, comment: nil, assignee: nil, locale: LOCALE)
+    # `project`/`cell` situam a tarefa no caminho completo (projeto · célula · robô).
+    def build(type:, author:, task:, robot:, project: nil, cell: nil, n: nil, comment: nil, assignee: nil, locale: LOCALE)
       key = "notifications.v#{FORMAT_VERSION}.#{type}"
-      vars = { author: author, task: task, robot: robot, n: n, comment: comment, assignee: assignee }.compact
+      vars = { author: author, task: task, robot: robot, project: project, cell: cell,
+               n: n, comment: comment, assignee: assignee }.compact
 
       msg = render(key, vars, locale)
       if msg.length > MAX_LEN && comment

@@ -4,10 +4,10 @@
 pt-BR:
   notifications:
     v1:
-      assign: '%{author} atribuiu você à tarefa "%{task}" (robô %{robot})'
-      assign_observer: '%{author} atribuiu %{assignee} à tarefa "%{task}" (robô %{robot})'
-      progress: '%{author} registrou %{n}%% na tarefa "%{task}" (robô %{robot}): %{comment}'
-      done: 'Tarefa "%{task}" (robô %{robot}) foi concluída por %{author}'
+      assign: '%{author} atribuiu você à tarefa "%{task}" (projeto %{project} · célula %{cell} · robô %{robot})'
+      assign_observer: '%{author} atribuiu %{assignee} à tarefa "%{task}" (projeto %{project} · célula %{cell} · robô %{robot})'
+      progress: '%{author} registrou %{n}%% na tarefa "%{task}" (projeto %{project} · célula %{cell} · robô %{robot}): %{comment}'
+      done: 'Tarefa "%{task}" (projeto %{project} · célula %{cell} · robô %{robot}) foi concluída por %{author}'
       # notification-preferences G6 (§D-P8) — eventos ESTRUTURAIS, 3ª pessoa. O
       # enum na coluna é sempre 'structure'; a ação e a entidade moram AQUI, no
       # texto. `label` = nome da entidade; `parent` = rótulo do pai (ausente no

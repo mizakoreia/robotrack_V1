@@ -4,10 +4,10 @@
 en:
   notifications:
     v1:
-      assign: '%{author} assigned you to the task "%{task}" (robot %{robot})'
-      assign_observer: '%{author} assigned %{assignee} to the task "%{task}" (robot %{robot})'
-      progress: '%{author} logged %{n}%% on the task "%{task}" (robot %{robot}): %{comment}'
-      done: 'Task "%{task}" (robot %{robot}) was completed by %{author}'
+      assign: '%{author} assigned you to the task "%{task}" (project %{project} · cell %{cell} · robot %{robot})'
+      assign_observer: '%{author} assigned %{assignee} to the task "%{task}" (project %{project} · cell %{cell} · robot %{robot})'
+      progress: '%{author} logged %{n}%% on the task "%{task}" (project %{project} · cell %{cell} · robot %{robot}): %{comment}'
+      done: 'Task "%{task}" (project %{project} · cell %{cell} · robot %{robot}) was completed by %{author}'
       # notification-preferences G6 (§D-P8) — STRUCTURAL events, 3rd person. The
       # column enum is always 'structure'; the action and entity live HERE, in
       # the text. `label` = entity name; `parent` = parent label (absent on the

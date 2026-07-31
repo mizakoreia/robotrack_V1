@@ -26,13 +26,14 @@ module Notifications
       recipients = RecipientResolver.resolve(type: type, actor_person_id: advance.by.to_s, current_assignees: current)
       recipients = with_owner(recipients, task, advance.by)
 
-      ctx, robot_label = ctx_for(task)
+      ctx, robot_label, project_label, cell_label = ctx_for(task)
       index = SubscriptionResolver.load(ctx)
       recipients = SubscriptionResolver.filter(recipients, index, advance.by)
       return 0 if recipients.empty?
 
       build_args = { type: type.to_s, author: advance.author_name_snapshot, task: task.desc,
-                     robot: robot_label, n: advance.to_progress, comment: advance.comment }
+                     robot: robot_label, project: project_label, cell: cell_label,
+                     n: advance.to_progress, comment: advance.comment }
       insert_rows(task: task, type: type, actor_id: advance.by, author_name: advance.author_name_snapshot,
                   recipients: recipients, recorded_at: advance.recorded_at, ctx: ctx, build_args: build_args)
     end
@@ -52,7 +53,7 @@ module Notifications
       added = Array(added).map(&:to_s)
       actor = actor_person_id.to_s
       when_at = parse_time(recorded_at)
-      ctx, robot_label = ctx_for(task)
+      ctx, robot_label, project_label, cell_label = ctx_for(task)
       actor_person = ::Person.find_by(id: actor_person_id)
       author = actor_person&.name.to_s
 
@@ -61,7 +62,8 @@ module Notifications
       # 2ª pessoa ao atribuído (delta − autor). Isento de mute (O-4).
       assignees = RecipientResolver.resolve(type: :assign, actor_person_id: actor, current_assignees: added)
       if assignees.any?
-        build_args = { type: 'assign', author: author, task: task.desc, robot: robot_label }
+        build_args = { type: 'assign', author: author, task: task.desc, robot: robot_label,
+                       project: project_label, cell: cell_label }
         created += insert_rows(task: task, type: :assign, actor_id: actor_person_id, author_name: author,
                                recipients: assignees, recorded_at: when_at, ctx: ctx, build_args: build_args)
       end
@@ -70,8 +72,8 @@ module Notifications
       observers = assign_observers(task, ctx, added, actor)
       if observers.any?
         assignee_names = person_names(added)
-        build_args = { type: 'assign_observer', author: author, task: task.desc,
-                       robot: robot_label, assignee: assignee_names }
+        build_args = { type: 'assign_observer', author: author, task: task.desc, robot: robot_label,
+                       project: project_label, cell: cell_label, assignee: assignee_names }
         created += insert_rows(task: task, type: :assign, actor_id: actor_person_id, author_name: author,
                                recipients: observers, recorded_at: when_at, ctx: ctx, build_args: build_args)
       end
@@ -164,9 +166,10 @@ module Notifications
     def ctx_for(task)
       robot = ::Robot.find_by(id: task.robot_id)
       cell = robot && ::Cell.find_by(id: robot.cell_id)
+      project = cell && ::Project.find_by(id: cell.project_id)
       ctx = { project_id: cell&.project_id, cell_id: robot&.cell_id, robot_id: task.robot_id, task_id: task.id }
       robot_label = robot ? "#{robot.name} - #{robot.application}" : ''
-      [ctx, robot_label]
+      [ctx, robot_label, project&.name.to_s, cell&.name.to_s]
     end
 
     # internationalization G6 (D-I5a) — a msg é CONGELADA no locale de CADA
