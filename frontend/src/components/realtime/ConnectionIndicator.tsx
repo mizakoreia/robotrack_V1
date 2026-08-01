@@ -1,3 +1,4 @@
+import { cn } from '@/lib/utils'
 import { useRealtimeStore } from '@/store/realtimeStore'
 
 // realtime-collaboration 7.3 / D6.6 — o indicador de transporte da topbar. O modo
@@ -11,18 +12,26 @@ export function ConnectionIndicator() {
 
   if (transport === 'live' || transport === 'connecting') return null
 
-  const label =
-    transport === 'offline'
-      ? 'Sem conexão'
-      : synced
-        ? 'Atualizando periodicamente'
-        : 'Atualizando periodicamente · não sincronizado'
+  const isOffline = transport === 'offline'
+  const label = isOffline
+    ? 'Sem conexão'
+    : synced
+      ? 'Atualizando periodicamente'
+      : 'Atualizando periodicamente · não sincronizado'
 
   return (
     <span
       role="status"
       aria-live="polite"
-      className="label-sm inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-text-muted"
+      className={cn(
+        'label-sm inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-text-muted',
+        // No plano free o websocket vive "degradado", e o aviso "Atualizando
+        // periodicamente" entupia a topbar no celular, escondendo o seletor de
+        // workspace. O estado DEGRADADO (updates por polling — não crítico) some
+        // abaixo de md; "Sem conexão" (offline) segue visível em TODA tela —
+        // estado honesto que o operador de galho precisa enxergar.
+        !isOffline && 'max-md:hidden',
+      )}
       data-transport={transport}
     >
       <span
