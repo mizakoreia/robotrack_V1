@@ -75,6 +75,14 @@ echo "[render-start] DATABASE_URL de runtime derivado (robotrack_app @ host do d
 if [ -n "${RENDER_EXTERNAL_URL:-}" ]; then
   export ACTION_CABLE_URL="wss://${RENDER_EXTERNAL_URL#https://}/cable"
   echo "[render-start] ACTION_CABLE_URL derivado de RENDER_EXTERNAL_URL"
+  # Login Google: o redirect do OAuth é a própria URL pública deste backend +
+  # o callback do Devise/OmniAuth — derivável, então ninguém precisa colar. As
+  # CHAVES (GOOGLE_CLIENT_ID/SECRET) continuam manuais no painel: só o dono as
+  # tem, vindas do Google Cloud Console.
+  if [ -z "${OAUTH_GOOGLE_REDIRECT_URI:-}" ]; then
+    export OAUTH_GOOGLE_REDIRECT_URI="${RENDER_EXTERNAL_URL%/}/users/auth/google_oauth2/callback"
+    echo "[render-start] OAUTH_GOOGLE_REDIRECT_URI derivado de RENDER_EXTERNAL_URL"
+  fi
 fi
 if [ -n "${APP_URL:-}" ]; then
   export CORS_ORIGINS="${APP_URL%/}"
