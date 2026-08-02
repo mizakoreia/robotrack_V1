@@ -134,6 +134,16 @@ services:
           type: keyvalue
           name: robotrack-kv
           property: connectionString
+      # Login Google (opcional). sync:false = o Render cria o campo VAZIO no
+      # painel e o dono cola os valores do Google Cloud Console (OAuth Client ID
+      # tipo "Web application", redirect autorizado:
+      # https://<backend>.onrender.com/users/auth/google_oauth2/callback — o
+      # bin/render-web-start deriva esse redirect sozinho no boot). Sem os
+      # valores, o botão Google não funciona; e-mail/senha e código seguem ok.
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
 
   # ── Worker Sidekiq — DESATIVADO NO FREE ──────────────────────────────────────
   # O plano FREE do Render não oferece Background Worker ("service type is not

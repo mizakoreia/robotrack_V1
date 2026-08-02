@@ -33,9 +33,16 @@ Devise.setup do |config|
   # Só Google, por redirect de página inteira (identity-and-auth 3.1 / D4.4).
   # O Facebook saiu: mantê-lo configurado sem credenciais faz o boot logar warning
   # e expõe `/users/auth/facebook` como rota pública sem dono.
+  #
+  # Credenciais: ENV primeiro (produção/Render — o dono cola GOOGLE_CLIENT_ID e
+  # GOOGLE_CLIENT_SECRET no painel, sem tocar em credentials criptografadas nem
+  # RAILS_MASTER_KEY), com fallback nas credentials locais (dev). Sem nenhum dos
+  # dois o provider fica sem chave e o botão do Google simplesmente falha no
+  # redirect — e-mail/senha e código de convite seguem intactos.
   config.omniauth :google_oauth2,
-                  Rails.application.credentials.dig(:oauth, :google, :client_id),
-                  Rails.application.credentials.dig(:oauth, :google, :client_secret),
+                  ENV['GOOGLE_CLIENT_ID'].presence || Rails.application.credentials.dig(:oauth, :google, :client_id),
+                  ENV['GOOGLE_CLIENT_SECRET'].presence ||
+                    Rails.application.credentials.dig(:oauth, :google, :client_secret),
                   {
                     redirect_uri: ENV['OAUTH_GOOGLE_REDIRECT_URI'] || ENV['OAUTH_REDIRECT_URI']
                   }
