@@ -25,6 +25,18 @@ Ao remover/renomear um controle, procure-o nos `.md` (`grep -rn "<rótulo>" *.md
 
 Nada de `[x]` em `tasks.md` sem prova verde. Handoff é anotado como handoff.
 
+## Princípios de implementação (pedido do dono, 2026-08-01)
+
+- **A implementação mais simples que atende plenamente o requisito atual.** Nada
+  especulativo, nada de camada "para o futuro".
+- **Biblioteca estabelecida e bem mantida > implementação própria** — exceto onde
+  a invariante mora no banco/segurança por decisão da casa (RLS, triggers,
+  imutabilidade), que continuam artesanais de propósito.
+- **Compatibilidade retroativa não é sagrada, mas o app ESTÁ EM PRODUÇÃO.** Não
+  carregar peso morto por compatibilidade especulativa; porém mudança que quebra
+  dado, API ou URL de produção exige migração planejada e aviso prévio ao dono —
+  mesma regra que já vale para migrações de banco.
+
 ## Método por grupo
 
 1. Uma change por vez, na branch de feature, **ff para `main` a cada grupo**.
